@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mcmodder
 // @namespace    http://www.mcmod.cn/
-// @version      1.2
+// @version      1.2.1
 // @description  MC百科编审辅助工具
 // @author       charcoalblack__
 // @license      AGPL-3.0
@@ -17,7 +17,7 @@
 // @grant        GM_getValue
 // ==/UserScript==
 GM_registerMenuCommand("打开设置", setting);
-const mcmodderVersion = "1.2";
+const mcmodderVersion = "1.2.1";
 const settingList = [{
 	id: "mcmodder-theme-color-1",
 	todo: "themeColor1",
@@ -129,7 +129,7 @@ const settingList = [{
 	id: "mcmodder-version-helper",
 	todo: "versionHelper",
 	title: "日志智能管理",
-	description: "(Beta!) 允许从其他网站获取模组版本列表，并支持一键补充缺失的日志。",
+	description: "允许从其他网站获取模组版本列表，并支持一键补充缺失的日志。支持 CurseForge 和 Modrinth 双平台。",
 	type: 0
 }, {
 	id: "mcmodder-subscribe-modlist",
@@ -440,6 +440,51 @@ window.getCurseForgeFileList = function(u) {
 		}
 	};
 	n(0)
+};
+window.getModrinthFileList = function(h) {
+	$("#mcmodder-version-menu")
+		.show();
+	$("#mcmodder-version-menu tbody")
+		.html(loadingColorful);
+	let a = [];
+	let e = async function(e) {
+		let t = await fetch(`https://api.modrinth.com/v2/project/${h}/version`, {
+			method: "GET"
+		});
+		let i = await t.text();
+		let o = JSON.parse(i);
+		a = a.concat(o);
+		$("#mcmodder-version-menu tbody")
+			.empty();
+		a.forEach(e => {
+			let t = e.id,
+				i = e.version_type,
+				o = e.version_number,
+				a = e.game_versions.filter(e => /\d+(\.\d+){1,2}(-\w+)*/.test(e)),
+				n, r = new Date(e.date_published),
+				l = "未找到",
+				d = "-",
+				c, s, m;
+			let p = e => e.toLowerCase()
+				.replaceAll("forge", "")
+				.replaceAll("fabric", "")
+				.replaceAll(".jar", "")
+				.replaceAll("alpha", "")
+				.replaceAll("beta", "")
+				.split(/[\/-\s]/)
+				.filter(e => e)
+				.slice(-1)[0];
+			versionList.forEach(e => {
+				let t = e.name;
+				if (t[0] === "v") t = t.slice(1);
+				if (p(o) === p(t)) l = e.name, d = e.mcver, c = e.date, s = e.logid
+			});
+			m = c ? "" : `<a href="/class/version/add/${window.location.href.split("/version/")[1].split(".html")[0]}/?mrid=${h}&fileid=${t}&ver=${p(o)}&mcver=${a}&date=${r.valueOf()}" target="_blank">补全日志</a>`;
+			$("#mcmodder-version-menu tbody")
+				.append(`<tr><td>${t}</td><td>${i}</td><td>${o}</td><td>${a}</td><td>${r.toLocaleString()}</td><td>${l}</td><td>${d}</td><td>${c?c.toLocaleString():"-"}</td><td>${m}</td></tr>`)
+		})
+	};
+	e(0)
 };
 
 function tabInit() {
@@ -1535,7 +1580,21 @@ function generalEditInit() {
 	$(".common-rowlist-block b")
 		.filter((e, t) => $(t)
 			.text() === "改动说明:")
-		.append('<span class="mcmodder-common-dark"> (所有人均可见)</span>')
+		.append('<span class="mcmodder-common-dark"> (所有人均可见)</span>');
+	$("[data-multi-id=remark], [data-multi-id=reason]")
+		.hide()
+		.each((e, t) => $(`<textarea id=${"mcmodder-textarea-"+$(t).attr("data-multi-id")} class="form-control" placeholder="${$(t).attr("placeholder")}"></textarea>`)
+			.insertBefore($(t)
+				.parent())
+			.val($(t)
+				.val())
+			.bind("change", function() {
+				$(this)
+					.parent()
+					.find(`[data-multi-id=${this.id.split("-").slice(-1)[0]}]`)
+					.val($(this)
+						.val())
+			}))
 }
 
 function editorInit() {
@@ -1893,14 +1952,18 @@ function editorInit() {
 				.attr("src") === "https://www.mcmod.cn/pages/class/images/none.jpg") $("#item-cover-preview-img")
 				.attr("src", "https://i.mcmod.cn/editor/upload/20241213/1734019784_179043_sDxX.jpg")
 		}
-		if (getConfig("markdownIt")) {
+		const o = window.location.href.includes("?mrid=");
+		if (getConfig("markdownIt") || o) {
 			let e = document.createElement("script");
 			e.id = "mcmodder-markdownit";
 			e.src = "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js";
 			s.head.appendChild(e);
 			setTimeout(function() {
 				$($(".edui-editor-toolbarboxinner")[0].appendChild(document.createElement("button")))
-					.attr("class", "btn btn-outline-dark btn-sm")
+					.attr({
+						id: "mcmodder-markdown-it",
+						class: "btn btn-outline-dark btn-sm"
+					})
 					.html("Markdown → HTML")
 					.bind("click", function() {
 						let e = $("#ueditor_0")[0].contentWindow,
@@ -1916,7 +1979,9 @@ function editorInit() {
 						const i = e.markdownit();
 						const o = i.render(t.innerText);
 						t.innerHTML = o
-					})
+					});
+				if (o) $("#mcmodder-markdown-it")
+					.click()
 			}, 2e3)
 		}
 	}
@@ -2109,7 +2174,7 @@ function versionListInit() {
 			})
 		});
 	if (getConfig("versionHelper")) {
-		$('<div class="version-menu"><fieldset><legend>从其他网站获取版本列表</legend><div class="bd-callout"><p>该功能尚不保证能够准确对应版本列表与百科现有日志的版本号，对比结果仅供参考，提交日志前请仔细检查各信息是否正确~</p><p>添加时请注意：新增日志的版本号格式应尽可能与现有日志统一。例如，若其他版本号有前缀“v”，则新建日志的版本号也应带此前缀~</p></div><input id="mcmodder-fetch-version-cf" class="form-control" placeholder="输入 CFID 以查询..." style="text-align: center;"><table id="mcmodder-version-menu"><thead><tr><th>文件 ID</th><th>发布状态</th><th>文件名称</th><th>支持 MC 版本</th><th>更新日期</th><th>对应日志版本号</th><th>对应日志支持版本</th><th>对应更新日期</th><th>操作</th></tr></thead><tbody></tbody></table></fieldset></div>')
+		$('<div class="version-menu"><fieldset><legend>从其他网站获取版本列表</legend><div class="bd-callout"><p>该功能尚不保证能够准确对应版本列表与百科现有日志的版本号，对比结果仅供参考，提交日志前请仔细检查各信息是否正确~</p><p>添加时请注意：新增日志的版本号格式应尽可能与现有日志统一。例如，若其他版本号有前缀“v”，则新建日志的版本号也应带此前缀~</p></div><input id="mcmodder-fetch-version-cf" class="form-control" placeholder="输入 CFID 以查询..." style="text-align: center;"><input id="mcmodder-fetch-version-mr" class="form-control" placeholder="输入 MRID 以查询..." style="text-align: center;"><table id="mcmodder-version-menu"><thead><tr><th>文件 ID</th><th>发布状态</th><th>文件名称</th><th>支持 MC 版本</th><th>更新日期</th><th>对应日志版本号</th><th>对应日志支持版本</th><th>对应更新日期</th><th>操作</th></tr></thead><tbody></tbody></table></fieldset></div>')
 			.insertBefore(".version-menu, .version-content-empty");
 		$("#mcmodder-version-menu")
 			.hide();
@@ -2119,6 +2184,14 @@ function versionListInit() {
 					.val();
 				if (e != parseInt(e)) return;
 				getCurseForgeFileList($("#mcmodder-fetch-version-cf")
+					.val())
+			});
+		$("#mcmodder-fetch-version-mr")
+			.bind("change", () => {
+				let e = $("#mcmodder-fetch-version-mr")
+					.val();
+				if (!e) return;
+				getModrinthFileList($("#mcmodder-fetch-version-mr")
 					.val())
 			})
 	}
@@ -2150,26 +2223,41 @@ function versionInit() {
 			$("li.tab-li:nth-child(3) > div:nth-child(2) > input:nth-child(1)")[0].focus()
 		});
 	setTimeout(editorInit, 1e3);
-	let t = new URLSearchParams(window.location.search);
-	if (t.get("cfid")) {
+	let t = new URLSearchParams(window.location.search),
+		c = 0,
+		a;
+	if (t.get("cfid")) c = 1, a = t.get("cfid");
+	else if (t.get("mrid")) c = 2, a = t.get("mrid");
+	if (c) {
 		let e = async function(e, t, i, o, a) {
-			let n = await fetch(`https://www.curseforge.com/api/v1/mods/${e}/files/${t}/change-log`, {
-				method: "GET"
-			});
-			let r = await n.text();
-			let l = JSON.parse(r)
-				.changelogBody;
+			let n, r, l;
+			if (c === 1) {
+				n = await fetch(`https://www.curseforge.com/api/v1/mods/${cfid}/files/${t}/change-log`, {
+					method: "GET"
+				});
+				r = await n.text();
+				l = JSON.parse(r)
+					.changelogBody
+			} else if (c === 2) {
+				n = await fetch(`https://api.modrinth.com/v2/version/${t}`, {
+					method: "GET"
+				});
+				r = await n.text();
+				l = "<p>" + JSON.parse(r)
+					.changelog.replaceAll("\n", "</p><p>") + "</p>"
+			}
 			if (l) setTimeout(() => {
 				editor.setContent(l);
 				let e = $("#ueditor_0")[0].contentDocument.body,
-					t = false;
+					o = false;
 				for (let i = 1; i < 6; i++) $(e)
 					.find("h" + i)
 					.each((e, t) => {
 						$(t)
-							.replaceWith(`<p>[h${i}=${t.textContent}]</p>`)
-					}), t = true;
-				if (t) $(e)
+							.replaceWith(`<p>[h${i}=${t.textContent}]</p>`);
+						o = true
+					});
+				if (o) $(e)
 					.append("<p>[ban:title_menu]</p>");
 				$(e)
 					.trigger("keyup")
@@ -2183,7 +2271,7 @@ function versionInit() {
 				.val(d.getYear() % 100 * 1e4 + (d.getMonth() + 1) * 100 + d.getDate())
 				.trigger("change")
 		};
-		e(t.get("cfid"), t.get("fileid"), t.get("ver"), t.get("mcver"), t.get("date"))
+		e(a, t.get("fileid"), t.get("ver"), t.get("mcver"), t.get("date"))
 	}
 }
 
@@ -3701,6 +3789,7 @@ function scheduleEvents() {
 						.first()
 						.attr("href");
 					Swal.fire({
+							type: "info",
 							title: "Mcmodder 有新版本可用！",
 							html: `<div class="mcmodder-golden-alert"><span class="mcmodder-common-danger">${mcmodderVersion}</span> → <span class="mcmodder-common-light">${a}</span></div><div class="mcmodder-changelog">${e}</div>`,
 							confirmButtonText: "立即下载",
