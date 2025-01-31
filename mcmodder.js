@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         Mcmodder
 // @namespace    http://www.mcmod.cn/
-// @version      1.2.2
+// @version      1.3
 // @description  MC百科编审辅助工具
 // @author       charcoalblack__
 // @license      AGPL-3.0
 // @match        https://*.mcmod.cn/*
 // @exclude      https://bbs.mcmod.cn/*
-// @exclude      https://www.mcmod.cn/modpack/*
-// @exclude      https://play.mcmod.cn/
+// @exclude      https://play.mcmod.cn/add/*
 // @exclude      https://www.mcmod.cn/tools/*/*
 // @run-at       document-end
 // @iconURL      https://www.mcmod.cn/static/public/images/favicon.ico
@@ -17,7 +16,7 @@
 // @grant        GM_getValue
 // ==/UserScript==
 GM_registerMenuCommand("打开设置", setting);
-const mcmodderVersion = "1.2.2";
+const mcmodderVersion = "1.3";
 const settingList = [{
 	id: "mcmodder-theme-color-1",
 	todo: "themeColor1",
@@ -44,6 +43,12 @@ const settingList = [{
 	todo: "autoCheckUpdate",
 	title: "自动检查更新",
 	description: "每隔一段时间自动检查更新，并在有新更新可用时提醒。",
+	type: 0
+}, {
+	id: "mcmodder-notosans",
+	todo: "useNotoSans",
+	title: "自定义字体",
+	description: "使用 Noto Sans 替换百科默认字体。",
 	type: 0
 }, {
 	id: "mcmodder-disable-gradient",
@@ -119,7 +124,7 @@ const settingList = [{
 	id: "mcmodder-latex",
 	todo: "latexEditor",
 	title: "LaTeX 编辑器",
-	description: '(WIP) 基于 <a href="https://www.mathjax.org">MathJax</a> 的 MC 百科编辑器 LaTeX 渲染功能。使用一对美元符号 "$" 括起编辑器中的 LaTeX 代码后，轻触编辑器菜单中的“转换”按钮即可。',
+	description: '(WIP) 基于 <a href="https://www.mathjax.org" target="_blank">MathJax</a> 的 MC 百科编辑器 LaTeX 渲染功能。使用一对美元符号 "$" 括起编辑器中的 LaTeX 代码后，轻触编辑器菜单中的“转换”按钮即可。',
 	type: 0
 }, {
 	id: "mcmodder-markdown",
@@ -237,6 +242,7 @@ const settingList = [{
 	description: "在待审列表中显示“一键催审”按钮。",
 	type: 0
 }];
+let advancementList, userItemList;
 const adminUid = [2, 8, 9, 208, 331, 7926, 7949, 10167, 12422, 14115, 17038, 21294, 29797, 672797];
 const loadingColorful = '<img src="/static/public/images/loading-colourful.gif"></img>';
 
@@ -249,27 +255,36 @@ window.playSound = function(e = "//www.mcmod.cn/static/public/sound/task/levelup
 	t.setAttribute("src", e);
 	t.play()
 };
-window.getConfig = function(t, e = "mcmodderSettings") {
-	if (!GM_getValue(e)) GM_setValue(e, "{}");
-	let i = JSON.parse(GM_getValue(e))[t];
-	if (!i) settingList.forEach(e => {
-		if (e.todo === t) return e.value || ""
+window.getConfig = function(t, i = "mcmodderSettings") {
+	if (!GM_getValue(i)) GM_setValue(i, "{}");
+	let e = JSON.parse(GM_getValue(i))[t];
+	if (!e) settingList.forEach(e => {
+		if (i === "mcmodderSettings" && e.todo === t) return e.value || ""
 	});
-	switch (i) {
+	switch (e) {
 		case "true":
 			return true;
 		case "false":
 			return false;
 		default:
-			return i
+			return e
 	}
 	return ""
 };
 window.setConfig = function(e, t, i = "mcmodderSettings") {
 	if (!GM_getValue(i)) GM_setValue("mcmodderSettings", "{}");
-	let o = JSON.parse(GM_getValue(i));
-	o[e] = t;
-	GM_setValue(i, JSON.stringify(o))
+	let a = JSON.parse(GM_getValue(i));
+	a[e] = t;
+	GM_setValue(i, JSON.stringify(a))
+};
+window.timeFormatter = function(e) {
+	if (e < 0) return `-`;
+	if (e < 1e3) return `${e}ms`;
+	if (e < 5e3) return `${parseInt(e/1e3)}s ${e%1e3}ms`;
+	if (e < 6e4) return `${parseInt(e/1e3)}s`;
+	if (e < 36e5) return `${parseInt(e/6e4)}m ${parseInt(e%6e4/1e3)}s`;
+	if (e < 864e5) return `${parseInt(e/36e5)}h ${parseInt(e%36e5/6e4)}m`;
+	return `${parseInt(e/864e5)}d`
 };
 let nightStyle = ":root {--mcmodder-bgcolor: rgba(17,17,17," + Math.max(Math.min(parseInt(getConfig("backgroundAlpha") || 204), 255), 128) / 255 + "); --mcmodder-txcolor: #ddd;} html, body, pre, code {color: var(--mcmodder-txcolor);} .edui-default .edui-editor-toolbarboxinner {} .edui-default .edui-editor-toolbarboxouter { background-color: #050505 !important; background-image: linear-gradient(to bottom,#555,#777) !important;} .common-center .right .tab-content ul.tab-ul p.title, .common-link-frame .title, .center-block-head .title, .center-content.admin-list .title, .center-sub-menu a:hover, .center-content.edit-chart-frame .title-main, .author-mods .title, .author-member .title, .author-partner .title, .page-header .title, .panel-title, .page-header .title, thead {color: #ee6;} .common-center .right .tab-content li.tab-li .tips { color: #aaf;}.common-center .right .tab-content li.tab-li .tips.red, .common-center .right .tab-content li.tab-li .tips.red a { color: #faf;}.form-control, input {border-color: #333; box-shadow: inset 0px 1px 0px #111;} .edui-default .edui-default .edui-menu-body .state-hover { background: #d6d;} .arrow, .comment-row .comment-tools .comment-attitude-list .comment-attitude-list-hover ul, .dropdown-menu, .center-task-block .icon, .edui-default .edui-toolbar .edui-combox .edui-combox-body, .edui-default .edui-popup, .edui-default .edui-popup-content, .edui-default .edui-dialog-shadow, .modal-content, .header-search form, .searchbox, .radio label::before, .checkbox label::before, .popover-header { background: var(--mcmodder-bgcolor) !important; border-color: #444; color: #ddd;} common-menu-page li, .bootstrap-tagsinput .tag {border-color: #444;} .bootstrap-tagsinput { background-color: #000; border-color: #333;} .common-menu-page li, .comment-quote-block, .comment-skip-block .common-text table th, th, .common-class-category li .normal.gray { background-color: #111; border-color: #333;}.common-nav li, .common-nav a, p {color: #bbb;} a { color: #6bf;}.alert-primary { color: #b8daff; background-color: #226; border-color: #224;} .alert-warning {border-color: #660; background-color: #330} .item-category li, .common-text table th, .center-content.post-list .post-block .cover img, .center-card-view { background-color: var(--mcmodder-bgcolor); border-color: #333;} .form-control ::selection, .item-table-block .text, .edui-default .edui-editor { background-color: #000;} .selectTdClass { background-color: #07122d !important;} td, th, .news_block .left .block img, .edui-default .edui-dialog-titlebar { border-color: #333 !important;} .history-list-frame li, .common-comment-block .comment-row { border-bottom-color: #333; } .topic_block .dec a, .right a.class{ color: #fff; } div, ul, li, .chart_block .list li a, .news_block .left .name a,  .class_block .left .list .name a, .class_block .right .list a, .post_block .list li .postTitle a, .card_block ul li a, .dropdown-item, .common-nav a.home, input, .common-comment-block .comment-title, .common-fuc-group span, .checkbox label::after { color: var(--mcmodder-txcolor); text-shadow: 1px 1px 1px #f0f8ff40 } .class_block .title a { color: #dd6; } .pages_system .Pbtn, .pages_system .Pbtn_on { background-color: #000 !important; } .class_block .left .list .frame, .common-text-title-1, hr, .table-bordered > thead > tr > th, .table-bordered > tbody > tr > th, .table-bordered > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > tbody > tr > td, .table-bordered > tfoot > tr > td, .panel, .center-card-block.background .center-card-border, .center-card-block.badges .center-card-border, .center-card-block.tracker .center-card-border.rank-1 { border-color: #333; } .class_block .left .list .items { border-top-color: #333; }  .news_block .right .editor, .bd-callout, .webui-popover-title { border-color: #222; } .news_block .right .editor ul a { color: #88f; } .progress { background-color: #e9ecef55; } .common-comment-block .comment-row-username a { color: #938a82; } .rank-head-frame fieldset, .history-list-head fieldset, .common-fuc-group li, .table-bordered td, .table-bordered th, .table thead th, .common-center .maintext .quote_text { border-color: #555; } .common-pages .page-item .page-link, .common-class-category li .normal.gray, .badge-light { background-color: #333; color: #fff; } .page-link, .verify-list-list-head fieldset { border-color: #777; } .class-excount .infos, exp-rate text-muted, .class_block .left .list .name, .class_block .right .list, .common-user-card .card-container .tracker-frame .block .item, .modlist-filter-block ul:not(.common-class-category) li.main a, .common-fuc-group .action, .center-main.favorite .favorite-fold-list a, .news_block .right .count, .center-main.favorite .favorite-slot-menu ol a, .popover, .main .nav ul li, .edui-popup-content, .item-table-block .title, .webui-popover-title, .page-header {background-color: var(--mcmodder-bgcolor);} .form-control:disabled, .form-control[readonly] {background-color: #222;} .common-center .right .class-info .col-lg-4, .content, .common-center .left .class-rating-submit, .common-center .right .class-info .class-info-left .tag, .common-center .right .class-info .class-info-left .tag a, .rank-list-block .title b, .common-rowlist-2 li, .common-center .maintext .item-jump p, .edit-autolink-frame .tips, .center-content.edit-chart-frame .title-sub, .comment-quote-block, .comment-skip-block, .class-item-type .mold-0 .title, .class-item-type .mold-0 .icon {color: #aaa;} .class-excount .infos .span .n, h1, h2, h3, h4, h5, h6, .center-sub-menu a, .rank-list-block a, .common-menu-page a, .common-text p, .list_block .menu li a, .verify-list-list td a.text-muted, .az_block .menu li, .az_block .list li a, .swal2-popup .swal2-title, .star_block .list li a, .list_block .list li a, .item-category a, .common-icon-text a, .dropdown-menu > li > a, .sidebar-open-button, .sidepanel-open-button, .searchbutton, .top-right .profilebox .col-lg-12.common-rowlist-2 .title, .center-total li .title, .class-info-left .col-lg-6 .title, .common-text .common-text-menu li a span, .class-item-type li .content, .common-center .class-edit-block li a, .worldgen-list li p.name a, .class_block .left .list .name a, .modlist-block .title p, .modlist-block .title a , .modlist-filter-block ul:not(.common-class-category) li.main a, .header-search #header-search-submit, .common-center .right .class-relation-list legend {color: var(--mcmodder-txcolor);} .center-main.favorite .favorite-slot-ul li {border-color: #000} .header-layer, .webui-popover-inner {background-color: #000 !important; border-color: #111 !important; box-shadow: 1px 1px 4px #222 !important;} .edit-autolink-list li:not(.empty):not(.limit):hover, .modlist-filter-block ul:not(.common-class-category) li.main a:hover {background-color: #445} .center-content.item-list li.rank_1 {border-color: #222; background-color: #000; background-image: radial-gradient(at 60px 50px, #222 20%, #111);} .edui-default .edui-toolbar .edui-button .edui-state-hover .edui-button-wrap {background-color: #499 !important; border-color: #6cc !important;} .radio label::after {background-color: #ddd} .uknowtoomuch {text-shadow: 0px 0px !important;} #top {background-color: #135;} .header-layer-block a {color: #aac;} .mcmodder-golden-alert {background-color: #552d;}";
 let classRatingChart, centerEditChart;
@@ -301,11 +316,11 @@ generalEditorObserver.observe(document.body, {
 });
 
 function addStyle(e, t = "", i = document) {
-	let o = $("head", i)[0].appendChild(document.createElement("style"));
-	$(o)
+	let a = $("head", i)[0].appendChild(document.createElement("style"));
+	$(a)
 		.attr("type", "text/css")
 		.html(e);
-	if (t) o.id = t
+	if (t) a.id = t
 }
 
 function addScript(e, t) {
@@ -320,43 +335,98 @@ let getStartTime = (e, t = 1) => new Date(e.setHours(0, 0, 0, 0))
 function customStyle() {
 	let e = (e, t) => {
 		let i = parseInt(e.slice(1), 16);
-		let o = t * 255;
-		let a = (i >> 16) - o;
-		let n = ((i & 65280) >> 8) - o;
-		let r = (i & 255) - o;
-		return "#" + (0 | Math.max(Math.min(a, 255), 0) << 16 | Math.max(Math.min(n, 255), 0) << 8 | Math.max(Math.min(r, 255), 0))
+		let a = t * 255;
+		let o = (i >> 16) - a;
+		let n = ((i & 65280) >> 8) - a;
+		let r = (i & 255) - a;
+		return "#" + (0 | Math.max(Math.min(o, 255), 0) << 16 | Math.max(Math.min(n, 255), 0) << 8 | Math.max(Math.min(r, 255), 0))
 			.toString(16)
 			.padStart(6, "0")
 	};
 	let t = getConfig("themeColor1") || "#86c155",
 		i = getConfig("themeColor2") || "#58b6d8",
-		o = getConfig("themeColor3") || "#ff3030",
-		a = e(t, .2),
+		a = getConfig("themeColor3") || "#ff3030",
+		o = e(t, .2),
 		n = e(i, .2),
 		r = t + "80",
 		l = i + "80",
-		d = a + "80",
+		d = o + "80",
 		c = n + "80";
-	addStyle(":root {--mcmodder-tc1:" + t + "; --mcmodder-tc2:" + i + "; --mcmodder-tc3:" + o + "; --mcmodder-td1:" + a + "; --mcmodder-td2:" + n + "; --mcmodder-tca1:" + r + "; --mcmodder-tca2:" + l + "; --mcmodder-tda1:" + d + "; --mcmodder-tda2:" + c + "; --mcmodder-bgcolor: rgba(255,255,255," + Math.max(Math.min(parseInt(getConfig("backgroundAlpha") || 204), 255), 128) / 255 + "); --mcmodder-txcolor: #333; --mcmodder-platform-forge: #5b6197; --mcmodder-platform-fabric: #8a7b71; --mcmodder-platform-neoforge: #dc895c; --mcmodder-platform-quilt: #8b61b4; --mcmodder-platform-liteloader: #4c90de;}");
+	addStyle(":root {--mcmodder-tc1:" + t + "; --mcmodder-tc2:" + i + "; --mcmodder-tc3:" + a + "; --mcmodder-td1:" + o + "; --mcmodder-td2:" + n + "; --mcmodder-tca1:" + r + "; --mcmodder-tca2:" + l + "; --mcmodder-tda1:" + d + "; --mcmodder-tda2:" + c + "; --mcmodder-bgcolor: rgba(255,255,255," + Math.max(Math.min(parseInt(getConfig("backgroundAlpha") || 204), 255), 128) / 255 + "); --mcmodder-txcolor: #333; --mcmodder-platform-forge: #5b6197; --mcmodder-platform-fabric: #8a7b71; --mcmodder-platform-neoforge: #dc895c; --mcmodder-platform-quilt: #8b61b4; --mcmodder-platform-liteloader: #4c90de;}");
 	addStyle(".form-control {width:100%;box-sizing:border-box;padding:4px;color:var(--mcmodder-txcolor);}  .form-control::placeholder{color:#999}  .item-id{margin-right:2px;border-radius:5px;font-size:12px;font-weight:unset;}  .item-ename{font-size:12px;color:#999;}  .item-modabbr{font-size:12px;color:#555;}  .btn {background:linear-gradient(45deg,var(--mcmodder-tca1),var(--mcmodder-tca2));}  .btn-dark, .dropdown-item.active {background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));}  .btn-outline-dark {border-color:var(--mcmodder-tda1)}  .mcmodder-task-tip { width:320px; height:85px; position:fixed; right:0; top:-50px; z-index:1000; background-color:#212121; border:4px solid #555; box-shadow:0 0 0 1px #000; border-radius:6px}.mcmodder-task-tip .icon { width:48px; height:48px; margin:5px 0 0 5px; border:1px solid #DDD; border-radius:10px; text-align:center; float:left}.mcmodder-task-tip .icon img { width:32px; height:32px; margin-top:8px}.mcmodder-task-tip .info { width:100%; padding-left:60px; position:absolute}.mcmodder-task-tip .info .title { line-height:25px; font-size:14px; font-weight:bold; color:#fafa00}.mcmodder-task-tip .info .text,.mcmodder-task-tip .info .time { line-height:20px; font-size:12px; color:#FFF}.mcmodder-task-tip .info .time { position:absolute; left:10px; bottom:0}.mcmodder-task-tip .info .range { margin-top:10px; line-height:20px; margin-right:5px; font-size:12px; color:#FFF; text-align:right} #mcmodder-night-switch, #mcmodder-invisibility {line-height: 30px;border: 0;background-color: transparent;color: #d8d8d8;cursor: url(//www.mcmod.cn/images/cursor/hand.png),auto;display: inline-block;} #mcmodder-night-switch:focus, #mcmodder-invisibility:focus {outline: none;} * {transition: color .3s ease-in-out, background-color .3s ease-in-out, border-color .3s ease-in-out;} .common-template-frame li p {line-height: unset;} .common-template-frame li {width: 100%; position: relative;} .center-setting-block .form-control[type=color] {width: 4em;}");
-	if (!getConfig("disableGradient")) addStyle("  .mcmodder-common-light{background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-light{background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-common-dark{background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-dark{background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-common-danger{background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-danger{background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-chroma{color: transparent; background: linear-gradient(45deg,red,orange,green,purple,red); background-clip: text;text-shadow:1px 1px 1px #8884;}  ");
-	else addStyle("  .mcmodder-common-light{color:var(--mcmodder-tc2);font-weight:bold;}  .mcmodder-slim-light{color:var(--mcmodder-tc1);}  .mcmodder-common-dark{color:var(--mcmodder-td2);font-weight:bold;}  .mcmodder-slim-dark{color:var(--mcmodder-td1);}  .mcmodder-common-danger{color:var(--mcmodder-tc3);font-weight:bold;}  .mcmodder-slim-danger{color:var(--mcmodder-tc3);font-weight:bold;}  .mcmodder-chroma{color: red;}  ");
-	let s = $("head")[0].appendChild(document.createElement("script"));
-	s.setAttribute("type", "text/javascript");
-	s.innerHTML = 'currentUsername = $(".header-user-name")[0]?.childNodes[0]?.innerHTML || "";  currentUid = $(".header-user-name a, .name.top-username a, .profilebox").first().attr("href").split("//center.mcmod.cn/")[1]?.split("/")[0] || "0";  expReq = [0,20,20,200,240,480,960,1728,2918,4597,6698,8930,10716,11252,9752,5851,6437,7080,7787,8567,9423,10366,11402,12543,13796,15177,16694,18363,20200,22219,24442,2147000000];  autoLinkIndex = 1; originalContextLength = 0; contextLength = 0;  itemSearchCooldown = false;  async function AsyncItemSearch (s) {    if (itemSearchCooldown) return null;    itemSearchCooldown = true;    setTimeout(() => {itemSearchCooldown = false}, 3e2);    asyncItem = {      id: 0,      name: "",      englishName: "",      type: "",      modName: "",      modEnglishName: "",      modAbbreviation: ""    };    asyncResponse = await fetch("https://www.mcmod.cn/object/UEAutolink/", {      method: "POST",      headers: {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},      body: "classID=0&key=" + s    });    asyncData = await asyncResponse.text();    raw = asyncData.split(\'<a title=\')[1].split(" - ");    asyncItem.type = raw[0];    asyncItem.id = raw[1].slice(3).split(" ")[0];    asyncItem.name = raw[1].slice(4 + asyncItem.id.length).split(" (")[0];    if (raw[1].includes("(")) asyncItem.englishName = raw[1].split("(")[1].split(")")[0];    if (raw[2].includes("]")) asyncItem.modAbbreviation = raw[2].slice(1).split("]")[0];    if (raw[2].includes("]")) asyncItem.modName = raw[2].split("]")[1].split("\\"")[0].split("(")[0];    else asyncItem.modName = raw[2].split("\\"")[0].split(" (")[0];    if (raw[2].includes("(")) asyncItem.modEnglishName = raw[2].split("(")[1].split(")")[0];  };  function itemSearch(s) {    AsyncItemSearch(s);    return asyncItem;  };  function toChinese(s) {    let chineseStr = "";    for (i = 0; i < s.length;) {      const unicode = s.substr(i, 6);      if (unicode.substr(0, 2) === "\\\\u") {chineseStr += String.fromCharCode(parseInt(unicode.substr(2), 16)); i += 6;}      else {chineseStr += unicode[0]; i += 1;}    }    return chineseStr;  };  function customDateStringToTimestamp(str) {    const [year, month, day, hour, minute, second] = str.split(/[- :]/);    return new Date(year, month - 1, day, hour, minute, second).getTime();  }  function clearContextFormatter(e) {    e = " " + e;    const r = ["h1=", "h2=", "h3=", "h4=", "h5=", "ban:", "mark:", "icon:"];    m = true;    while (m) {      m = false;      r.forEach(function (i) {        p = e.indexOf("[" + i);        if (p > -1) {          if (e.slice(p).indexOf("]") < 0) return;          m = true;          s = e.slice(p).split("]")[0].replace("[" + i, "");          if (i.indexOf("=") > -1) e = e.replace(e.slice(p).split("]")[0] + "]", s);          else if (i === "icon:" && s.includes("=")) {            s = s.split("=")[1].replace(",", "");            e = e.replace(e.slice(p).split("]")[0] + "]", s);          }          else e = e.replace(e.slice(p).split("]")[0] + "]", "");        }      });    }    return e.replace(" ", "");  }  function getContextLength(e) {    const encoder = new TextEncoder();    let r = clearContextFormatter(e);    return encoder.encode(r).length;  };  '
+	if (!getConfig("disableGradient")) addStyle("  .mcmodder-common-light{background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-light{background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-common-dark{background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-dark{background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-common-danger{background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;}  .mcmodder-slim-danger{background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;}  .mcmodder-chroma{color: transparent; background: linear-gradient(90deg,#32C5FF,#B620E0,#F7B500,#20E050,#32C5FF); background-size: 100px; background-clip: text;text-shadow:2px 2px 1px #8884; animation: gradientText 3s infinite linear;} @keyframes gradientText {0% {background-position: 0;} 100% {background-position: 100px;}}  ");
+	else addStyle("  .mcmodder-common-light{color:var(--mcmodder-tc2);font-weight:bold;}  .mcmodder-slim-light{color:var(--mcmodder-tc1);}  .mcmodder-common-dark{color:var(--mcmodder-td2);font-weight:bold;}  .mcmodder-slim-dark{color:var(--mcmodder-td1);}  .mcmodder-common-danger{color:var(--mcmodder-tc3);font-weight:bold;}  .mcmodder-slim-danger{color:var(--mcmodder-tc3);font-weight:bold;}  .mcmodder-chroma{color: red;}  ")
 }
+window.currentUsername = $(".header-user-name")[0]?.childNodes[0]?.innerHTML || "";
+window.currentUid = $(".header-user-name a, .name.top-username a, .profilebox")
+	.first()
+	.attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0] || 0;
+window.expReq = [0, 20, 20, 200, 240, 480, 960, 1728, 2918, 4597, 6698, 8930, 10716, 11252, 9752, 5851, 6437, 7080, 7787, 8567, 9423, 10366, 11402, 12543, 13796, 15177, 16694, 18363, 20200, 22219, 24442, 2147e6];
+window.autoLinkIndex = 1, window.originalContextLength = 0, window.contextLength = 0;
+window.toChinese = function(e) {
+	let t = "";
+	for (i = 0; i < e.length;) {
+		const a = e.substr(i, 6);
+		if (a.substr(0, 2) === "\\u") {
+			t += String.fromCharCode(parseInt(a.substr(2), 16));
+			i += 6
+		} else {
+			t += a[0];
+			i += 1
+		}
+	}
+	return t
+};
+window.customDateStringToTimestamp = function(e) {
+	const [t, i, a, o, n, r] = e.split(/[- :]/);
+	return new Date(t, i - 1, a, o, n, r)
+		.getTime()
+};
+window.clearContextFormatter = function(t) {
+	t = " " + t;
+	const e = ["h1=", "h2=", "h3=", "h4=", "h5=", "ban:", "mark:", "icon:"];
+	m = true;
+	while (m) {
+		m = false;
+		e.forEach(function(e) {
+			p = t.indexOf("[" + e);
+			if (p > -1) {
+				if (t.slice(p)
+					.indexOf("]") < 0) return;
+				m = true;
+				s = t.slice(p)
+					.split("]")[0].replace("[" + e, "");
+				if (e.indexOf("=") > -1) t = t.replace(t.slice(p)
+					.split("]")[0] + "]", s);
+				else if (e === "icon:" && s.includes("=")) {
+					s = s.split("=")[1].replace(",", "");
+					t = t.replace(t.slice(p)
+						.split("]")[0] + "]", s)
+				} else t = t.replace(t.slice(p)
+					.split("]")[0] + "]", "")
+			}
+		})
+	}
+	return t.replace(" ", "")
+};
+window.getContextLength = function(e) {
+	const t = new TextEncoder;
+	let i = clearContextFormatter(e);
+	return t.encode(i)
+		.length
+};
 window.heightAutoResize = function() {
-	let o = 25;
+	let a = 25;
 	let e = $("#ueditor_0")[0].contentDocument.body;
 	$(e)
 		.children()
 		.each((e, t) => {
 			let i = getComputedStyle(t);
-			o += t.offsetHeight + parseFloat(i.marginTop) + parseFloat(i.marginBottom) + parseFloat(i.borderTopWidth) + parseFloat(i.borderBottomWidth)
+			a += t.offsetHeight + parseFloat(i.marginTop) + parseFloat(i.marginBottom) + parseFloat(i.borderTopWidth) + parseFloat(i.borderBottomWidth)
 		});
-	o = Math.max(o, 300);
-	$("#edui1")[0].style.height = o + $("#edui1_toolbarbox")[0].offsetHeight + "px";
-	$("#edui1_iframeholder")[0].style.height = o + "px";
+	a = Math.max(a, 300);
+	$("#edui1")[0].style.height = a + $("#edui1_toolbarbox")[0].offsetHeight + "px";
+	$("#edui1_iframeholder")[0].style.height = a + "px";
 	let t = 0;
 	$(e)
 		.contents()
@@ -370,27 +440,27 @@ window.heightAutoResize = function() {
 	$("#changed-text")[0].className = i < 0 ? "mcmodder-common-danger" : "mcmodder-common-light";
 	$("#changed-text")
 		.html((i > 0 ? "+" : "") + i.toLocaleString());
-	let a = $(".mcmodder-editor-stats")
+	let o = $(".mcmodder-editor-stats")
 		.contents()
 		.filter(e => e > 2);
-	i ? a.show() : a.hide()
+	i ? o.show() : o.hide()
 };
 window.refreshExpBar = function(e, t = 0) {
 	let i = 1,
-		o = 0,
 		a = 0,
+		o = 0,
 		n = e;
 	while (e - expReq[i] >= 0) e -= expReq[i++];
-	o = parseInt(e / expReq[i] * 100);
-	a = expReq[i] - e;
+	a = parseInt(e / expReq[i] * 100);
+	o = expReq[i] - e;
 	if (i <= 30) {
 		$(".lv-title span:nth-child(2)")
 			.html(`升级进度: ${e.toLocaleString()} / ${expReq[i].toLocaleString()} Exp`);
 		$(".lv-title span:nth-child(3)")
-			.html(`升级还需经验: ${a.toLocaleString()} Exp`)
+			.html(`升级还需经验: ${o.toLocaleString()} Exp`)
 	} else {
 		i = 30;
-		o = 100;
+		a = 100;
 		$(".lv-title span:nth-child(2)")
 			.html(`升级进度: ${n.toLocaleString()} / - Exp`);
 		$(".lv-title span:nth-child(3)")
@@ -402,36 +472,70 @@ window.refreshExpBar = function(e, t = 0) {
 		.html(`总经验: ${n.toLocaleString()} Exp`);
 	$(".lv-bar .progress-bar")
 		.attr({
-			style: `width: ${o}%;`,
-			"aria-valuenow": o
+			style: `width: ${a}%;`,
+			"aria-valuenow": a
 		});
 	$(".lv-bar .per")
-		.html(o + "%");
+		.html(a + "%");
 	$("#mcmodder-lv-input")
 		.trigger("change")
+};
+window.doCheckUpdate = async function() {
+	let e = await fetch("https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483", {
+		method: "GET"
+	});
+	let t = $("<html>")
+		.html(await e.text()),
+		i;
+	let a = t.find("#postmessage_85878 font[size=5]")
+		.first()
+		.text()
+		.split("Mcmodder v")[1].split(" --")[0];
+	if (versionCompare(mcmodderVersion, a) < 0) {
+		let e = t.find("#postmessage_85878 .spoilerbody")
+			.first()
+			.html();
+		i = "https://bbs.mcmod.cn/" + t.find(".attnm a")
+			.first()
+			.attr("href");
+		Swal.fire({
+				html: `<div style="width: 100%;background-image: url(&quot;https://s21.ax1x.com/2025/01/05/pE9Avh4.jpg\&quot;); display: inline-block; height: 200px; background-position-y: 100%; background-size: 100%; position: relative;"><span style="position: absolute; bottom: 1em; right: 0; color: white; text-shadow: 3px 3px 1px #8888; font-size: 1.875em;">啊哈哈哈、更新来咯！</span><span style="position: absolute; bottom: .7em; right: .5em; color: white;"><span class="mcmodder-common-danger">${mcmodderVersion}</span> → <span class="mcmodder-common-light">${a}</span></span></div><div class="mcmodder-changelog">${e}</div>`,
+				confirmButtonText: "立即下载",
+				showCancelButton: true,
+				cancelButtonText: "稍后提醒"
+			})
+			.then(e => {
+				if (e.value) open(i);
+				else setConfig("nextAutoUpdateTime", Date.now() + 60 * 60 * 1e3, "scheduledEvent")
+			})
+	} else {
+		if ($("#mcmodder-update-check")
+			.length) common_msg(PublicLangData.remind, "当前插件已是最新版本~", "ok");
+		setConfig("nextAutoUpdateTime", Date.now() + 60 * 60 * 1e3, "scheduledEvent")
+	}
 };
 window.getCurseForgeFileList = function(u) {
 	$("#mcmodder-version-menu")
 		.show();
 	$("#mcmodder-version-menu tbody")
 		.html(loadingColorful);
-	let a = [];
+	let o = [];
 	let n = async function(e) {
 		let t = await fetch(`https://www.curseforge.com/api/v1/mods/${u}/files?pageIndex=${e}&pageSize=50&sort=dateCreated&sortDescending=true&removeAlphas=false`, {
 			method: "GET"
 		});
 		let i = await t.text();
-		let o = JSON.parse(i);
-		a = a.concat(o.data);
-		if (o.pagination.totalCount > (e - 1) * 50) setTimeout(n(++e), 1e3);
+		let a = JSON.parse(i);
+		o = o.concat(a.data);
+		if (a.pagination.totalCount > (e - 1) * 50) setTimeout(n(++e), 1e3);
 		else {
 			$("#mcmodder-version-menu tbody")
 				.empty();
-			a.forEach(e => {
+			o.forEach(e => {
 				const t = ["-", "Release", "Beta", "Alpha"];
 				let i = e.id,
-					o = t[e.releaseType],
-					a = e.fileName,
+					a = t[e.releaseType],
+					o = e.fileName,
 					n = e.gameVersions.filter(e => /\d+(\.\d+){1,2}(-\w+)*/.test(e)),
 					r, l = new Date(e.dateCreated),
 					d = "未找到",
@@ -449,11 +553,11 @@ window.getCurseForgeFileList = function(u) {
 				versionList.forEach(e => {
 					let t = e.name;
 					if (t[0] === "v") t = t.slice(1);
-					if (h(a) === h(t)) d = e.name, c = e.mcver, s = e.date, m = e.logid
+					if (h(o) === h(t)) d = e.name, c = e.mcver, s = e.date, m = e.logid
 				});
-				p = s ? "" : `<a href="/class/version/add/${window.location.href.split("/version/")[1].split(".html")[0]}/?cfid=${u}&fileid=${i}&ver=${h(a)}&mcver=${n}&date=${l.valueOf()}" target="_blank">补全日志</a>`;
+				p = s ? "" : `<a href="/class/version/add/${window.location.href.split("/version/")[1].split(".html")[0]}/?cfid=${u}&fileid=${i}&ver=${h(o)}&mcver=${n}&date=${l.valueOf()}" target="_blank">补全日志</a>`;
 				$("#mcmodder-version-menu tbody")
-					.append(`<tr><td>${i}</td><td>${o}</td><td>${a}</td><td>${n}</td><td>${l.toLocaleString()}</td><td>${d}</td><td>${c}</td><td>${s?s.toLocaleString():"-"}</td><td>${p}</td></tr>`)
+					.append(`<tr><td>${i}</td><td>${a}</td><td>${o}</td><td>${n}</td><td>${l.toLocaleString()}</td><td>${d}</td><td>${c}</td><td>${s?s.toLocaleString():"-"}</td><td>${p}</td></tr>`)
 			})
 		}
 	};
@@ -464,21 +568,21 @@ window.getModrinthFileList = function(h) {
 		.show();
 	$("#mcmodder-version-menu tbody")
 		.html(loadingColorful);
-	let a = [];
+	let o = [];
 	let e = async function(e) {
 		let t = await fetch(`https://api.modrinth.com/v2/project/${h}/version`, {
 			method: "GET"
 		});
 		let i = await t.text();
-		let o = JSON.parse(i);
-		a = a.concat(o);
+		let a = JSON.parse(i);
+		o = o.concat(a);
 		$("#mcmodder-version-menu tbody")
 			.empty();
-		a.forEach(e => {
+		o.forEach(e => {
 			let t = e.id,
 				i = e.version_type,
-				o = e.version_number,
-				a = e.game_versions.filter(e => /\d+(\.\d+){1,2}(-\w+)*/.test(e)),
+				a = e.version_number,
+				o = e.game_versions.filter(e => /\d+(\.\d+){1,2}(-\w+)*/.test(e)),
 				n, r = new Date(e.date_published),
 				l = "未找到",
 				d = "-",
@@ -495,11 +599,11 @@ window.getModrinthFileList = function(h) {
 			versionList.forEach(e => {
 				let t = e.name;
 				if (t[0] === "v") t = t.slice(1);
-				if (p(o) === p(t)) l = e.name, d = e.mcver, c = e.date, s = e.logid
+				if (p(a) === p(t)) l = e.name, d = e.mcver, c = e.date, s = e.logid
 			});
-			m = c ? "" : `<a href="/class/version/add/${window.location.href.split("/version/")[1].split(".html")[0]}/?mrid=${h}&fileid=${t}&ver=${p(o)}&mcver=${a}&date=${r.valueOf()}" target="_blank">补全日志</a>`;
+			m = c ? "" : `<a href="/class/version/add/${window.location.href.split("/version/")[1].split(".html")[0]}/?mrid=${h}&fileid=${t}&ver=${p(a)}&mcver=${o}&date=${r.valueOf()}" target="_blank">补全日志</a>`;
 			$("#mcmodder-version-menu tbody")
-				.append(`<tr><td>${t}</td><td>${i}</td><td>${o}</td><td>${a}</td><td>${r.toLocaleString()}</td><td>${l}</td><td>${d}</td><td>${c?c.toLocaleString():"-"}</td><td>${m}</td></tr>`)
+				.append(`<tr><td>${t}</td><td>${i}</td><td>${a}</td><td>${o}</td><td>${r.toLocaleString()}</td><td>${l}</td><td>${d}</td><td>${c?c.toLocaleString():"-"}</td><td>${m}</td></tr>`)
 		})
 	};
 	e(0)
@@ -534,7 +638,7 @@ function tabInit() {
 		addStyle("#item-table-item-frame .item-table-hover {width: 192px;} #item-table-item-frame .item-table-hover img {position: absolute; left: 0px;} #item-table-item-frame .item-table-hover div {display: inline-block; font-size: 14px; max-width: 160px; line-height: 1; max-height: 32px; overflow: clip; position: absolute; right: 0px;} #item-table-item-frame .item-table-hover .zh-name {margin-left: .25em; font-size: 12px;} #item-table-item-frame .item-table-hover .en-name {margin-left: .25em; font-size: 10px; color: gray;} #item-table-item-frame .delete {position: absolute; bottom: 0px; right: 0px; color: var(--mcmodder-tc3);}");
 		window.setTabSelectorInfo = function() {
 			let e = function(e) {
-				let a = 0;
+				let o = 0;
 				$(e)
 					.each(function() {
 						if (this.classList.contains("mcmodder-tag")) return;
@@ -550,11 +654,11 @@ function tabInit() {
 								else
 									for (let e of l)
 										if (e.includes(t)) this.style.backgroundColor = "pink";
-						if (this.style.backgroundColor) this.parentNode.insertBefore(this, this.parentNode.childNodes[a++]);
+						if (this.style.backgroundColor) this.parentNode.insertBefore(this, this.parentNode.childNodes[o++]);
 						let e = $("img", this)[0],
 							i = e.alt.split(" (")[0],
-							o = e.alt.replace(i + " (", "");
-						$(`<div><span class="mcmodder-slim-dark zh-name">${$(this).attr("item-id")}</span><span class="zh-name">${i}</span><span class="en-name">${o.slice(0,o.length-1)} [${$(this).attr("data-original-title").split("<b>")[1].split("</b>")[0]}]</span><a class="delete"><i class="fa fa-trash" /></a></div>`)
+							a = e.alt.replace(i + " (", "");
+						$(`<div><span class="mcmodder-slim-dark zh-name">${$(this).attr("item-id")}</span><span class="zh-name">${i}</span><span class="en-name">${a.slice(0,a.length-1)} [${$(this).attr("data-original-title").split("<b>")[1].split("</b>")[0]}]</span><a class="delete"><i class="fa fa-trash" /></a></div>`)
 							.appendTo(this);
 						$(".delete", this)
 							.click(() => {
@@ -707,7 +811,7 @@ function tabWork() {
 			chanceEditable: false,
 			unit: ""
 		}));
-	let o = new Array(e)
+	let a = new Array(e)
 		.fill(null)
 		.map(() => ({
 			valid: false,
@@ -715,12 +819,12 @@ function tabWork() {
 			number: "",
 			unit: ""
 		}));
-	let a = $("input.value", $(".gui")[0])
+	let o = $("input.value", $(".gui")[0])
 		.toArray();
 	let n = $("#item-table-gui-frame > .tab-li")
 		.toArray();
 	let r, l, d, c, s;
-	for (let e of a) {
+	for (let e of o) {
 		l = $(e)
 			.attr("data-multi-id");
 		d = parseInt($(e)
@@ -755,19 +859,19 @@ function tabWork() {
 				i[d].number = r.value, i[d].chanceEditable = true;
 				break;
 			case "slot-power-number":
-				o[d].id = $("p.title", e)
+				a[d].id = $("p.title", e)
 					.html()
-					.split("<span")[0], o[d].number = r.value, o[d].valid = true, o[d].unit = c
+					.split("<span")[0], a[d].number = r.value, a[d].valid = true, a[d].unit = c
 		}
 	}
 	$(".item-table-gui-slot")
 		.each((e, t) => {
 			let i = $(t)
 				.attr("data-type");
-			let o = $(t)
+			let a = $(t)
 				.attr("data-id");
 			$(t)
-				.append(`<span class="mcmodder-gui-${i}">${o}</span>`)
+				.append(`<span class="mcmodder-gui-${i}">${a}</span>`)
 		});
 	let m = guiFrame.appendChild(document.createElement("table"));
 	let p = m.appendChild(document.createElement("tbody"));
@@ -931,12 +1035,12 @@ function tabWork() {
 				cursor: "no-drop"
 			})
 	}
-	for (let e in o) {
-		if (!o[e].valid) continue;
+	for (let e in a) {
+		if (!a[e].valid) continue;
 		recipeTr = p.appendChild(document.createElement("tr"));
 		recipeTd = recipeTr.appendChild(document.createElement("td"));
 		recipeTd.align = "right";
-		recipeTd.innerHTML = `<strong>${o[e].id}: ${o[e].unit}</strong>`;
+		recipeTd.innerHTML = `<strong>${a[e].id}: ${a[e].unit}</strong>`;
 		recipeTd = recipeTr.appendChild(document.createElement("td"));
 		recipeTd = recipeTr.appendChild(document.createElement("td"));
 		recipeInput = recipeTd.appendChild(document.createElement("input"));
@@ -949,7 +1053,7 @@ function tabWork() {
 				class: "form-control slot-text slot-text" + e
 			});
 		$(recipeInput)
-			.val(o[e].number)
+			.val(a[e].number)
 	}
 	$("b")
 		.filter((e, t) => $(t)
@@ -970,8 +1074,8 @@ function tabWork() {
 			$(valueInput)
 				.val(this.value)
 		})
-		.bind("keydown", function(o) {
-			if (o.key === "Enter") {
+		.bind("keydown", function(a) {
+			if (a.key === "Enter") {
 				let e = 0,
 					t = 0,
 					i;
@@ -981,7 +1085,7 @@ function tabWork() {
 						break
 					} for (let e in this.parentNode.parentNode.parentNode.childNodes)
 					if (this.parentNode.parentNode.parentNode?.childNodes[e]?.childNodes[t]?.childNodes[0] === this) {
-						this.parentNode.parentNode.parentNode?.childNodes[parseInt(e) + (o.shiftKey ? -1 : 1)]?.childNodes[t]?.childNodes[0]?.focus();
+						this.parentNode.parentNode.parentNode?.childNodes[parseInt(e) + (a.shiftKey ? -1 : 1)]?.childNodes[t]?.childNodes[0]?.focus();
 						return
 					}
 			}
@@ -1015,10 +1119,10 @@ const slotObserver = new MutationObserver(function(t, i) {
 			if (e.target.className === "value") {
 				guiObserver.disconnect();
 				i.disconnect();
-				var o = $("[data-multi-id=" + $(e.target)
+				var a = $("[data-multi-id=" + $(e.target)
 					.attr("data-multi-id") + "][data-part=" + $(e.target)
 					.attr("data-part") + "]", $("tbody", $("#item-table-gui-frame")[0])[0])[0];
-				$(o)
+				$(a)
 					.val(e.target.value)
 					.trigger("change");
 				guiObserver.observe(guiFrame, {
@@ -1045,19 +1149,19 @@ let textCompare = function(e, t) {
 		document.head.appendChild(e);
 		addStyle('pre#mcmodder-text-result {font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;display:block;border:1px solid var(--mcmodder-tca1);color:var(--mcmodder-txcolor);max-height:300px;padding:.25em;font-size:12px;} del, #del_num{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New";text-decoration:none;color:#b30000;background:#f333} ins, #ins_num{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New";color:#406619;text-decoration:none;background:#3f33}')
 	}
-	let o = ($(".difference-info")[0] || $("#verify-window-frame")[0] || $(".tab-content")[0])
+	let a = ($(".difference-info")[0] || $("#verify-window-frame")[0] || $(".tab-content")[0])
 		.appendChild(document.createElement("div"));
-	o.id = "mcmodder-text-area";
-	let d = o.appendChild(document.createElement("div"));
+	a.id = "mcmodder-text-area";
+	let d = a.appendChild(document.createElement("div"));
 	let c = d.appendChild(document.createElement("span"));
 	c.className = "mcmodder-slim-danger";
 	let s = d.appendChild(document.createElement("span"));
 	s.className = "mcmodder-slim-dark";
-	let m = o.appendChild(document.createElement("pre"));
+	let m = a.appendChild(document.createElement("pre"));
 	m.id = "mcmodder-text-result";
 	($(".difference-info")[0] || $("#verify-window-frame")[0] || $(".tab-content")[0])
-	.insertBefore(o, $(".difference-area")[0] || $(".verify-info-table")[0] || $("#edit-page-1")[0]);
-	let a = function(e) {
+	.insertBefore(a, $(".difference-area")[0] || $(".verify-info-table")[0] || $("#edit-page-1")[0]);
+	let o = function(e) {
 		let t = "";
 		e.contents()
 			.filter(function(e, t) {
@@ -1079,12 +1183,12 @@ let textCompare = function(e, t) {
 					.text()
 					.includes("介绍")
 			})[0];
-		p = a($("td:nth-child(3) .common-text", e));
-		h = a($("td:nth-child(2) .common-text", e))
+		p = o($("td:nth-child(3) .common-text", e));
+		h = o($("td:nth-child(2) .common-text", e))
 	} else if ($(".difference-info")
 		.length) {
-		p = a($(".difference-content-right"));
-		h = a($(".difference-content-left"))
+		p = o($(".difference-content-right"));
+		h = o($(".difference-content-left"))
 	} else if ($(".edit-user-alert.locked")
 		.length) {
 		p = e;
@@ -1098,8 +1202,8 @@ let textCompare = function(e, t) {
 		$(m)
 			.html("");
 		var i = JsDiff[p.length + h.length > 5e4 ? "diffLines" : p.length + h.length > 15e3 ? "diffWords" : "diffChars"](p, h);
-		var o = 0,
-			a = 0,
+		var a = 0,
+			o = 0,
 			n = 0,
 			r = 0;
 		var l = document.createDocumentFragment();
@@ -1113,14 +1217,14 @@ let textCompare = function(e, t) {
 			if (i[t].removed) {
 				e = document.createElement("del");
 				e.appendChild(document.createTextNode(i[t].value));
-				o++;
+				a++;
 				n += (new TextEncoder)
 					.encode(e.textContent)
 					.length
 			} else if (i[t].added) {
 				e = document.createElement("ins");
 				e.appendChild(document.createTextNode(i[t].value));
-				a++;
+				o++;
 				r += (new TextEncoder)
 					.encode(e.textContent)
 					.length
@@ -1131,14 +1235,14 @@ let textCompare = function(e, t) {
 		}
 		$(m)
 			.text("");
-		if (o || a) m.appendChild(l);
+		if (a || o) m.appendChild(l);
 		else {
 			$("#mcmodder-text-area")
 				.remove();
 			return
 		}
-		if (o) c.innerHTML = "删除: <strong>" + o.toLocaleString() + "</strong> 处 (<strong>" + n.toLocaleString() + "</strong> 字节) ";
-		if (a) s.innerHTML = "新增: <strong>" + a.toLocaleString() + "</strong> 处 (<strong>" + r.toLocaleString() + "</strong> 字节) ";
+		if (a) c.innerHTML = "删除: <strong>" + a.toLocaleString() + "</strong> 处 (<strong>" + n.toLocaleString() + "</strong> 字节) ";
+		if (o) s.innerHTML = "新增: <strong>" + o.toLocaleString() + "</strong> 处 (<strong>" + r.toLocaleString() + "</strong> 字节) ";
 		if (p.length + h.length > 5e3) {
 			let e = d.appendChild(document.createElement("span"));
 			e.outerHTML = '<span style="font-size: 12px; color: gray">*正文过长，将' + (p.length + h.length > 15e3 ? "按行对比" : "按句对比") + "而非按字对比，以节省性能~</span>"
@@ -1338,14 +1442,14 @@ function oredictPageInit() {
 function historyInit() {
 	if ($(".badge-secondary")
 		.text() === "最近100条") return;
-	let o = parseInt($(".pagination span")
+	let a = parseInt($(".pagination span")
 		.text()
 		.split(" / ")[1]?.split(" 页")[0]);
-	let a = window.location.href.split("starttime=")[1].split("&endtime=")[0];
+	let o = window.location.href.split("starttime=")[1].split("&endtime=")[0];
 	let n = window.location.href.split("endtime=")[1].split("&page=")[0];
-	if (!o) return;
+	if (!a) return;
 	let r = async function(e) {
-		let t = await fetch(`https://www.mcmod.cn/history.html?starttime=${a}&endtime=${n}&page=${e}`, {
+		let t = await fetch(`https://www.mcmod.cn/history.html?starttime=${o}&endtime=${n}&page=${e}`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "text/html; charset=UTF-8"
@@ -1356,8 +1460,8 @@ function historyInit() {
 		$(".history-list-frame ul", i)
 			.children()
 			.appendTo(".history-list-frame ul");
-		common_msg(PublicLangData.remind, `成功加载第 ${e} / ${o} 页~`, "ok");
-		if (e < o) setTimeout(r(++e), 1e3);
+		common_msg(PublicLangData.remind, `成功加载第 ${e} / ${a} 页~`, "ok");
+		if (e < a) setTimeout(r(++e), 1e3);
 		else {
 			let e = $(".history-list-head")[0].appendChild(document.createElement("input"));
 			e.id = "mcmodder-history-search";
@@ -1386,16 +1490,16 @@ function historyInit() {
 function verifyHistoryInit() {
 	if ($(".badge-secondary")
 		.text() === "最近100条") return;
-	let o = parseInt($(".pagination span")
+	let a = parseInt($(".pagination span")
 		.text()
 		.split(" / ")[1]?.split(" 页")[0]);
-	let a = window.location.href.split("verify.html?")[1]?.split("&page=")[0];
-	if (!a || !o) {
+	let o = window.location.href.split("verify.html?")[1]?.split("&page=")[0];
+	if (!o || !a) {
 		verifyInit();
 		return
 	}
 	let n = async function(e) {
-		let t = await fetch(`https://www.mcmod.cn/verify.html?${a}&page=${e}`, {
+		let t = await fetch(`https://www.mcmod.cn/verify.html?${o}&page=${e}`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "text/html; charset=UTF-8"
@@ -1406,8 +1510,8 @@ function verifyHistoryInit() {
 		$(".verify-list-list-table tbody", i)
 			.children()
 			.appendTo(".verify-list-list-table tbody");
-		common_msg(PublicLangData.remind, `成功加载第 ${e} / ${o} 页~`, "ok");
-		if (e < o) setTimeout(n(++e), 1e3);
+		common_msg(PublicLangData.remind, `成功加载第 ${e} / ${a} 页~`, "ok");
+		if (e < a) setTimeout(n(++e), 1e3);
 		else verifyInit()
 	};
 	n(2);
@@ -1419,7 +1523,7 @@ function itemTabInit() {
 	if (!getConfig("compactedTablist")) return;
 	addStyle(".item-table-block p {display: inline; margin: 2px; } .item-table-block td {padding: 0rem; line-height: 1.0;} .alert {margin-bottom: 0rem;} .alert.alert-table-forother {background-color: transparent; color: #c63; border: 1px solid #963;} .alert.alert-table-startver {background-color: transparent; color: #369; border: 1px solid #336;} .alert.alert-table-endver {background-color: transparent; color: #933; border: 1px solid #633;} .alert.alert-table-guifromother {background-color: transparent; color: #9b9c9d; border: 1px solid #d6d8db;} .item-table-remarks {width: 25%;} .item-table-id {width: 7%;} .item-table-remarks span {margin-left: 5%; margin-right: 5%; width: 90%} .item-table-block .power_area {margin-left: 5%; margin-right: 5%; width: 90%; border-radius: .25em;}");
 	const e = "//i.mcmod.cn/editor/upload/20241008/1728389750_179043_rcRM.png";
-	const a = "//i.mcmod.cn/editor/upload/20241018/1729266514_179043_vZVb.png";
+	const o = "//i.mcmod.cn/editor/upload/20241018/1729266514_179043_vZVb.png";
 	$("div.item-table-frame > table.item-table-block > thead > tr")
 		.each(function() {
 			this.innerHTML = '<th class="title item-table-id">合成表 ID</th>' + this.innerHTML
@@ -1465,19 +1569,19 @@ function itemTabInit() {
 					}
 			} else i = parseInt(this.href.split("/item/")[1].split(".html")[0]);
 			this.innerHTML = '<span class="mcmodder-tab-item-name">' + this.textContent + '</span><span class="mcmodder-tab-item-icon" style="background-image: url(//i.mcmod.cn/item/icon/32x32/' + parseInt(i / 1e4) + "/" + i + '.png); width: 32px; height: 32px; display: inline-block; position: relative; background-size: cover;"></span>';
-			let o = parseInt(this.parentNode.innerHTML.replace(",", "")
+			let a = parseInt(this.parentNode.innerHTML.replace(",", "")
 				.split("* ")[1]);
-			if (o > 1) {
-				let e = o,
+			if (a > 1) {
+				let e = a,
 					t = e < 1e3 ? 16 : 12;
-				if (e >= 1e12) e = (o / 1e12)
-					.toFixed(o % 1e12 != 0) + "T";
-				else if (e >= 1e9) e = (o / 1e9)
-					.toFixed(o % 1e9 != 0) + "G";
-				else if (e >= 1e6) e = (o / 1e6)
-					.toFixed(o % 1e6 != 0) + "M";
-				else if (e >= 1e4) e = (o / 1e3)
-					.toFixed(o % 1e3 != 0) + "k";
+				if (e >= 1e12) e = (a / 1e12)
+					.toFixed(a % 1e12 != 0) + "T";
+				else if (e >= 1e9) e = (a / 1e9)
+					.toFixed(a % 1e9 != 0) + "G";
+				else if (e >= 1e6) e = (a / 1e6)
+					.toFixed(a % 1e6 != 0) + "M";
+				else if (e >= 1e4) e = (a / 1e3)
+					.toFixed(a % 1e3 != 0) + "k";
 				$("span.mcmodder-tab-item-icon", this)[0].innerHTML += '<span style="font-family: Unifont; color: black; position: absolute; right: 0px; bottom: 0px; line-height: ' + t + "px; font-size: " + t + 'px;">' + e + '</span><span style="font-family: Unifont; color: white; position: absolute; right: 1px; bottom: 1px; line-height: ' + t + "px; font-size: " + t + 'px;">' + e + "</span>"
 			}
 			if ($("span[data-original-title=合成后返还]", this.parentNode)
@@ -1539,37 +1643,37 @@ function itemTabInit() {
 				.attr("mcmodder-gui-id"));
 			const t = "//i.mcmod.cn/editor/upload/20241019/1729313235_179043_fNWH.png";
 			let i = -1,
-				o = -1;
+				a = -1;
 			switch (parseInt(e)) {
 				case 52:
-					i = 0, o = 0;
+					i = 0, a = 0;
 					break;
 				case 54:
-					i = 34, o = 0;
+					i = 34, a = 0;
 					break;
 				case 209877:
-					i = 68, o = 0;
+					i = 68, a = 0;
 					break;
 				case 209876:
-					i = 0, o = 34;
+					i = 0, a = 34;
 					break;
 				case 158632:
-					i = 34, o = 34;
+					i = 34, a = 34;
 					break;
 				case 209864:
-					i = 68, o = 34;
+					i = 68, a = 34;
 					break;
 				case 210368:
-					i = 0, o = 68;
+					i = 0, a = 68;
 					break;
 				case 48:
-					i = 34, o = 68;
+					i = 34, a = 68;
 					break;
 				case 209863:
-					i = 68, o = 68;
+					i = 68, a = 68;
 					break
 			}
-			this.innerHTML = '<span style="background-image: url(' + a + '); height: 32px; width: 64px; display: inline-block; background-size: cover; margin-left: 5px; margin-right: 5px; position: relative;">' + (e ? i < 0 ? '<span class="mcmodder-tab-item-icon" style="background-image: url(//i.mcmod.cn/item/icon/32x32/' + parseInt(e / 1e4) + "/" + e + '.png); width: 32px; height: 32px; display: inline-block; position: absolute; left: 12px; background-size: cover;"></span>' : '<span class="mcmodder-tab-item-icon" style="background-image: url(' + t + "); background-position: -" + i + "px -" + o + 'px; width: 34px; height: 34px; display: inline-block; position: absolute; left: 12px;"></span>' : "") + "</span>"
+			this.innerHTML = '<span style="background-image: url(' + o + '); height: 32px; width: 64px; display: inline-block; background-size: cover; margin-left: 5px; margin-right: 5px; position: relative;">' + (e ? i < 0 ? '<span class="mcmodder-tab-item-icon" style="background-image: url(//i.mcmod.cn/item/icon/32x32/' + parseInt(e / 1e4) + "/" + e + '.png); width: 32px; height: 32px; display: inline-block; position: absolute; left: 12px; background-size: cover;"></span>' : '<span class="mcmodder-tab-item-icon" style="background-image: url(' + t + "); background-position: -" + i + "px -" + a + 'px; width: 34px; height: 34px; display: inline-block; position: absolute; left: 12px;"></span>' : "") + "</span>"
 		});
 	$("div.item-table-frame > table.item-table-block td.text.item-table-count span.noecho")
 		.remove();
@@ -1749,8 +1853,8 @@ function editorInit() {
 			if (h.type === "childList" && h?.addedNodes[0]?.className === "swal2-container swal2-center swal2-fade swal2-shown" && $("h2#swal2-title")
 				.text() === "自动链接") {
 				let e = h.addedNodes[0];
-				let i, o = 1,
-					a = "",
+				let i, a = 1,
+					o = "",
 					n = "",
 					t, r, l, d, c = $(".common-nav li:not(.line):nth-child(5) a")[0]?.href.split("/class/")[1].split(".html")[0];
 				let s = $(".edit-autolink-list > ul", e)[0];
@@ -1805,8 +1909,8 @@ function editorInit() {
 				}
 				p.filter((e, t) => t.className != "limit" && t.className != "empty")
 					.each(function() {
-						autoLinkIndex = 1, i = $("a", this)[0], a = i.title.split(" - ")[2] || "", n = a.includes("[") ? a.slice(1)
-							.split("] ")[0] : a.split(" (")[0], r = $(i)
+						autoLinkIndex = 1, i = $("a", this)[0], o = i.title.split(" - ")[2] || "", n = o.includes("[") ? o.slice(1)
+							.split("] ")[0] : o.split(" (")[0], r = $(i)
 							.attr("data-id");
 						nonItemTypeList.forEach(e => i.innerHTML = i.innerHTML.replace(e.text + " -", `<i class="fas ${e.icon} mcmodder-chroma"></i>`));
 						itemDefaultTypeList.forEach(e => i.innerHTML = i.innerHTML.replace(e.text + " -", `<span class="iconfont icon" style="color: ${e.color}">${e.icon}</span>`));
@@ -1824,16 +1928,16 @@ function editorInit() {
 							.split(","),
 							t = getConfig(c, "modExpansions")
 							.split(",");
-						if (a === modName || n === "MC" || e.includes(a) || t.includes(a) || m.includes(n.toLowerCase()) || m.includes("原版") || $("a", this)
+						if (o === modName || n === "MC" || e.includes(o) || t.includes(o) || m.includes(n.toLowerCase()) || m.includes("原版") || $("a", this)
 							.attr("data-type") === "oredict") {
 							if ($(".item-modabbr", this)
 								.length) {
-								if (n === "MC" || e.includes(a)) $(".item-modabbr", this)[0].style.backgroundColor = "aquamarine";
-								else if (t.includes(a)) $(".item-modabbr", this)[0].style.backgroundColor = "pink";
+								if (n === "MC" || e.includes(o)) $(".item-modabbr", this)[0].style.backgroundColor = "aquamarine";
+								else if (t.includes(o)) $(".item-modabbr", this)[0].style.backgroundColor = "pink";
 								else $(".item-modabbr", this)[0].style.backgroundColor = "gold";
 								$(".item-modabbr", this)[0].style.fontWeight = "bold"
 							}
-							s.insertBefore(this, s.childNodes[o++]);
+							s.insertBefore(this, s.childNodes[a++]);
 							if (m.includes(l.toLowerCase()) || m.includes(d.toLowerCase()) || $("a", this)
 								.attr("data-type") === "oredict") {
 								this.style.backgroundColor = "gold";
@@ -1847,7 +1951,7 @@ function editorInit() {
 					.children()
 					.each((e, t) => {
 						if (e > 0 && e < 10) $("a", t)
-							.append(`<span class="mcmodder-common-light item-ename"> [Alt+${e}]</span>`)
+							.append(`<span class="mcmodder-common-dark item-ename"> [Alt+${e}]</span>`)
 					});
 				$("input.form-control", e)
 					.bind("keyup", e => {
@@ -1918,10 +2022,10 @@ function editorInit() {
 				});
 				let i = document.createElement("html");
 				i.innerHTML = await t.text();
-				let o = $(".text-area.common-text", i)[0] || $(".item-content.common-text", i)[0];
-				$(".figure", o)
+				let a = $(".text-area.common-text", i)[0] || $(".item-content.common-text", i)[0];
+				$(".figure", a)
 					.remove();
-				let a = $(o)
+				let o = $(a)
 					.children()
 					.filter((e, t) => {
 						if (t.className === "common-text-menu") return false;
@@ -1935,7 +2039,7 @@ function editorInit() {
 					.children();
 				let r = "",
 					l = "";
-				a.each(function() {
+				o.each(function() {
 					r += this.textContent + "\n";
 					originalContextLength += getContextLength(this.textContent)
 				});
@@ -1969,8 +2073,8 @@ function editorInit() {
 				.attr("src") === "https://www.mcmod.cn/pages/class/images/none.jpg") $("#item-cover-preview-img")
 				.attr("src", "https://i.mcmod.cn/editor/upload/20241213/1734019784_179043_sDxX.jpg")
 		}
-		const o = window.location.href.includes("?mrid=");
-		if (getConfig("markdownIt") || o) {
+		const a = window.location.href.includes("?mrid=");
+		if (getConfig("markdownIt") || a) {
 			let e = document.createElement("script");
 			e.id = "mcmodder-markdownit";
 			e.src = "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js";
@@ -1994,10 +2098,10 @@ function editorInit() {
 							.each((e, t) => $(t)
 								.text(`[h${i}=${t.innerText.slice(i+1)}]`));
 						const i = e.markdownit();
-						const o = i.render(t.innerText);
-						t.innerHTML = o
+						const a = i.render(t.innerText);
+						t.innerHTML = a
 					});
-				if (o) $("#mcmodder-markdown-it")
+				if (a) $("#mcmodder-markdown-it")
 					.click()
 			}, 2e3)
 		}
@@ -2033,13 +2137,13 @@ function editorLoad() {
 function itemEditorInit() {
 	window.imgResize = function(e, t) {
 		let i = document.createElement("canvas");
-		let o = i.getContext("2d");
-		let a = new Image;
-		a.onload = function() {
+		let a = i.getContext("2d");
+		let o = new Image;
+		o.onload = function() {
 			i.width = i.height = t * ($(".common-item-mold-list li a[data-category-selected='true']")
 				.attr("data-multi-value") === "6" ? 1.125 : 1);
-			o.imageSmoothingEnabled = false;
-			o.drawImage(a, 0, 0, i.width, i.height);
+			a.imageSmoothingEnabled = false;
+			a.drawImage(o, 0, 0, i.width, i.height);
 			let e = i.toDataURL("image/png");
 			$(`#icon-${t}x`)
 				.val(e);
@@ -2048,7 +2152,7 @@ function itemEditorInit() {
 			$(`#item-icon-${t}x-preview-img`)
 				.attr("src", e)
 		};
-		a.src = $(`#icon-${e}x`)
+		o.src = $(`#icon-${e}x`)
 			.val()
 	};
 	window.loadOriginal = function() {
@@ -2060,8 +2164,8 @@ function itemEditorInit() {
 			if (!t) return !1;
 			var i = new Image;
 			i.src = t;
-			var o = 0,
-				a = 0;
+			var a = 0,
+				o = 0;
 			i.onload = function() {
 				$("#icon-16x")
 					.val(t);
@@ -2216,10 +2320,10 @@ function versionListInit() {
 			let i = $(t)
 				.parent()
 				.attr("data-frame"),
-				o = [];
-			o = i.replaceAll(" ", "")
+				a = [];
+			a = i.replaceAll(" ", "")
 				.split(/[\/,&]/);
-			let a = $(t)
+			let o = $(t)
 				.find(".name")
 				.text(),
 				n = $(t)
@@ -2228,8 +2332,8 @@ function versionListInit() {
 			if (n === "未知时间") n = 0;
 			versionList.push({
 				date: new Date(n),
-				name: a,
-				mcver: o,
+				name: o,
+				mcver: a,
 				logid: e
 			})
 		});
@@ -2276,7 +2380,7 @@ function versionInit() {
 	generalEditInit();
 	const e = new Date;
 	const i = e.getFullYear();
-	let o = (e, t, i) => t <= e && e <= i;
+	let a = (e, t, i) => t <= e && e <= i;
 	$($("li.tab-li:nth-child(1)")[0].appendChild(document.createElement("input")))
 		.attr({
 			id: "mcmodder-date-editor",
@@ -2286,7 +2390,7 @@ function versionInit() {
 		.bind("change", function() {
 			let e = new Array(this.value.slice(0, 2), this.value.slice(2, 4), this.value.slice(4, 6)),
 				t;
-			if (!(o(e[0], 9, i - 2e3) && o(e[1], 1, 12) && o(e[2], 1, 31))) return;
+			if (!(a(e[0], 9, i - 2e3) && a(e[1], 1, 12) && a(e[2], 1, 31))) return;
 			if (e[1][0] === "0") e[1] = e[1].slice(1);
 			if (e[2][0] === "0") e[2] = e[2].slice(1);
 			$("#class-version-updatetime-year")
@@ -2300,11 +2404,11 @@ function versionInit() {
 	setTimeout(editorInit, 1e3);
 	let t = new URLSearchParams(window.location.search),
 		c = 0,
-		a;
-	if (t.get("cfid")) c = 1, a = t.get("cfid");
-	else if (t.get("mrid")) c = 2, a = t.get("mrid");
+		o;
+	if (t.get("cfid")) c = 1, o = t.get("cfid");
+	else if (t.get("mrid")) c = 2, o = t.get("mrid");
 	if (c) {
-		let e = async function(e, t, i, o, a) {
+		let e = async function(e, t, i, a, o) {
 			let n, r, l;
 			if (c === 1) {
 				n = await fetch(`https://www.curseforge.com/api/v1/mods/${e}/files/${t}/change-log`, {
@@ -2324,15 +2428,15 @@ function versionInit() {
 			if (l) setTimeout(() => {
 				editor.setContent(l);
 				let e = $("#ueditor_0")[0].contentDocument.body,
-					o = false;
+					a = false;
 				for (let i = 1; i < 6; i++) $(e)
 					.find("h" + i)
 					.each((e, t) => {
 						$(t)
 							.replaceWith(`<p>[h${i}=${t.textContent}]</p>`);
-						o = true
+						a = true
 					});
-				if (o) $(e)
+				if (a) $(e)
 					.append("<p>[ban:title_menu]</p>");
 				$(e)
 					.trigger("keyup")
@@ -2340,56 +2444,58 @@ function versionInit() {
 			$("[data-multi-id=name]")
 				.val(i);
 			$("[data-multi-id=mcversion]")
-				.val(o);
-			let d = new Date(parseInt(a));
+				.val(a);
+			let d = new Date(parseInt(o));
 			$("#mcmodder-date-editor")
 				.val(d.getYear() % 100 * 1e4 + (d.getMonth() + 1) * 100 + d.getDate())
 				.trigger("change")
 		};
-		e(a, t.get("fileid"), t.get("ver"), t.get("mcver"), t.get("date"))
+		e(o, t.get("fileid"), t.get("ver"), t.get("mcver"), t.get("date"))
 	}
 }
 
 function classInit() {
-	let e = window.location.href.split("/class/")[1].split(".html")[0];
-	let t = getConfig(e, "modDependences"),
-		i = "";
-	let o = getConfig(e, "modExpansions"),
-		a = "";
-	$("li.col-lg-12.relation")
-		.each(function() {
-			if ($("span[data-toggle=tooltip]:first-child()", this)
-				.text()
-				.includes("前置Mod")) {
-				$("a[data-toggle=tooltip]", this)
-					.each(function() {
-						i += $(this)
-							.text()
-							.replaceAll("  ", " ") + ","
-					})
-			}
-			if ($("span[data-toggle=tooltip]:first-child()", this)
-				.text()
-				.includes("依赖")) {
-				$("a[data-toggle=tooltip]", this)
-					.each(function() {
-						a += $(this)
-							.text()
-							.replaceAll("  ", " ") + ","
-					})
-			}
-		});
-	if (t != i) {
-		setConfig(e, i, "modDependences");
-		common_msg(PublicLangData.remind, "成功更新此模组前置列表~", "ok")
-	}
-	if (o != a) {
-		setConfig(e, a, "modExpansions");
-		common_msg(PublicLangData.remind, "成功更新此模组拓展列表~", "ok")
+	let o = window.location.href.split("/class/")[1]?.split(".html")[0] || window.location.href.split("/modpack/")[1]?.split(".html")[0];
+	if (window.location.href.includes("/class/")) {
+		let e = getConfig(o, "modDependences"),
+			t = "";
+		let i = getConfig(o, "modExpansions"),
+			a = "";
+		$("li.col-lg-12.relation")
+			.each(function() {
+				if ($("span[data-toggle=tooltip]:first-child()", this)
+					.text()
+					.includes("前置Mod")) {
+					$("a[data-toggle=tooltip]", this)
+						.each(function() {
+							t += $(this)
+								.text()
+								.replaceAll("  ", " ") + ","
+						})
+				}
+				if ($("span[data-toggle=tooltip]:first-child()", this)
+					.text()
+					.includes("依赖")) {
+					$("a[data-toggle=tooltip]", this)
+						.each(function() {
+							a += $(this)
+								.text()
+								.replaceAll("  ", " ") + ","
+						})
+				}
+			});
+		if (e != t) {
+			setConfig(o, t, "modDependences");
+			common_msg(PublicLangData.remind, "成功更新此模组前置列表~", "ok")
+		}
+		if (i != a) {
+			setConfig(o, a, "modExpansions");
+			common_msg(PublicLangData.remind, "成功更新此模组拓展列表~", "ok")
+		}
 	}
 	$(".title")
 		.filter((e, t) => t.textContent === "更新日志")
-		.append(`<span class="more"><a href="/class/version/${e}.html" target="_blank">更多</a><a></a></span>`);
+		.append(`<span class="more"><a href="/class/version/${o}.html" target="_blank">更多</a><a></a></span>`);
 	if (getConfig("enableAprilFools")) {
 		let t = 0,
 			i = ["诅咒锻炉", "CurseFabric", "BlessForge", "BlessFabric"];
@@ -2407,7 +2513,7 @@ function classInit() {
 	}
 	$(".class-info-left > ul > *, .common-link-frame .title")
 		.contents()
-		.filter((e, t) => t.nodeType === 3 && (["相关链接:", "模组标签: ", "支持的MC版本: "].includes(t.data) || t.data.includes("作者/开发团队")))
+		.filter((e, t) => t.nodeType === 3 && (["相关链接:", "模组标签: ", "整合包标签", "支持的MC版本: "].includes(t.data) || t.data.includes("作者")))
 		.each(function() {
 			$(this)
 				.parent()
@@ -2436,30 +2542,30 @@ function classInit() {
 		.insertBefore(".common-center .right");
 	$(".common-center > .right")
 		.remove();
-	let n = parseInt($(".infolist.modpack")
+	let e = parseInt($(".infolist.modpack")
 		.text()
 		.slice(2));
-	let r = parseInt($(".infolist.server-count")
+	let t = parseInt($(".infolist.server-count")
 		.text()
 		.slice(2));
-	let l = parseFloat($(".infolist.server-pre")
+	let i = parseFloat($(".infolist.server-pre")
 		.text()
 		.split("安装率为 ")[1]);
-	let d = parseFloat($(".infolist.worldgen")
+	let a = parseFloat($(".infolist.worldgen")
 		.text()
 		.split("有 ")[1]);
 	$(".infolist.modpack, .infolist.server-count, .infolist.server-pre, .infolist.worldgen")
 		.remove();
-	if (n) $(`<li class="col-lg-6"><span class="title">${n}</span><span class="text"><a target="_blank" href="/modpack.html?mod=${e}">整合包已收录</a></span></li>`)
+	if (e) $(`<li class="col-lg-6"><span class="title">${e}</span><span class="text"><a target="_blank" href="/modpack.html?mod=${o}">整合包已收录</a></span></li>`)
 		.insertAfter($(".col-lg-6")
 			.last());
-	if (r) $(`<li class="col-lg-6"><span class="title">${r}</span><span class="text"><a target="_blank" href="https://play.mcmod.cn/list/?classid=${e}">服务器已安装</a></span></li>`)
+	if (t) $(`<li class="col-lg-6"><span class="title">${t}</span><span class="text"><a target="_blank" href="https://play.mcmod.cn/list/?classid=${o}">服务器已安装</a></span></li>`)
 		.insertAfter($(".col-lg-6")
 			.last());
-	if (l) $(`<li class="col-lg-6"><span class="title">${l}%</span><span class="text">模组服安装率</span></li>`)
+	if (i) $(`<li class="col-lg-6"><span class="title">${i}%</span><span class="text">模组服安装率</span></li>`)
 		.insertAfter($(".col-lg-6")
 			.last());
-	if (d) $(`<li class="col-lg-6"><span class="title">${d}</span><span class="text"><a target="_blank" href="https://www.mcmod.cn/worldgen.html?mod=${e}">资源分布数据</a></span></li>`)
+	if (a) $(`<li class="col-lg-6"><span class="title">${a}</span><span class="text"><a target="_blank" href="https://www.mcmod.cn/worldgen.html?mod=${o}">资源分布数据</a></span></li>`)
 		.insertAfter($(".col-lg-6")
 			.last());
 	$(".class-text > span.figure")
@@ -2493,35 +2599,35 @@ function classEditorInit() {
 	let e = $(".col-lg-12.right")[0].appendChild(document.createElement("div"));
 	e.setAttribute("style", "position: fixed; top: 100px; right: 250px; max-width: 250px;");
 	let t = e.appendChild(document.createElement("ul")),
-		o;
+		a;
 	t.id = "mcmodder-sidebar";
 	editorLoad();
-	let a = $("p.title");
-	for (let e in a.toArray()) {
-		a[e].id = "mcmodder-title-" + e;
-		o = t.appendChild(document.createElement("li"));
-		o.setAttribute("style", "height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;");
+	let o = $("p.title");
+	for (let e in o.toArray()) {
+		o[e].id = "mcmodder-title-" + e;
+		a = t.appendChild(document.createElement("li"));
+		a.setAttribute("style", "height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;");
 		switch (parseInt(e)) {
 			case 18:
-				o.innerHTML = '<i class="mcmodder-slim-light fa fa-check" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-18">CFID:</a>';
+				a.innerHTML = '<i class="mcmodder-slim-light fa fa-check" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-18">CFID:</a>';
 				break;
 			case 19:
-				o.innerHTML = '<i class="mcmodder-slim-light fa fa-check" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-19">MRID:</a>';
+				a.innerHTML = '<i class="mcmodder-slim-light fa fa-check" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-19">MRID:</a>';
 				break;
 			default:
-				o.innerHTML = '<i class="mcmodder-slim-danger fa fa-close" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-' + e + '">' + a[e].innerHTML + "</a>"
+				a.innerHTML = '<i class="mcmodder-slim-danger fa fa-close" style="margin-right: 5px"></i><a class="mcmodder-fastlink" style="margin-right: 5px" href="#mcmodder-title-' + e + '">' + o[e].innerHTML + "</a>"
 		}
 		switch (parseInt(e)) {
 			case 12:
-				o.innerHTML += '<ul style="margin-left: 30px;"><li>客户端: <span class="mcmodder-content-1" style="color: gray"></span></li><li>服务端: <span class="mcmodder-content-2" style="color: gray"></span></li></ul>';
-				o.style.removeProperty("height");
+				a.innerHTML += '<ul style="margin-left: 30px;"><li>客户端: <span class="mcmodder-content-1" style="color: gray"></span></li><li>服务端: <span class="mcmodder-content-2" style="color: gray"></span></li></ul>';
+				a.style.removeProperty("height");
 				break;
 			case 4:
-				o.innerHTML += '<ul style="margin-left: 30px;"><li>核心: <span class="mcmodder-content-1" style="color: gray"></span></li><li>其他: <span class="mcmodder-content-2" style="color: gray"></span></li></ul>';
-				o.style.removeProperty("height");
+				a.innerHTML += '<ul style="margin-left: 30px;"><li>核心: <span class="mcmodder-content-1" style="color: gray"></span></li><li>其他: <span class="mcmodder-content-2" style="color: gray"></span></li></ul>';
+				a.style.removeProperty("height");
 				break;
 			case 7:
-				let e = o.innerHTML + '<ul style="margin-left: 30px;">';
+				let e = a.innerHTML + '<ul style="margin-left: 30px;">';
 				$("div.checkbox", $("p#mcmodder-title-6")
 						.parent())
 					.each(function() {
@@ -2531,13 +2637,13 @@ function classEditorInit() {
 							.attr("value") + '" style="color: gray"></span></li>'
 					});
 				e += "</ul>";
-				o.innerHTML = e;
-				o.style.removeProperty("height");
+				a.innerHTML = e;
+				a.style.removeProperty("height");
 				break;
 			default:
-				o.innerHTML += '<span class="mcmodder-content" style="color: gray"></span>'
+				a.innerHTML += '<span class="mcmodder-content" style="color: gray"></span>'
 		}
-		$("a", o)
+		$("a", a)
 			.click(function() {
 				document.getElementById(this.href.split("#")[1])
 					.style.backgroundColor = "gold";
@@ -2645,12 +2751,12 @@ function classEditorInit() {
 			let e = $("ul#mcmodder-sidebar")[0].childNodes[7];
 			$("span.mcmodder-content", e)[0].innerHTML = ""
 		});
-	let n = function(t, o) {
+	let n = function(t, a) {
 		for (i in $("div.radio", $(`p#mcmodder-title-${t}.title`)[0].parentNode)
 			.toArray()) {
 			let e = $("div.radio", $(`p#mcmodder-title-${t}.title`)[0].parentNode)[i].appendChild(document.createElement("span"));
 			e.className = "mcmodder-tip";
-			e.innerHTML = o[i]
+			e.innerHTML = a[i]
 		}
 		$("p.tips", $(`p#mcmodder-title-${t}.title`)[0].parentNode)
 			.remove()
@@ -2699,7 +2805,7 @@ function adminInit() {
 					$("#mcmodder-check-verification")
 						.text("一键查询待审项 (加载中...)");
 					let t = $("#class-version-list > option");
-					let a = t.toArray()
+					let o = t.toArray()
 						.map(e => $(e)
 							.attr("value"));
 					let n = 1,
@@ -2713,37 +2819,34 @@ function adminInit() {
 							body: 'data={"classID":"' + e + '"}'
 						});
 						let i = await t.text();
-						let o = parseInt(toChinese(i)
+						let a = parseInt(toChinese(i)
 							.split("总待审：")[1].split("个。")[0]);
-						if (o > 0 && r === 0) $("button.btn:nth-child(2)")
+						if (a > 0 && r === 0) $("button.btn:nth-child(2)")
 							.click();
-						r += o;
-						if (o > 0) {
+						r += a;
+						if (a > 0) {
 							let e = $("ul.dropdown-menu:nth-child(1)")[0].childNodes[n];
 							e.style.backgroundColor = "gold";
 							if ($("span.text-danger", e.childNodes[0])
 								.length > 0) $("span.text-danger", e.childNodes[0])
 								.remove();
-							e.childNodes[0].innerHTML += `<span class="text-danger">${o}个待审！</span>`
+							e.childNodes[0].innerHTML += `<span class="text-danger">${a}个待审！</span>`
 						}
-						if (a.length > n + 1) {
+						if (o.length > n + 1) {
 							setTimeout(() => {
-								l(a[++n])
+								l(o[++n])
 							}, 300);
 							return
 						} else $("#mcmodder-check-verification")
 							.text(`一键查询待审项 (${r}个)`)
 					};
-					if (a) l(a[1])
+					if (o) l(o[1])
 				};
-				$($(".select-row")[0].appendChild(document.createElement("button")))
-					.attr({
-						id: "mcmodder-check-verification",
-						class: "btn",
-						title: "快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。"
-					})
-					.text("一键查询待审项")
+				$('<button class="btn" id="mcmodder-check-verification" title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>')
+					.insertAfter(".selectJump.bs3")
 					.click(t);
+				if (getConfig("autoVerifyDelay") >= .01) $(`<span style="margin-left: 10px;">距离自动查询: <span class="mcmodder-timer" data-source="nextAutoVerifyTime-${currentUid}"></span></span>`)
+					.insertAfter("#mcmodder-check-verification");
 				const i = new MutationObserver(function(t, e) {
 					for (let e of t) {
 						if (e.target.id === "verify-window-frame" && $(e.addedNodes)
@@ -2765,7 +2868,7 @@ function adminInit() {
 			}
 			if ($(e)
 				.text() === "样式管理") {
-				const o = new MutationObserver(function(e, t) {
+				const a = new MutationObserver(function(e, t) {
 					for (let i of e) {
 						if (!(i.addedNodes.length > 7 || i.removedNodes.length > 7) || $(".item-list-table")
 							.length) return;
@@ -2791,16 +2894,16 @@ function adminInit() {
 											.replace(/<!--[\s\S]*?-->/g, "");
 										let t = e("#itemlist-head-th"),
 											i = e("#itemlist-body-th"),
-											o = e("#itemlist-body-td");
+											a = e("#itemlist-body-td");
 										$("#mcmodder-style-preview")
-											.html("table.item-list-table.item-list-table-1 {table-layout: auto}.item-list-table.item-list-table-1 thead th {" + t + "}.item-list-table.item-list-table-1 thead th * {color:inherit}.item-list-table.item-list-table-1 thead th a:hover {color:inherit; opacity:.75}.item-list-table.item-list-table-1 tbody th {" + i + "}.item-list-table.item-list-table-1 tbody th * {color:inherit}.item-list-table.item-list-table-1 tbody th a:hover {color:inherit; opacity:.75}.item-list-table.item-list-table-1 tbody td {" + o + "}.item-list-table.item-list-table-1 tbody td * {color:inherit}.item-list-table.item-list-table-1 tbody td th {" + i + "}.item-list-table.item-list-table-1 tbody td a:hover {color:inherit; opacity:.75}.item-list-table th,.item-list-table td {border-color:#DADADA}.item-list-table {position:relative; margin-bottom:10px}.item-list-table .title {width:100%; margin:0; line-height:30px; font-size:14px; font-weight:bold; text-align:center; display:block}.item-list-table th {background-color:#f9f9f9; font-size:14px; color:#222}.item-list-table .item-list-type-left {width:100px; text-align:center; vertical-align:middle; font-size:12px}.item-list-table .item-list-type-right ul {width:100%; display:block}.item-list-table .item-list-type-right li {display:inline-block; margin-right:10px; font-size:14px}.item-list-table .item-list-type-right li img {margin-right:5px}.item-list-table .item-list-type-right li .null {color:#F30}.item-list-table .item-list-type-right li .null:hover {color:#222}.item-list-table .empty td {line-height:120px; font-size:14px; text-align:center; color:#777}.item-list-table .item-list-type-right li .more {color:#777}.item-list-table .item-list-type-right li .more:hover {color:#222}.item-list-table .item-list-type-right li .more i {margin-right:5px}.item-list-table .title a {text-decoration:underline; text-transform: none;}.item-list-table td {padding:0}.item-list-type-right ul {padding:.75rem}.item-list-table table {width:100%}.item-list-table table td {border-bottom:0; border-right:0}.item-list-table table th {border-bottom:0; border-left:0}.item-list-table:last-child {margin-bottom:0}.item-list-type-right .loading {position:absolute}.item-list-style-setting {text-align:right; font-size:12px; line-height:30px; position:absolute; bottom:-5px; right:5px}.item-list-style-setting i {margin-right:5px}.item-list-style-setting a {color:#99a2aa}.item-list-style-setting a:hover {color:#222}.item-list-branch-frame {width:100%; margin-bottom:10px}.item-list-branch-frame li {display:inline-block; margin-right:5px}.item-list-switch,.item-list-switch-fold {position:absolute; right:10px; top:8px}.item-list-switch-fold {right:auto; left:10px}.item-list-switch li,.item-list-switch-fold {display:inline-block; margin-left:10px; color:#99a2aa}.item-list-pages {padding:0; margin:0}.item-list-pages ul {margin-bottom:10px}@media(max-width:990px) {.item-list-style-setting { position:inherit;  bottom:0 }}@media(max-width:980px) {.item-list-switch { top:-10px }}@media(max-width:720px) {.item-list-switch-fold { top:25px }}@media(max-width:460px) {.item-list-table .item-list-type-left { width:80px;  padding:5px }}@media(max-width:360px) {.item-list-table .item-list-type-left { width:50px;  padding:5px }}@media(max-width:260px) {.item-list-table .item-list-type-left { width:0;  padding:5px }}")
+											.html("table.item-list-table.item-list-table-1 {table-layout: auto}.item-list-table.item-list-table-1 thead th {" + t + "}.item-list-table.item-list-table-1 thead th * {color:inherit}.item-list-table.item-list-table-1 thead th a:hover {color:inherit; opacity:.75}.item-list-table.item-list-table-1 tbody th {" + i + "}.item-list-table.item-list-table-1 tbody th * {color:inherit}.item-list-table.item-list-table-1 tbody th a:hover {color:inherit; opacity:.75}.item-list-table.item-list-table-1 tbody td {" + a + "}.item-list-table.item-list-table-1 tbody td * {color:inherit}.item-list-table.item-list-table-1 tbody td th {" + i + "}.item-list-table.item-list-table-1 tbody td a:hover {color:inherit; opacity:.75}.item-list-table th,.item-list-table td {border-color:#DADADA}.item-list-table {position:relative; margin-bottom:10px}.item-list-table .title {width:100%; margin:0; line-height:30px; font-size:14px; font-weight:bold; text-align:center; display:block}.item-list-table th {background-color:#f9f9f9; font-size:14px; color:#222}.item-list-table .item-list-type-left {width:100px; text-align:center; vertical-align:middle; font-size:12px}.item-list-table .item-list-type-right ul {width:100%; display:block}.item-list-table .item-list-type-right li {display:inline-block; margin-right:10px; font-size:14px}.item-list-table .item-list-type-right li img {margin-right:5px}.item-list-table .item-list-type-right li .null {color:#F30}.item-list-table .item-list-type-right li .null:hover {color:#222}.item-list-table .empty td {line-height:120px; font-size:14px; text-align:center; color:#777}.item-list-table .item-list-type-right li .more {color:#777}.item-list-table .item-list-type-right li .more:hover {color:#222}.item-list-table .item-list-type-right li .more i {margin-right:5px}.item-list-table .title a {text-decoration:underline; text-transform: none;}.item-list-table td {padding:0}.item-list-type-right ul {padding:.75rem}.item-list-table table {width:100%}.item-list-table table td {border-bottom:0; border-right:0}.item-list-table table th {border-bottom:0; border-left:0}.item-list-table:last-child {margin-bottom:0}.item-list-type-right .loading {position:absolute}.item-list-style-setting {text-align:right; font-size:12px; line-height:30px; position:absolute; bottom:-5px; right:5px}.item-list-style-setting i {margin-right:5px}.item-list-style-setting a {color:#99a2aa}.item-list-style-setting a:hover {color:#222}.item-list-branch-frame {width:100%; margin-bottom:10px}.item-list-branch-frame li {display:inline-block; margin-right:5px}.item-list-switch,.item-list-switch-fold {position:absolute; right:10px; top:8px}.item-list-switch-fold {right:auto; left:10px}.item-list-switch li,.item-list-switch-fold {display:inline-block; margin-left:10px; color:#99a2aa}.item-list-pages {padding:0; margin:0}.item-list-pages ul {margin-bottom:10px}@media(max-width:990px) {.item-list-style-setting { position:inherit;  bottom:0 }}@media(max-width:980px) {.item-list-switch { top:-10px }}@media(max-width:720px) {.item-list-switch-fold { top:25px }}@media(max-width:460px) {.item-list-table .item-list-type-left { width:80px;  padding:5px }}@media(max-width:360px) {.item-list-table .item-list-type-left { width:50px;  padding:5px }}@media(max-width:260px) {.item-list-table .item-list-type-left { width:0;  padding:5px }}")
 									})
 							});
 						$("textarea.style-box")
 							.trigger("change")
 					}
 				});
-				o.observe($("div#connect-frame-sub")[0], {
+				a.observe($("div#connect-frame-sub")[0], {
 					childList: true
 				})
 			}
@@ -2824,19 +2927,19 @@ function rankInit() {
 		let d = Array.from($("ul > li", e));
 		let t = e.appendChild(document.createElement("div"));
 		let i = e.appendChild(document.createElement("div"));
-		let o = e.appendChild(document.createElement("div"));
-		t.style.width = i.style.width = o.style.width = "33.333%";
-		t.style.display = i.style.display = o.style.display = "inline-block";
+		let a = e.appendChild(document.createElement("div"));
+		t.style.width = i.style.width = a.style.width = "33.333%";
+		t.style.display = i.style.display = a.style.display = "inline-block";
 		let c = t.appendChild(document.createElement("ul"));
 		let s = i.appendChild(document.createElement("ul"));
-		let m = o.appendChild(document.createElement("ul"));
+		let m = a.appendChild(document.createElement("ul"));
 		let p = parseFloat($("span.score", d[0])
 			.text());
 		let h = d.length;
 		let u = 0,
-			f = 0,
-			a = 0,
-			g = 0;
+			g = 0,
+			o = 0,
+			f = 0;
 		for (let l in d) {
 			let e = null,
 				t = null;
@@ -2844,17 +2947,17 @@ function rankInit() {
 			else if (l < h * 2 / 3) e = s.appendChild(document.createElement("li"));
 			else e = m.appendChild(document.createElement("li"));
 			let i = e.appendChild(document.createElement("div"));
-			let o = $(d[l])
+			let a = $(d[l])
 				.attr("data-content");
-			if (o.includes("字节")) o = o.replace("字节", " B")
+			if (a.includes("字节")) a = a.replace("字节", " B")
 				.replace("(约", '<span style="color: gray; display: inline">(~')
 				.replace("个汉字)", "汉字)</span>");
-			else o = o.replace("次", " 次");
-			let a = $("a", d[l])[0].href;
+			else a = a.replace("次", " 次");
+			let o = $("a", d[l])[0].href;
 			let n = parseFloat($("span.score", d[l])
 				.text());
 			if (isNaN(n)) n = 0;
-			f += n;
+			g += n;
 			let r = $("a.name", d[l])
 				.text();
 			i.style.display = "inline-block";
@@ -2870,8 +2973,8 @@ function rankInit() {
 			i.style.width = "75%";
 			if (l > 0 && $(d[l])
 				.attr("data-content") != $(d[l - 1])
-				.attr("data-content")) g = l;
-			switch (parseInt(g)) {
+				.attr("data-content")) f = l;
+			switch (parseInt(f)) {
 				case 0:
 					t = '<i class="fa fa-trophy" style="margin-right: 4px; color:goldenrod"></i>';
 					break;
@@ -2882,16 +2985,16 @@ function rankInit() {
 					t = '<i class="fa fa-trophy" style="margin-right: 4px; color:brown"></i>';
 					break;
 				default:
-					t = '<span style="margin-right: 4px; display: inline; font-size: 13px" class="mcmodder-common-light">#' + (parseInt(g) + 1) + "</span>"
+					t = '<span style="margin-right: 4px; display: inline; font-size: 13px" class="mcmodder-common-light">#' + (parseInt(f) + 1) + "</span>"
 			}
-			i.innerHTML = `<p style="font-size: 14px; height: 20px; overflow: hidden;">${t}<a style="text-align: left; font-weight: bold; display: inline; font-size: 14px;" href="${a}" target="_blank">${r+(r===currentUsername?" (我)":"")}</a> (${n}%) </p><div class="progress" style="width: 100%;height: 20px;position:relative"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${n/p*100}%;"><span style="text-align: center; display: inline; position: absolute">${o}</span></div>`;
+			i.innerHTML = `<p style="font-size: 14px; height: 20px; overflow: hidden;">${t}<a style="text-align: left; font-weight: bold; display: inline; font-size: 14px;" href="${o}" target="_blank">${r+(r===currentUsername?" (我)":"")}</a> (${n}%) </p><div class="progress" style="width: 100%;height: 20px;position:relative"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${n/p*100}%;"><span style="text-align: center; display: inline; position: absolute">${a}</span></div>`;
 			if (r === currentUsername) $("a", i)[0].style.color = "red";
-			u += parseInt(o.split(" B")[0].replace(",", ""))
+			u += parseInt(a.split(" B")[0].replace(",", ""))
 		}
 		$("ul", e)[0].remove();
 		return {
 			value: u,
-			rate: f
+			rate: g
 		}
 	}
 	let t = e($(".rank-list-block")[0]),
@@ -2903,14 +3006,14 @@ function rankInit() {
 	$(".popover")
 		.remove();
 	setTimeout(commentInit, 1e3);
-	let o = getStartTime(new Date(parseInt(window.location.href.split("starttime=")[1]?.split("&endtime=")[0] * 1e3)), 0) / 1e3;
-	let a = getStartTime(new Date(parseInt(window.location.href.split("endtime=")[1]?.split("&page=")[0] * 1e3)), 0) / 1e3;
-	if (!(o && a)) return;
-	let n = async function(o) {
-		o = Math.max(o, 1496332800);
-		if (!getConfig(o, "rankData")) {
+	let a = getStartTime(new Date(parseInt(window.location.href.split("starttime=")[1]?.split("&endtime=")[0] * 1e3)), 0) / 1e3;
+	let o = getStartTime(new Date(parseInt(window.location.href.split("endtime=")[1]?.split("&page=")[0] * 1e3)), 0) / 1e3;
+	if (!(a && o)) return;
+	let n = async function(a) {
+		a = Math.max(a, 1496332800);
+		if (!getConfig(a, "rankData")) {
 			let e = [];
-			let t = await fetch(`https://www.mcmod.cn/rank.html?starttime=${o}&endtime=${o}`, {
+			let t = await fetch(`https://www.mcmod.cn/rank.html?starttime=${a}&endtime=${a}`, {
 				method: "GET",
 				headers: {
 					"Content-Type": "text/html; charset=UTF-8"
@@ -2929,13 +3032,13 @@ function rankInit() {
 							.split("center.mcmod.cn/")[1].split("/")[0]
 					})
 				});
-			setConfig(o, JSON.stringify(e), "rankData");
-			common_msg(PublicLangData.remind, `成功保存 ${new Date(o*1e3).toString()} 的贡献数据~`, "ok")
+			setConfig(a, JSON.stringify(e), "rankData");
+			common_msg(PublicLangData.remind, `成功保存 ${new Date(a*1e3).toString()} 的贡献数据~`, "ok")
 		}
-		o += 24 * 60 * 60;
-		if (o <= a) setTimeout(n(o), 1e3)
+		a += 24 * 60 * 60;
+		if (a <= o) setTimeout(n(a), 1e3)
 	};
-	n(o)
+	n(a)
 }
 
 function verifyInit() {
@@ -2943,7 +3046,9 @@ function verifyInit() {
 		.length) return;
 	let e = $(".verify-list-frame .list-row-limit p"),
 		t = e.text()
-		.match(/\d+/g);
+		.match(/\d+/g)
+		.map(Number)
+		.map(e => e.toLocaleString());
 	e.html(`<ul class="verify-rowlist"><li><span class="title">${t[1]}</span><span class="text">48 小时内已处理</span></li><li><span class="title">${t[2]}</span><span class="text">今日已处理</span></li><li><span class="title">${t[3]}</span><span class="text">今日新提交</span></li><li><span class="title">${t[4]}</span><span class="text">剩余待审</span></li></ul>`);
 	$(".table > thead > tr:nth-child(1) > th:nth-child(3)")[0].innerHTML += "&nbsp;";
 	$(".table > thead > tr:nth-child(1) > th:nth-child(4)")[0].style.width = "25%";
@@ -2972,7 +3077,7 @@ function verifyInit() {
 				this.innerHTML = t.replace(e, '<a href="' + e + '" target="_blank">' + e + "</a>")
 			})
 		});
-	const o = [{
+	const a = [{
 		reg: /^添加模组/,
 		label: "添加模组",
 		exclude: "中的"
@@ -3023,24 +3128,24 @@ function verifyInit() {
 		reg: /^删除资料.+中的一张合成表。/,
 		label: "删除合成表"
 	}];
-	let a = new Array(o.length)
+	let o = new Array(a.length)
 		.fill(null)
 		.map(() => [0, 0, 0, 0, 0]);
 	$(".verify-list-list-table tbody tr")
 		.each(function() {
 			let i = $("td:nth-child(2)", this)
 				.text();
-			o.forEach((e, t) => {
+			a.forEach((e, t) => {
 				if (e.reg.test(i) && (!e.exclude || !i.includes(e.exclude)) && (!e.exclude2 || !i.includes(e.exclude2))) {
 					$(this)
 						.attr("edit-type", t.toString());
-					a[t][0]++;
+					o[t][0]++;
 					let e = $("td:nth-child(4) p:first-child()", this)
 						.text();
-					if (e.includes("已通过")) a[t][1]++;
-					else if (e.includes("已退回")) a[t][2]++;
-					else if (e.includes("审核中")) a[t][3]++;
-					else if (e.includes("已撤回")) a[t][4]++
+					if (e.includes("已通过")) o[t][1]++;
+					else if (e.includes("已退回")) o[t][2]++;
+					else if (e.includes("审核中")) o[t][3]++;
+					else if (e.includes("已撤回")) o[t][4]++
 				}
 			})
 		});
@@ -3072,19 +3177,19 @@ function verifyInit() {
 	let l = document.createElement("div");
 	l.className = "verify-list-search-area";
 	addStyle(".verify-list-search-area label span {color: gray; margin-left: 0px;}");
-	o.forEach((e, t) => {
-		if (!a[t][0]) return;
+	a.forEach((e, t) => {
+		if (!o[t][0]) return;
 		let i = document.createElement("div");
 		i.className = "checkbox";
 		i.style.display = "inline-block";
-		let o = `<input type="checkbox" id="mcmodder-type-${t}"><label for="mcmodder-type-${t}">${e.label} <span>(`;
-		if (a[t][1]) o += `<span class="text-success">${a[t][1]}</span>`;
-		if (a[t][2]) o += `<span class="text-danger">${a[t][2]}</span>`;
-		if (a[t][3]) o += `<span class="text-muted">${a[t][3]}</span>`;
-		if (a[t][4]) o += `<span style="color: lightgray;">${a[t][4]}</span>`;
-		o += `)</span></label>`;
+		let a = `<input type="checkbox" id="mcmodder-type-${t}"><label for="mcmodder-type-${t}">${e.label} <span>(`;
+		if (o[t][1]) a += `<span class="text-success">${o[t][1]}</span>`;
+		if (o[t][2]) a += `<span class="text-danger">${o[t][2]}</span>`;
+		if (o[t][3]) a += `<span class="text-muted">${o[t][3]}</span>`;
+		if (o[t][4]) a += `<span style="color: lightgray;">${o[t][4]}</span>`;
+		a += `)</span></label>`;
 		$(i)
-			.html(o);
+			.html(a);
 		$("span:not(span:last-child())", i)
 			.each(function() {
 				this.outerHTML += "/"
@@ -3164,9 +3269,9 @@ function verifyInit() {
 			.click(function() {
 				$(this)
 					.html("一键催审 (处理中...)");
-				let a = $(".verify-urge-btn")
+				let o = $(".verify-urge-btn")
 					.toArray();
-				let n = a.map(e => $(e)
+				let n = o.map(e => $(e)
 					.attr("data-id"));
 				let r = 0,
 					l = 0;
@@ -3179,11 +3284,11 @@ function verifyInit() {
 						body: "nVerifyID=" + e
 					});
 					let i = await t.text();
-					let o = JSON.parse(i)
+					let a = JSON.parse(i)
 						.state;
-					if (o === 0) {
+					if (a === 0) {
 						r++;
-						$(a[l])
+						$(o[l])
 							.html("催审成功")
 							.attr("class", "ml-1 text-muted")
 					}
@@ -3233,7 +3338,7 @@ function centerInit() {
 			});
 		common_msg(PublicLangData.remind, PublicLangData.center.setting.complete, "ok")
 	};
-	const t = new MutationObserver(function(t, a) {
+	const t = new MutationObserver(function(t, o) {
 		for (let e of t) {
 			if (e.addedNodes.length > 1) {
 				$(document)
@@ -3276,7 +3381,7 @@ function centerInit() {
 					});
 				let t = e.appendChild(document.createElement("div"));
 				let i = "",
-					o = 0;
+					a = 0;
 				for (let e of settingList) {
 					if (e.value) e.description += `（默认：${e.value}）`;
 					const n = ["checkbox", "", "text", "color", "text"];
@@ -3284,12 +3389,12 @@ function centerInit() {
 						case 2:
 						case 3:
 						case 4:
-							i += `<div class="center-setting-block"><div class="setting-item"><span class="title">${e.title}:</span><input type="${n[e.type]}" class="form-control" placeholder="${e.title}.." data-todo="${e.todo}" data-id="${o}"></div><p class="text-muted">${e.description}</p></div>`;
+							i += `<div class="center-setting-block"><div class="setting-item"><span class="title">${e.title}:</span><input type="${n[e.type]}" class="form-control" placeholder="${e.title}.." data-todo="${e.todo}" data-id="${a}"></div><p class="text-muted">${e.description}</p></div>`;
 							break;
 						default:
-							i += `<div class="center-setting-block"><div class="setting-item"><div class="checkbox" data-todo="${e.todo}"><input id="${e.id}" type="checkbox" data-id="${o}"><label for="${e.id}">${e.title}</label></div></div><p class="text-muted">${e.description}</p></div>`
+							i += `<div class="center-setting-block"><div class="setting-item"><div class="checkbox" data-todo="${e.todo}"><input id="${e.id}" type="checkbox" data-id="${a}"><label for="${e.id}">${e.title}</label></div></div><p class="text-muted">${e.description}</p></div>`
 					}
-					o++
+					a++
 				}
 				t.outerHTML = `<div class="center-block hidden" data-menu-frame="9" style="display: none;"><div class="center-block-head"><span class="title mcmodder-slim-dark">Mcmodder设置</span><span style="font-size: 12px; color: gray; margin-left: 1em;">版本 v${mcmodderVersion} ~ ☆</span></div><div class="center-content">${i}</div></div>`;
 				$("div.center-block[data-menu-frame=9] div.checkbox > input")
@@ -3308,20 +3413,24 @@ function centerInit() {
 						$(this)
 							.bind("change", window.updateSettings)
 					});
-				a.disconnect();
+				o.disconnect();
+				$('<button id="mcmodder-update-check-manual", class="btn" style="margin: 0 10px 0 10px;">立即检查更新</button>')
+					.insertAfter("[for=mcmodder-update-check]")
+					.click(doCheckUpdate)
+					.parent()
+					.append(getConfig("autoCheckUpdate") ? '<span class="mcmodder-timer" data-source="nextAutoUpdateTime"></span>' : "");
 				$("<pre>")
 					.appendTo($("#mcmodder-splash-tracker")
 						.parents(".center-setting-block"))
 					.attr("style", "max-height: 300px;")
 					.html(`<code id="mcmodder-splash-text">${GM_getValue("mcmodderSplashList")}</code>`);
-				if (!adminUid.includes(currentUid) && !getConfig("adminList", `userProfile-${currentUid}`)
-					.length) $("[data-todo=autoVerifyDelay]")
+				if (!adminUid.includes(currentUid) && !getConfig("adminModList", `userProfile-${currentUid}`)?.length) $("[data-todo=autoVerifyDelay]")
 					.parents(".center-setting-block")
 					.hide()
 			}
 		}
 	});
-	const o = new MutationObserver(function(t, n) {
+	const a = new MutationObserver(function(t, n) {
 		for (let e of t) {
 			if (e.addedNodes[0].className = "center-main lv" && $(".lv-title")
 				.length) {
@@ -3329,7 +3438,7 @@ function centerInit() {
 						.text()
 						.replace("Lv.", "")),
 					e = $(".lv-title")[0],
-					o = parseInt($(".lv-title > span:nth-child(2)")
+					a = parseInt($(".lv-title > span:nth-child(2)")
 						.text()
 						.replace("升级进度: ", "")
 						.replace(",", ""));
@@ -3347,23 +3456,23 @@ function centerInit() {
 								.text("-");
 							return
 						}
-						let o = -parseInt($(".lv-title > span:nth-child(2)")
+						let a = -parseInt($(".lv-title > span:nth-child(2)")
 							.text()
 							.replace("升级进度: ", "")
 							.replace(",", ""));
-						for (let e = t; e <= i - 1; e++) o += expReq[e];
+						for (let e = t; e <= i - 1; e++) a += expReq[e];
 						$("span#mcmodder-expreq")
-							.text(o.toLocaleString());
+							.text(a.toLocaleString());
 						this.parentNode.className = "common-user-lv large lv-" + i
 					});
 				$("input#mcmodder-lv-input", e)
 					.trigger("change");
-				let a = o;
-				if (o < 1e5)
-					for (let e = 1; e < t; e++) a += expReq[e];
+				let o = a;
+				if (a < 1e5)
+					for (let e = 1; e < t; e++) o += expReq[e];
 				window.editnum = {
 					change: function() {
-						let e = a;
+						let e = o;
 						for (i = parseInt((c + 1) / 1e3) * 1e3; i <= Math.min(19e3, parseInt($(this)
 							.val() / 1e3 - 1) * 1e3); i += 1e3) {
 							e += (i + 1e3) / 2
@@ -3372,7 +3481,7 @@ function centerInit() {
 							.val() / 5e4 - 1) * 5e4); i += 5e4) {
 							e += (i + 5e4) / 100
 						}
-						refreshExpBar(e, a)
+						refreshExpBar(e, o)
 					},
 					keydown: function(e) {
 						let t = parseInt($(this)
@@ -3395,7 +3504,7 @@ function centerInit() {
 				};
 				window.editbyte = {
 					change: function() {
-						let e = a;
+						let e = o;
 						for (i = parseInt((s + 1) / 5e4) * 5e4; i <= Math.min(95e4, parseInt($(this)
 							.val() / 5e4 - 1) * 5e4); i += 5e4) {
 							e += (i + 5e4) / 100
@@ -3404,7 +3513,7 @@ function centerInit() {
 							.val() / 1e3 - 1) * 1e3); i += 1e3) {
 							e += (i + 1e3) / 2
 						}
-						refreshExpBar(e, a)
+						refreshExpBar(e, o)
 					},
 					keydown: function(e) {
 						let t = parseInt($(this)
@@ -3425,7 +3534,7 @@ function centerInit() {
 					}
 				};
 				$(e)
-					.append(`<span>总经验: <span id="mcmodder-totalexp" style="margin-right: 0px">${a.toLocaleString()} Exp</span></span><span>次数计算器: <input id="mcmodder-editnum"></span><span>字数计算器: <input id="mcmodder-editbyte"></span>`);
+					.append(`<span>总经验: <span id="mcmodder-totalexp" style="margin-right: 0px">${o.toLocaleString()} Exp</span></span><span>次数计算器: <input id="mcmodder-editnum"></span><span>字数计算器: <input id="mcmodder-editbyte"></span>`);
 				$("#mcmodder-editnum")
 					.val(c);
 				$("#mcmodder-editbyte")
@@ -3449,7 +3558,7 @@ function centerInit() {
 			}
 		}
 	});
-	const a = new MutationObserver(function(t, e) {
+	const o = new MutationObserver(function(t, i) {
 		for (let e of t) {
 			if (e.removedNodes[0]?.className === "loading") {
 				$(".center-content.background")
@@ -3459,11 +3568,45 @@ function centerInit() {
 						$(this)
 							.parent()
 							.append(this.textContent)
-					})
+					});
+				i.disconnect()
 			}
 		}
 	});
-	const n = new MutationObserver(function(t, l) {
+	const n = new MutationObserver(function(t, i) {
+		for (let e of t) {
+			if (e.removedNodes[0]?.className === "loading") {
+				i.disconnect();
+				if (currentUid === d) {
+					advancementList.forEach(e => {
+						if (e.isCustom) $(`<div class="center-task-block "><div class="center-task-border"><span class="icon"><img src="${e.img}" alt="task"></span><div class="task-item"><span class="title">${PublicLangData.center.task.list[e.langdata].title}</span><span class="difficulty">${'<i class="fa fa-star"></i>'.repeat(e.level||5)}</span><span class="text"><p>${PublicLangData.center.task.list[e.langdata].content}</p></span></div><span class="task-exp"><i class="fa fa-gift" style="margin-right:4px;"></i>奖励: ${e.reward?PublicLangData.center.item.list[userItemList[e.reward[0].id].langdata].title:"-"}</span><span class="task-rate"><i class="fas fa-hourglass-half" style="margin-right:4px;font-size:10px;"></i>进度: 0 / ${e.range||PublicLangData.center.task.list[e.langdata].range}</span></div></div>`)
+							.appendTo(`.task > [data-menu-frame=${e.category}] > .center-content`)
+					})
+				}
+				let r, l;
+				for (let e = 1; e <= 2; e++) {
+					r = l = 0;
+					$(`.task [data-menu-frame=${e}] .center-task-block`)
+						.each((e, t) => {
+							let i = $(t)
+								.find(".title")
+								.text(),
+								a = 0,
+								o = $(t)
+								.find(".finished")
+								.length;
+							let n = advancementList.find(e => PublicLangData.center.task.list[e.langdata].title === i);
+							if (!n?.progress) a += n?.exp || 0, r += a, l += o * a;
+							else
+								for (let t = 1; t <= n.max; t++) a = advancementList.find(e => e.id === n.id && e.progress === t)?.exp || 0, l += (t < n.progress + o) * a, r += a
+						});
+					$(`.task [data-menu-frame=${e}] .center-block-head`)
+						.append(`<span class="${l<r*.88?"text-muted":"mcmodder-chroma"}" style="margin-left: 1em;">${l.toLocaleString()} Exp / ${r.toLocaleString()} Exp 已取得 (${(l/r*100).toFixed(1)}% 完成)</span>`)
+				}
+			}
+		}
+	});
+	const r = new MutationObserver(function(t, l) {
 		for (let e of t) {
 			if (e.addedNodes[0]?.className === "center-total") {
 				let e = $(".center-content.admin-list");
@@ -3474,12 +3617,12 @@ function centerInit() {
 				let i = $(t)
 					.contents()
 					.filter((e, t) => t.nodeType === 8)[0];
-				let o = t.appendChild(document.createElement("li"));
-				o.outerHTML = i.textContent.replace(" 次", " 字节");
+				let a = t.appendChild(document.createElement("li"));
+				a.outerHTML = i.textContent.replace(" 次", " 字节");
 				t.insertBefore($(".center-total li:last-child()")[0], $(".center-total li:nth-child(4)")[0]);
 				i.remove();
-				o = t.appendChild(document.createElement("li"));
-				o.innerHTML = '<span class="title">科龄</span><span class="text">' + parseInt((Date.now() - Date.parse($(".center-total li:nth-child(7) span.text")
+				a = t.appendChild(document.createElement("li"));
+				a.innerHTML = '<span class="title">科龄</span><span class="text">' + parseInt((Date.now() - Date.parse($(".center-total li:nth-child(7) span.text")
 						.text())) / (24 * 60 * 60 * 1e3))
 					.toLocaleString() + " 天 </span>";
 				$(".center-total li")
@@ -3556,19 +3699,19 @@ function centerInit() {
 							}
 						})
 				}
-				let a = JSON.parse(GM_getValue("rankData")),
+				let o = JSON.parse(GM_getValue("rankData")),
 					n = [
 						[0, "center"],
 						[1, "mcmod"],
 						[2, "cn"]
 					],
 					r = {};
-				Object.keys(a)
+				Object.keys(o)
 					.forEach(e => {
 						let t = new Date((e - 24 * 60 * 60) * 1e3),
 							i = `${1900+t.getYear()}-${(1+t.getMonth()).toString().padStart(2,"0")}-${t.getDate().toString().padStart(2,"0")}`,
-							o = JSON.parse(a[e]);
-						o.forEach(e => {
+							a = JSON.parse(o[e]);
+						a.forEach(e => {
 							if (e.user == d) {
 								n.push([i, parseInt(e.value)]);
 								r[i] = parseInt(e.value)
@@ -3614,6 +3757,10 @@ function centerInit() {
 								.text("历史成功完成改动操作的字数");
 							window.originalData = e.getOption();
 							e.setOption({
+								calendar: [{
+									range: parseInt($("#center-editchart-select .filter-option-inner-inner")
+										.text())
+								}],
 								series: [{
 									data: n
 								}],
@@ -3628,14 +3775,19 @@ function centerInit() {
 									formatter: function(e) {
 										var t = e.data[0],
 											i = "",
-											o = "";
+											a = "";
 										return r[t] && (i = ` <b>${r[t].toLocaleString()}字节</b> (约${parseFloat((r[t]/3).toFixed(1)).toLocaleString()}汉字)`), "<p>" + e.marker + t.substring(5) + i + "</p>"
 									}
 								}]
 							});
 							this.innerHTML = "转为次数统计"
 						} else {
-							e.setOption(originalData);
+							e.setOption(Object.assign(originalData, {
+								calendar: [{
+									range: parseInt($("#center-editchart-select .filter-option-inner-inner")
+										.text())
+								}]
+							}));
 							$(".title-sub", this.parentNode)[0].innerHTML = "历史成功完成改动操作的次数";
 							this.innerHTML = "转为字数统计"
 						}
@@ -3653,23 +3805,27 @@ function centerInit() {
 		.length > 0) t.observe($("#center-page-setting")[0], {
 		childList: true
 	});
-	n.observe($("#center-page-home")[0], {
+	r.observe($("#center-page-home")[0], {
 		childList: true
 	});
-	o.observe($("#center-page-rank")[0], {
+	a.observe($("#center-page-rank")[0], {
 		childList: true
 	});
 	if ($("#center-page-card")
-		.length) a.observe($("#center-page-card")[0], {
+		.length) o.observe($("#center-page-card")[0], {
+		childList: true
+	});
+	if ($("#center-page-task")
+		.length) n.observe($("#center-page-task")[0], {
 		childList: true
 	});
 	if (getConfig("enableAprilFools")) addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ");
-	let r = window.getComputedStyle(document.body)["background-image"].replace('url("', "")
+	let l = window.getComputedStyle(document.body)["background-image"].replace('url("', "")
 		.replace('")', "");
-	if (r != getConfig("defaultBackground") && ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"].includes(r.split(".")
+	if (l != getConfig("defaultBackground") && ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"].includes(l.split(".")
 		.pop()
 		.toLowerCase())) $("div.bbs-link")
-		.append(`<p align="right"><a href="${r}" target="_blank">查看个人中心背景图片</a></p>`);
+		.append(`<p align="right"><a href="${l}" target="_blank">查看个人中心背景图片</a></p>`);
 	$("div.bbs-link")
 		.append(`<p align="right"><a href="https://www.mcmod.cn/verify.html?order=createtime&userid=${d}" target="_blank">查看近期提交审核列表</a></p>`);
 	window.addUserBlacklist = function() {
@@ -3702,14 +3858,14 @@ function commentInit() {
 			.length || $("div.comment-close")
 			.length)
 			if (getConfig("unlockComment")) {
-				const a = "common-comment-block lazy";
+				const o = "common-comment-block lazy";
 				let e = $("div.center-block:last-child()")[0] || $(".common-comment-block.lazy .comment-editor")[0] || $(".author-row")[0],
 					t, i;
-				let o = document.getElementsByClassName(a);
-				if (e && (!o.length || $("div.comment-close")
+				let a = document.getElementsByClassName(o);
+				if (e && (!a.length || $("div.comment-close")
 					.length)) {
 					i = document.createElement("div");
-					i.className = a;
+					i.className = o;
 					i.style = "";
 					t = e.appendChild(i);
 					addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
@@ -3732,7 +3888,7 @@ function commentInit() {
 		block: "center"
 	});
 	const e = new MutationObserver(function(t, e) {
-		function a(e) {
+		function o(e) {
 			if ($("input.comment-id", e)[0]?.value === window.location.href.split("comment-")[1]) {
 				setTimeout(() => {
 					e.scrollIntoView({
@@ -3773,7 +3929,7 @@ function commentInit() {
 								})
 						});
 					let i = parseInt(getConfig("missileAlertHeight")) || 1e3;
-					let o = parseInt(getConfig("commentExpandHeight")) || 300;
+					let a = parseInt(getConfig("commentExpandHeight")) || 300;
 					$("div.comment-row-content", e.target)
 						.each(function() {
 							if (getConfig("userBlacklist")
@@ -3794,14 +3950,14 @@ function commentInit() {
 									href: "https://t.bilibili.com/779290398405165095"
 								})
 								.text("本模组管理员");
-							a(this);
+							o(this);
 							let e = $("div.comment-row-text-content.common-text.font14", this)[0];
 							if (getConfig("ignoreEmptyLine")) $(e)
 								.children()
 								.filter((e, t) => t.innerHTML === "<br>")
 								.remove();
 							let t = parseInt(e.clientHeight);
-							if (t > o && t < 300 && o < 300) {
+							if (t > a && t < 300 && a < 300) {
 								let e = this.appendChild(document.createElement("a"));
 								e.outerHTML = '<a class="fold text-muted"><i class="fas fa-chevron-down"></i>展开更多内容</a>';
 								this.insertBefore($("a.fold.text-muted", this)[0], $("ul.comment-tools", this)[0])
@@ -3816,14 +3972,14 @@ function commentInit() {
 								.split(",")
 								.includes($("a.poped", this)
 									.attr("data-uid"))) this.remove();
-							a(this);
+							o(this);
 							let t = $("div.comment-reply-row-text-content.common-text.font14", this)[0];
 							let i = $(t)
 								.html()
 								.replaceAll("<br>", ""),
-								o = "";
-							for (let e = 0; e < i.length; e++) o += i[e].charCodeAt() <= 255 ? i[e] : " ";
-							let e = o.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
+								a = "";
+							for (let e = 0; e < i.length; e++) a += i[e].charCodeAt() <= 255 ? i[e] : " ";
+							let e = a.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
 							e.forEach(function(e) {
 								$(t)
 									.html(i.replace(e, '<a href="' + e + '" target="_blank">' + e + "</a>"))
@@ -3839,58 +3995,26 @@ function commentInit() {
 		subtree: true
 	})
 }
+window.versionCompare = function(e, t) {
+	const i = e.split(".")
+		.map(Number);
+	const a = t.split(".")
+		.map(Number);
+	for (let e = 0; e < Math.max(i.length, a.length); e++) {
+		const o = i[e] || 0;
+		const n = a[e] || 0;
+		if (o > n) return 1;
+		if (o < n) return -1
+	}
+	return 0
+};
 
 function scheduleEvents() {
 	if (getConfig("autoCheckUpdate")) {
-		let n = (e, t) => {
-			const i = e.split(".")
-				.map(Number);
-			const o = t.split(".")
-				.map(Number);
-			for (let e = 0; e < Math.max(i.length, o.length); e++) {
-				const a = i[e] || 0;
-				const n = o[e] || 0;
-				if (a > n) return 1;
-				if (a < n) return -1
-			}
-			return 0
-		};
 		let e = parseInt(getConfig(`nextAutoUpdateTime`, "scheduledEvent")) || 0,
 			t = Date.now();
 		setTimeout(async function() {
-			let e = async function(e) {
-				let t = await fetch("https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483", {
-					method: "GET"
-				});
-				let i = $("<html>")
-					.html(await t.text()),
-					o;
-				let a = i.find("#postmessage_85878 font[size=5]")
-					.first()
-					.text()
-					.split("Mcmodder v")[1].split(" --")[0];
-				if (n(mcmodderVersion, a) < 0) {
-					let e = i.find("#postmessage_85878 .spoilerbody")
-						.first()
-						.html();
-					o = "https://bbs.mcmod.cn/" + i.find(".attnm a")
-						.first()
-						.attr("href");
-					Swal.fire({
-							type: "info",
-							title: "Mcmodder 有新版本可用！",
-							html: `<div class="mcmodder-golden-alert"><span class="mcmodder-common-danger">${mcmodderVersion}</span> → <span class="mcmodder-common-light">${a}</span></div><div class="mcmodder-changelog">${e}</div>`,
-							confirmButtonText: "立即下载",
-							showCancelButton: true,
-							cancelButtonText: "稍后提醒"
-						})
-						.then(e => {
-							if (e.value) open(o);
-							else setConfig("nextAutoUpdateTime", Date.now() + 60 * 60 * 1e3, "scheduledEvent")
-						})
-				} else setConfig("nextAutoUpdateTime", Date.now() + 60 * 60 * 1e3, "scheduledEvent")
-			};
-			e()
+			doCheckUpdate()
 		}, t > e ? 1 : e - t + 100)
 	}
 	if (currentUid && getConfig("autoCheckin")) {
@@ -3908,15 +4032,15 @@ function scheduleEvents() {
 				});
 				let t = await e.text();
 				let i = JSON.parse(t),
-					o = "";
-				if (!i.state && i.amount) o = "自动签到已执行！获得知识碎片 " + i.amount + " 个~";
-				else if (i.state === 182) o = "自动签到已执行！但是似乎早就签到过啦~";
-				else if (i.state === 109) o = "自动签到已执行！但是似乎被别的百科页面抢先一步了~";
+					a = "";
+				if (!i.state && i.amount) a = "自动签到已执行！获得知识碎片 " + i.amount + " 个~";
+				else if (i.state === 182) a = "自动签到已执行！但是似乎早就签到过啦~";
+				else if (i.state === 109) a = "自动签到已执行！但是似乎被别的百科页面抢先一步了~";
 				setConfig(`nextCheckInTime-${currentUid}`, getStartTime(new Date), "scheduledEvent");
-				if (o) try {
-					common_msg(PublicLangData.remind, o, !i.state ? "ok" : "err")
+				if (a) try {
+					common_msg(PublicLangData.remind, a, !i.state ? "ok" : "err")
 				} catch (e) {
-					alert(o)
+					alert(a)
 				}
 			} else open("https://center.mcmod.cn/")
 		}, i);
@@ -3932,7 +4056,7 @@ function scheduleEvents() {
 				open("https://admin.mcmod.cn/");
 				return
 			}
-			let a = 0,
+			let o = 0,
 				n = 0,
 				r = "";
 			let l = async function(e) {
@@ -3944,12 +4068,12 @@ function scheduleEvents() {
 					body: 'data={"classID":"' + e + '"}'
 				});
 				let i = await t.text();
-				let o = parseInt(toChinese(i)
+				let a = parseInt(toChinese(i)
 					.split("总待审：")[1].split("个。")[0]);
-				n += o;
-				if (c.length > a + 2) {
+				n += a;
+				if (c.length > o + 2) {
 					setTimeout(() => {
-						l(c[++a])
+						l(c[++o])
 					}, 300);
 					return
 				} else {
@@ -3991,7 +4115,236 @@ function scheduleEvents() {
 	customStyle();
 	let e = window.location.href;
 	if (getConfig("forceV4") && e === "https://www.mcmod.cn/") window.location.href = "https://www.mcmod.cn/v4/";
+	advancementList = [{
+		langdata: "old_text_word_length_1000",
+		category: 2,
+		id: 0,
+		exp: 350
+	}, {
+		langdata: "old_text_word_length_0",
+		category: 2,
+		id: 1,
+		exp: 350
+	}, {
+		langdata: "view_below_50",
+		category: 2,
+		id: 2,
+		exp: 350
+	}, {
+		langdata: "last_edit_365",
+		category: 2,
+		id: 3,
+		exp: 350
+	}, {
+		langdata: "edit_times_20",
+		category: 2,
+		id: 4,
+		exp: 350
+	}, {
+		langdata: "add_post_word_length_10000",
+		category: 2,
+		id: 5,
+		exp: 520
+	}, {
+		langdata: "edit_class_area_100",
+		category: 2,
+		id: 6,
+		exp: 400
+	}, {
+		langdata: "download_mods_1",
+		category: 3,
+		id: 12,
+		exp: 0,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/4/40221.png"
+	}, {
+		langdata: "keep_edit_240days",
+		category: 3,
+		id: 10,
+		exp: 0
+	}, {
+		langdata: "wait_a_minute",
+		category: 3,
+		id: 13,
+		exp: 0,
+		range: 3,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/0/9378.png"
+	}, {
+		langdata: "fault_finder",
+		category: 3,
+		id: 14,
+		exp: 0,
+		range: 10,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/0/940.png"
+	}, {
+		langdata: "master_editor",
+		category: 3,
+		id: 15,
+		exp: 0,
+		range: 1,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/0/6724.png"
+	}, {
+		langdata: "click_girl_100_times",
+		category: 3,
+		id: 16,
+		exp: 0,
+		range: 100,
+		isCustom: true,
+		img: "/ueditor/dialogs/emotion/images/mcmod_2020/13.gif"
+	}, {
+		langdata: "skillful_craftsman",
+		category: 3,
+		id: 17,
+		exp: 0,
+		range: 1,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/77/770349.png"
+	}, {
+		langdata: "grave_digger",
+		category: 3,
+		id: 18,
+		exp: 0,
+		range: 1,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/7/72138.png"
+	}, {
+		langdata: "all_your_fault",
+		category: 3,
+		id: 19,
+		exp: 0,
+		range: 1e3,
+		isCustom: true,
+		img: "//i.mcmod.cn/item/icon/128x128/3/37698.png",
+		reward: [{
+			id: 6
+		}]
+	}, {
+		langdata: "mcmod_10th",
+		category: 3,
+		id: 11,
+		exp: 0
+	}, {
+		langdata: "user_view_center",
+		category: 1,
+		id: 22,
+		exp: 1
+	}, {
+		langdata: "user_push_class",
+		category: 1,
+		id: 23,
+		exp: 1
+	}, {
+		langdata: "user_add_class",
+		category: 1,
+		id: 24,
+		exp: 10
+	}, {
+		langdata: "user_add_modpack",
+		category: 1,
+		id: 25,
+		exp: 10
+	}, {
+		langdata: "user_add_post",
+		category: 1,
+		id: 26,
+		exp: 25
+	}];
+	for (let e = 1; e <= 20; e++) advancementList.push({
+		langdata: "user_edit_all_" + e,
+		category: 2,
+		id: 7,
+		progress: e,
+		exp: e * 500,
+		max: 20
+	});
+	for (let e = 1; e <= 20; e++) advancementList.push({
+		langdata: "user_word_all_" + e,
+		category: 2,
+		id: 8,
+		progress: e,
+		exp: e * 500,
+		max: 20
+	});
+	for (let e = 1; e <= 6; e++) advancementList.push({
+		langdata: "user_word_avg_" + e,
+		category: 2,
+		id: 9,
+		progress: e,
+		exp: parseInt(expReq[e * 5] / 10),
+		max: 6
+	});
+	for (let e = 2; e <= 30; e++) advancementList.push({
+		langdata: "user_lv_" + e,
+		category: 2,
+		id: 21,
+		progress: e - 1,
+		exp: 0,
+		max: 29
+	});
+	for (let e = 1; e <= 5; e++) advancementList.push({
+		langdata: "user_edit_today_" + e,
+		category: 1,
+		id: 27,
+		progress: e,
+		exp: [1, 10, 25, 50, 100][e - 1],
+		max: 5
+	});
+	for (let e = 1; e <= 5; e++) advancementList.push({
+		langdata: "user_word_today_" + e,
+		category: 1,
+		id: 28,
+		progress: e,
+		exp: [1, 10, 25, 50, 100][e - 1],
+		max: 5
+	});
+	userItemList = [{
+		langdata: "knowledge_fragment",
+		id: 0
+	}, {
+		langdata: "technique_crystal",
+		id: 1,
+		isCustom: true
+	}, {
+		langdata: "memory_cube",
+		id: 2,
+		isCustom: true
+	}, {
+		langdata: "canning_civilization",
+		id: 3,
+		isCustom: true
+	}, {
+		langdata: "wisdom_singularity",
+		id: 4,
+		isCustom: true
+	}, {
+		langdata: "mr_torcherino",
+		id: 5
+	}, {
+		langdata: "red_button",
+		id: 6,
+		isCustom: true
+	}, {
+		langdata: "medal_of_friendship",
+		id: 7,
+		isCustom: true
+	}, {
+		langdata: "test_1",
+		id: 8,
+		isCustom: true
+	}, {
+		langdata: "vanilla",
+		id: 9,
+		isCustom: true
+	}];
 	scheduleEvents();
+	if (getConfig("useNotoSans")) {
+		$('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&amp;display=swap" rel="stylesheet">')
+			.appendTo("head");
+		addStyle('* {font-family: "Noto Sans SC","Microsoft YaHei","微软雅黑","宋体",sans-serif}')
+	}
 	$("span")
 		.filter((e, t) => $(t)
 			.attr("style") === "position: absolute;color: #555;border-radius: 5px;border: 1px solid #555;font-size: 12px;padding: 0 2px;left:5px;top:5px;bottom:auto;right:auto;background:RGBA(255,255,255,.45);")
@@ -4020,7 +4373,7 @@ function scheduleEvents() {
 	if (getConfig("enableAprilFools")) {
 		if (e.includes("/author/22957.html")) $("div.author-user-avatar img")[0].src = "https://i.mcmod.cn/editor/upload/20230331/1680246648_2_vWiM.gif"
 	}
-	addStyle("@keyframes fadeIn {from {opacity: 0;} to {opacity: 1;}} .common-imglist a[rel=nofollow] img, .sidebar .user-info img {border-radius: 50%} .common-rowlist-block .title, .common-imglist-block .title, .popover-header {background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2));} .common-center .item-table i {background-image: url(//i.mcmod.cn/editor/upload/20241019/1729313235_179043_fNWH.png); background-position: -0px -0px; width: 34px; height: 34px;} body > .content, .fold-list-object-ul .count, .item-table-gui-slot .view, .table-striped > tbody > tr:nth-of-type(2n+1), .common-select .find-close, .tools-list li {background-color: transparent;} .common-center .maintext .itemname .name h5, .center-block-head .title, .common-center .post-row .postname .name h5, .common-center .right .class-title h3, .common-comment-block .comment-title, .mcmodder-title, .modal-title {text-decoration: underline 4px var(--mcmodder-tc1); text-underline-position: under; line-height: 2; font-size: 24px;} .header-layer .header-layer-block .title, .center-content.admin-list .title, .modlist-filter-block .title, .relation > span, .common-center .right .tab-content ul.tab-ul p.title, .mcmodder-subtitle, .col-form-label {text-decoration: underline 3px var(--mcmodder-tc1); text-underline-position: under; line-height: 2; font-size: 18px; font-weight: unset; color: var(--mcmodder-txcolor);} .common-center {background-color: transparent; margin-top: 6em; border: unset; padding: .5em;  border-radius: 0px; margin: 0 15% 0 10%; width: 80%;} .common-center .right .class-text-top {min-height: unset; padding-right: unset;}  .common-frame {padding: 0px; max-width: unset;} .col-lg-12.common-rowlist-2 .title, .center-total li .title, .class-info-left .col-lg-6 .title, .verify-rowlist .title, .class-excount .infos .span .n {color: #333; justify-content: center; display: flex; width: 100%; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;} .class-excount {width: unset;} .col-lg-12.common-rowlist-2 .text, .center-total li .text, .class-info-left .col-lg-6 .text, .verify-rowlist .text {color: #666; text-align: center; display: block; width: 100%; font-size: 12px;} .common-center .maintext .item-give {width: unset; border: unset; background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2))} .common-center .maintext .item-give span {font-size: 14px; color: unset; font-family: consolas;} body .common-nav {padding: 0 .8em 0 .8em; margin-top: 8em;} .item-dict a {color: #333; font-family: consolas; border-radius: 10px; background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2)); padding: 5px; margin-right: .5em;} .center-content.admin-list li, .center-content.edit-list li, .common-rowlist.borderbottom li, .header-layer .header-layer-block li, .common-center .right .class-relation-list .relation li, .item-search-frame, .item-used-frame {padding-bottom: .3em; border-bottom: 2px dashed var(--mcmodder-tca1);} .col-lg-6 {padding: 0; display: inline-block;} .header-layer {padding: 1em !important; padding-left: 3em !important; padding-right: 3em !important; background-color: var(--mcmodder-bgcolor) !important; backdrop-filter: blur(10px);} border: unset; .header-layer .header-layer-block {width: 250px;} .header-menu-widget-homepage .header-layer-block.layer-category {width: 170px !important;} .header-layer .header-layer-block li:nth-child(2n+1) {margin-right: 25px;} .class-menu-page li i, .common-fuc-group i, .header-layer-block i, .common-center .class-edit-block li a i {color: var(--mcmodder-td1); margin-right: .5em} .class-excount .star .fire i {color: goldenrod} .class-menu-page, .common-menu-page, .link-list li.link-row, .modlist-block .title p, .others-list li, #relation-frame .relation-list, #modlist-frame .modlist-list, #relation-frame .relation-list .relation-group li, #modlist-frame .modlist-list .modlist-group li, .class-excount .infos {background: transparent; border: unset;} .class-menu-page li.active, .common-menu-page li.active {border-top-color: var(--mcmodder-td2);} .center-content.lv-info .lv-bar .progress-bar, .bootstrap-tagsinput .tag {background: linear-gradient(90deg,var(--mcmodder-tc1),var(--mcmodder-tc2));} .common-center .right .class-info .class-info-left .author li {height: 60px;} .common-center .right .class-info .class-info-left .author li .avatar {width: 55px; height: 55px;} .common-center .right .class-info .class-info-left .author li .member {padding: 5px 10px; background-color: var(--mcmodder-bgcolor); border: unset; border-radius: unset; max-width: 160px;} .common-center .right .class-info .class-info-left .author li a {font-size: 14px;} .common-center .right .class-info .class-info-left .author li .avatar img {width: 55px; height: 55px; padding: 5px; border-radius: 50%;} .common-center .right .class-info .class-info-left .author .frame {height: unset;} .common-center .right .class-info .class-info-left .author li .member .name {max-width: 245px;} .common-fuc-group .action {background-color: #fff8; padding: 2px;} .tooltip-inner, body .edui-default .edui-bubble .edui-popup-content {max-width: unset; color: var(--mcmodder-txcolor); background-color: var(--mcmodder-bgcolor); border-radius: 1rem; padding: .5em 1em; animation: fadeIn .3s ease-out forwards; border: solid 10px; border-image: linear-gradient(45deg, var(--mcmodder-tc1), var(--mcmodder-tc2)) 1 stretch; clip-path: inset(0 round 1rem); position: relative; box-shadow: 5px 5px 5px gray;} .common-center .right {padding-left: 280px;} .tooltip-inner::after, .edui-default .edui-bubble .edui-popup-content::after {position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; content: ''; border-radius: 10px; z-index: -2; border: 5px solid var(--mcmodder-bgcolor);} .bs-tooltip-auto[x-placement^=\"top\"] .arrow::before, .bs-tooltip-top .arrow::before {border-top-color: var(--mcmodder-bgcolor); backdrop-filter: blur(10px);} .class-excount .star .block-left {background: linear-gradient(45deg,var(--mcmodder-tca1),var(--mcmodder-tca2));} .header-user .header-user-info .header-panel {width: 400px !important; padding-top: 70px; animation: fadeIn ease-out .2s both} .header-user .header-user-info .header-panel .header-layer {padding: 1em !important;} .header-user .header-user-info .header-panel .header-layer-block {margin-top: 75px;} .mcmodder-profile {position: absolute; left: 50%; top: -55px; transform: translate(-50%);} .mcmodder-profile img {width: 110px; height: 110px; padding: 2px; background-color: #fff; border-radius: 50%; margin-bottom: 0.8em;} .common-center .center {display: inline-block; max-width: unset;} .mcmodder-profile p {font-weight: bold;} .header-layer {position: relative;} .common-center .left, .common-center .right:not(.col-lg-12) {width: 275px;} .common-center .left {position: absolute; left: 0;} .mcmodder-class-init.col-lg-12.right {padding-right: 280px;} @media (max-width: 1280px) {.common-center .right:not(.col-lg-12) {display: none;} .mcmodder-class-init.col-lg-12.right {padding-right: 0;} .common-center {margin: 0 1% 0 1%; width: 98%;}} .class-text {margin: 0 1em 0 1em;} .mcmodder-modloader {height: 24px; margin: 3px; display: flex; justify-content: center;} .mcmodder-loadername {font-size: 16px; margin-left: .2em;} .common-nav, .common-center .left, .class-info-right, .class-text, .center-block, .center-total, .common-menu-page, .item-list-filter, .item-list-table, .item-row, .common-menu-area, .rank-head-frame, .rank-list-frame, .common-center .center > div:not(.right), .author-row > div:not(.dropdown), .center > fieldset, .center > ul, .center .main > div:not(.nav), .oredict-list-table, .modal-content, *:not(.center-block) > .common-comment-block.lazy, .common-center .left, .common-center .post-row, .version-content-empty, .swal2-popup, .popover, .panel, .panel-default, .panel-title, .edit-unlogining, .common-select, .item-table-main, .log-frame > p, .about-frame > *, body > .container > *, .modfile-main-frame > * {background: var(--mcmodder-bgcolor); border-radius: 1em; padding: 1em; box-shadow: rgba(50, 50, 100, 0.5) 0px 2px 4px 0px;} .bd-callout p {font-size: 12px; color: #6c757d;} #edui1, .mold, .progress-list, .class-item-type li, .post-block, .tools-list li a, .comment-row, .common-center .item-data, .item-table-area, .comment-channel-list li a, .common-icon-text.edit-history, .bd-callout, .tab-ul > .text-danger, .center-task-block, .center-content.lv-info, .center-card-block.badges, .common-center .maintext .item-give, .modlist-block, .verify-info-table, .common-world-gen-block, .common-world-gen-data, .header-search form .class-info-right > ul, .item-text > .item-info-table, .class-excount, #mcmodder-text-result, .mcmodder-golden-alert, .mcmodder-gui-alert, .mcmodder-changelog {background: var(--mcmodder-bgcolor); border-radius: 1em; margin: .6em; padding: .6em; box-shadow: rgba(50, 50, 100, 0.2) 0px 2px 4px 0px;} .mcmodder-changelog {max-height: 300px; overflow: scroll; text-align: left; font-size: 14px;} .mcmodder-changelog li {margin-left: 2em;} .mcmodder-changelog ul li {list-style-type: disc;} .tag li, .mcver li a, .common-center .maintext .itemname .tool, .common-center .right .class-relation-list .relation li, .common-fuc-group li, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-border, .common-center .post-row .postname .tool li a, .edit-tools a, .center-main.attitude li, .bootstrap-tagsinput .tag {color: var(--mcmodder-txcolor); background: var(--mcmodder-bgcolor); border-radius: 1em; box-shadow: rgba(50, 50, 100, 0.1) 0px 2px 4px 0px; padding: .2em .5em .2em .5em; line-height: unset;} .common-comment-block.lazy {width: unset; margin: 1em;} .tooltip.show {opacity: 1;} .class-info-right {vertical-align: top; display: inline-block; width: 20%;} .header-layer-block a {color: #334;} .header-layer-block li {position: relative;} .header-user:not(.unlogin) li {width: 180px;} .header-layer-block .fa {position: absolute; top: 50%; transform: translate(0, -50%); color: #666;} body .edui-default span.edui-clickable {color: #33f; text-decoration: unset;} body .edui-default .edui-toolbar .edui-button .edui-state-checked .edui-button-wrap, body .edui-default .edui-toolbar .edui-splitbutton .edui-state-checked .edui-splitbutton-body, body .edui-default .edui-toolbar .edui-menubutton .edui-state-checked .edui-menubutton-body {background-color: var(--mcmodder-tca1); border-color: var(--mcmodder-ta1);} .common-pages .page-item .page-link {background-color: transparent; border-color: #fff8;} .common-pages .page-item.active .page-link, .badge-secondary {background-color: var(--mcmodder-tca1); color: var(--mcmodder-td1); border-color: #fff8; text-shadow: 1px 1px 1px #fff8;} .modlist-filter-block ul:not(.common-class-category) li.main span {background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));} .form-control, .bootstrap-tagsinput {background-color: var(--mcmodder-bgcolor);} .fixed-top {position: fixed; top: 50px; width: 100%;} .item-used-frame, .item-search-frame {width: 100%; max-height: 500px; margin-bottom: .5em;} .item-table-block .power_area, .common-center .right .class-relation-list fieldset {border-color: var(--mcmodder-tca1); border-radius: .8em;} .mcmodder-rednum {z-index: 1; position: absolute; top: 4px; left: 25px; padding: 0 4px; min-width: 15px; border-radius: 10px; background-color: #fa5a57; color: #fff; font-size: 12px; line-height: 15px;} .common-center .right .class-info .class-info-right {top: 0; right: .5em; width: 270px;} .common-class-category li .normal {border-radius: 1em;} .badge {line-height: 1.5; border-radius: 1em; font-weight: unset; padding: .25em .8em;} .common-center .right .class-post-frame .post-block, .class-item-type li {width: 30%; padding: .6em;} .class-item-type li .title {font-size: 16px;} .mcmodder-content-block:hover {background-color: aliceblue;} .dark .mcmodder-content-block:hover {background-color: darkblue;} .common-center .right .class-info .mcver ul ul li {margin-right: unset;} .mcmodder-golden-alert {background-color: #fe8d; width: 90%; display: inline-block; text-align: center;} .modal-content, footer, .row.footer, .page-header, .swal2-popup, .popover {backdrop-filter: blur(20px) brightness(140%); background-color: var(--mcmodder-bgcolor);} .sidebar {background: #3d464daa; backdrop-filter: blur(5px);} .common-center .maintext .item-text {padding-right: 0;} .common-center .item-data {width: 220px;} body .header-container {background-image: linear-gradient(#434c53aa, #3c454caa); backdrop-filter: blur(20px); background-color: transparent;} .btn, .alert, .form-control, .bootstrap-tagsinput {border-radius: 1em; padding: .6em; box-shadow: rgba(50, 50, 100, 0.3) 0px 2px 4px 0px;} .mcmodder-gui-in {position: absolute; right: 0; bottom: -.25em; color: var(--mcmodder-tc1); text-shadow: 2px 2px 1px var(--mcmodder-td1);} .mcmodder-gui-out {position: absolute; right: 0; bottom: -.25em; color: var(--mcmodder-tc2); text-shadow: 2px 2px 1px var(--mcmodder-td2);} .item-list-filter .form-control {border-radius: 1em !important;} .center-task-block {width: 30%;} .center-task-border, .center-card-border {border: unset; margin: unset;} .center-main.favorite .favorite-slot-ul li, .common-user-card .card-userinfo .exp-rate {border-color: transparent; background-color: transparent;} .center-card-view {background-color: var(--mcmodder-bgcolor); margin: 4em 1em;} .center-content.post-list .post-block {padding: .6em;} .common-center .left .class-rating-block #class-rating {background: unset;} .verify-rowlist {text-align: center;} .verify-rowlist li {width: 10em; display: inline-block;} .common-center .item-data {position: relative; z-index: 1; float: right;} .common-text .common-text-menu, .common-center .maintext .quote_text {width: 75%;} .common-text .item-info-table table, #mcmodder-version-menu {width: 100%;} .message-main {padding-left: 200px !important;} #mcmodder-editnum, #mcmodder-editbyte {width: 5em; height: 2em; border-radius: .5em; padding: .3em; border: 1px solid var(--mcmodder-tca2); background-color: transparent;} #mcmodder-lv-input {text-align: center; height: 20px; width: 25px; margin-right: 0px; color: yellow; background: transparent; border: none; font-weight: bold; text-shadow: 1px 1px 1px #333;}.center-block-head .more {right: 2em;} #item-table-item-input {width: 100%; border-top-right-radius: 1em; border-bottom-right-radius: 1em;} .header-right .header-user .header-user-avatar img {border-color: #fff8;} .common-center .class-edit-block {width: unset;} .common-link-frame-style-2 ul li {width: 100%; overflow: initial;} .common-center .right .class-relation-list .relation li {height: 2em;} .version-menu {margin-top: 0} #mcmodder-version-menu tbody * {white-space: nowrap; overflow: hidden;} #mcmodder-version-menu td {border: 1px solid var(--mcmodder-tc1);} @media(min-width:992px) {.item-text > .item-info-table {display: none;}} @media(max-width:991px) {.common-center .maintext .item-content > .item-data {display: none;}} .common-text .table-scroll {width: auto;}");
+	addStyle("@keyframes fadeIn {from {opacity: 0;} to {opacity: 1;}} .common-imglist a[rel=nofollow] img, .sidebar .user-info img {border-radius: 50%} .common-rowlist-block .title, .common-imglist-block .title, .popover-header {background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2));} .common-center .item-table i {background-image: url(//i.mcmod.cn/editor/upload/20241019/1729313235_179043_fNWH.png); background-position: -0px -0px; width: 34px; height: 34px;} body > .content, .fold-list-object-ul .count, .item-table-gui-slot .view, .table-striped > tbody > tr:nth-of-type(2n+1), .common-select .find-close, .tools-list li {background-color: transparent;} .common-center .maintext .itemname .name h5, .center-block-head .title, .common-center .post-row .postname .name h5, .common-center .right .class-title h3, .common-comment-block .comment-title, .mcmodder-title, .modal-title, .tools-title {text-decoration: underline 4px var(--mcmodder-tc1); text-underline-position: under; line-height: 2; font-size: 24px;} .header-layer .header-layer-block .title, .center-content.admin-list .title, .modlist-filter-block .title, .relation > span, .common-center .right .tab-content ul.tab-ul p.title, .mcmodder-subtitle, .col-form-label {text-decoration: underline 3px var(--mcmodder-tc1); text-underline-position: under; line-height: 2; font-size: 18px; font-weight: unset; color: var(--mcmodder-txcolor);} .common-center {background-color: transparent; margin-top: 6em; border: unset; padding: .5em;  border-radius: 0px; margin: 0 15% 0 10%; width: 80%;} .common-center .right .class-text-top {min-height: unset; padding-right: unset;}  .common-frame {padding: 0px; max-width: unset;} .col-lg-12.common-rowlist-2 .title, .center-total li .title, .class-info-left .col-lg-6 .title, .verify-rowlist .title, .class-excount .infos .span .n {color: #333; justify-content: center; display: flex; width: 100%; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;} .class-excount {width: unset;} .col-lg-12.common-rowlist-2 .text, .center-total li .text, .class-info-left .col-lg-6 .text, .verify-rowlist .text {color: #666; text-align: center; display: block; width: 100%; font-size: 12px;} .common-center .maintext .item-give {width: unset; border: unset; background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2))} .common-center .maintext .item-give span {font-size: 14px; color: unset; font-family: consolas;} body .common-nav {padding: 0 .8em 0 .8em; margin-top: 8em;} .item-dict a {color: #333; font-family: consolas; border-radius: 10px; background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2)); padding: 5px; margin-right: .5em;} .center-content.admin-list li, .center-content.edit-list li, .common-rowlist.borderbottom li, .header-layer .header-layer-block li, .common-center .right .class-relation-list .relation li, .item-search-frame, .item-used-frame {padding-bottom: .3em; border-bottom: 2px dashed var(--mcmodder-tca1);} .col-lg-6 {padding: 0; display: inline-block;} .header-layer {padding: 1em !important; padding-left: 3em !important; padding-right: 3em !important; background-color: var(--mcmodder-bgcolor) !important; backdrop-filter: blur(10px);} border: unset; .header-layer .header-layer-block {width: 250px;} .header-menu-widget-homepage .header-layer-block.layer-category {width: 170px !important;} .header-layer .header-layer-block li:nth-child(2n+1) {margin-right: 25px;} .class-menu-page li i, .common-fuc-group i, #server-tool i, .server-listtype-switch li i, .header-layer-block i, .common-center .class-edit-block li a i, .common-menu-page li i, .center-main.favorite .favorite-fold-fuc i, .common-center .right .class-relation-list .relation i {color: var(--mcmodder-td1); margin-right: .5em} .class-excount .star .fire i {color: goldenrod} .class-menu-page, .common-menu-page, .link-list li.link-row, .modlist-block .title p, .others-list li, #relation-frame .relation-list, #modlist-frame .modlist-list, #relation-frame .relation-list .relation-group li, #modlist-frame .modlist-list .modlist-group li, .class-excount .infos, .common-index-block ul.list-block .info, .page-app::before, .server-list-index .page-app {background: transparent; border: unset;} .class-menu-page li.active, .common-menu-page li.active {border-top-color: var(--mcmodder-td2);} .center-menu li.active a, .center-menu li:hover a {border-bottom-color: var(--mcmodder-td2)} .center-content.lv-info .lv-bar .progress-bar, .bootstrap-tagsinput .tag {background: linear-gradient(90deg,var(--mcmodder-tc1),var(--mcmodder-tc2));} .common-center .right .class-info .class-info-left .author li {height: 60px;} .common-center .right .class-info .class-info-left .author li .avatar {width: 55px; height: 55px;} .common-center .right .class-info .class-info-left .author li .member {padding: 5px 10px; background-color: var(--mcmodder-bgcolor); border: unset; border-radius: unset; max-width: 160px;} .common-center .right .class-info .class-info-left .author li a {font-size: 14px;} .common-center .right .class-info .class-info-left .author li .avatar img {width: 55px; height: 55px; padding: 5px; border-radius: 50%;} .common-center .right .class-info .class-info-left .author .frame {height: unset;} .common-center .right .class-info .class-info-left .author li .member .name {max-width: 245px;} .common-fuc-group .action {background-color: #fff8; padding: 2px;} .tooltip-inner, body .edui-default .edui-bubble .edui-popup-content {max-width: unset; color: var(--mcmodder-txcolor); background-color: var(--mcmodder-bgcolor); border-radius: 1rem; padding: .5em 1em; animation: fadeIn .3s ease-out forwards; border: solid 10px; border-image: linear-gradient(45deg, var(--mcmodder-tc1), var(--mcmodder-tc2)) 1 stretch; clip-path: inset(0 round 1rem); position: relative; box-shadow: 5px 5px 5px gray;} .common-center .right {padding-left: 280px;} .col-lg-12.server-listtype-switch {padding-left: 1em;} .tooltip-inner::after, .edui-default .edui-bubble .edui-popup-content::after {position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; content: ''; border-radius: 10px; z-index: -2; border: 5px solid var(--mcmodder-bgcolor);} .bs-tooltip-auto[x-placement^=\"top\"] .arrow::before, .bs-tooltip-top .arrow::before {border-top-color: var(--mcmodder-bgcolor); backdrop-filter: blur(10px);} .class-excount .star .block-left {background: linear-gradient(45deg,var(--mcmodder-tca1),var(--mcmodder-tca2));} .header-user .header-user-info .header-panel {width: 400px !important; padding-top: 70px; animation: fadeIn ease-out .2s both} .header-user .header-user-info .header-panel .header-layer {padding: 1em !important;} .header-user .header-user-info .header-panel .header-layer-block {margin-top: 75px;} .mcmodder-profile {position: absolute; left: 50%; top: -55px; transform: translate(-50%);} .mcmodder-profile img {width: 110px; height: 110px; padding: 2px; background-color: #fff; border-radius: 50%; margin-bottom: 0.8em;} .common-center .center {display: inline-block; max-width: unset;} .mcmodder-profile p {font-weight: bold;} .header-layer {position: relative;} .common-center .left, .common-center .right:not(.col-lg-12) {width: 275px;} .common-center .left {position: absolute; left: 0;} .mcmodder-class-init.col-lg-12.right {padding-right: 280px;} @media (max-width: 1280px) {.common-center .right:not(.col-lg-12) {display: none;} .mcmodder-class-init.col-lg-12.right {padding-right: 0;} .common-center {margin: 0 1% 0 1%; width: 98%;}} .class-text {margin: 0 1em 0 1em;} .mcmodder-modloader {height: 24px; margin: 3px; display: flex; justify-content: center;} .mcmodder-loadername {font-size: 16px; margin-left: .2em;} .common-nav, .common-center .left, .class-info-right, .class-text, .center-block, .center-total, .common-menu-page, .item-list-filter, .item-list-table, .item-row, .common-menu-area, .rank-head-frame, .rank-list-frame, .common-center .center > div:not(.right), .author-row > div:not(.dropdown), .center > fieldset, .center > ul, .center .main > div:not(.nav), .oredict-list-table, .modal-content, *:not(.center-block) > .common-comment-block.lazy, .common-center .left, .common-center .post-row, .version-content-empty, .swal2-popup, .popover, .panel, .panel-default, .panel-title, .edit-unlogining, .common-select, .item-table-main, .log-frame > p, .about-frame > *, body > .container > *, .modfile-main-frame > * {background-color: var(--mcmodder-bgcolor); border-radius: 1em; padding: 1em; box-shadow: rgba(50, 50, 100, 0.5) 0px 2px 4px 0px;} .bd-callout p {font-size: 12px; color: #6c757d;} #edui1, .mold, .progress-list, .class-item-type li, .post-block, .tools-list li a, .comment-row, .common-center .item-data, .item-table-area, .comment-channel-list li a, .common-icon-text.edit-history, .bd-callout, .tab-ul > .text-danger, .center-task-block, .center-content.lv-info, .center-card-block.badges, .common-center .maintext .item-give, .modlist-block, .verify-info-table, .common-world-gen-block, .common-world-gen-data, .header-search form .class-info-right > ul, .item-text > .item-info-table, .class-excount, #mcmodder-text-result, .mcmodder-golden-alert, .mcmodder-gui-alert, .mcmodder-changelog {background-color: var(--mcmodder-bgcolor); border-radius: 1em; margin: .6em; padding: .6em; box-shadow: rgba(50, 50, 100, 0.2) 0px 2px 4px 0px;} .mcmodder-changelog {max-height: 300px; overflow: scroll; text-align: left; font-size: 14px;} .mcmodder-changelog li {margin-left: 2em;} .mcmodder-changelog ul li {list-style-type: disc;} .tag li, .mcver li a, .common-center .maintext .itemname .tool, .author-user-frame .author-tool, .common-center .right .class-relation-list .relation li, .common-fuc-group li, #server-tool li, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-border, .common-center .post-row .postname .tool li a, .edit-tools a, .center-main.attitude li, .bootstrap-tagsinput .tag, .list_item, .ta_date, .ta_calendar {color: var(--mcmodder-txcolor); background-color: var(--mcmodder-bgcolor); border-radius: 1em; box-shadow: rgba(50, 50, 100, 0.1) 0px 2px 4px 0px; padding: .2em .5em .2em .5em; line-height: unset;} .common-comment-block.lazy {width: unset; margin: 1em;} .tooltip.show {opacity: 1;} .class-info-right {vertical-align: top; display: inline-block; width: 20%;} .header-layer-block a {color: #334;} .header-layer-block li {position: relative;} .header-user:not(.unlogin) li {width: 180px;} .header-layer-block .fa {position: absolute; top: 50%; transform: translate(0, -50%); color: #666;} body .edui-default span.edui-clickable {color: #33f; text-decoration: unset;} body .edui-default .edui-toolbar .edui-button .edui-state-checked .edui-button-wrap, body .edui-default .edui-toolbar .edui-splitbutton .edui-state-checked .edui-splitbutton-body, body .edui-default .edui-toolbar .edui-menubutton .edui-state-checked .edui-menubutton-body {background-color: var(--mcmodder-tca1); border-color: var(--mcmodder-ta1);} .common-pages .page-item .page-link {background-color: transparent; border-color: #fff8;} .common-pages .page-item.active .page-link, .badge, .center-menu .badge, .center-main.favorite .common-pages .page-item.active .page-link, .center-main.favorite .favorite-fold-list a.active, .center-main.favorite .favorite-slot-menu ol a.active {background-color: var(--mcmodder-tca1); color: var(--mcmodder-td1); border-color: #fff8; text-shadow: 1px 1px 1px #fff8;} .center-main.favorite .favorite-fold-list a.active span {color: inherit;} .modlist-filter-block ul:not(.common-class-category) li.main span {background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));} .form-control, .bootstrap-tagsinput {background-color: var(--mcmodder-bgcolor);} .fixed-top {position: fixed; top: 50px; width: 100%;} .item-used-frame, .item-search-frame {width: 100%; max-height: 500px; margin-bottom: .5em;} .item-table-block .power_area, .common-center .right .class-relation-list fieldset {border-color: var(--mcmodder-tca1); border-radius: .8em;} .mcmodder-rednum {z-index: 1; position: absolute; top: 4px; left: 25px; padding: 0 4px; min-width: 15px; border-radius: 10px; background-color: #fa5a57; color: #fff; font-size: 12px; line-height: 15px;} .common-center .right .class-info .class-info-right {top: 0; right: .5em; width: 270px;} .common-class-category li .normal, .c_0 {border-radius: 1em;} .badge {line-height: 1.5; border-radius: 1em; font-weight: unset; padding: .25em .8em;} .common-center .right .class-post-frame .post-block, .class-item-type li {width: 30%; padding: .6em;} .class-item-type li .title {font-size: 16px;} .mcmodder-content-block:hover {background-color: aliceblue;} .dark .mcmodder-content-block:hover {background-color: darkblue;} .common-center .right .class-info .mcver ul ul li {margin-right: unset;} .mcmodder-golden-alert {background-color: #fe8d; width: 90%; display: inline-block; text-align: center;} .modal-content, footer, .row.footer, .page-header, .swal2-popup, .popover {backdrop-filter: blur(20px) brightness(140%); background-color: var(--mcmodder-bgcolor);} .sidebar {background: #3d464daa; backdrop-filter: blur(5px);} .common-center .maintext .item-text {padding-right: 0;} .common-center .item-data {width: 220px;} body .header-container {background-image: linear-gradient(#434c53aa, #3c454caa); backdrop-filter: blur(20px); background-color: transparent;} .btn, .alert, .form-control, .bootstrap-tagsinput {border-radius: 1em; padding: .6em; box-shadow: rgba(50, 50, 100, 0.3) 0px 2px 4px 0px;} .mcmodder-gui-in {position: absolute; right: 0; bottom: -.25em; color: var(--mcmodder-tc1); text-shadow: 2px 2px 1px var(--mcmodder-td1);} .mcmodder-gui-out {position: absolute; right: 0; bottom: -.25em; color: var(--mcmodder-tc2); text-shadow: 2px 2px 1px var(--mcmodder-td2);} .item-list-filter .form-control {border-radius: 1em !important;} .center-task-block {width: 30%;} .center-task-border, .center-card-border {border: unset; margin: unset;} .center-main.favorite .favorite-slot-ul li, .common-user-card .card-userinfo .exp-rate {border-color: transparent; background-color: transparent;} .center-card-view {background-color: var(--mcmodder-bgcolor); margin: 4em 1em;} .center-content.post-list .post-block {padding: .6em;} .common-center .left .class-rating-block #class-rating {background: unset;} .verify-rowlist {text-align: center;} .verify-rowlist li {width: 10em; display: inline-block;} .common-center .item-data {position: relative; z-index: 1; float: right;} .common-text .common-text-menu, .common-center .maintext .quote_text {width: 75%;} .common-text .item-info-table table, #mcmodder-version-menu {width: 100%;} .message-main {padding-left: 200px !important;} #mcmodder-editnum, #mcmodder-editbyte {width: 5em; height: 2em; border-radius: .5em; padding: .3em; border: 1px solid var(--mcmodder-tca2); background-color: transparent;} #mcmodder-lv-input {text-align: center; height: 20px; width: 25px; margin-right: 0px; color: yellow; background: transparent; border: none; font-weight: bold; text-shadow: 1px 1px 1px #333;}.center-block-head .more {right: 2em;} #item-table-item-input {width: 100%; border-top-right-radius: 1em; border-bottom-right-radius: 1em;} .header-right .header-user .header-user-avatar img {border-color: #fff8;} .common-center .class-edit-block {width: unset;} .common-link-frame-style-2 ul li {width: 100%; overflow: initial;} .common-center .right .class-relation-list .relation li {height: 2em;} .version-menu {margin-top: 0} #mcmodder-version-menu tbody * {white-space: nowrap; overflow: hidden;} #mcmodder-version-menu td {border: 1px solid var(--mcmodder-tc1);} @media(min-width:992px) {.item-text > .item-info-table {display: none;}} @media(max-width:991px) {.common-center .maintext .item-content > .item-data {display: none;}} .common-text .table-scroll {width: auto;} .author-user-frame.hascontent {width: 220px; margin: 0 20px;} .common-center .author-row .author-content {border-radius: 1em; margin-top: 45px;} .table-bordered td, .table-bordered th, .table thead th {border-color: var(--mcmodder-tc1);}");
 	$(".mold, .progress-list, .class-item-type li, .post-block, .tag li, .mcver li a, .tools-list li a, .edit-tools span, .comment-row, .comment-channel-list li a, .class-relation-list .relation li, .btn, .mcmodder-gui-alert, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-block.badges, .center-card-border, .modlist-block, .common-center .maintext .item-give, .common-center .post-row .postname .tool li a")
 		.addClass("mcmodder-content-block");
 	$(".common-nav .line")
@@ -4085,14 +4438,14 @@ function scheduleEvents() {
 			.parent()
 			.attr("href", "https://www.mcmod.cn/message/")
 	}
-	let o = $(".text-area.common-text, .item-content.common-text, .post-row");
-	o.find("*")
+	let a = $(".text-area.common-text, .item-content.common-text, .post-row");
+	a.find("*")
 		.filter((e, t) => $(t)
 			.css("background-color") === "rgb(255, 255, 255)")
 		.css({
 			"background-color": "unset"
 		});
-	o.find("span")
+	a.find("span")
 		.filter((e, t) => $(t)
 			.css("color") === "rgb(0, 0, 0)")
 		.css({
@@ -4263,7 +4616,7 @@ function scheduleEvents() {
 		description: "适用于将“头盔”、“胸甲”、“护腿”、“靴子”综合到同一个父资料中一起介绍时使用。",
 		content: '<p><br/></p><table width="435"><tbody><tr><th style="word-break: break-all;" valign="top" align="center">装备部位<br/></th><th style="word-break: break-all;" valign="top" align="center">提供盔甲值<br/></th><th style="word-break: break-all;" valign="top" align="center">提供盔甲韧性<br/></th><th style="word-break: break-all;">特殊属性<br/></th></tr><tr><td style="word-break: break-all;" valign="middle" align="center">头盔</td><td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td><td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td><td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td></tr><tr><td style="word-break: break-all;" valign="middle" align="center">胸甲<br/></td><td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td><td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td><td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td></tr><tr><td style="word-break: break-all;" valign="middle" align="center">护腿<br/></td><td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td><td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td><td colspan="1" rowspan="1" valign="middle" align="center">-<br/></td></tr><tr><td style="word-break: break-all;" valign="middle" align="center">靴子<br/></td><td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td><td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td><td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td></tr></tbody></table>'
 	}]));
-	const a = {
+	const o = {
 		Forge: '<svg viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"></path><path fill="none" stroke="var(--mcmodder-platform-forge)" stroke-width="2" d="M2 7.5h8v-2h12v2s-7 3.4-7 6 3.1 3.1 3.1 3.1l.9 3.9H5l1-4.1s3.8.1 4-2.9c.2-2.7-6.5-.7-8-6Z"></path></svg>',
 		Fabric: '<svg viewBox="0 0 24 24"><path fill="none" stroke="var(--mcmodder-platform-fabric)" d="m820 761-85.6-87.6c-4.6-4.7-10.4-9.6-25.9 1-19.9 13.6-8.4 21.9-5.2 25.4 8.2 9 84.1 89 97.2 104 2.5 2.8-20.3-22.5-6.5-39.7 5.4-7 18-12 26-3 6.5 7.3 10.7 18-3.4 29.7-24.7 20.4-102 82.4-127 103-12.5 10.3-28.5 2.3-35.8-6-7.5-8.9-30.6-34.6-51.3-58.2-5.5-6.3-4.1-19.6 2.3-25 35-30.3 91.9-73.8 111.9-90.8" transform="matrix(.08671 0 0 .0867 -49.8 -56)" stroke-width="23"></path></svg>',
 		NeoForge: '<svg viewBox="0 0 24 24"><g fill="none" stroke="var(--mcmodder-platform-neoforge)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m12 19.2v2m0-2v2"></path><path d="m8.4 1.3c0.5 1.5 0.7 3 0.1 4.6-0.2 0.5-0.9 1.5-1.6 1.5m8.7-6.1c-0.5 1.5-0.7 3-0.1 4.6 0.2 0.6 0.9 1.5 1.6 1.5"></path><path d="m3.6 15.8h-1.7m18.5 0h1.7"></path><path d="m3.2 12.1h-1.7m19.3 0h1.8"></path><path d="m8.1 12.7v1.6m7.8-1.6v1.6"></path><path d="m10.8 18h1.2m0 1.2-1.2-1.2m2.4 0h-1.2m0 1.2 1.2-1.2"></path><path d="m4 9.7c-0.5 1.2-0.8 2.4-0.8 3.7 0 3.1 2.9 6.3 5.3 8.2 0.9 0.7 2.2 1.1 3.4 1.1m0.1-17.8c-1.1 0-2.1 0.2-3.2 0.7m11.2 4.1c0.5 1.2 0.8 2.4 0.8 3.7 0 3.1-2.9 6.3-5.3 8.2-0.9 0.7-2.2 1.1-3.4 1.1m-0.1-17.8c1.1 0 2.1 0.2 3.2 0.7"></path><path d="m4 9.7c-0.2-1.8-0.3-3.7 0.5-5.5s2.2-2.6 3.9-3m11.6 8.5c0.2-1.9 0.3-3.7-0.5-5.5s-2.2-2.6-3.9-3"></path><path d="m12 21.2-2.4 0.4m2.4-0.4 2.4 0.4"></path></g></svg>',
@@ -4277,22 +4630,22 @@ function scheduleEvents() {
 		.each(function(i) {
 			let e = $(this)
 				.text();
-			let o = e.split(e.includes("：") ? "：" : ": ");
-			if (o[1] == parseInt(o[1])) o[1] = parseInt(o[1])
+			let a = e.split(e.includes("：") ? "：" : ": ");
+			if (a[1] == parseInt(a[1])) a[1] = parseInt(a[1])
 				.toLocaleString();
-			if (o[0] === "支持平台") o[1] = o[1].replace(" (JAVA Edition)", "")
+			if (a[0] === "支持平台") a[1] = a[1].replace(" (JAVA Edition)", "")
 				.replace(" (Bedrock Edition)", "");
-			else if (o[0] === "运作方式") {
-				let t = o[1].split(", ");
-				o[1] = "";
+			else if (a[0] === "运作方式") {
+				let t = a[1].split(", ");
+				a[1] = "";
 				t.forEach(e => {
-					o[1] += `<div class="mcmodder-modloader" title="${e}">${a[e]}`;
-					if (t.length === 1) o[1] += `<span class="mcmodder-loadername" style="color: var(--mcmodder-platform-${t[0].toLowerCase()})">${t[0]}</span>`;
-					o[1] += "</div>"
+					a[1] += `<div class="mcmodder-modloader" title="${e}">${o[e]}`;
+					if (t.length === 1) a[1] += `<span class="mcmodder-loadername" style="color: var(--mcmodder-platform-${t[0].toLowerCase()})">${t[0]}</span>`;
+					a[1] += "</div>"
 				})
 			}
-			if (o[0] === "运行环境") {
-				let e = o[1].split(", ");
+			if (a[0] === "运行环境") {
+				let e = a[1].split(", ");
 				e.forEach(e => {
 					let t = e.slice(3, 5);
 					if (t === "需装") t = `<span style="color: var(--mcmodder-td1)"><i class="fa fa-check" />${t}</span>`;
@@ -4305,7 +4658,7 @@ function scheduleEvents() {
 				});
 				this.remove()
 			} else $(this)
-				.html(`<span class="title">${o[1]}</span><span class="text">${o[0]}</span>`);
+				.html(`<span class="title">${a[1]}</span><span class="text">${a[0]}</span>`);
 			if (this.className === "col-lg-4") this.className = "col-lg-6"
 		});
 	$(".slider-block")
@@ -4315,8 +4668,16 @@ function scheduleEvents() {
 			background: "transparent",
 			color: "var(--mcmodder-txcolor)"
 		});
+	setInterval(() => {
+		$(".mcmodder-timer")
+			.each((e, t) => {
+				$(t)
+					.text(timeFormatter(parseInt(getConfig($(t)
+						.attr("data-source"), "scheduledEvent")) - Date.now()))
+			})
+	}, 1e3);
 	if (e.includes("/item/tab/") && !e.includes(".html")) setTimeout(tabInit, 1e3);
-	if (e.includes("/class/edit/") || e.includes("/sandbox/") || e.includes("/post/edit/")) editorLoad();
+	if (e.includes("/class/edit/") || e.includes("/modpack/edit/") || e.includes("/sandbox/") || e.includes("/post/edit/")) editorLoad();
 	if (e.includes("/item/edit/") || e.includes("/item/add/")) itemEditorInit();
 	if (e.includes("/item/") && e.includes(".html") && !e.includes("/diff/")) itemInit();
 	if (e.includes("/oredict/")) oredictPageInit();
@@ -4325,8 +4686,8 @@ function scheduleEvents() {
 	if (e.includes("/queue.html")) queueInit();
 	if (e.includes("/class/add/")) classEditorInit();
 	if (e.includes("/version/add") || e.includes("/version/edit")) versionInit();
-	else if (e.includes("/version/")) versionListInit();
-	if (/class\/[0-9]*\.html/.test(e)) classInit();
+	else if (e.includes("/class/version/")) versionListInit();
+	if (/class\/[0-9]*\.html/.test(e) || /modpack\/[0-9]*\.html/.test(e)) classInit();
 	if (e.includes("/diff/") && !e.includes("/list/")) diffInit();
 	if (e.includes("/rank.html") && getConfig("advancedRanklist")) rankInit();
 	if (e.includes("/class/") || e.includes("/author/")) setTimeout(commentInit, 1e3);
