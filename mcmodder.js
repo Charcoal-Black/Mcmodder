@@ -4713,3 +4713,24 @@ function scheduleEvents() {
 			color: "var(--mcmodder-txcolor)"
 		})
 })();
+(function () {
+	"use strict";
+  
+	const style = `
+		.class_block .left .list .name a {
+			background-color: #FFFFFF00;
+		}
+		.class_block .right .list .no1 .rank i {
+			background: url(/images/index_icon.png) #FFFFFF00;
+			background-position: -17px -92px;
+		}
+		.common-text .common-text-menu {
+			background-color: var(--mcmodder-bgcolor);
+		}
+		.common-comment-block .comment-row {
+			padding: 10px 20px 20px 10px;
+		}
+	`;
+  
+	addStyle(style);
+  })();    
