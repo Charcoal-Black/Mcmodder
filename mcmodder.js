@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mcmodder-MC百科编审辅助工具
 // @namespace    http://www.mcmod.cn/
-// @version      1.6.0.1
+// @version      1.6.0.2
 // @description  MC百科编审辅助工具
 // @author       charcoalblack__
 // @license      AGPL-3.0
@@ -169,16 +169,16 @@ class McmodderValues {
     USER_ADD_POST: 26
   };
   static userItemList = [
-    { langdata: "knowledge_fragment", id: 0 },
-    { langdata: "technique_crystal", id: 1, isCustom: true },
-    { langdata: "memory_cube", id: 2, isCustom: true },
-    { langdata: "canning_civilization", id: 3, isCustom: true },
-    { langdata: "wisdom_singularity", id: 4, isCustom: true },
-    { langdata: "mr_torcherino", id: 5 },
-    { langdata: "red_button", id: 6, isCustom: true },
-    { langdata: "medal_of_friendship", id: 7, isCustom: true },
-    { langdata: "test_1", id: 8, isCustom: true },
-    { langdata: "vanilla", id: 9, isCustom: true }
+    { lang: "knowledge_fragment", id: 0 },
+    { lang: "technique_crystal", id: 1, isCustom: true },
+    { lang: "memory_cube", id: 2, isCustom: true },
+    { lang: "canning_civilization", id: 3, isCustom: true },
+    { lang: "wisdom_singularity", id: 4, isCustom: true },
+    { lang: "mr_torcherino", id: 5 },
+    { lang: "red_button", id: 6, isCustom: true },
+    { lang: "medal_of_friendship", id: 7, isCustom: true },
+    { lang: "test_1", id: 8, isCustom: true },
+    { lang: "vanilla", id: 9, isCustom: true }
   ];
   static nonItemTypeList = [ // 综合类型
     { text: '模组', icon: "fa-cubes" },
@@ -2211,11 +2211,11 @@ class McmodderEditableTable extends McmodderTable {
 
 class ProgressBar {
 
-  static DISPLAYRULE_PERCENT = (val, max) => `${ new Intl.NumberFormat("en-US", {
+  static DISPLAYRULE_PERCENT = (val, min, max) => `${ new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(val / max * 100) }%`;
-  static DISPLAYRULE_FRACTION = (val, max) => `${ val.toLocaleString() } / ${ max.toLocaleString() }`;
+  }).format((val - min) / (max - min) * 100) }%`;
+  static DISPLAYRULE_FRACTION = (val, min, max) => `${ val.toLocaleString() } / ${ max.toLocaleString() }`;
 
   // static GRADIENT_DERIVATOR_INSTANT = (x, y) => y - x;
 
@@ -2239,8 +2239,8 @@ class ProgressBar {
   }
 
   update() {
-    this.$bar.css("width", `${ this.max === 0 ? 0 : (this.value / this.max * 100) }%`);
-    this.$per.html(this.displayRule(this.value, this.max));
+    this.$bar.css("width", `${ this.max === 0 ? 0 : ((this.value - this.min) / (this.max - this.min) * 100) }%`);
+    this.$per.html(this.displayRule(this.value, this.min, this.max));
   }
 
   setProgress(val) {
@@ -2561,9 +2561,8 @@ class AdvancementUtils {
     this.parent = parent;
     this.list = [];
   }
-  // list = Array.from(advancementList);
 
-  add(lang, category, id, range, exp, image, reward) {
+  add(lang, category, id, range, exp, image, reward, tier) {
     this.list.push({
       lang: lang,
       category: category,
@@ -2572,6 +2571,7 @@ class AdvancementUtils {
       exp: exp || 0,
       image: image,
       reward: reward,
+      tier: tier,
       isCustom: image ? true : false
     });
     return this;
@@ -2579,17 +2579,18 @@ class AdvancementUtils {
 
   addTiered(maxTier, langGen, category, id, rangeGen, expGen, imageGen, rewardGen) {
     for (let tier = 1; tier <= maxTier; ++tier) {
-      this.add({
-        lang: langGen(tier),
-        category: category,
-        id: id,
-        range: rangeGen ? rangeGen(tier) : 1,
-        exp: expGen ? expGen(tier) : 0,
-        image: imageGen ? imageGen(tier) : undefined,
-        reward: rewardGen ? rewardGen(tier) : undefined,
-        tier: tier,
-        isCustom: imageGen ? true : false
-      });
+      this.add(
+        langGen(tier),
+        category,
+        id,
+        rangeGen ? rangeGen(tier) : 1,
+        expGen ? expGen(tier) : 0,
+        imageGen ? imageGen(tier) : undefined,
+        rewardGen ? rewardGen(tier) : undefined,
+        tier
+      );
+      const t = this.list.slice(-2);
+      if (tier > 1) t[1].prev = t[0], t[0].next = t[1]; // 双链表
     }
     return this;
   }
@@ -2599,7 +2600,7 @@ class AdvancementUtils {
   }
 
   getAll() {
-    return JSON.parse(this.utils.getProfile("advancements") || "[]");
+    return JSON.parse(this.parent.utils.getProfile("advancements") || "[]");
   }
 
   getSingleProgress(id) {
@@ -2611,7 +2612,7 @@ class AdvancementUtils {
   }
 
   setProgress(id, value) {
-    if (!this.utils.getConfig("customAdvancements")) return;
+    if (!this.parent.utils.getConfig("customAdvancements")) return;
     let advancements = this.getAll(), max = this.getData(id).range, f = 1;
     for (let i of advancements) {
       if (i.id == id) {
@@ -2629,7 +2630,7 @@ class AdvancementUtils {
       }
     }
     if (f) advancements.push({ id: id, progress: value });
-    this.utils.setProfile("advancements", JSON.stringify(advancements));
+    this.parent.utils.setProfile("advancements", JSON.stringify(advancements));
   }
 
   addProgress(id, value = 1) {
@@ -5654,7 +5655,7 @@ class Mcmodder {
     .add("view_below_50", AdvancementUtils.CATEGORY_COMMON, 2, 1, 350, null, null)
     .add("last_edit_365", AdvancementUtils.CATEGORY_COMMON, 3, 1, 350, null, null)
     .add("edit_times_20", AdvancementUtils.CATEGORY_COMMON, 4, 1, 350, null, null)
-    .add("old_text_add_post_word_length_10000", AdvancementUtils.CATEGORY_COMMON, 5, 1, 520, null, null)
+    .add("add_post_word_length_10000", AdvancementUtils.CATEGORY_COMMON, 5, 1, 520, null, null)
     .add("edit_class_area_100", AdvancementUtils.CATEGORY_COMMON, 6, 1, 400, null, null)
     .add("download_mods_1", AdvancementUtils.CATEGORY_SPECIAL, 12, 1, 0, McmodderUtils.getImageURLByItemID(40221, 128), null)
     .add("keep_edit_240days", AdvancementUtils.CATEGORY_SPECIAL, 10, 1, 0, null, null)
@@ -5679,7 +5680,7 @@ class Mcmodder {
       8, tier => tier * 5e4, tier => tier * 500, null, null)
     .addTiered(6, tier => `user_word_avg_${ tier }`, AdvancementUtils.CATEGORY_COMMON,
       9, _ => 50, tier => [192, 669, 585, 942, 1517, 2444][tier - 1])
-    .addTiered(29, tier => `user_lv_${ tier }`, AdvancementUtils.CATEGORY_COMMON,
+    .addTiered(29, tier => `user_lv_${ tier + 1 }`, AdvancementUtils.CATEGORY_COMMON,
       21, _ => 1, 0, null, null)
     .addTiered(5, tier => `user_edit_today_${ tier }`, AdvancementUtils.CATEGORY_DAILY,
       27, tier => [1, 10, 20, 50, 100][tier - 1], 
@@ -5926,6 +5927,7 @@ class Mcmodder {
   text-shadow: 2px 2px 1px var(--mcmodder-td2);
 }
 .mcmodder-progress {
+  position: relative;
   display: flex;
   height: 1rem;
   overflow: hidden;
@@ -11538,25 +11540,25 @@ body .uknowtoomuch {
     if (this.currentUID === this.pageUID) {
       // 添加自定义成就
       let c;
-      advancementList.forEach(e => {
+      this.advutils.list.forEach(e => {
         if (e.isCustom) c = $(`
           <div class="center-task-block ">
             <div class="center-task-border">
-              <span class="icon"><img src="${e.img}" alt="task"></span>
+              <span class="icon"><img src="${e.image}" alt="task"></span>
               <div class="task-item">
-                <span class="title">${PublicLangData.center.task.list[e.langdata].title}</span>
+                <span class="title">${PublicLangData.center.task.list[e.lang].title}</span>
                 <span class="difficulty">${'<i class="fa fa-star"></i>'.repeat(e.level || 5)}</span>
                 <span class="text">
-                  <p>${PublicLangData.center.task.list[e.langdata].content}</p>
+                  <p>${PublicLangData.center.task.list[e.lang].content}</p>
                 </span>
               </div>
               <span class="task-exp">
                 <i class="fa fa-gift" style="margin-right:4px;"></i>
-                奖励: ${e.reward ? PublicLangData.center.item.list[McmodderValues.userItemList[e.reward[0].id].langdata].title : "-"}
+                奖励: ${e.reward ? PublicLangData.center.item.list[McmodderValues.userItemList[e.reward[0].id].lang].title : "-"}
               </span>
               <span class="task-rate">
                 <i class="fas fa-hourglass-half" style="margin-right:4px;font-size:10px;"></i>
-                进度: ${this.advutils.getSingleProgress(e.id)} / ${e.range || PublicLangData.center.task.list[e.langdata].range}
+                进度: ${this.advutils.getSingleProgress(e.id)} / ${e.range || PublicLangData.center.task.list[e.lang].range}
               </span>
             </div>
           </div>`).appendTo(`.task > [data-menu-frame=${e.category}] > .center-content`);
@@ -11570,12 +11572,16 @@ body .uknowtoomuch {
           }).click(async () => {
             swal.fire({
               title: "检测中",
-              html: '请勿关闭此页面<br><div class="progress"><div id="mcmodder-progress" class="progress-bar" style="width: 0%;"></div></div>',
+              html: '请勿关闭此页面<br><div class="progress-container"></div>',
               allowOutsideClick: false,
               allowEscapeKey: false,
               showConfirmButton: false
             });
-            let regTime = McmodderUtils.getStartTime(this.utils.getProfile("regTime"), 0), now = McmodderUtils.getStartTime(new Date(), 0), startTime = regTime, endTime, resp, total = 0, verifyList = [], maxPage, title, lastEdit, lastVerify;
+            let regTime = McmodderUtils.getStartTime(this.utils.getProfile("regTime"), 0);
+            let now = McmodderUtils.getStartTime(new Date(), 0);
+            let startTime = regTime, endTime, resp, total = 0, verifyList = [], maxPage, title, lastEdit, lastVerify;
+            const progressBar = new ProgressBar(regTime, regTime, now, ProgressBar.DISPLAYRULE_PERCENT);
+            progressBar.$instance.appendTo(".progress-container");
             do {
               endTime = Math.min(now, McmodderUtils.getStartTime(startTime, 29));
               resp = await this.utils.createAsyncRequest({
@@ -11594,7 +11600,7 @@ body .uknowtoomuch {
                 resp.find(".verify-list-list-frame tbody tr").each((i, c) => verifyList.push(c));
               }
               startTime = McmodderUtils.getStartTime(endTime);
-              $("#mcmodder-progress").css("width", 100 * (startTime - regTime) / (now - regTime) + "%");
+              progressBar.setProgress(startTime);
             } while (endTime < now);
             verifyList.forEach(e => {
               title = $(e).find("td:nth-child(3) span").attr("data-original-title");
@@ -11617,9 +11623,28 @@ body .uknowtoomuch {
       expTotal = expEarned = 0;
       $(`.task [data-menu-frame=${i}] .center-task-block`).each((_, e) => {
         let t = $(e).find(".title").text(), exp = 0, c = $(e).find(".finished").length;
-        let f = advancementList.find(a => PublicLangData.center.task.list[a.langdata].title === t);
-        if (!f?.progress) exp += f?.exp || 0, expTotal += exp, expEarned += c * exp;
-        else for (let j = 1; j <= f.max; j++) exp = advancementList.find(a => a.id === f.id && a.progress === j)?.exp || 0, expEarned += (j < f.progress + c) * exp, expTotal += exp;
+        let f = this.advutils.list.find(a => PublicLangData.center.task.list[a.lang].title === t);
+        if (!f?.tier) exp += f?.exp || 0, expTotal += exp, expEarned += c * exp;
+        else {
+          let cur = f, prev, next, sum = 0;
+          while (prev = cur.prev) { // 前向遍历
+            sum += prev.exp;
+            cur = prev;
+          }
+          expEarned += sum;
+          cur = f;
+          if (c) { // 全部已完成
+            expEarned += cur.exp;
+            expTotal += (sum + cur.exp);
+          }
+          else { // 后向遍历
+            while (next = cur.next) {
+              sum += cur.exp;
+              cur = next;
+            }
+            expTotal += sum;
+          }
+        }
       });
       $(`.task [data-menu-frame=${i}] .center-block-head`).append(`<span class="${expEarned < expTotal * 0.6 ? "text-muted" : "mcmodder-chroma"}" style="margin-left: 1em;">${expEarned.toLocaleString()} Exp / ${expTotal.toLocaleString()} Exp 已取得 (${(expEarned / expTotal * 100).toFixed(1)}% 完成)</span>`);
     }
@@ -12585,8 +12610,8 @@ body .uknowtoomuch {
       if (completed) completed.split(",")?.forEach(id => {
         let data = this.advutils.list.filter(e => e.id == id)[0];
         McmodderUtils.showTaskTip(data.img,
-          PublicLangData.center.task.list[data.langdata].title,
-          PublicLangData.center.task.list[data.langdata].content,
+          PublicLangData.center.task.list[data.lang].title,
+          PublicLangData.center.task.list[data.lang].content,
           "", data.range, ""
         );
         playSound();
