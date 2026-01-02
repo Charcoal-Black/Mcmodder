@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mcmodder-MC百科编审辅助工具
 // @namespace    http://www.mcmod.cn/
-// @version      1.6
+// @version      1.6.0.1
 // @description  MC百科编审辅助工具
 // @author       charcoalblack__
 // @license      AGPL-3.0
@@ -293,7 +293,7 @@ class McmodderUtils {
   }
 
   getAllConfig(item = "mcmodderSettings", defaultValue) {
-    let res = this.getConfig(null, item);
+    let res = this.getConfig(null, item, defaultValue);
     if (res != undefined) return res;
     return defaultValue;
   }
@@ -384,7 +384,7 @@ class McmodderUtils {
   }
 
   static parseClassFullName(fullName) {
-
+    
     let abbr, name, ename, indexOf;
     if (fullName) {
       fullName = fullName.trim();
@@ -675,7 +675,7 @@ class McmodderUtils {
   }
 
   static getFormattedCodeDecoratedHTML = str => {
-
+    
     const res = $("<span>");
     if (str.indexOf("\u00a7") >= 0) {
       let i = 0, color = -1, bold = false, italic = false, obfuscated = false, underline = false, strikethrough = false;
@@ -923,7 +923,7 @@ class McmodderUtils {
       if (command.length > 2) res.metadata = Number(command[2]) || 0;
     }
     const itemType = Number(nav.eq(6).find("a").attr(href).split(`/item/list/${ res.id }-`)[1].slice(0, -5));
-    if (itemType != 1) res.itemType = itemType;
+    if (itemType != 1) res.itemType = itemType; 
     McmodderUtils.deleteEmptyProperties(res);
     return res;
   }
@@ -1367,7 +1367,7 @@ class McmodderContextMenu {
     }
   }
 
-  _moveTo(x, y) {
+  _moveTo(x, y) {    
     this.$instance.css({
       left: x + "px",
       top: y + "px"
@@ -1409,7 +1409,7 @@ class McmodderContextMenu {
           nx = x + (-1.7 - 0.2) * em - menuRect.width;
           ny = y + (-0.75 - 0.2) * em;
         }
-
+        
         this._moveTo(nx, ny);
       }
       this.$instance.removeClass("faded");
@@ -1593,7 +1593,7 @@ class McmodderTable {
       this.renderingRows.r = newRows.r;
     }
   }
-
+  
   setheadOptions(headOptions) {
     this.headOptions = headOptions;
     Object.keys(headOptions).forEach(key => {
@@ -1685,7 +1685,7 @@ class McmodderTable {
   }
 
   hide() {
-
+    
   }
 
   switchDisplayState() {
@@ -2132,13 +2132,13 @@ class McmodderEditableTable extends McmodderTable {
       if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 90 }, e)) {
         e.preventDefault();
         this.undo();
-      }
+      } 
 
       // 重做 Ctrl+Y
       else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 89 }, e)) {
         e.preventDefault();
         this.redo();
-      }
+      } 
 
       // 保存 Ctrl+S
       else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
@@ -2150,14 +2150,14 @@ class McmodderEditableTable extends McmodderTable {
       else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 65 }, e)) {
         e.preventDefault();
         this.selectAll(!e.shiftKey);
-      }
+      } 
 
       // 复制 Ctrl+C
       else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 67 }, e)) {
         e.preventDefault();
         this.copyRow(this.getSelection());
-      }
-
+      } 
+      
       // 选中行
       else if (e.key === "Shift") {
         this.isShiftKeyPressed = true;
@@ -2177,19 +2177,19 @@ class McmodderEditableTable extends McmodderTable {
   initContextMenu() {
     this.contextMenu = new McmodderContextMenu(this.parent, this.$instance);
     this.contextMenu
-    .addOption("newRow", "新建行", e => !this.currentData.length,
+    .addOption("newRow", "新建行", e => !this.currentData.length, 
       e => this.execute(new McmodderEditableTable.InsertRowCommand(this, 0)))
-    .addOption("insertRowUpper", "在此行上方插入行", e => !isNaN(this.getNodeIndex(e.target)),
+    .addOption("insertRowUpper", "在此行上方插入行", e => !isNaN(this.getNodeIndex(e.target)), 
       e => this.execute(new McmodderEditableTable.InsertRowCommand(this, this.getNodeIndex(e.target))))
-    .addOption("insertRowLower", "在此行下方插入行", e => !isNaN(this.getNodeIndex(e.target)),
+    .addOption("insertRowLower", "在此行下方插入行", e => !isNaN(this.getNodeIndex(e.target)), 
       e => this.execute(new McmodderEditableTable.InsertRowCommand(this, this.getNodeIndex(e.target) + 1)))
-    .addOption("pasteRowUpper", "粘贴在其上方", e => !isNaN(this.getNodeIndex(e.target)) && this.clipboard.length,
+    .addOption("pasteRowUpper", "粘贴在其上方", e => !isNaN(this.getNodeIndex(e.target)) && this.clipboard.length, 
       e => this.execute(new McmodderEditableTable.PasteCommand(this, this.getNodeIndex(e.target))))
-    .addOption("pasteRowLower", "粘贴在其下方", e => !isNaN(this.getNodeIndex(e.target)) && this.clipboard.length,
+    .addOption("pasteRowLower", "粘贴在其下方", e => !isNaN(this.getNodeIndex(e.target)) && this.clipboard.length, 
       e => this.execute(new McmodderEditableTable.PasteCommand(this, this.getNodeIndex(e.target) + 1)))
-    .addOption("deleteRow", "删除该行", e => !isNaN(this.getNodeIndex(e.target)),
+    .addOption("deleteRow", "删除该行", e => !isNaN(this.getNodeIndex(e.target)), 
       e => this.execute(new McmodderEditableTable.DeleteRowCommand(this, this.getNodeIndex(e.target))))
-    .addOption("deleteMultipleRow", "删除所有选中行", e => this.selectedRowCount,
+    .addOption("deleteMultipleRow", "删除所有选中行", e => this.selectedRowCount, 
       e => this.execute(new McmodderEditableTable.DeleteMultipleRowCommand(this, this.getSelection())))
   }
 
@@ -2230,7 +2230,7 @@ class ProgressBar {
       <div class="mcmodder-progress">
         <div class="mcmodder-progress-bar" />
         <div class="mcmodder-progress-per" />
-      </div>
+      </div>  
     `);
     this.$bar = this.$instance.find(".mcmodder-progress-bar");
     this.$per = this.$instance.find(".mcmodder-progress-per");
@@ -2283,7 +2283,7 @@ class AdvancedExperienceBar extends ExperienceBar {
 }
 
 class McmodderConfigUtils {
-
+  
   static CONFIG_CHECKBOX = 0;
   static CONFIG_NUMBER = 1;
   static CONFIG_TEXT = 2;
@@ -2311,7 +2311,7 @@ class McmodderConfigUtils {
     this.buffer = new StorageBuffer(this);
   }
 
-  addConfig(id, title, description, type = McmodderConfigUtils.CONFIG_CHECKBOX,
+  addConfig(id, title, description, type = McmodderConfigUtils.CONFIG_CHECKBOX, 
     value = null, minValue = null, maxValue = null, permission = McmodderConfigUtils.PERMISSION_NONE) {
     this.data[id] = {
       title: title,
@@ -2345,7 +2345,7 @@ class McmodderConfigInterface {
       value = Number(value);
       min = min === null ? NaN : Number(min);
       max = max === null ? NaN : Number(max);
-      if (isNaN(value)) return { isok: false, msg: `请输入一个正确的数值~` };
+      if (isNaN(value)) return { isok: false, msg: `请输入一个正确的数值~` }; 
       if (original === value) return { isok: false };
       if (!isNaN(min) && value < min) return { isok: false, msg: `您输入的数值 (${value}) 低于允许的最小值 (${min})，请重新设置~` };
       if (!isNaN(max) && value > max) return { isok: false, msg: `您输入的数值 (${value}) 高于允许的最大值 (${max})，请重新设置~` };
@@ -2388,14 +2388,14 @@ class McmodderConfigInterface {
     this.cfgutils = cfgutils;
     this.data = cfgutils.data[id];
     this.original = cfgutils.parent.utils.getConfig(id);
-
+    
     this.$instance = $(`
       <div class="center-setting-block">
         <div class="setting-item"></div>
         <p class="text-muted">${ this.getDescription() }</p>
       </div>`);
     this.$content = this.$instance.find(".setting-item")
-    .append(McmodderConfigInterface.configHTML[this.data.type] ?
+    .append(McmodderConfigInterface.configHTML[this.data.type] ? 
       McmodderConfigInterface.configHTML[this.data.type](this.id, this.data.title) :
       McmodderConfigInterface.configHTML.default(this.id, this.data.title));
     this.input = this.$content.find("input");
@@ -2483,13 +2483,13 @@ class McmodderConfigInterface {
   getDescription() {
     let list = [];
     let val = this.data.value;
-    if (val != null) list.push(`默认：${
+    if (val != null) list.push(`默认：${ 
       typeof val === "number" ? val.toLocaleString() :
       typeof val === "object" ? McmodderUtils.key2Str(val) : val
     }`);
     let l = this.data.minValue, r = this.data.maxValue;
     let tl = l?.toLocaleString(), tr = r?.toLocaleString();
-    if (l != null && r != null)
+    if (l != null && r != null) 
       list.push(`允许范围：${ tl } ~ ${ tr }`);
     else if (l != null)
       list.push(`最小值：${ tl }`);
@@ -2520,7 +2520,7 @@ class McmodderConfigResourceInterface {
 
     this.$instance = $(`
       <div>
-        <a>${ name }</a> =
+        <a>${ name }</a> = 
         <span>${ McmodderUtils.getFormattedSize(GM_getValue(id)?.length) }</span>
       </div>
     `);
@@ -2665,9 +2665,9 @@ class ScheduleRequestList {
         let configID = param[0], minimum = param[1] || 0, hasUserLimit = param[2];
         let configValue = this.parent.utils.getConfig(configID);
         if (
-          (hasUserLimit ? (this.parent.currentUID > 0) : true) &&
-          configValue &&
-          configValue >= minimum &&
+          (hasUserLimit ? (this.parent.currentUID > 0) : true) && 
+          configValue && 
+          configValue >= minimum && 
           !this.find(key, hasUserLimit ? this.parent.currentUID : undefined)?.time
         ) {
           this.create(0, key, hasUserLimit ? this.parent.currentUID : undefined);
@@ -2681,11 +2681,11 @@ class ScheduleRequestList {
   }
 
   get() {
-    return this.parent.storageBuffer.data.scheduleRequestList;
+    return this.parent.utils.getAllConfig("scheduleRequestList", new Array);
   }
 
   set(e) {
-    GM_setValue("scheduleRequestList", JSON.stringify(e));
+    this.parent.utils.setAllConfig("scheduleRequestList", e);
   }
 
   empty() {
@@ -2798,7 +2798,7 @@ class McmodderAutoLink {
         <label for="edit-autolink-source-online">联网搜索</label>
       </div>
     </div>`).appendTo(this.frame);
-
+    
     let preferredStyle = this.parent.utils.getConfig("preferredAutolinkStyle");
     if (preferredStyle === undefined) preferredStyle = 0;
     if (!preferredStyle && this._shouleHideStyle0) preferredStyle = 1;
@@ -2873,15 +2873,15 @@ class McmodderAutoLink {
       className ||= item.className, classEname ||= item.classEname, classAbbr ||= item.classAbbr;
       classFullName = McmodderUtils.getClassFullName(className, classEname, classAbbr);
     }
-
+    
 
     const itemLi = $(`<li
-      data-type="item"
-      data-id="${item.id}"
-      data-text-full="${fullName}"
-      data-text-half="${item.name}"
-      href="javascript:void(0);"
-      data-toggle="tooltip"
+      data-type="item" 
+      data-id="${item.id}" 
+      data-text-full="${fullName}" 
+      data-text-half="${item.name}" 
+      href="javascript:void(0);" 
+      data-toggle="tooltip" 
       data-original-title="${item.itemType || "物品/方块"} - ID:${item.id} ${fullName} - ${classFullName}">
     </li>`);
     itemLi.append(`<img class="item-img" src="${item.smallIcon || McmodderUtils.getImageURLByItemID(item.id)}" width="32" height="32">`);
@@ -3045,7 +3045,7 @@ class McmodderAutoLink {
       searchLocal = this.searchSourceSetting.find("#edit-autolink-source-local").prop("checked");
       searchOnline = this.searchSourceSetting.find("#edit-autolink-source-online").prop("checked");
     }
-
+    
     if (!this.searchText.length) {
       this.displaySearchResult([]);
       return;
@@ -4382,7 +4382,7 @@ class JsonFrame {
     this.hasRearranged = false;
 
     // 与另一个RequestQueue区分开，这个专用于处理用户手动发起的数据同步请求，只适用于小规模数据
-    this.manualRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent);
+    this.manualRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent); 
 
     this.table = new McmodderEditableTable(parent, {class: "table jsonframe-table"}, {
       smallIcon: new HeadOption("小", McmodderTable.DISPLAYRULE_IMAGE_BASE64),
@@ -4663,7 +4663,7 @@ class JsonFrame {
     fileTable.$instance.appendTo(".jsonframe-bbs-filelist");
 
     fileTable.$instance.on("click", ".jsonframe-bbs-filedl", e => this.downloadAndImportFile(e.currentTarget.getAttribute("data-url")));
-
+    
     await this._getJSONByPage(1, fileTable);
     let pagination = new Pagination(this.parent, null, this.maxPage, page => {
       this._getJSONByPage(page, fileTable);
@@ -4708,11 +4708,11 @@ class JsonFrame {
         McmodderUtils.commonMsg("请输入一个合法的数值~", false);
         return;
       }
-
+      
       const startTime = Date.now();
       button.addClass("disabled");
       this.logger.key(`任务已创建，请等待执行结束，期间请勿关闭当前标签页。`);
-
+      
       try {
         await this.performClassSearch(classID);
       } catch (e) {
@@ -4723,7 +4723,7 @@ class JsonFrame {
         button.removeClass("disabled");
         this.logger.key(`任务已结束，耗时 ${ McmodderUtils.getFormattedTime(endTime - startTime) }。`);
       }
-
+      
       // jsonFrameB.updateSelection();
     });
   }
@@ -4861,7 +4861,7 @@ class JsonFrame {
         await this.getItemListFromPage(categoryID, itemList, branchName, config);
         this.logger.log(`展开分类 ${ categoryID } 完成`);
       }
-
+    
       // 处理普通资料
       if (!itemID || itemID != parseInt(itemID)) continue;
       if (repeatedData = itemList.filter(e => e.itemID === itemID)[0]) {
@@ -4869,7 +4869,7 @@ class JsonFrame {
         if (!repeatedData.branchName.split(",").include(branchName)) repeatedData.branchName += ',' + branchName;
       }
       c = $(c).find("a").last(), categoryArray = c.parents(".item-list-type-right").prev().toArray().reverse().map(a => a.textContent);
-
+      
       itemData = {
         id: itemID,
         smallIcon: "",
@@ -4945,7 +4945,7 @@ class JsonFrame {
 
     // 获取被隐藏分类（考虑到不同的分支会有不同的隐藏分类，目前尚不清楚后台分支管理的具体机制，此项功能暂且搁置）
     // 欢迎了解此项后台功能的朋友们与我们合作完善此项功能！
-    /* if (this.utils.getProfile("editorModList").split(",").includes(classID)) {
+    /* if (this.utils.getProfile("editorModList").split(",").includes(classID)) { 
       const resp = await this.createAsyncRequest({
         url: "https://admin.mcmod.cn/frame/pageItemType-list/",
         method: "POST",
@@ -4959,7 +4959,7 @@ class JsonFrame {
     } */
 
     // 获取分支情况
-    const resp = await this.parent.utils.createAsyncRequest({
+    const resp = await this.parent.utils.createAsyncRequest({ 
       url: `https://www.mcmod.cn/item/list/${ classID }-1.html`,
       method: "GET"
     });
@@ -4968,7 +4968,7 @@ class JsonFrame {
       doc.find("a").each((_, c) => branchList.push(c.href.split("/item/list/")[1].split(".html")[0]));
       doc.find("a, span").each((_, c) => branchNameList.push(c.textContent));
     }
-
+    
     // 根据分支情况逐一读取总物品列表
     config.classID = classID;
     for (let i in branchList) {
@@ -5160,7 +5160,7 @@ class JsonFrame {
       preConfirm: () => {
         const newName = McmodderUtils.regulateFileName(input.val().trim());
         if (name === newName) return;
-
+        
         const storage = this.parent.utils.getAllConfig("mcmodderJsonStorage");
         const fileData = storage[name];
         delete storage[name];
@@ -5269,7 +5269,7 @@ class JsonFrame {
       showCancelButton: true,
       cancelButtonText: "完事了"
     });
-
+    
     let autolink = $("#jsonframe-autolink").click(_ => {
       Swal.close();
       let linking = this.parent.utils.getConfig("jsonDatabase") || [];
@@ -5285,7 +5285,7 @@ class JsonFrame {
     });
     let linking = this.parent.utils.getConfig("jsonDatabase") || [];
     if (linking.includes(this.activeFileName)) autolink.text("移出自动链接数据库");
-
+    
   }
 
   fileDeleteInquire(fileName) {
@@ -5349,13 +5349,18 @@ class StorageBuffer {
     return this.cacheableItems[key] != undefined;
   }
 
-  addCacheableItem(key, defaultValue, injectedEvent) {
+  addCacheableItem(key, defaultProvider, injectedEvent) {
     this.cacheableItems[key] = {};
     let data = this.cacheableItems[key];
-    if (defaultValue) data.defaultValue = defaultValue;
+    if (defaultProvider) data.defaultProvider = defaultProvider;
     if (injectedEvent) data.injectedEvent = injectedEvent;
 
-    this.data[key] = (JSON.parse(GM_getValue(key) || "{}")) || (defaultValue ? defaultValue() : new Object);
+    try {
+      this.data[key] = JSON.parse(GM_getValue(key));
+    } catch (e) {} finally {
+      this.data[key] ||= (defaultProvider ? defaultProvider() : new Object);
+    }
+
     this._isDisabled[key] = false;
 
     GM_addValueChangeListener(key, () => {
@@ -5488,7 +5493,7 @@ class Mcmodder {
         }
         Swal.fire({
           html: `
-            <span
+            <span 
               class="swal2-icon-text ${yr < 10 ? "mcmodder-cake" : "mcmodder-10th-cake"}"
               data-toggle="tooltip"
               data-original-title="蛋糕是个谎言 - ${ yr.toLocaleString() } 周年限定"
@@ -5639,7 +5644,7 @@ class Mcmodder {
       if (f) McmodderUtils.commonMsg("自动检查预编辑项已执行~ 当前暂无可正式提交的项目~");
       else this.utils.setProfile("preSubmitList", preSubmitList.filter(o => o));
     }), ScheduleRequestList.TRIGGER_CONFIG, "preSubmitCheckInterval", 1e-1, true); // 自动检测预编辑项
-
+  
     setInterval(() => list.check(), 1e3);
   }
 
@@ -5668,7 +5673,7 @@ class Mcmodder {
     .add("user_add_modpack", AdvancementUtils.CATEGORY_DAILY, 25, 1, 0, null, null)
     .add("user_add_post", AdvancementUtils.CATEGORY_DAILY, 26, 1, 0, null, null)
 
-    .addTiered(20, tier => `user_edit_all_${ tier }`, AdvancementUtils.CATEGORY_COMMON,
+    .addTiered(20, tier => `user_edit_all_${ tier }`, AdvancementUtils.CATEGORY_COMMON, 
       7, tier => tier * 1e3, tier => tier * 500, null, null)
     .addTiered(20, tier => `user_word_all_${ tier }`, AdvancementUtils.CATEGORY_COMMON,
       8, tier => tier * 5e4, tier => tier * 500, null, null)
@@ -5677,24 +5682,21 @@ class Mcmodder {
     .addTiered(29, tier => `user_lv_${ tier }`, AdvancementUtils.CATEGORY_COMMON,
       21, _ => 1, 0, null, null)
     .addTiered(5, tier => `user_edit_today_${ tier }`, AdvancementUtils.CATEGORY_DAILY,
-      27, tier => [1, 10, 20, 50, 100][tier - 1],
+      27, tier => [1, 10, 20, 50, 100][tier - 1], 
       tier => [1, 10, 25, 50, 100][tier - 1], null, null)
     .addTiered(5, tier => `user_word_today_${ tier }`, AdvancementUtils.CATEGORY_DAILY,
-      28, tier => [50, 500, 1000, 2500, 5000][tier - 1],
+      28, tier => [50, 500, 1000, 2500, 5000][tier - 1], 
       tier => [1, 10, 25, 50, 100][tier - 1], null, null);
   }
 
   loadStorageBuffer(buffer) {
-    buffer.addCacheableItem("mcmodderSettings", null, buffer => {
-      // 夜间模式全页面同步
-      if (buffer.parent.utils.getConfig("nightMode")) {
-        $("#mcmodder-night-switch i").css("text-shadow", "unset");
-        buffer.parent.enableNightMode();
-      } else {
-        $("#mcmodder-night-controller").remove();
-        $("#mcmodder-night-switch i").css("text-shadow", "0px 0px 5px gold");
-        buffer.parent.disableNightMode();
-      }
+    buffer.addCacheableItem("mcmodderSettings", null, buffer => { // 全页面同步
+
+      // 夜间模式
+      this.updateNightMode();
+
+      // 宽窄屏
+      this.updatePageWidth();
 
       /* if (window.location.href.includes("/admin.mcmod.cn/") && $(".model-backdrop").length && this.parent.utils.getConfig("verifyScreenSplit")) {
         document.body.classList.remove("mcmodder-screen-split");
@@ -5708,18 +5710,18 @@ class Mcmodder {
   }
 
   loadConfig(cfgutils) {
-    cfgutils.addConfig("themeColor1", "主题样式主配色", "主题样式主配色。",
+    cfgutils.addConfig("themeColor1", "主题样式主配色", "主题样式主配色。", 
       McmodderConfigUtils.CONFIG_COLORPICKER, "#86c155")
-    .addConfig("themeColor2", "主题样式副配色", "主题样式副配色。",
+    .addConfig("themeColor2", "主题样式副配色", "主题样式副配色。", 
       McmodderConfigUtils.CONFIG_COLORPICKER, "#58b6d8")
-    .addConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。",
+    .addConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", 
       McmodderConfigUtils.CONFIG_COLORPICKER, "#ff3030")
     .addConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。")
     .addConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本插件不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
     .addConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")
     .addConfig("disableGradient", "禁用文字渐变", "勾选此项可能有助于提升性能。")
-    .addConfig("adaptableNightMode", "夜间模式自适应", "夜间模式将跟随当前浏览器偏好设置而自动开启或关闭。启用此配置也将隐藏页面右上角的夜间模式开关。")
-    .addConfig("forceV4", "强制v4", "打开百科任意非v4主页时，自动跳转到v4主页。")
+    .addConfig("adaptableNightMode", "夜间模式自适应", "夜间模式将跟随当前浏览器偏好设置而自动开启或关闭。启用此配置也将隐藏页面右上角的夜间模式开关。") 
+    .addConfig("forceV4", "强制v4", "打开百科任意非v4主页时，自动跳转到v4主页。") 
     .addConfig("mcmodderUI", "Mcmodder风格UI", "启用 Mcmodder 风格的 UI 界面。（目前此配置项尚未完全分离，强烈建议保持该配置项为启用状态！）")
     // .addConfig("unlockHeaderContainer", "取消锁定导航栏", "使页面最上方导航栏默认隐藏，只有当光标移至其上时才会显示。")
     .addConfig("customAdvancements", "成就拓展", "启用自定义成就及相关特性。")
@@ -5733,9 +5735,9 @@ class Mcmodder {
     .addConfig("autoCheckin", "自动签到", "每日首次访问百科，或是本机时间为 00:00:00 时，自动执行签到操作。")
     .addConfig("defaultBackground", "默认背景", "输入一个图片链接 URL。若当前页面没有设置背景，则自动使用此背景。图像加载可能会拖慢页面载入时间，可输入 <code>none</code> 以禁用此特性。",
       McmodderConfigUtils.CONFIG_TEXT, "https://s21.ax1x.com/2025/01/05/pE9Avh4.jpg")
-    .addConfig("backgroundAlpha", "背景透明度", "控制背景透明度，数值越小透明度越高。",
+    .addConfig("backgroundAlpha", "背景透明度", "控制背景透明度，数值越小透明度越高。", 
       McmodderConfigUtils.CONFIG_NUMBER, 204, 128, 255)
-    .addConfig("textShadowAlpha", "文字阴影透明度", "控制夜间模式下的文字阴影透明度，数值越小透明度越高。",
+    .addConfig("textShadowAlpha", "文字阴影透明度", "控制夜间模式下的文字阴影透明度，数值越小透明度越高。", 
       McmodderConfigUtils.CONFIG_NUMBER, 64, 0, 255)
     .addConfig("classAddHelper", "模组添加辅助工具", "(Alpha!) 启用模组添加页面相关的特性。")
     .addConfig("editorAutoResize", "编辑器尺寸自适应", "使编辑器的长度随正文内容，宽度随窗口尺寸自动调整。")
@@ -5744,14 +5746,14 @@ class Mcmodder {
     .addConfig("fastSubmitFix", "快速提交修复", "修复百科本体 Bug：快速提交时编辑框意外换行。")
     .addConfig("tabSelectorInfo", "物品搜索详情", "在合成表编辑界面中搜索物品时，显示每个物品的详细信息，并将属于当前模组的物品置顶。")
     .addConfig("rememberModRelation", "模组关系记录器", "打开模组主页时，自动记忆该模组的前置、拓展信息。配合“物品搜索详情”配置项使用时，属于当前所编辑模组的前置或拓展模组的物品也会在搜素结果中被置顶。")
-    .addConfig("editorStats", "编辑量实时统计", "实时显示编辑器中的有效正文字节数和字节变动量，该配置值大于 0 时启用该特性，字节量超过该配置值时需要手动触发统计以避免卡顿（触发方法：轻触字节统计所显示的数字）。不保证 100% 精确，且除正文改动外的其他操作也可能会影响最终的字节变动量。",
+    .addConfig("editorStats", "编辑量实时统计", "实时显示编辑器中的有效正文字节数和字节变动量，该配置值大于 0 时启用该特性，字节量超过该配置值时需要手动触发统计以避免卡顿（触发方法：轻触字节统计所显示的数字）。不保证 100% 精确，且除正文改动外的其他操作也可能会影响最终的字节变动量。", 
       McmodderConfigUtils.CONFIG_NUMBER, 10000, 0)
     .addConfig("anonymousUknowtoomuch", "匿名吐槽", "创建吐槽时不再记录创建人（仅影响光标悬浮于其上时的提示信息，不影响改动对比数据）。")
     .addConfig("autoExpandPage", "自动展开页面", "根据时间范围搜索待审列表和历史编辑记录时，自动展开所有页面。")
     .addConfig("multiDiffCompare", "改动列表批量对比", "(WIP) 在改动列表页中分别选取起始项和终止项，即可一键获取并展示在此期间的所有改动详情。")
-    .addConfig("versionHelper", "日志智能管理", "允许从其他网站获取模组版本列表，并支持一键补充缺失的日志。支持 CurseForge 和 Modrinth 双平台。")
+    .addConfig("versionHelper", "日志智能管理", "允许从其他网站获取模组版本列表，并支持一键补充缺失的日志。支持 CurseForge 和 Modrinth 双平台。") 
     .addConfig("versionEditorHelper", "日志搬运辅助工具", "允许直接输入版本更新日期，而不再需要通过下拉列表勾选日期。")
-    .addConfig("subscribeDelay", "关注功能提醒", "在所关注的模组被编辑时提醒。设置相邻两次自动检测之间的最短冷却时间，单位为小时，设置为小于 0.01 以禁用。点击模组主页“关注”按钮时，插件会自动同步关注模组列表。",
+    .addConfig("subscribeDelay", "关注功能提醒", "在所关注的模组被编辑时提醒。设置相邻两次自动检测之间的最短冷却时间，单位为小时，设置为小于 0.01 以禁用。点击模组主页“关注”按钮时，插件会自动同步关注模组列表。", 
       McmodderConfigUtils.CONFIG_NUMBER, 24, 0)
     .addConfig("subscribeComment", "关注模组新短评提醒", "若启用，则在所关注的模组有新的短评时也会提醒。")
     .addConfig("hoverDescription", "物品资料链接预览", "当鼠标悬停于正文中某一物品资料的链接时，显示该资料的正文预览。")
@@ -5771,7 +5773,7 @@ class Mcmodder {
     .addConfig("advancedRanklist", "贡献榜重排版", "让贡献榜中各用户的昵称、排名、编辑量、编辑占比一目了然！")
     .addConfig("centerMainExpand", "个人主页数据拓展", "显示平均字数和科龄，令模组区域并排显示，过长的模组区域默认压缩。")
     .addConfig("byteChart", "字数活跃图表", "决定是否在个人主页显示字数活跃图表，以及是否在贡献榜查看历史贡献数据时自动获取编辑字数数据。")
-    .addConfig("maxByteColorValue", "字数活跃图表最大有效值", "决定字数活跃图表的总体颜色深度，当日编辑字节数大于该值时，对应字数图表中的色块始终为黑色。",
+    .addConfig("maxByteColorValue", "字数活跃图表最大有效值", "决定字数活跃图表的总体颜色深度，当日编辑字节数大于该值时，对应字数图表中的色块始终为黑色。", 
       McmodderConfigUtils.CONFIG_NUMBER, 30000, 5000, 524984)
     .addConfig("expCalculator", "经验计算器", "决定是否在个人等级页显示当前等级相关数据。")
     .addConfig("freezeAdvancements", "冻结进度", "使窗口右上角弹出的进度框不再自动消失。快截图留念吧！")
@@ -5850,6 +5852,10 @@ class Mcmodder {
 .btn-light, .btn-outline-dark {
   background-color: var(--mcmodder-bgd1);
   color: var(--mcmodder-txcolor);
+}
+.col-lg-12.mcmodder-class-page,
+.col-lg-12.common-center {
+  transition: width .6s ease, margin .6s ease;
 }
 .mcmodder-changelog-cover {
   width: 100%;
@@ -6243,14 +6249,12 @@ footer,
 .common-menu-area,
 .rank-head-frame,
 .rank-list-frame,
-.common-center .center > div:not(.right,
-.logreg-frame),
+.common-center .center > div:not(.right, .logreg-frame),
 .author-row > div:not(.dropdown),
 .donate-frame > *:not(hr),
 .center > fieldset,
 .center > ul,
-.center .main > div:not(.nav,
-.mbx),
+.center .main > div:not(.nav, .mbx),
 .oredict-list-table,
 .modal-content,
 *:not(.center-block) > .common-comment-block.lazy,
@@ -6609,6 +6613,7 @@ div#editor-ueeditor,
   max-width: 250px;
   text-align: left
 }
+#block-selector label,
 .jsonframe-import-label {
   margin-bottom: 0;
 }
@@ -6899,13 +6904,10 @@ body > .content,
 }
 .common-center {
   background-color: transparent;
-  margin-top: 6em;
   border: unset;
   padding: .5em;
-  border-radius: 0px
-}
-.common-center.content-expanded {
-  margin: 0 10% 0 10%;
+  border-radius: 0px;
+  margin: 6em 10% 0 10%;
   width: 80%;
 }
 .common-frame {
@@ -6955,7 +6957,7 @@ body > .content,
 }
 body .common-nav {
   padding: 0 .8em 0 .8em;
-  margin-top: 8em;
+  margin-top: 4em;
 }
 .item-dict a {
   color: var(--mcmodder-txcolor);
@@ -7217,7 +7219,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 .author-row > div:not(.dropdown),
 .donate-frame > *:not(hr),
 .center > fieldset,
-.center > ul,
+.center > ul:not(.common-item-mold-list),
 .center .main > div:not(.nav,
 .mbx),
 .oredict-list-table,
@@ -8015,7 +8017,7 @@ pre,
 .common-nav a,
 p:not(.card-item p):not(.text-danger) {
   color: var(--mcmodder-txcolor);
-  text-shadow: 1px 1px 1px var(--mcmodder-ts)
+  text-shadow: 1px 1px 1px var(--mcmodder-ts) 
 }
 .class_block .title a {
   color: #dd6;
@@ -8341,7 +8343,7 @@ body .uknowtoomuch {
     }
 
     this.screenAttachedFrame = [];
-
+    
     this.storageBuffer = new StorageBuffer(this);
     this.loadStorageBuffer(this.storageBuffer);
 
@@ -8356,7 +8358,7 @@ body .uknowtoomuch {
 
     this.scheduleRequestList = new ScheduleRequestList(this);
     this.loadScheduleRequest(this.scheduleRequestList);
-
+    
     this.loadCss();
 
     this.main();
@@ -8439,7 +8441,7 @@ body .uknowtoomuch {
   background-color: #212121;
   border: 4px solid #555;
   box-shadow: 0 0 0 1px #000;
-  border-radius:6px;
+  border-radius: 6px;
 }
 .mcmodder-task-tip .icon {
   width: 48px;
@@ -8487,7 +8489,8 @@ body .uknowtoomuch {
 }
 #mcmodder-night-switch,
 #mcmodder-profile-switch,
-#mcmodder-message-center {
+#mcmodder-message-center,
+#mcmodder-pagewidth-switch {
   position: relative;
   line-height: 30px;
   border: 0;
@@ -8498,6 +8501,7 @@ body .uknowtoomuch {
 }
 #mcmodder-night-switch:focus,
 #mcmodder-profile-switch:focus,
+#mcmodder-pagewidth-switch:focus,
 #mcmodder-message-center:focus {
   outline: none;
 }
@@ -9208,7 +9212,7 @@ body .uknowtoomuch {
     if (autoFoldTable) $(".table.table-bordered.text-nowrap tbody").filter((i, c) => $(c).children().length >= autoFoldTable).find("tr:first-child() th:last-child()").append(' [<a class="collapsetoggle">隐藏</a>]').find(".collapsetoggle").click(function () { let c = $(this).parent().parent().parent(); $(this).text() === "显示" ? ($("tr:not(tr:first-child())", c).show(), $(this).text("隐藏")) : ($("tr:not(tr:first-child())", c).hide(), $(this).text("显示")) }).trigger("click");
 
     let isCompactive = $("div.item-skip-list").length && $("div.item-content").length < 2;
-    if (!isCompactive) $(".item-data").each((i, c) => {
+    if (!isCompactive) $(".item-data").each((_, c) => {
       c = $(c);
       c.insertBefore(c.parent().find(".item-content").children().first());
       let n = c.parents(".item-text").find(".name h5 > a").text();
@@ -9228,6 +9232,7 @@ body .uknowtoomuch {
 
     if (isCompactive && this.utils.getConfig("compactedChild")) { // 综合子资料紧凑化
       McmodderUtils.addStyle("table.table-bordered.righttable td {padding: 0rem;}");
+      $(".col-lg-12.right > hr").remove();
       $("table.table-bordered.righttable").each(function () {
         $("tr", this).first().remove();
         let mainTr = $("tr:first-child()", this);
@@ -9447,7 +9452,7 @@ body .uknowtoomuch {
         border: 1px solid #336;
       }
       .alert.alert-table-endver {
-        background-color: transparent; color: #933;
+        background-color: transparent; color: #933; 
         border: 1px solid #633;
       }
       .alert.alert-table-guifromother {
@@ -9666,7 +9671,7 @@ body .uknowtoomuch {
         if (mutation.type === "childList" && mutation?.addedNodes[0]?.className === "swal2-container swal2-center swal2-fade swal2-shown" && $("h2#swal2-title").text() === PublicLangData.editor.autolink.title) {
           // 一堆还不知道有没有用的代码
           // 反正先留着吧，以后再清理www
-
+          
           /*let autoLinkFrame = $(mutation.addedNodes[0]);
           // let a, pt = 1, mod = "", modAbbr = "", img, dataId, name, eName;
           let autoLinkUl = autoLinkFrame.find(".edit-autolink-list > ul").first();
@@ -9711,13 +9716,13 @@ body .uknowtoomuch {
           /* R.I.P.
           autoLinkList.filter((i, c) => c.className != "limit" && c.className != "empty").each(function () {
             let autoLinkIndex = 1, a = $("a", this).get(0), mod = a.title.split(" - ")[2] || "", modAbbr = mod.includes('[') ? mod.slice(1).split('] ')[0] : mod.split(' (')[0], dataId = $(a).attr("data-id");
-
+  
             McmodderValues.nonItemTypeList.forEach(item => a.innerHTML = a.innerHTML.replace(item.text + " -", `<i class="fas ${item.icon} mcmodder-chroma"></i>`));
             McmodderValues.itemDefaultTypeList.forEach(item => a.innerHTML = a.innerHTML.replace(item.text + " -", `<span class="iconfont icon" style="color: ${item.color}">${item.icon}</span>`));
             itemCustomTypeList.forEach(item => a.innerHTML = a.innerHTML.replace(item.text + " -", `<i class="fas ${item.icon}" style="color: ${item.color}"></i>`));
-
+  
             a.innerHTML = a.innerHTML.replace(`ID:${ dataId }`, `<span class="mcmodder-slim-dark item-id">${ dataId }</span>`);
-
+  
             name = $(a).attr("data-text-half");
             eName = $(a).attr("data-text-full").replace(name, "");
             eName = eName.slice(2, eName.length - 1);
@@ -10300,9 +10305,9 @@ body .uknowtoomuch {
       $(".class-card .text-block span").each((_, e) => {
         e.innerHTML = e.innerHTML
         .replace(PublicLangData.class.card.red, "猛票")
-        .replace(PublicLangData.class.card.black, "盲票")
+        .replace(PublicLangData.class.card.black, "盲票") 
       });
-      $(".class-card .progress-bar").each((_, e) =>
+      $(".class-card .progress-bar").each((_, e) => 
         $(e).attr("data-original-title", $(e).attr("data-original-title")
         .replace(PublicLangData.class.card.red, "猛票")
         .replace(PublicLangData.class.card.black, "盲票"))
@@ -10311,7 +10316,7 @@ body .uknowtoomuch {
 
     // 禁用模组页排版
     if (this.utils.getConfig("mcmodderUI") && !this.utils.getConfig("disableClassDataTypesetting")) {
-      McmodderUtils.addStyle('.common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {margin: 0 5% 0 5%; width: 90%;}');
+      McmodderUtils.addStyle('.common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {width: 90%; margin: 0 5%; margin-top: 6em;}');
       $("<div>").attr("class", "mcmodder-info-right").insertAfter(".class-info-left .col-lg-12:first-child()");
       $(".class-info-right").children().clone().appendTo(".mcmodder-info-right");
       let src = $(".class-info-left").attr("class", "class-info-left mcmodder-class-source-info");
@@ -10511,7 +10516,7 @@ body .uknowtoomuch {
         });
       }).insertAfter($(".col-lg-6").last());
     }
-
+    
     // 压缩支持版本
     if (this.utils.getConfig("compactSupportedVersions")) {
       let startIndex, minorIndex, versionRanges, currentRange;
@@ -10883,7 +10888,7 @@ body .uknowtoomuch {
             <a style="text-align: left; font-weight: bold; display: inline; font-size: 14px;" href="${href}" target="_blank">
               ${userName + ((userName === this.currentUsername) ? " (我)" : "")}
             </a>
-            (${rate}%)
+            (${rate}%) 
           </p>
           <div class="progress" style="width: 100%;height: 20px;position:relative">
             <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${rate / maxValue * 100.0}%;">
@@ -11137,7 +11142,7 @@ body .uknowtoomuch {
     const preSubmitList = this.utils.getProfile("preSubmitList") || [];
     // if (!preSubmitList.length) return;
     const preSubmitFrame = $('<div class="presubmit-list"><span class="mcmodder-subtitle">等待提交的预编辑</span></div>').appendTo(".verify-list-frame");
-
+    
     const preSubmitTable = new McmodderTable(this, {}, {
       createTime: new HeadOption("保存时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC),
       lastSubmitTime: new HeadOption("待审项提交时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC),
@@ -11240,7 +11245,7 @@ body .uknowtoomuch {
     if (resp2?.status === 200) return this.performSplashCompare(resp2.responseText, data);
     McmodderUtils.commonMsg("公共标语库加载失败，请检查网络连接~", false);
   }
-
+  
   performSplashCompare(publicList, localList) {
     publicList = JSON.parse(publicList);
     let unique = [], flag;
@@ -11321,7 +11326,7 @@ body .uknowtoomuch {
     Object.keys(this.cfgutils.data).forEach(key => {
       const data = this.cfgutils.data[key];
       if (data.permission && permission < data.permission) return;
-      if (data.type === McmodderConfigUtils.CONFIG_KEYBIND &&
+      if (data.type === McmodderConfigUtils.CONFIG_KEYBIND && 
         McmodderUtils.isMobileClient()) return;
       const entry = new McmodderConfigInterface(key, this.cfgutils);
       entry.$instance.appendTo(content);
@@ -11356,7 +11361,7 @@ body .uknowtoomuch {
 
     const storages = $(".mcmodder-storage ul");
     const resourceManagers = [];
-
+    
     resourceManagers.push(new McmodderConfigResourceInterface(
       this,
       "mcmodderSplashList_v2",
@@ -11404,7 +11409,7 @@ body .uknowtoomuch {
         date: {name: "日期", displayRule: data => McmodderTable.DISPLAYRULE_DATE_SEC_ZH},
         byteTop1: {name: "字数榜首", displayRule: rawData => {
           const data = rawData.split(","); // [userID, bytes, ratio]
-          return `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(data[0]) }">${ data[0] }</a>
+          return `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(data[0]) }">${ data[0] }</a> 
             (${ data[1].toLocaleString() } 字节, ${ (data[2] * 100).toFixed(1) }%)`;
         }},
         totalEdited: {name: "前 60 名总编辑字数", displayRule: data => `${data.toLocaleString()} 字节`},
@@ -11436,7 +11441,7 @@ body .uknowtoomuch {
       const li = $("<li>").appendTo(storages);
       manager.$instance.appendTo(li);
     });
-
+    
     const splashesManager = resourceManagers[0];
     splashesManager.$instance.find("a").click(e => {
       if (splashesManager.$instance.find(`#${ Mcmodder.ID_SPLASH_COMPARE }`).length) return;
@@ -11524,8 +11529,8 @@ body .uknowtoomuch {
     $(".center-content.background")
     .contents()
     .filter((_, content) => content.nodeType === Node.COMMENT_NODE)
-    .each(function () {
-      $(this).parent().append(this.textContent)
+    .each(function () { 
+      $(this).parent().append(this.textContent) 
     });
   }
 
@@ -11869,10 +11874,10 @@ body .uknowtoomuch {
         animation: aprilfools 2.75s linear infinite;
         background: var(--mcmodder-bgn);
         z-index:999;
-      }
+      } 
       @keyframes aprilfools {
         0% {
-          -webkit-transform:rotate(0deg);
+          -webkit-transform:rotate(0deg); 
         }
         25% {
           -webkit-transform:rotate(90deg);
@@ -11890,8 +11895,8 @@ body .uknowtoomuch {
 
     // 快捷获取背景图像
     const bgImg = window.getComputedStyle(document.body)["background-image"].replace('url("', "").replace('")', "");
-    if (bgImg != this.utils.getConfig("defaultBackground") &&
-        McmodderValues.supportedImageSuffix.includes(bgImg.split(".").pop().toLowerCase()))
+    if (bgImg != this.utils.getConfig("defaultBackground") && 
+        McmodderValues.supportedImageSuffix.includes(bgImg.split(".").pop().toLowerCase())) 
       $("div.bbs-link").append(`<p align="right"><a href="${ bgImg }" target="_blank">查看个人中心背景图片</a></p>`);
 
     // 近期编辑记录
@@ -11962,7 +11967,7 @@ body .uknowtoomuch {
           if (mutation.target.className === "comment-floor") {
             $("ul.pagination.common-pages > span").each((_, e) => {
               e.innerHTML += '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
-              e.find("#mcmodder-gotopage").val(e.textContent.replace("当前 ", "").split(" / ")[0]).bind("change", f => {
+              $(e).find("#mcmodder-gotopage").val(e.textContent.replace("当前 ", "").split(" / ")[0]).bind("change", f => {
                 const v = parseInt(f.currentTarget.value);
                 if (v < 1 || v > parseInt(f.currentTarget.textContent.replace("当前 ", "").split(" / ")[1])) return;
                 comment_nowpage = v;
@@ -12098,7 +12103,11 @@ body .uknowtoomuch {
         const u = structure_browser.raycaster.intersectObjects(structure_browser.cube_list);
         if (u.length) {
           let n = u[0].face.normal, x = u[0].object.data.position[0] + n.x, z = u[0].object.data.position[1] + n.z, y = u[0].object.data.layer + n.y;
-          let blockData = structure_browser.blocktype_list[parseInt($("input[name=blocktype]:checked()").attr("id").split("block-selector-")[1])];
+          const blockData = structure_browser.blocktype_list[$("input[name=blocktype]:checked()").parents("tr").attr("data-index")];
+          if (!blockData) {
+            McmodderUtils.commonMsg("请先在下方表格选取目标方块种类~", false);
+            return;
+          }
           if (structure_browser.cube_list.filter(e => (x === e.data.position[0] && y === e.data.layer && z === e.data.position[1])).length) return;
           structure_browser.set_block(
             y - 1, [x, z],
@@ -12121,8 +12130,8 @@ body .uknowtoomuch {
 
     let blockList = $(`<div>方块列表：</div>`).appendTo(".info-frame");
     let blockListTable = new McmodderTable(this, {id: "block-selector"}, {
-      op: new HeadOption("操作", _ => {
-        let id = McmodderUtils.randStr(8);
+      op: new HeadOption("操作", (_, __) => {
+        const id = McmodderUtils.randStr(8);
         return `
           <div class="radio">
             <input id="block-selector-${ id }" name="blocktype" type="radio">
@@ -12139,6 +12148,7 @@ body .uknowtoomuch {
       itemID: new HeadOption("对应资料ID", McmodderTable.DISPLAYRULE_LINK_ITEM)
     });
     blockListTable.$instance.appendTo(blockList);
+    blockListTable.showLoading();
 
     await McmodderUtils.sleep(3e3);
 
@@ -12196,7 +12206,7 @@ body .uknowtoomuch {
     const profiles = this.utils.getAllConfig("userProfile");
     let profile;
     let uuid = $.cookie("_uuid");
-    const h = $(`<li><div class="profile-option empty-profile" uid="0">-- 未登录状态 --</div></li>`).appendTo(ul);
+    let h = $(`<li><div class="profile-option empty-profile" uid="0">-- 未登录状态 --</div></li>`).appendTo(ul);
     if (!uuid) h.addClass("profile-selected");
     Object.keys(profiles).forEach(uid => {
       uid = Number(uid);
@@ -12215,8 +12225,8 @@ body .uknowtoomuch {
             </span>
           </div>
           <div class="text">
-            ${profile.userGroup} · ${Number(profile.editNum).toLocaleString()} 次编辑 ·
-            ${Number(profile.editByte).toLocaleString()} 字节 ·
+            ${profile.userGroup} · ${Number(profile.editNum).toLocaleString()} 次编辑 · 
+            ${Number(profile.editByte).toLocaleString()} 字节 · 
             ${(profile.expirationDate > Date.now()) ?
             `登录信息 <span class="mcmodder-timer-pre" /> 后过期` :
             '<span class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>'}
@@ -12298,66 +12308,88 @@ body .uknowtoomuch {
     McmodderUtils.addStyle("th {text-align: center;}");
   }
 
-  enableNightMode() {
-    McmodderUtils.addStyle(this.css.night, "mcmodder-night-controller");
-    if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
-    let o = this.classRatingChart?.getOption();
-    if (o) {
-      o.backgroundColor = "#1118";
-      // o.axisPointer[0].lineStyle.color = "#444";
-      o.radar[0].splitLine.lineStyle.color = "#1f190e";
-      o.series[0].color = "#ee6";
-      o.series[0].data[0].areaStyle.color = "rgba(255, 255, 255, 0.5)";
-      this.classRatingChart.setOption(o);
+  updateNightMode() {
+    const icon = $("#mcmodder-night-switch i");
+    if (this.utils.getConfig("nightMode")) {
+      icon.css("text-shadow", "unset");
+      McmodderUtils.addStyle(this.css.night, "mcmodder-night-controller");
+      if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) {
+        $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
+      }
+      let o = this.classRatingChart?.getOption();
+      if (o) {
+        o.backgroundColor = "#1118";
+        // o.axisPointer[0].lineStyle.color = "#444";
+        o.radar[0].splitLine.lineStyle.color = "#1f190e";
+        o.series[0].color = "#ee6";
+        o.series[0].data[0].areaStyle.color = "rgba(255, 255, 255, 0.5)";
+        this.classRatingChart.setOption(o);
+      }
+      o = this.centerEditChart?.getOption();
+      if (o) {
+        o.tooltip[0].backgroundColor = "#222";
+        o.calendar[0].dayLabel.color = "#fff";
+        o.calendar[0].yearLabel.color = "#ee6";
+        o.calendar[0].monthLabel.color = "#fff";
+        o.calendar[0].itemStyle = {
+          color: "#3330",
+          borderColor: "#444"
+        };
+        this.centerEditChart.setOption(o);
+      }
+      $("html").addClass("dark");
+      this.ueditorFrame.forEach(e => {
+        McmodderUtils.addStyle(this.css.night, "mcmodder-night-controller", e.document);
+        e.$document.find("html").addClass("dark");
+      });
     }
-    o = this.centerEditChart?.getOption();
-    if (o) {
-      o.tooltip[0].backgroundColor = "#222";
-      o.calendar[0].dayLabel.color = "#fff";
-      o.calendar[0].yearLabel.color = "#ee6";
-      o.calendar[0].monthLabel.color = "#fff";
-      o.calendar[0].itemStyle = {
-        color: "#3330",
-        borderColor: "#444"
-      };
-      this.centerEditChart.setOption(o);
+    else {
+      $("#mcmodder-night-controller").remove();
+      icon.css("text-shadow", "0px 0px 5px gold");
+      $("#mcmodder-night-controller").remove();
+      if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.nightMode.imagesNone) {
+        $("#item-cover-preview-img").attr("src", McmodderValues.assets.mcmod.imagesNone);
+      }
+      let o = this.classRatingChart?.getOption();
+      if (o) {
+        o.backgroundColor = "#fff8";
+        // o.axisPointer[0].lineStyle.color = "#B9BEC9";
+        o.radar[0].splitLine.lineStyle.color = "#E0E6F1";
+        o.series[0].color = "#555";
+        o.series[0].data[0].areaStyle.color = "rgba(0, 0, 0, 0.25)";
+        this.classRatingChart.setOption(o);
+      }
+      o = this.centerEditChart?.getOption();
+      if (o) {
+        o.tooltip[0].backgroundColor = "#fff";
+        o.calendar[0].dayLabel.color = "#000";
+        o.calendar[0].yearLabel.color = "#aaa";
+        o.calendar[0].monthLabel.color = "#000";
+        o.calendar[0].itemStyle = {
+          color: "#fff0",
+          borderColor: "#bbb"
+        };
+        this.centerEditChart.setOption(o);
+      }
+      $("html").removeClass("dark");
+      this.ueditorFrame.forEach(e => {
+        e.$document.find("#mcmodder-night-controller").remove();
+        e.$document.find("html").removeClass("dark");
+      });
     }
-    $("html").addClass("dark");
-    this.ueditorFrame.forEach(e => {
-      McmodderUtils.addStyle(this.css.night, "mcmodder-night-controller", e.document);
-      e.$document.find("html").addClass("dark");
-    });
   }
 
-  disableNightMode() {
-    $("#mcmodder-night-controller").remove();
-    if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.nightMode.imagesNone) $("#item-cover-preview-img").attr("src", McmodderValues.assets.mcmod.imagesNone);
-    let o = this.classRatingChart?.getOption();
-    if (o) {
-      o.backgroundColor = "#fff8";
-      // o.axisPointer[0].lineStyle.color = "#B9BEC9";
-      o.radar[0].splitLine.lineStyle.color = "#E0E6F1";
-      o.series[0].color = "#555";
-      o.series[0].data[0].areaStyle.color = "rgba(0, 0, 0, 0.25)";
-      this.classRatingChart.setOption(o);
+  updatePageWidth() {
+    const icon = $("#mcmodder-pagewidth-switch i");
+    if (this.utils.getConfig("preferredWiderScreen")) {
+      this.preferredWiderScreen = true;
+      McmodderUtils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: 6em;}`, "mcmodder-pagewidth-controller");
+      icon.attr("class", "fa fa-compress");
+    } else {
+      this.preferredWiderScreen = false;
+      $("#mcmodder-pagewidth-controller").remove();
+      icon.attr("class", "fa fa-expand");
     }
-    o = this.centerEditChart?.getOption();
-    if (o) {
-      o.tooltip[0].backgroundColor = "#fff";
-      o.calendar[0].dayLabel.color = "#000";
-      o.calendar[0].yearLabel.color = "#aaa";
-      o.calendar[0].monthLabel.color = "#000";
-      o.calendar[0].itemStyle = {
-        color: "#fff0",
-        borderColor: "#bbb"
-      };
-      this.centerEditChart.setOption(o);
-    }
-    $("html").removeClass("dark");
-    this.ueditorFrame.forEach(e => {
-      e.$document.find("#mcmodder-night-controller").remove();
-      e.$document.find("html").removeClass("dark");
-    });
   }
 
   switchNightMode() {
@@ -12483,7 +12515,9 @@ body .uknowtoomuch {
     }
     else this.isNightMode = this.utils.getConfig("nightMode");
 
-    this.isNightMode ? this.enableNightMode() : this.disableNightMode();
+    this.updateNightMode();
+    this.updatePageWidth();
+
     if (!this.utils.getConfig("adaptableNightMode")) {
       $('<button id="mcmodder-night-switch" data-toggle="tooltip" data-original-title="夜间模式"><i class="fa fa-lightbulb-o"></i></button>')
       .appendTo(".header-container .header-search, .top-right")
@@ -12506,6 +12540,15 @@ body .uknowtoomuch {
           return;
         }
         this.fireProfileSelectFrame();
+      });
+    
+    this.preferredWiderScreen = this.utils.getConfig("preferredWiderScreen");
+    $(`<button id="mcmodder-pagewidth-switch" data-toggle="tooltip" data-original-title="宽窄屏切换">
+        <i class="fa fa-${ this.preferredWiderScreen ? "compress" : "expand" }"></i>
+      </button>`)
+      .appendTo(".header-container .header-search")
+      .click(e => {
+        this.utils.setConfig("preferredWiderScreen", !this.preferredWiderScreen);
       });
 
     if (this.currentUID && this.utils.getConfig("mcmodderUI")) {
