@@ -1,0 +1,8 @@
+.common-text table {
+  margin: 0;
+}
+.common-text > div:not(.common),
+.common-text > table,
+.common-text .figure {
+  align-items: start;
+}
