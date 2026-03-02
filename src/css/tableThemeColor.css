@@ -1,0 +1,8 @@
+td,
+th,
+.table-bordered:not(.item-list-table) td,
+.table-bordered:not(.item-list-table) th,
+.table:not(.item-list-table) thead th,
+.common-text table {
+  border-color: var(--mcmodder-tc1);
+}
