@@ -247,7 +247,12 @@ export class CenterSettingInit extends CenterBaseInit {
       if (splashesManager.$instance.find(`#${ Mcmodder.ID_SPLASH_COMPARE }`).length) return;
       $(`<btn class="btn" id="${ Mcmodder.ID_SPLASH_COMPARE }">与公共标语库对比</btn>`)
       .appendTo(splashesManager.$instance)
-      .click(() => this.accessPublicSplashList(splashesManager));
+      .click(async e => {
+        const button = $(e.currentTarget);
+        button.addClass("disabled").append(`<i class="fa fa-pulse fa-spinner">`);
+        await this.accessPublicSplashList(splashesManager);
+        button.removeClass("disabled").find("i").remove();
+      });
     });
 
     $(`<div class="center-setting-block" style="margin-top: 2em;">

@@ -241,6 +241,8 @@ export interface McmodderProfileData {
   devModList?: string,
   /** 权限等级 */
   permission: McmodderPermission
+  /** 该数据上次更新的时间戳 */
+  lastUpdated?: number;
 }
 
 export interface AdvancementData {

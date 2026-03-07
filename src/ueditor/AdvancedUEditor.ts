@@ -1,5 +1,5 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderItemList } from "../types";
+import { McmodderItemList, McmodderKeyData } from "../types";
 import { McmodderTemplate } from "../Template";
 import { TextCompareFrame } from "../TextCompareFrame";
 import { McmodderUtils } from "../Utils";
@@ -57,20 +57,34 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.autoLink = new McmodderAutoLink(this, itemSourceList);
 
     // 内置样式
-    McmodderUtils.addStyle("pre {font-family: Consolas, monospace; box-shadow: inset rgba(50, 50, 100, 0.4) 0px 2px 4px 0px;}", "", this.document);
+    // McmodderUtils.addStyle("pre {font-family: Consolas, monospace; box-shadow: inset rgba(50, 50, 100, 0.4) 0px 2px 4px 0px;}", "", this.document);
 
     // 快速提交
     this.$document.keydown(e => this.fastSubmitOverride(e));
 
+    const postRow = $(".post-row").first();
+    const editTools = $(".edit-tools").first();
+
+    // 按钮展示修改
+    ([
+      ["save", "快速存档", { ctrlKey: true, key: "S" }],
+      ["new", "存档", { ctrlKey: true, shiftKey: true, key: "S" }],
+      ["load", "读取", { ctrlKey: true, key: "O" }]
+    ] as [string, string, McmodderKeyData][]).forEach(data => {
+      const editToolButton = editTools.find(`.${ data[0] } a`);
+      (editToolButton.get(0).lastChild as Text).data = data[1];
+      editToolButton.append(` ${ McmodderUtils.keyToHTML(data[2]) }`);
+    });
+
     // 高度自适应 + 编辑量实时统计
     if (this.autoUpdateEditorStatsThreshold > 0) {
-      if (!$(".edit-tools").length && $(".post-row").length) {
+      if (!editTools.length && postRow.length) {
         // $("div.col-lg-12.left").remove();
         // $("div.col-lg-12.right").css("padding-left", "0px");
-        this.statsBar = $('<span style="font-size: 12px; margin-top: 10px; position: relative;">').appendTo($(".post-row").first());
+        this.statsBar = $('<span style="font-size: 12px; margin-top: 10px; position: relative;">').appendTo(postRow);
       }
       else {
-        this.statsBar = $("<span>").appendTo($(".edit-tools").first());
+        this.statsBar = $("<span>").appendTo(editTools);
       }
       this.statsBar.attr('class', 'mcmodder-editor-stats')
       .html(`<i class="fa fa-edit"></i>
@@ -246,7 +260,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.currentTextNode.html(this.currentTextLength.toLocaleString());
     this.changedTextNode.attr("class", (changedTextLength < 0 ? "mcmodder-common-danger" : "mcmodder-common-light"))
       .html((changedTextLength > 0 ? "+" : "") + changedTextLength.toLocaleString());
-    let t = this.statsBar.contents().filter(i => i > 4);
+    let t = this.statsBar.contents().filter(i => i > 4 && i < 12);
     if (changedTextLength) t.show();
     else t.hide();
   }

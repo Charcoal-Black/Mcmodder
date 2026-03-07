@@ -17,7 +17,7 @@
 }
 .tooltip-inner,
 body .edui-default .edui-bubble .edui-popup-content {
-  background: var(--mcmodder-bg);
+  background-color: var(--mcmodder-bgn);
   color: var(--mcmodder-tx);
 }
 .btn-outline-dark {
@@ -236,14 +236,17 @@ body .header-layer {
 .class-excount .star .fire i {
   color: goldenrod;
 }
+.class-menu-page li,
 .class-menu-page li.active,
+.class-menu-page li:hover, 
+.center-menu li a,
+.center-menu li.active a, 
+.center-menu li:hover a,
+.common-menu-page li,
 .common-menu-page li.active,
-.class-menu-page li:hover {
-  border-top-color: var(--mcmodder-td1);
-}
-.center-menu li.active a,
-.center-menu li:hover a {
-  border-bottom-color: var(--mcmodder-td1)
+.common-menu-page li.hover {
+  border-top: 0;
+  border-bottom: 0;
 }
 .center-content.lv-info .lv-bar .progress-bar,
 #mcmodder-progress {
@@ -284,36 +287,46 @@ body .header-layer {
 .common-fuc-group .action {
   padding: 2px;
 }
+@keyframes mcmodder-tooltip-gradient {
+  from {
+    border-color: var(--mcmodder-tc1);
+  }
+  to {
+    border-color: var(--mcmodder-tc2);
+  }
+}
 .tooltip-inner,
 body .edui-default .edui-bubble .edui-popup-content {
   max-width: unset;
-  backdrop-filter: blur(10px);
   border-radius: 1rem;
-  padding: .5em 1em;
-  animation: fadeIn .3s ease-out forwards;
-  border: solid 10px;
-  border-image: linear-gradient(45deg, var(--mcmodder-tc1), var(--mcmodder-tc2)) 1 stretch;
-  clip-path: inset(0 round 1rem);
+  padding: 1em 2em;
+  animation: fadeIn .3s ease-out forwards, mcmodder-tooltip-gradient 2s ease-in-out infinite alternate;
+  border: 2px solid;
   position: relative;
-  box-shadow: 5px 5px 5px gray;
+  box-shadow: 0 0 10px #8888;
+  background-color: var(--mcmodder-bgn);
+}
+.swiper-wrapper.page-ul {
+  position: relative;
+}
+.mcmodder-swiper-tab {
+  height: 3px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+.mcmodder-swiper-cursor {
+  height: 100%;
+  width: 50px;
+  background-image: linear-gradient(90deg, var(--mcmodder-td1), var(--mcmodder-td2));
+  border-radius: 1.5px;
+  transition: margin-left .3s;
 }
 .common-center .right {
   padding-left: 280px;
 }
 .col-lg-12.server-listtype-switch {
   padding-left: 1em;
-}
-.tooltip-inner::after,
-.edui-default .edui-bubble .edui-popup-content::after {
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  right: -5px;
-  bottom: -5px;
-  content: '';
-  border-radius: 10px;
-  z-index: -2;
-  border: 5px solid var(--mcmodder-bg);
 }
 .bs-tooltip-auto[x-placement^="top"] .arrow::before,
 .bs-tooltip-top .arrow::before {
@@ -653,7 +666,7 @@ body .edui-default .edui-editor-iframeholder {
 .mcmodder-logger {
   border-radius: 1em;
   box-shadow: rgba(50, 50, 100, 0.1) 0px 2px 4px 0px;
-  padding: .2em .5em .2em .5em;
+  padding: .2em .5em;
   line-height: unset;
 }
 .common-comment-block .comment-row {

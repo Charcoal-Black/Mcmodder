@@ -27,6 +27,10 @@ export class McmodderUtils {
     this.parent = parent;
   }
 
+  static isMac() {
+    return navigator.userAgent.includes("Macintosh");
+  }
+
   static isMobileClient() {
     return !!(navigator.userAgent.match(/Mobi/i) ||
       navigator.userAgent.match(/Android/i) ||
@@ -106,6 +110,10 @@ export class McmodderUtils {
     return entry;
   }
 
+  getConfigAsNumberList(key?: string | number | null, item = "mcmodderSettings", defaultValue: any = undefined) {
+    return (this.getConfig(key, item, defaultValue) || "").replaceAll(" ", "").split(",").map(Number) as number[];
+  }
+
   getAllConfig(item = "mcmodderSettings", defaultValue?: any) {
     let res = this.getConfig(null, item, defaultValue);
     if (res != undefined) return res;
@@ -147,7 +155,7 @@ export class McmodderUtils {
     return profile[key];
   }
 
-  getAllProfile(uid = this.parent.currentUID) {
+  getAllProfile(uid = this.parent.currentUID): McmodderProfileData {
     return this.getProfile("*", uid);
   }
 
@@ -163,6 +171,7 @@ export class McmodderUtils {
     const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
     let profile = JSON.parse(profiles[uid] || "{}");
     profile = Object.assign(profile, content);
+    profile.lastUpdated = Date.now();
     profiles[uid] = JSON.stringify(profile);
     GM_setValue("userProfile", JSON.stringify(profiles));
   }
@@ -171,6 +180,22 @@ export class McmodderUtils {
     const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
     delete profiles[uid];
     GM_setValue("userProfile", JSON.stringify(profiles));
+  }
+
+  getProfileAbstract(target: number | McmodderProfileData, plainText = false) {
+    const profile = typeof target === "number" ? this.getAllProfile(target) : target;
+    if (!Object.keys(profile).length) {
+      const text = "用户信息获取失败...";
+      return plainText ? text : `<span class="text-danger">${ text }</span>`;
+    }
+    const content = [profile.userGroup];
+    if (profile.editNum) content.push(`${ profile.editNum.toLocaleString() } 次编辑`);
+    if (profile.editByte) content.push(`${ profile.editByte.toLocaleString() } 字节`)
+    if (profile.expirationDate && !plainText) {
+      if (profile.expirationDate > Date.now()) content.push(`登录信息 <span class="mcmodder-timer-pre" /> 后过期`);
+      else content.push(`<span class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>`);
+    }
+    return content.join(" · ");
   }
 
   getInteract(id?: string | null) {
@@ -404,9 +429,9 @@ export class McmodderUtils {
       .padStart(6, "0");
   }
 
-  static key2Str(e: McmodderKeyData) {
+  static keyToRawList(e: McmodderKeyData) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
-    if (!e || !e.key) return "未指定";
+    if (!e.key) return [];
     let k = [], c;
     if (e.ctrlKey) k.push("Ctrl");
     if (e.shiftKey) k.push("Shift");
@@ -421,7 +446,30 @@ export class McmodderUtils {
       else c = e.key;
       k.push(c);
     }
-    return k.join(" + ");
+    return k;
+  }
+
+  static keyToString(e: McmodderKeyData) {
+    const list = McmodderUtils.keyToRawList(e);
+    if (!list.length) return "未指定";
+    return list.join(" + ");
+  }
+
+  static keyToHTML(e: McmodderKeyData) {
+    const list = McmodderUtils.keyToRawList(e);
+    const isMac = McmodderUtils.isMac();
+    const HTMLList = list.map(data => {
+      if (isMac) {
+        switch (data) {
+          case "Ctrl": data = "⌃‌"; break;
+          case "Shift": data = "⇧"; break;
+          case "Alt": data = "⌥"; break;
+          case "Meta": data = "⌘";
+        }
+      }
+      return `<kbd>${ data }</kbd>`;
+    })
+    return HTMLList.join("");
   }
 
   static isKeyMatch(a: McmodderKeyData, b: McmodderKeyData) { // b需要匹配a
@@ -731,8 +779,8 @@ export class McmodderUtils {
   static updateAllTooltip() {
     return $().tooltip ?
       $('[data-toggle="tooltip"]').tooltip({
-        animation: false,
-        delay: { show: 200 }
+        // animation: false,
+        // delay: { show: 200 }
       }) :
       null;
   }

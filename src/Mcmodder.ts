@@ -20,6 +20,7 @@ import { McmodderInit } from "./init/Init";
 import { InitLoader } from "./loader/InitLoader";
 import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
+import { McmodderSwiper } from "./widget/Swiper";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -50,11 +51,12 @@ export class Mcmodder {
   centerEditChart?: any;
   css: Record<string, string> = {};
   itemTypeList?: ItemTypeList;
+  private msgAlertCount = 0;
   private readonly titleNode = $("title");
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
-    this.isMac = navigator.userAgent.includes("Macintosh");
+    this.isMac = McmodderUtils.isMac();
     this.currentUsername = ($(".header-user-name").get(0)?.childNodes[0] as HTMLElement)?.innerHTML || "";
     this.currentUID = Number($(".header-user-name a, .name.top-username a, .profilebox").first().attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
@@ -128,7 +130,9 @@ export class Mcmodder {
           "data-source-id": href.split("mcmod.cn/")[1],
           "data-toggle": "tooltip",
           "data-html": "true",
-          "data-original-title": `<div class="mcmodder-data-frame maintext" data-source-id="${href.split("mcmod.cn/")[1]}"><img src="${McmodderValues.assets.mcmod.loading}"></img></div>`
+          "data-original-title": `<div class="mcmodder-data-frame maintext" data-source-id="${href.split("mcmod.cn/")[1]}">
+            <div class="mcmodder-loading"></div>
+          </div>`
         });
       });
       $(document).on("mouseover", ".mcmodder-item-link", async e => {
@@ -177,13 +181,22 @@ export class Mcmodder {
   }
 
   notifyUnreadMessage(count: number) {
+    this.msgAlertCount = count;
     const redNum = $(".mcmodder-rednum");
     if (count) {
       const text = count.toLocaleString();
       redNum.text(text).show();
-      this.titleNode.html(`[${ text } 条新消息!] ${ this.title } - MC 百科`);
     } else {
       redNum.hide();
+    }
+    this.updateTitleNode();
+  }
+
+  updateTitleNode(count = this.msgAlertCount) {
+    if (count) {
+      const text = count.toLocaleString();
+      this.titleNode.html(`[${ text } 条新消息!] ${ this.title } - MC 百科`);
+    } else {
       this.titleNode.html(this.title + " - MC 百科");
     }
   }
@@ -248,7 +261,7 @@ export class Mcmodder {
   fireProfileSelectFrame() {
     const html = $('<div><p>登录过的用户至少需要在本机访问自己的个人主页一次才会在这里显示~</p><div id="mcmodder-profile-frame"><ul></ul></div></div>');
     const ul = html.find("ul");
-    const myProfiles: number[] = this.utils.getConfig("myProfiles")?.split(",").map(Number) || [];
+    const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
     let uuid = $.cookie("_uuid");
     let h = $(`<li><div class="profile-option empty-profile" uid="0">-- 未登录状态 --</div></li>`).appendTo(ul);
     if (!uuid) h.addClass("profile-selected");
@@ -268,11 +281,7 @@ export class Mcmodder {
             </span>
           </div>
           <div class="text">
-            ${profile.userGroup} · ${Number(profile.editNum).toLocaleString()} 次编辑 · 
-            ${Number(profile.editByte).toLocaleString()} 字节 · 
-            ${(profile.expirationDate > Date.now()) ?
-            `登录信息 <span class="mcmodder-timer-pre" /> 后过期` :
-            '<span class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>'}
+            ${ this.utils.getProfileAbstract(profile) }
             <a class="delete">
               <i class="fa fa-trash"></i>
             </a>
@@ -532,9 +541,9 @@ export class Mcmodder {
       const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
       .insertBefore(".header-user .header-layer-block:first-child()");
 
-      const userFavList = (this.utils.getConfig("userFavList")?.split(",").map(Number) as number[])?.filter(e => e) || [];
-      const myProfileList = this.utils.getConfig("myProfiles")?.split(",").map(Number) as number[] || [];
-      const recentlyVisited = (this.utils.getConfig("recentlyVisited")?.split(",").map(Number) as number[])?.filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e)) || [];
+      const userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
+      const myProfileList = this.utils.getConfigAsNumberList("myProfiles");
+      const recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
 
       let userList;
       if (recentlyVisited.length) {
@@ -561,7 +570,7 @@ export class Mcmodder {
         const favUserContent = favUserContainer.find(".content");
         userList.forEach(uid => {
           const profile: McmodderProfileData = this.utils.getAllProfile(uid);
-          const node = $(`<a class="user" title="${ profile.nickname }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
+          const node = $(`<a class="user" title="${ profile.nickname } · ${ this.utils.getProfileAbstract(profile, true) }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
             <div class="avatar">
               <img alt="${ profile.nickname }" src="${ profile.avatar }">
             </div>
@@ -580,19 +589,24 @@ export class Mcmodder {
       });
     }
 
-    // 去除正文异常背景
     if (this.utils.getConfig("mcmodderUI")) {
+      // 去除正文异常背景
       let textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
       textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "unset");
       textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "unset");
+
+      // Swiper 调整
+      $(".swiper-container").each((_, _container) => {
+        const container = $(_container);
+        new McmodderSwiper(container);
+      });
     }
 
     if (this.utils.getConfig("adaptableNightMode")) {
       const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-      this.isNightMode = scheme.matches;
+      this.utils.setConfig("nightMode", scheme.matches);
       scheme.addEventListener("change", _ => {
-        this.isNightMode = scheme.matches;
-        this.switchNightMode();
+        this.utils.setConfig("nightMode", scheme.matches);
       });
     }
     else this.isNightMode = this.utils.getConfig("nightMode");
@@ -766,6 +780,6 @@ export class Mcmodder {
     });
 
     this.copyright();
-    this.titleNode.html(this.title + " - MC 百科");
+    this.updateTitleNode();
   }
 }
