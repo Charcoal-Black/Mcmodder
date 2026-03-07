@@ -119,7 +119,7 @@ export class McmodderConfigInteractor {
       }
     }
     else {
-      this.input.val(McmodderUtils.key2Str(this.original))
+      this.input.val(McmodderUtils.keyToString(this.original))
       .focus(e => this.keybindOnFocus(e))
       .keydown(e => this.keybindOnKeydown(e))
       .keyup(e => this.keybindOnKeyup(e))
@@ -139,13 +139,13 @@ export class McmodderConfigInteractor {
     e.stopPropagation();
     if (e.key === this.keyLastData?.key) return;
     if (e.key === "Escape") {
-      this.input.val(McmodderUtils.key2Str({}));
+      this.input.val(McmodderUtils.keyToString({}));
       this.input.blur();
       return;
     }
     this.keyLastData = e;
     this.keyQueue++;
-    this.input.val(McmodderUtils.key2Str(e));
+    this.input.val(McmodderUtils.keyToString(e));
   }
 
   protected keybindOnKeyup(e: JQueryKeyEventObject) {
@@ -168,7 +168,7 @@ export class McmodderConfigInteractor {
   protected keybindOnBlur(e: JQueryEventObject) {
     e.preventDefault();
     if (this.keyFinished) return;
-    if (!(e.target as HTMLInputElement).value || this.keyQueue) this.input.val(McmodderUtils.key2Str({}));
+    if (!(e.target as HTMLInputElement).value || this.keyQueue) this.input.val(McmodderUtils.keyToString({}));
     this.onChange({});
   }
 
@@ -197,7 +197,7 @@ export class McmodderConfigInteractor {
     McmodderUtils.commonMsg(PublicLangData.center.setting.complete);
     this.original = value;
     if (resp.final) {
-      if (this.data.type === McmodderConfigType.KEYBIND) this.input.val(McmodderUtils.key2Str(resp.final as McmodderKeyData))
+      if (this.data.type === McmodderConfigType.KEYBIND) this.input.val(McmodderUtils.keyToString(resp.final as McmodderKeyData))
       else this.input.val(resp.final as string);
     }
     this.cfgutils.parent.utils.setConfig(this.id, resp.final);
@@ -209,7 +209,7 @@ export class McmodderConfigInteractor {
     let val = this.data.value;
     if (val != null) list.push(`默认：${ 
       typeof val === "number" ? val.toLocaleString() :
-      typeof val === "object" ? McmodderUtils.key2Str(val) : val
+      typeof val === "object" ? McmodderUtils.keyToString(val) : val
     }`);
     const range = this.data.range as ConfigValueNumericRange;
     let l = range[0], r = range[1];

@@ -56,6 +56,9 @@
   --mcmodder-alert-warning-1: #856404;
   --mcmodder-alert-warning-2: #fff3cd;
   --mcmodder-alert-warning-3: #ffeeba;
+  --mcmodder-verifyframe-error: #933;
+  --mcmodder-verifyframe-warning: #7c4916;
+  --mcmodder-verifyframe-info: #666;
   --mcmodder-version-alpha-1: #f55;
   --mcmodder-version-alpha-2: #faa8;
   --mcmodder-version-beta-1: #55f;
@@ -107,6 +110,9 @@
   --mcmodder-alert-warning-1: #fdc;
   --mcmodder-alert-warning-2: #430;
   --mcmodder-alert-warning-3: #860;
+  --mcmodder-verifyframe-error: #f55;
+  --mcmodder-verifyframe-warning: #da6;
+  --mcmodder-verifyframe-info: #aaa;
   --mcmodder-uknowtoomuch: #444;
   --ck-color-base-foreground: #111;
   --ck-color-base-background: var(--mcmodder-bg);
@@ -381,7 +387,11 @@ a:hover,
 .nav-frame .buttons a:hover,
 .recent-buttons .refresh:hover,
 .container-more a:hover,
-.common-center .post-row .postname .tool li a:hover {
+.common-center .post-row .postname .tool li a:hover,
+.message-menu li a.active,
+.message-menu li a:hover,
+.message-submenu li.active a,
+.message-main .message-submenu li a:hover {
   color: var(--mcmodder-link-hover);
 }
 .verify-list-list td a.text-muted:hover {
@@ -546,7 +556,7 @@ body #remote input.text,
 #mcmodder-message-center:focus {
   outline: none;
 }
-#mcmodder-night-switch.on {
+#mcmodder-night-switch .on {
   text-shadow: 0px 0px 5px gold;
 }
 .common-template-frame li p {
@@ -787,6 +797,8 @@ body:not(.view),
 .mcmodder-loading {
   height: 100%;
   width: 100%;
+  min-width: 70px;
+  min-height: 50px;
   position: relative
 }
 .mcmodder-loading:before, .mcmodder-loading:after {
@@ -967,6 +979,15 @@ body:not(.view),
   font-family: FontAwesome;
   content: "\f002  ";
 }
+.edit-dataverify-frame ul.error li {
+  color: var(--mcmodder-verifyframe-error);
+}
+.edit-dataverify-frame ul.warning li {
+  color: var(--mcmodder-verifyframe-warning);
+}
+.edit-dataverify-frame ul.info li {
+  color: var(--mcmodder-verifyframe-info);
+}
 .mcmodder-data-frame {
   overflow: hidden;
   max-width: 600px;
@@ -992,7 +1013,18 @@ body:not(.view),
   font-size: 12px;
   color: var(--mcmodder-txd2);
 }
-.common-menu-page li,
+.mcmodder-data-frame.overflown {
+  position: relative;
+}
+.mcmodder-data-frame.overflown:after {
+  content: "......";
+  vertical-align: bottom;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background-image: linear-gradient(180deg, #0000, var(--mcmodder-bgn));
+}
 .comment-quote-block,
 .comment-skip-block .common-text table th,
 th,
@@ -1211,7 +1243,8 @@ body > .container > *,
 }
 .bd-callout,
 .common-menu-page,
-.common-fuc-group li {
+.common-fuc-group li,
+.center-content.item-list li {
   border-color: var(--mcmodder-bgd2);
 }
 .common-menu-page li {
@@ -1219,6 +1252,7 @@ body > .container > *,
   border-top-color: var(--mcmodder-bgn);
 }
 .bs-popover-auto[x-placement^="right"] .arrow::after,
+.tooltip.top .tooltip-arrow,
 .bs-popover-right .arrow::after {
   border-right-color: var(--mcmodder-bg);
 }
@@ -1234,6 +1268,10 @@ body > .container > *,
   background-color: var(--mcmodder-bgn);
   text-align: center;
   padding: 0 .5em 0 .5em;
+}
+.center-total .changed {
+  font-size: 75%;
+  margin-left: .375em;
 }
 .mcmodder-text-stats > span {
   font-size: 14px;
@@ -1864,6 +1902,12 @@ div#editor-ueeditor,
 .badge-row .text-muted-muted {
   background-color: #ddd5;
 }
+kbd {
+  color: var(--mcmodder-tx);
+  background-color: var(--mcmodder-bgd2);
+  margin: 0 .05em;
+  padding: 0 .2rem;
+}
 @property --mcmodder-oredict-column {
   syntax: "<integer>";
   inherits: true;
@@ -1955,6 +1999,9 @@ html.dark .edui-default .edui-editor-toolbarboxouter,
   background-image: none;
   background-color: var(--mcmodder-bgd1);
   border-bottom-color: var(--mcmodder-bgd2);
+}
+html.dark .selectTdClass {
+  background-color: #07122d !important;
 }
 footer h5 {
   color: var(--mcmodder-copyright-title);

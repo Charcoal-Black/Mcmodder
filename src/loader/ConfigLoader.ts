@@ -65,8 +65,8 @@ export class ConfigLoader {
     .addConfig("compactedVerifyEntry", "紧凑化审核界面", "将有效的编辑对比表格尽可能移到靠前的位置，以省去一些时候使用鼠标滚轮的麻烦。")
     .addConfig("advancedRanklist", "贡献榜重排版", "让贡献榜中各用户的昵称、排名、编辑量、编辑占比一目了然！")
     .addConfig("advancedOredictPage", "矿词/标签页重排版", "减小矿词/标签页中单个物品所占用的页面空间，并将各物品按所属模组分类。")
-    .addConfig("rememberVisited", "最近串门追踪", "自动记录我最近串门的用户。经常串门的用户会显示在“我的收藏”当中。")
-    .addConfig("favUserDisplayStyle", "收藏用户样式", "决定“我的收藏”列表中已收藏用户的头像显示样式。",
+    .addConfig("rememberVisited", "最近串门追踪", "自动记录我最近串门的用户。经常串门的用户会显示在“最近串门”当中。")
+    .addConfig("favUserDisplayStyle", "收藏用户样式", "决定“最近串门”列表中已收藏用户的头像显示样式。",
       McmodderConfigType.DROPDOWN_MENU, 0, { 0: "星星", 1: "大头钉", 2: "爱心" })
     .addConfig("centerMainExpand", "个人主页数据拓展", "显示平均字数和科龄，令模组区域并排显示，过长的模组区域默认压缩。")
     .addConfig("byteChart", "字数活跃图表", "决定是否在个人主页显示字数活跃图表，以及是否在贡献榜查看历史贡献数据时自动获取编辑字数数据。")

@@ -6,7 +6,7 @@ import { McmodderInit } from "./Init";
 
 abstract class EditorAlertLink {
   static replaceText = (c: HTMLElement, target: string) => {
-    (Array.from(c.childNodes).filter(e => e.nodeType === Node.TEXT_NODE) as Text[]).forEach(first => {
+    const work = (first: Text) => {
       const content = first.textContent;
       const pos = content?.indexOf(target);
       if (pos === undefined || pos < 0) return;
@@ -14,7 +14,14 @@ abstract class EditorAlertLink {
       const last = mid.splitText(target.length);
       mid.remove();
       $(`<a>`).text(target).insertBefore(last);
-    });
+    }
+    const search = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) work(node as Text);
+      else if (node.nodeType === Node.ELEMENT_NODE) {
+        (node as HTMLElement).childNodes.forEach(child => search(child));
+      }
+    }
+    search(c);
   }
   static appendButton = (c: HTMLElement) => c.innerHTML += `<a>定位</a>`;
   protected readonly editor: McmodderUEditor[];
@@ -253,7 +260,6 @@ export class EditorInit extends McmodderInit {
                 .addClass("badge mcmodder-editor-link")
                 .click(_e => link.run());
               });
-              b.remove();
             });
           }
         });

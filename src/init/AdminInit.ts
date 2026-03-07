@@ -92,7 +92,8 @@ export class AdminInit extends McmodderInit {
         const singleVerifyObserver = new MutationObserver(mutationList => {
           for (let mutation of mutationList) {
             console.log(mutation);
-            if ((mutation.target as HTMLElement).id === "verify-window-frame" && $(mutation.addedNodes).filter((_, c) => c.classList.contains("verify-info-table")).length) { // 当所有详情已全部加载完成
+            if ((mutation.target as HTMLElement).id === "verify-window-frame" &&
+            Array.from(mutation.addedNodes).filter(c => c.nodeType === Node.ELEMENT_NODE && (c as HTMLElement).classList.contains("verify-info-table")).length) { // 当所有详情已全部加载完成
               // 重排版
               const target = $(mutation.target);
               target.contents().appendTo(verifyFrame);
@@ -109,9 +110,9 @@ export class AdminInit extends McmodderInit {
               });
               target.find("> hr").remove();
               target.find(".verify-action-btns br").remove();
-              target.find("#verify-pass-btn:not(.edit)").append(` (${McmodderUtils.key2Str(this.parent.utils.getConfig("keybindVerifyPass"))})`);
-              target.find("#verify-refund-btn:not(.edit)").append(` (${McmodderUtils.key2Str(this.parent.utils.getConfig("keybindVerifyRefund"))})`);
-              target.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${McmodderUtils.key2Str(this.parent.utils.getConfig("keybindVerifyReason"))} 以快速聚焦)`);
+              target.find("#verify-pass-btn:not(.edit)").append(McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
+              target.find("#verify-refund-btn:not(.edit)").append(McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
+              target.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))} 以快速聚焦)`);
               $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
                 if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
                   e.stopPropagation();

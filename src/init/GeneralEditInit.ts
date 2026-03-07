@@ -18,8 +18,8 @@ export class GeneralEditInit extends McmodderInit {
     } */
     let leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
-      .replace("Alt + X", McmodderUtils.key2Str(this.parent.utils.getConfig("keybindFastLink")))
-      .replace("Ctrl + Enter", McmodderUtils.key2Str(this.parent.utils.getConfig("keybindFastSubmit")));
+    .replace("Alt + X", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastLink")))
+    .replace("Ctrl + Enter", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastSubmit")));
 
     // Bug修复：快速存档时当前菜单自动关闭
     if (this.parent.utils.getConfig("autoSaveFix")) {

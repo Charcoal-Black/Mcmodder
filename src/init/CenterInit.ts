@@ -22,6 +22,11 @@ export class CenterInit extends McmodderInit {
     return this.pageUID === this.parent.currentUID;
   }
 
+  isFavPage() {
+    const favList = this.parent.utils.getConfigAsNumberList("userFavList");
+    return favList.includes(this.pageUID) && !this.isMyPage();
+  }
+
   getPageUID() {
     return this.pageUID;
   }

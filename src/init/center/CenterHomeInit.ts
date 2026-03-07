@@ -43,13 +43,13 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private addUserBlacklist(uid: number) {
-    let b = this.getUtils().getConfig("userBlacklist").replaceAll(" ", "").split(",") as number[];
-    if (b.includes(uid)) {
-      this.getUtils().setConfig("userBlacklist", b.filter(e => e != uid).join(","));
+    const userBlacklist = this.getUtils().getConfigAsNumberList("userBlacklist");
+    if (userBlacklist.includes(uid)) {
+      this.getUtils().setConfig("userBlacklist", userBlacklist.filter(e => e != uid).join(","));
       McmodderUtils.commonMsg(`已将 UID:${ uid } 从用户黑名单中移除~`);
     } else {
-      b.push(uid);
-      this.getUtils().setConfig("userBlacklist", b.join(","));
+      userBlacklist.push(uid);
+      this.getUtils().setConfig("userBlacklist", userBlacklist.join(","));
       McmodderUtils.commonMsg(`已将 UID:${ uid } 加入用户黑名单~`);
     }
   }
@@ -58,16 +58,16 @@ export class CenterHomeInit extends CenterBaseInit {
     if (!this.center.pageProfileData) {
       throw new Error("当前页面的用户档案数据尚未初始化...");
     }
-    let b = (this.getUtils().getConfig("userFavList") || "").replaceAll(" ", "").split(",").map(Number) as number[];
-    if (b.includes(uid)) {
-      this.getUtils().setConfig("userFavList", b.filter(e => e != uid).join(","));
+    const userFavList = this.getUtils().getConfigAsNumberList("userFavList");
+    if (userFavList.includes(uid)) {
+      this.getUtils().setConfig("userFavList", userFavList.filter(e => e != uid).join(","));
       if (!this.getUtils().getConfig("rememberVisited")) {
         this.getUtils().deleteAllProfile(this.center.getPageUID());
       }
       McmodderUtils.commonMsg(`已将 UID:${ uid } 移出我的收藏列表~`);
     } else {
-      b.push(uid);
-      this.getUtils().setConfig("userFavList", b.join(","));
+      userFavList.push(uid);
+      this.getUtils().setConfig("userFavList", userFavList.join(","));
       this.getUtils().setAllProfile(this.center.pageProfileData, this.center.getPageUID())
       McmodderUtils.commonMsg(`已将 UID:${ uid } 加入我的收藏列表~`);
     }
@@ -83,8 +83,8 @@ export class CenterHomeInit extends CenterBaseInit {
       regTime: Date.parse(stats.eq(6).children().eq(1).text()),
       lv: Number($(".user-name .user-lv").text().slice(3)),
       userGroup: stats.eq(0).children().eq(1).text(),
-      editByte: Number(stats.eq(2).children().eq(1).text().slice(0, -2).replaceAll(",", "")),
-      editNum: Number(stats.eq(1).children().eq(1).text().slice(0, -3).replaceAll(",", "")),
+      editByte: Number(stats.eq(2).addClass("edit-byte").children().eq(1).text().slice(0, -3).replaceAll(",", "")),
+      editNum: Number(stats.eq(1).addClass("edit-num").children().eq(1).text().slice(0, -2).replaceAll(",", "")),
       editAvg: Number($(stats.get(3).textContent).children().eq(1).text().slice(0, -2).replaceAll(",", "")),
       permission: McmodderPermission.NONE
     };
@@ -154,7 +154,7 @@ export class CenterHomeInit extends CenterBaseInit {
     const averageByte = centerTotal.contents().filter((_, content) => content.nodeType === Node.COMMENT_NODE).get(0);
     if (this.getUtils().getConfig("centerMainExpand")) {
       centerTotal.addClass("mcmodder-center-main-expand");
-      $("<li>").html($(averageByte.textContent.replace(" 次", " 字节")).html())
+      $("<li>").addClass(".edit-avg").html($(averageByte.textContent.replace(" 次", " 字节")).html())
       .insertBefore(centerTotal.find("li:nth-child(4)"));
       $(`<li><span class="title">科龄</span><span class="text">${
         age.toLocaleString()
@@ -194,7 +194,7 @@ export class CenterHomeInit extends CenterBaseInit {
     });
 
     if (this.center.isMyPage()) {
-      const myProfiles: number[] = this.getUtils().getConfig("myProfiles")?.split(",").map(Number) || [];
+      const myProfiles = this.getUtils().getConfigAsNumberList("myProfiles");
       const pageUID = this.center.getPageUID();
       if (!myProfiles.includes(pageUID)) {
         myProfiles.push(pageUID);
@@ -206,6 +206,40 @@ export class CenterHomeInit extends CenterBaseInit {
         console.error(err);
         McmodderUtils.commonMsg("获取用户登录信息失败...");
       });
+    }
+    else if (this.getUtils().doesProfileDataExist(this.center.getPageUID())) {
+      const newProfile = this.center.pageProfileData;
+      if (newProfile) {
+        if (this.center.isFavPage()) {
+          const oldProfile = this.getUtils().getAllProfile(this.center.getPageUID());
+          if (!oldProfile.lastUpdated) return;
+          const updateDiff = Date.now() - oldProfile.lastUpdated;
+          const byteDiff = newProfile.editByte - oldProfile.editByte;
+          const numDiff = newProfile.editNum - oldProfile.editNum;
+          const avgDiff = newProfile.editAvg - oldProfile.editAvg;
+          ([
+            [byteDiff, "byte"],
+            [numDiff, "num"],
+            [avgDiff, "avg"]
+          ] as [number, string][]).forEach(value => {
+            if (value[0]) {
+              centerTotal.find(`.edit-${ value[1] } .text`).append(`
+              <span class="changed badge-row" data-toggle="tooltip" data-original-title="与 ${
+                McmodderUtils.getFormattedTime(updateDiff)
+              } 前所记录的用户数据相比的变化量">
+                <span class="text-${
+                  value[0] > 0 ? "success" : "danger"
+                }">${
+                  value[0] > 0 ? "+" : ""
+                }${
+                  value[0].toLocaleString()
+                }</span>
+              </span>`);
+            }
+          });
+        }
+        this.getUtils().setAllProfile(newProfile, this.center.getPageUID());
+      }
     }
 
     // 字数统计表
