@@ -288,12 +288,7 @@ export class EditorInit extends McmodderInit {
 
     this.autoLinkObserver.observe(document.body, { childList: true });
 
-    // let editorWin = $("#ueditor_0").get(0).contentWindow, editorDoc = editorWin.document;
-    // 编辑器内置样式
-    // McmodderUtils.addStyle("pre {font-family: Consolas, monospace; box-shadow: inset rgba(50, 50, 100, 0.4) 0px 2px 4px 0px;}", editorDoc);
     if ($(".edit-tools").length) {
-      // 一些已经写入 McmodderAdvancedUEditor 的方法
-      // ...
 
       if ($(".edit-user-alert.locked").length) {
         // 改动说明提前

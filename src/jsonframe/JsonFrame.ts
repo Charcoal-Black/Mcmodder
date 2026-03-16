@@ -27,7 +27,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
   content: JQuery;
   tools: Record<string, JsonFrameToolData>;
   activeFileName: string;
-  isMenuVisible: boolean;
+  isFixedMenuVisible: boolean;
   hasRearranged: boolean;
   table?: McmodderEditableTable<McmodderTableData>;
   fileSelector: JQuery;
@@ -60,7 +60,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     this.tools = {};
     this.activeFileName = "";
     this.instance = instance.get(0);
-    this.isMenuVisible = true;
+    this.isFixedMenuVisible = true;
     this.hasRearranged = false;
 
     // this.moreMenu = [];
@@ -90,17 +90,22 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     this.updateToolBar();
 
     $(document).scroll(McmodderUtils.throttle(() => {
-      let menuRect = this.instance.getBoundingClientRect();
-      if (menuRect.top < McmodderValues.headerContainerHeight && this.isMenuVisible) {
+      const frameRect = this.instance.getBoundingClientRect();
+      const isFrameVisible = 
+      frameRect.top < McmodderValues.headerContainerHeight &&
+      frameRect.bottom >= McmodderValues.headerContainerHeight;
+      
+      if (isFrameVisible && this.isFixedMenuVisible) {
         this.updateFixedMenu();
         this.menuContent.appendTo(this.fixedMenu.show());
-        this.isMenuVisible = false;
-      } else if (menuRect.top >= McmodderValues.headerContainerHeight && !this.isMenuVisible) {
+        this.isFixedMenuVisible = false;
+      }
+      else if (!isFrameVisible && !this.isFixedMenuVisible) {
         this.fixedMenu.hide();
         this.menuContent.appendTo(this.menu);
-        this.isMenuVisible = true;
+        this.isFixedMenuVisible = true;
       }
-    }, 50));
+    }, 16));
     $(window).resize(McmodderUtils.throttle((_e: JQueryEventObject) => this.updateFixedMenu(), 16));
 
     this.updateSelection();
@@ -355,7 +360,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
       showCancelButton: true,
       confirmButtonText: "删除",
       cancelButtonText: "取消",
-      confirmButtonColor: "var(--mcmodder-tc3)"
+      confirmButtonColor: "var(--mcmodder-color-danger)"
     }).then(isConfirm => resolve(isConfirm)));
   }
 

@@ -587,6 +587,14 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     let resp = await this.parent.utils.createAsyncRequest({ url: url, method: "GET" });
     if (!resp.responseXML) return;
     let doc = $(resp.responseXML);
+    if (doc.find("title").text() === "页面重载开启") {
+      return new Promise<void>(resolve => {
+        setTimeout(() => {
+          this.getJSONFromURL(url, table)
+          .then(() => resolve());
+        }, 1e3);
+      });
+    }
     let jsonList = doc.find("ignore_js_op");
     jsonList.each((_, _json) => {
       const json = $(_json);
@@ -623,7 +631,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         showCancelButton: true,
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        confirmButtonColor: "var(--mcmodder-tc3)"
+        confirmButtonColor: "var(--mcmodder-color-danger)"
       });
       if (isConfirm.value) return await this.syncRow(selection);
     }

@@ -1,6 +1,39 @@
 import { GmXmlhttpRequestOption, GmXmlhttpRequestType } from "$";
 import { McmodderPermission } from "./config/ConfigUtils";
 
+export interface RGB {
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+}
+
+export interface HSL {
+  readonly h: number;
+  readonly s: number;
+  readonly l: number;
+}
+
+export interface RGBA extends RGB {
+  readonly a: number;
+}
+
+export interface HSLA extends HSL {
+  readonly a: number;
+}
+
+export type McmodderPalette = Record<string, string>;
+
+export type PaletteConverter = (color: string, tier?: number) => string;
+
+export interface PaletteModifier {
+  maxTier?: number;
+  converter: PaletteConverter;
+}
+
+export type PaletteModifierStep = Record<string, PaletteModifier>;
+
+export type PaletteModifierSchedule = PaletteModifierStep[];
+
 export interface McmodderItemData {
   /** 该物品的百科资料 ID */
   id: number;

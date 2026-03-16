@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## [2.0.3] - 2026-03-16
+
+### 新增内容
+
+- 现在每次推送更新时自动通过 GitHub Actions 构建脚本 [[#48](https://github.com/Charcoal-Black/Mcmodder/pull/48)]！
+
+- 将“审核页面分屏”分离成为了一个可选且默认禁用的配置项。
+
+- 加入了一些交互动画，提升用户的沉浸体验感。
+
+### 更改内容
+
+- 调整了脚本设置页“资源管理”的显示样式，且新增了浏览合成表 JSON 文件列表的功能。
+
+- 重命名了大部分关于颜色的 CSS 自定义属性。例如：
+
+| v2.0.2-           | v2.0.3+                                      |
+| ----------------- | -------------------------------------------- |
+| `--mcmodder-tc1`  | `--mcmodder-color-primary`                   |
+| `--mcmodder-tda2` | `--mcmodder-color-accent-dark1-transparent1` |
+| `--mcmodder-jump` | `--mcmodder-color-itemrelation-jump`         |
+
+- 重写并优化了脚本的配色逻辑。
+
+### Bug 修复
+
+- 在收藏窗口选中收藏夹时，对勾不显示 [[#46](https://github.com/Charcoal-Black/Mcmodder/issues/46)]。
+
+- 在未“禁用模组页重排版”时，模组页的模组运行环境不显示 [[#47](https://github.com/Charcoal-Black/Mcmodder/issues/47)]。
+
+- 再次尝试修复了 v2.0.2- 出现的 Bug：
+> 已收藏用户的相关数据只会在收藏该用户的时刻更新，导致脚本存储的始终是当初收藏时的过期的用户数据。
+
+- 由于社群限流机制，一段时间内首次使用“物品 JSON 管理”的“从收纳贴获取 JSON”功能时，JSON 文件列表加载失败。
+
+- 整合包页“展开高级信息”功能错误地获取了同 ID 模组的数据。
+
 ## [2.0.2] - 2026-03-07
 
 ### 新增内容

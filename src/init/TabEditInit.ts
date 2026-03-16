@@ -155,7 +155,7 @@ export class TabEditInit extends McmodderInit {
 
     $("div#item-table-gui-frame hr").remove();
     if ($("#mcmodder-tabedit-tip").length) return;
-    $(`<span id="mcmodder-tabedit-tip" class="mcmodder-slim-dark" style="display: inline;">
+    $(`<span id="mcmodder-tabedit-tip" class="mcmodder-slim-dark">
       提示：巧妙运用
         <strong>Tab</strong> /
         <strong>Enter</strong> /
@@ -514,37 +514,6 @@ export class TabEditInit extends McmodderInit {
     this.dependences = this.parent.utils.getConfig(this.modID, "modDependences_v2", []);
     this.expansions = this.parent.utils.getConfig(this.modID, "modExpansions_v2", []);
     if (this.parent.utils.getConfig("tabSelectorInfo")) {
-      McmodderUtils.addStyle(`
-#item-used-item, #item-search-item {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
-}
-#item-table-item-frame .item-table-hover {
-  width: 100%;
-}
-#item-table-item-frame .item-table-hover img {
-  position: absolute;
-  left: 0px;
-}
-#item-table-item-frame .item-table-hover div {
-  display: inline-block;
-  font-size: 14px;
-  max-width: calc(100% - 32px);
-  line-height: 1;
-  max-height: 32px;
-  overflow: clip;
-  position: absolute;
-  right: 0px;
-}
-#item-table-item-frame .item-table-hover .zh-name {
-  margin-left: .25em;
-  font-size: 12px;
-}
-#item-table-item-frame .item-table-hover .en-name {
-  margin-left: .25em;
-  font-size: 10px;
-  color: gray;
-      }`);
       let itemSearchObserver = new MutationObserver((_mutationList, itemSearchObserver) => {
         itemUsedObserver.disconnect();
         itemSearchObserver.disconnect();

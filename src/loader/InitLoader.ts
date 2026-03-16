@@ -15,6 +15,7 @@ import { ItemListInit } from "../init/ItemListInit";
 import { ItemPageInit } from "../init/ItemPageInit";
 import { JsonHelperInit } from "../init/JsonHelperInit";
 import { MessageInit } from "../init/MessagePageInit";
+import { ModlistInit } from "../init/ModlistInit";
 import { OredictPageInit } from "../init/OredictPageInit";
 import { PostPageInit } from "../init/PostPageInit";
 import { QueuePageInit } from "../init/QueuePageInit";
@@ -51,6 +52,7 @@ export class InitLoader {
       new DiffListInit(parent),
       new RankInit(parent),
       new SandboxInit(parent),
+      new ModlistInit(parent),
       new CenterInit(parent),
       new AdminInit(parent),
       new StructureEditorInit(parent),

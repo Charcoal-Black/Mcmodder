@@ -138,7 +138,7 @@ export class McmodderAutoLink {
     const num = e.which;
     if (num < 48 || num > 57) return;
     e.preventDefault();
-    const target = this.resultFrame.find(`.mcmodder-autolink-altkey-${ num - 48 }`);
+    const target = this.resultFrame.find(`[data-shortcut-num=${ num - 48 }]`);
     McmodderUtils.highlight(target, "greenyellow");
     setTimeout(() => target.click(), 200);
   }
@@ -292,8 +292,8 @@ export class McmodderAutoLink {
     });
     this.resultListItems.forEach((item, index) => { // 修饰处理
       if (index < 10) $(item)
-      .append(`<span class="mcmodder-common-dark item-ename"> [Alt+${ index }]</span>`)
-      .addClass(`mcmodder-autolink-altkey-${ index }`);
+      .append(`<span class="item-shortcut">${ McmodderUtils.keyToHTML({ altKey: true, key: index.toString() }) }</span>`)
+      .attr("data-shortcut-num", index);
       this.resultList!.append(item);
     });
 

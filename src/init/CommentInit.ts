@@ -61,14 +61,15 @@ export class CommentInit extends McmodderInit {
           $("div.comment-row-content", mutation.target).each((_, c) => {
             // 隐藏黑名单用户发布的短评
             const target = $(c);
-            if (this.parent.utils.getConfig("userBlacklist").replace(" ", "").split(",").includes(target.find("a.poped").attr("data-uid"))) { // 用户屏蔽
+            const uid = Number(target.find("a.poped").attr("data-uid"));
+            if (this.parent.utils.getConfigAsNumberList("userBlacklist").includes(uid)) { // 用户屏蔽
               target.parent().remove();
               return;
             }
 
             // 愚人节特性 全员管理
             if (this.parent.utils.getConfig("enableAprilFools") && 
-                Number(target.find("a.poped").attr("data-uid")) === this.parent.currentUID && 
+                uid === this.parent.currentUID && 
                 this.parent.href.includes("/class/")) {
               this.promoteAsManager(target);
             }
@@ -97,7 +98,8 @@ export class CommentInit extends McmodderInit {
         else if (className === "comment-reply-floor" && this.parent.utils.getConfig("replyLink")) {
           $("div.comment-reply-row", mutation.target).each((_, _e) => {
             const e = $(_e);
-            if (this.parent.utils.getConfig("userBlacklist").replace(" ", "").split(",").includes(e.find("a.poped").attr("data-uid"))) e.remove();
+            const uid = Number(e.find("a.poped").attr("data-uid"));
+            if (this.parent.utils.getConfigAsNumberList("userBlacklist").includes(uid)) e.remove();
             this.setReplyLink(e);
             const replyContent = e.find("div.comment-reply-row-text-content.common-text.font14").first();
             const rawContent = replyContent.html().replaceAll("<br>", " ");
@@ -179,8 +181,8 @@ export class CommentInit extends McmodderInit {
         block: "center"
       });
     }
-    const commentContainer = $(".common-comment-block.lazy").get(0);
-    if (commentContainer) this.commentObserver.observe(commentContainer, {
+    const commentContainer = $(".common-comment-block.lazy");
+    if (commentContainer.length) this.commentObserver.observe(commentContainer.get(0), {
       childList: true,
       subtree: true
     });

@@ -114,6 +114,6 @@ export class TextCompareFrame {
     }
     if (del_num) this.delCounter.html(`<span class="mcmodder-slim-danger">删除: <strong>${ del_num.toLocaleString() }</strong> 处 (<strong>${ del_byte.toLocaleString() }</strong> 字节)</span>`).show();
     if (ins_num) this.insCounter.html(`<span class="mcmodder-slim-dark">新增: <strong>${ ins_num.toLocaleString() }</strong> 处 (<strong>${ ins_byte.toLocaleString() }</strong> 字节)</span>`).show();
-    if (mode != "diffChars") $(`<span style="font-size: 12px; color: gray">*正文过长，将${TextCompareFrame.modeName[mode]}而非${TextCompareFrame.modeName["diffChars"]}，以节省性能~</span>`).appendTo(this.statsNode);
+    if (mode != "diffChars") $(`<span class="mcmodder-jsdiff-nodiffbytes">*正文过长，将${TextCompareFrame.modeName[mode]}而非${TextCompareFrame.modeName["diffChars"]}，以节省性能~</span>`).appendTo(this.statsNode);
   }
 }

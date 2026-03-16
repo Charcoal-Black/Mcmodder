@@ -12,29 +12,6 @@ export class AdminInit extends McmodderInit {
   run() {
     const adminEntries: Record<string, (mutation: MutationRecord) => void> = {
       "模组区内容审核": _mutation => {
-        // 分屏
-        const connectedFrame = document.getElementById("connect-frame");
-        if (!connectedFrame) return;
-        const verifyContainer = $("<div>").appendTo(connectedFrame);
-        const verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(verifyContainer);
-        const verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(verifyWindow);
-        const verifyWindowDivider = new HorizontalDraggableFrame({}, connectedFrame).setHorizontalPos(1).bindRight(verifyContainer, true);
-
-        if (!this.triggered.has("模组区内容审核")) {
-          $(document).scroll(McmodderUtils.throttle(() => {
-            const top = document.scrollingElement?.scrollTop;
-            if (top != undefined) {
-              verifyWindow.css("margin-top", top + "px");
-            }
-          }, 16));
-        }
-
-        // 打开待审项时打开分屏
-        $("#connect-frame-sub").on("click", "tr[data-data]", _ => {
-          verifyFrame.empty();
-          verifyWindowDivider.expandIfCollapsed();
-        });
-
         // 调整排版顺序
         const w = $(".container-widget").get(0);
         w.insertBefore(w.childNodes[2], w.childNodes[1]);
@@ -75,65 +52,101 @@ export class AdminInit extends McmodderInit {
                   getUnverifiedNumber(modList[++index]);
                   return;
                 }
-                else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`);
+                else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`).removeClass("disabled");
               }
             });
           };
           if (modList) getUnverifiedNumber(modList[1]);
         }
-        $('<button class="btn" id="mcmodder-check-verification" data-toggle="tooltip" data-original-title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>').insertAfter(".selectJump.bs3").click(work);
+        $('<button class="btn" id="mcmodder-check-verification" data-toggle="tooltip" data-original-title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>')
+        .insertAfter(".selectJump.bs3")
+        .click(work);
         if (this.parent.utils.getConfig("autoVerifyDelay") >= 1e-2) {
           let t = $(`<span style="margin-left: 10px;">距离自动查询: </span>`).insertAfter("#mcmodder-check-verification");
           (new McmodderTimer(this.parent, McmodderTimer.DATAGETTER_SCHEDULE("autoCheckVerify", this.parent.currentUID, this.parent.scheduleRequestUtils))).$instance.appendTo(t);
         }
 
         // 单项审核界面
-        let lastRefundText: Record<number, string> = {};
+        // 分屏
+        let singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
+        if (this.parent.utils.getConfig("splitScreenOnVerify")) {
+          const connectedFrame = document.getElementById("connect-frame");
+          if (!connectedFrame) return;
+          const verifyContainer = $("<div>").appendTo(connectedFrame);
+          const verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(verifyContainer);
+          const verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(verifyWindow);
+          const verifyWindowDivider = new HorizontalDraggableFrame({}, connectedFrame).setHorizontalPos(1).bindRight(verifyContainer, true);
+
+          if (!this.triggered.has("模组区内容审核")) {
+            $(document).scroll(McmodderUtils.throttle(() => {
+              const top = document.scrollingElement?.scrollTop;
+              if (top != undefined) {
+                verifyWindow.css("margin-top", top + "px");
+              }
+            }, 16));
+          }
+
+          // 打开待审项时打开分屏
+          $("#connect-frame-sub").on("click", "tr[data-data]", _ => {
+            verifyFrame.empty();
+            verifyWindowDivider.expandIfCollapsed();
+          });
+
+          singleVerifyCallbackOnSplit = (mutation: MutationRecord) => {
+            // 重排版
+            $(mutation.target).contents().appendTo(verifyFrame);
+            verifyFrame.find("> p:first-child()").next().hide();
+            verifyFrame.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(e => {
+              let t = $(e.currentTarget);
+              if (t.attr("hide") === "1") {
+                t.attr("hide", "0").next().show();
+                t.find("span").html("[折叠]");
+              } else {
+                t.attr("hide", "1").next().hide();
+                t.find("span").html("[展开]");
+              }
+            });
+            verifyFrame.find("> hr").remove();
+            verifyFrame.find(".verify-action-btns br").remove();
+            verifyFrame.find("#verify-pass-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
+            verifyFrame.find("#verify-refund-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
+            verifyFrame.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${
+              McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
+            } 以快速聚焦)`);
+            $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
+              if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+                e.stopPropagation();
+                verifyFrame.find("#verify-pass-btn:not(.edit)").click();
+              }
+              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+                e.stopPropagation();
+                verifyFrame.find("#verify-refund-btn:not(.edit)").click();
+              }
+              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+                e.preventDefault();
+                verifyFrame.find("#verify-reason").focus();
+              }
+            });
+          }
+        }
+
+        const lastRefundText: Record<number, string> = {};
         const singleVerifyObserver = new MutationObserver(mutationList => {
           for (let mutation of mutationList) {
-            console.log(mutation);
             if ((mutation.target as HTMLElement).id === "verify-window-frame" &&
-            Array.from(mutation.addedNodes).filter(c => c.nodeType === Node.ELEMENT_NODE && (c as HTMLElement).classList.contains("verify-info-table")).length) { // 当所有详情已全部加载完成
-              // 重排版
-              const target = $(mutation.target);
-              target.contents().appendTo(verifyFrame);
-              target.find("> p:first-child()").next().hide();
-              target.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(_ => {
-                let t = $("#verify-window-frame > p:first-child()");
-                if (t.attr("hide") === "1") {
-                  t.attr("hide", "0").next().show();
-                  t.find("span").html("[折叠]");
-                } else {
-                  t.attr("hide", "1").next().hide();
-                  t.find("span").html("[展开]");
-                }
-              });
-              target.find("> hr").remove();
-              target.find(".verify-action-btns br").remove();
-              target.find("#verify-pass-btn:not(.edit)").append(McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
-              target.find("#verify-refund-btn:not(.edit)").append(McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
-              target.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))} 以快速聚焦)`);
-              $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
-                if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
-                  e.stopPropagation();
-                  $("#verify-pass-btn:not(.edit)").click();
-                }
-                else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
-                  e.stopPropagation();
-                  $("#verify-refund-btn:not(.edit)").click();
-                }
-                else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
-                  e.preventDefault();
-                  $("#verify-reason").focus();
-                }
-              });
+            Array.from(mutation.addedNodes).filter(c => c.nodeType === Node.ELEMENT_NODE &&
+            (c as HTMLElement).classList.contains("verify-info-table")).length) { // 当所有详情已全部加载完成
+              if (singleVerifyCallbackOnSplit) {
+                singleVerifyCallbackOnSplit(mutation);
+              }
 
               // 正文对比
+              $("#mcmodder-text-area").remove();
               $(".verify-copy-btn").parent().filter((_, c) => $(c).css("position") === "absolute").remove(); // 移除原版复制按钮
               const textTr = $(".verify-info-table > tbody").contents().filter((_, c) => $(c).children().text().includes("介绍"));
               const textA = textTr.find("td:nth-child(3) .common-text");
               const textB = textTr.find("td:nth-child(2) .common-text");
-              (new TextCompareFrame($("#verify-window-frame").first(), textA, textB)).performCompare();
+              (new TextCompareFrame($(".verify-action-btns").parent().children().first(), textA, textB)).performCompare();
 
               // 附言缓存
               const verifyId = Number(JSON.parse($("#verify-pass-btn").attr("data-data")).verifyID);

@@ -52,10 +52,7 @@ export class McmodderUEditor {
     this.parent.ueditorFrame.push(this);
     this.parent.ueditorFrame.forEach(e => {
       if (!e.document) return;
-      McmodderUtils.addStyle(this.parent.css.base, "", e.document);
-      if (this.parent.utils.getConfig("mcmodderUI")) {
-        McmodderUtils.addStyle(this.parent.css.mcmodderUI, "mcmodder-night-controller", e.document);
-      }
+      McmodderUtils.addStyle(this.parent.css, "", e.document);
       if (this.parent.isNightMode) {
         e.$document!.find("html").addClass("dark");
       }

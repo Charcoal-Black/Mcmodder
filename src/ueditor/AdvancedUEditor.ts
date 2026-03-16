@@ -56,9 +56,6 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     });
     this.autoLink = new McmodderAutoLink(this, itemSourceList);
 
-    // 内置样式
-    // McmodderUtils.addStyle("pre {font-family: Consolas, monospace; box-shadow: inset rgba(50, 50, 100, 0.4) 0px 2px 4px 0px;}", "", this.document);
-
     // 快速提交
     this.$document.keydown(e => this.fastSubmitOverride(e));
 
@@ -127,7 +124,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     // 全屏背景不再透明
     this.$outerFrame.find(".edui-for-fullscreen").children().click(() => {
       if (this.isEditorFullScreen())
-        McmodderUtils.addStyle("#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-bgn);}", "mcmodder-fullscreen-style");
+        McmodderUtils.addStyle("#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-color-background);}", "mcmodder-fullscreen-style");
       else
         $("#mcmodder-fullscreen-style").remove();
     });

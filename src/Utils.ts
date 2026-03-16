@@ -1,22 +1,13 @@
 import { GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
 import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, McmodderItemData, McmodderKeyData, McmodderProfileData } from "./types";
+import { ClassNameData, HSL, HSLA, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
   tc1: string,
   tc2: string,
-  tc3: string,
-  td1: string,
-  td2: string,
-  tca1: string,
-  tca2: string,
-  tca3: string,
-  tda1: string,
-  tda2: string,
-  tcaa1: string,
-  tcaa2: string
+  tc3: string
 }
 
 export class McmodderUtils {
@@ -46,20 +37,19 @@ export class McmodderUtils {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
-  static styleColors = (utils: McmodderUtils): ThemeColorData => ({
-    tc1: utils.getConfig("themeColor1"),
-    tc2: utils.getConfig("themeColor2"),
-    tc3: utils.getConfig("themeColor3"),
-    td1: McmodderUtils.darkenColor(utils.getConfig("themeColor1"), 0.2),
-    td2: McmodderUtils.darkenColor(utils.getConfig("themeColor2"), 0.2),
-    tca1: utils.getConfig("themeColor1") + "80",
-    tca2: utils.getConfig("themeColor2") + "80",
-    tca3: utils.getConfig("themeColor3") + "80",
-    tda1: McmodderUtils.darkenColor(utils.getConfig("themeColor1"), 0.2) + "80",
-    tda2: McmodderUtils.darkenColor(utils.getConfig("themeColor2"), 0.2) + "80",
-    tcaa1: McmodderUtils.darkenColor(utils.getConfig("themeColor1"), 0.2) + "40",
-    tcaa2: McmodderUtils.darkenColor(utils.getConfig("themeColor2"), 0.2) + "40"
-  });
+  static getThemeColors = (utils: McmodderUtils): ThemeColorData => {
+    return {
+      tc1: utils.getConfig("themeColor1"),
+      tc2: utils.getConfig("themeColor2"),
+      tc3: utils.getConfig("themeColor3")
+    }
+  }
+
+  static clamp(value: number, min: number, max: number) {
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+  }
 
   static versionCompare(v1: string, v2: string) {
     const p1 = v1.split(".").map(Number);
@@ -188,6 +178,15 @@ export class McmodderUtils {
       const text = "用户信息获取失败...";
       return plainText ? text : `<span class="text-danger">${ text }</span>`;
     }
+    
+    let userGroup = profile.userGroup;
+    if (!plainText) {
+      switch (userGroup) {
+        case "百科编辑员": userGroup = `<span class="mcmodder-admin-editor">${ userGroup }</span>`; break;
+        case "资深编辑员": userGroup = `<span class="mcmodder-admin-admin">${ userGroup }</span>`;
+      }
+    }
+    
     const content = [profile.userGroup];
     if (profile.editNum) content.push(`${ profile.editNum.toLocaleString() } 次编辑`);
     if (profile.editByte) content.push(`${ profile.editByte.toLocaleString() } 字节`)
@@ -413,20 +412,152 @@ export class McmodderUtils {
     return arr.join(".");
   }
 
-  static darkenColor = (color: string, percent: number) => {
-    let f = parseInt(color.slice(1), 16);
-    let t = percent * 255;
-    let r = (f >> 16) - t;
-    let g = ((f & 0x00FF00) >> 8) - t;
-    let b = (f & 0x0000FF) - t;
-    return "#" + (
-      0 |
-      (Math.max(Math.min(r, 255), 0) << 16) |
-      (Math.max(Math.min(g, 255), 0) << 8) |
-      Math.max(Math.min(b, 255), 0)
-    )
-      .toString(16)
-      .padStart(6, "0");
+  static colorToRGB(color: string): RGB | RGBA {
+    const colorFormatError = new Error("颜色代码的格式不正确。");
+    const colorParseError = new Error("颜色代码解析失败。");
+    if (color.charAt(0) != "#") {
+      throw colorFormatError;
+    }
+    const dec = parseInt(color.slice(1), 16);
+    if (isNaN(dec) || dec < 0) {
+      throw colorParseError;
+    }
+    switch (color.length) {
+      case 7: return {
+        r: dec >> 16,
+        g: (dec & 0x00FF00) >> 8,
+        b: dec & 0x0000FF
+      };
+      case 9: return {
+        r: dec >>> 24,
+        g: (dec & 0x00FF0000) >> 16,
+        b: (dec & 0x0000FF00) >> 8,
+        a: dec & 0x000000FF / 0xFF
+      }
+      case 4: case 5: {
+        const t = ["#"];
+        for (let i = 1; i < color.length; i++) {
+          t.push(color.charAt(i).repeat(2));
+        }
+        return this.colorToRGB(t.join(""));
+      }
+      default: throw colorFormatError;
+    }
+  }
+
+  static RGBToColor(rgb: RGB) {
+    const a = (rgb as RGBA).a;
+    let dec = (rgb.r << 16) + (rgb.g << 8) + rgb.b;
+    if (a != undefined) dec = dec * 256 + Math.round(a * 0xFF);
+    return "#" + dec.toString(16).padStart(a != undefined ? 8 : 6, "0");
+  }
+
+  static RGBToHSL(rgb: RGB): HSL | HSLA {
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    let h: number, s: number, l = (max + min) / 2;
+
+    if (delta === 0) {
+      h = s = 0;
+    } else {
+      s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / delta) % 6; break;
+        case g: h = (b - r) / delta + 2; break;
+        case b: h = (r - g) / delta + 4; break;
+        default: h = -1;
+      }
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+      s = Math.round(s * 100);
+    }
+
+    l = Math.round(l * 100);
+    const a = (rgb as RGBA).a;
+    if (a != undefined) {
+      return { h: h, s: s, l: l, a: a };
+    }
+    return { h: h, s: s, l: l };
+  }
+
+  static HSLToRGB(hsl: HSL): RGB | RGBA {
+    const h = hsl.h;
+    const s = hsl.s / 100;
+    const l = hsl.l / 100;
+    const a = (hsl as HSLA).a;
+
+    let c = (1 - Math.abs(2 * l - 1)) * s,
+        x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+        m = l - c/2,
+        r = 0,
+        g = 0,
+        b = 0;
+
+    if (0 <= h && h < 60) {
+      r = c; g = x; b = 0;
+    } else if (60 <= h && h < 120) {
+      r = x; g = c; b = 0;
+    } else if (120 <= h && h < 180) {
+      r = 0; g = c; b = x;
+    } else if (180 <= h && h < 240) {
+      r = 0; g = x; b = c;
+    } else if (240 <= h && h < 300) {
+      r = x; g = 0; b = c;
+    } else if (300 <= h && h < 360) {
+      r = c; g = 0; b = x;
+    }
+    
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+
+    if (a != undefined) {
+      return { r: r, g: g, b: b, a: a };
+    }
+    return { r: r, g: g, b: b };
+  }
+
+  static colorToHSL(color: string) {
+    return this.RGBToHSL(this.colorToRGB(color));
+  }
+
+  static HSLToColor(hsl: HSL) {
+    return this.RGBToColor(this.HSLToRGB(hsl));
+  }
+
+  static adjustColorBrightness = (color: string, ratio: number) => {
+    const hsl = this.colorToHSL(color);
+    let lightness = hsl.l;
+    if (ratio < 1) lightness *= ratio;
+    else lightness += (100 - lightness) * (ratio - 1);
+    return this.HSLToColor({
+      h: hsl.h,
+      s: hsl.s,
+      l: this.clamp(lightness, 0, 100)
+    });
+  }
+
+  static setColorBrightness = (color: string, lightness: number) => {
+    const hsl = this.colorToHSL(color);
+    return this.HSLToColor({
+      h: hsl.h,
+      s: hsl.s,
+      l: this.clamp(lightness, 0, 100)
+    });
+  }
+
+  static setColorAlpha(color: string, alpha: number) {
+    const rgb = this.colorToRGB(color);
+    return this.RGBToColor({
+      r: rgb.r,
+      g: rgb.g,
+      b: rgb.b,
+      a: this.clamp(alpha, 0, 1)
+    } as RGBA);
   }
 
   static keyToRawList(e: McmodderKeyData) {

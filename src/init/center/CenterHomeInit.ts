@@ -154,7 +154,7 @@ export class CenterHomeInit extends CenterBaseInit {
     const averageByte = centerTotal.contents().filter((_, content) => content.nodeType === Node.COMMENT_NODE).get(0);
     if (this.getUtils().getConfig("centerMainExpand")) {
       centerTotal.addClass("mcmodder-center-main-expand");
-      $("<li>").addClass(".edit-avg").html($(averageByte.textContent.replace(" 次", " 字节")).html())
+      $("<li>").addClass("edit-avg").html($(averageByte.textContent.replace(" 次", " 字节")).html())
       .insertBefore(centerTotal.find("li:nth-child(4)"));
       $(`<li><span class="title">科龄</span><span class="text">${
         age.toLocaleString()
@@ -171,10 +171,11 @@ export class CenterHomeInit extends CenterBaseInit {
     adminList.appendTo(adminContainer);
 
     adminList.each((_, c) => {
-      const title = (c.childNodes.item(0) as HTMLElement).innerText;
-      if (title.startsWith("开发者")) c.classList.add("mcmodder-admin-developer");
-      else if (title.startsWith("编辑员")) c.classList.add("mcmodder-admin-editor");
-      else if (title.startsWith("管理员")) c.classList.add("mcmodder-admin-admin");
+      const title = $(c).find(".title");
+      const text = title.text();
+      if (text.startsWith("开发者")) title.addClass("mcmodder-admin-developer");
+      else if (text.startsWith("编辑员")) title.addClass("mcmodder-admin-editor");
+      else if (text.startsWith("管理员")) title.addClass("mcmodder-admin-admin");
     });
 
     // 模组区域压缩
@@ -212,31 +213,32 @@ export class CenterHomeInit extends CenterBaseInit {
       if (newProfile) {
         if (this.center.isFavPage()) {
           const oldProfile = this.getUtils().getAllProfile(this.center.getPageUID());
-          if (!oldProfile.lastUpdated) return;
-          const updateDiff = Date.now() - oldProfile.lastUpdated;
-          const byteDiff = newProfile.editByte - oldProfile.editByte;
-          const numDiff = newProfile.editNum - oldProfile.editNum;
-          const avgDiff = newProfile.editAvg - oldProfile.editAvg;
-          ([
-            [byteDiff, "byte"],
-            [numDiff, "num"],
-            [avgDiff, "avg"]
-          ] as [number, string][]).forEach(value => {
-            if (value[0]) {
-              centerTotal.find(`.edit-${ value[1] } .text`).append(`
-              <span class="changed badge-row" data-toggle="tooltip" data-original-title="与 ${
-                McmodderUtils.getFormattedTime(updateDiff)
-              } 前所记录的用户数据相比的变化量">
-                <span class="text-${
-                  value[0] > 0 ? "success" : "danger"
-                }">${
-                  value[0] > 0 ? "+" : ""
-                }${
-                  value[0].toLocaleString()
-                }</span>
-              </span>`);
-            }
-          });
+          if (oldProfile.lastUpdated) {
+            const updateDiff = Date.now() - oldProfile.lastUpdated;
+            const byteDiff = newProfile.editByte - oldProfile.editByte;
+            const numDiff = newProfile.editNum - oldProfile.editNum;
+            const avgDiff = newProfile.editAvg - oldProfile.editAvg;
+            ([
+              [byteDiff, "byte"],
+              [numDiff, "num"],
+              [avgDiff, "avg"]
+            ] as [number, string][]).forEach(value => {
+              if (value[0]) {
+                centerTotal.find(`.edit-${ value[1] } .text`).append(`
+                <span class="changed badge-row" data-toggle="tooltip" data-original-title="与 ${
+                  McmodderUtils.getFormattedTime(updateDiff)
+                } 前所记录的用户数据相比的变化量">
+                  <span class="text-${
+                    value[0] > 0 ? "success" : "danger"
+                  }">${
+                    value[0] > 0 ? "+" : ""
+                  }${
+                    value[0].toLocaleString()
+                  }</span>
+                </span>`);
+              }
+            });
+          }
         }
         this.getUtils().setAllProfile(newProfile, this.center.getPageUID());
       }
@@ -323,15 +325,15 @@ export class CenterHomeInit extends CenterBaseInit {
     const editChart = this.getParent().centerEditChart;
     // editChart.setOption({
     //   tooltip: [{
-    //     backgroundColor: "var(--mcmodder-bgn)",
+    //     backgroundColor: "var(--mcmodder-color-background)",
     //   }],
     //   calendar: [{
-    //     dayLabel: { color: "var(--mcmodder-tx)" }, 
-    //     yearLabel: { color: "var(--mcmodder-txd2)" }, 
-    //     monthLabel: { color: "var(--mcmodder-txd1)" }, 
+    //     dayLabel: { color: "var(--mcmodder-color-text)" }, 
+    //     yearLabel: { color: "var(--mcmodder-color-text-dark2)" }, 
+    //     monthLabel: { color: "var(--mcmodder-color-text-dark1)" }, 
     //     itemStyle: {
-    //       color: "var(--mcmodder-bg)", // "#3330",
-    //       borderColor: "var(--mcmodder-bgd1)"
+    //       color: "var(--mcmodder-color-background-transparent)", // "#3330",
+    //       borderColor: "var(--mcmodder-color-background-dark1)"
     //     }
     //   }]
     // });

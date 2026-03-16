@@ -1,0 +1,13 @@
+#connect-frame-sub > #verify-window {
+  display: none !important;
+}
+#verify-window .modal-dialog {
+  width: 100%;
+  margin: 0;
+}
+#verify-window .modal-content {
+  border-radius: 0;
+}
+#verify-window .modal-backdrop {
+  background-color: var(--mcmodder-color-background);
+}

@@ -6,7 +6,7 @@ export class QueuePageInit extends McmodderInit {
     return this.parent.href.includes("/queue.html");
   }
   run() {
-    $(".table td:first-child()").css("background", "var(--mcmodder-bg)");
+    $(".table td:first-child()").css("background", "var(--mcmodder-color-background-transparent)");
 
     let t = $(".verify-queue-list-table tr")
     .filter((_, content) => $("a[rel=nofollow]", content).text() === this.parent.currentUsername).first();

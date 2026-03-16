@@ -2,12 +2,13 @@ import { McmodderConfigInteractor } from "../../config/ConfigInterface";
 import { McmodderConfigResourceInteractor } from "../../config/ConfigResourceInteractor";
 import { McmodderConfigType } from "../../config/ConfigUtils";
 import { Mcmodder } from "../../Mcmodder";
-import { McmodderClassRelationData, McmodderFileDisplayData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData } from "../../types";
+import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData } from "../../types";
 import { HeadConfig, McmodderTable } from "../../table/Table";
 import { McmodderTimer } from "../../widget/Timer";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
+import { McmodderConfigResourceFileListInteractor } from "../../config/ConfigResouceFileListInteractor";
 
 export class CenterSettingInit extends CenterBaseInit {
   private async accessPublicSplashList(manager: McmodderConfigResourceInteractor<McmodderSplashData>) {
@@ -159,7 +160,7 @@ export class CenterSettingInit extends CenterBaseInit {
     </div>`);
 
     const storages = $(".mcmodder-storage ul");
-    const resourceManagers = [];
+    const resourceManagers: McmodderConfigResourceInteractor<any>[] = [];
       
     const splashesManager = new McmodderConfigResourceInteractor<McmodderSplashData>(
       this.getParent(),
@@ -226,27 +227,31 @@ export class CenterSettingInit extends CenterBaseInit {
         };
       }
     ),
-    new McmodderConfigResourceInteractor<McmodderFileDisplayData>(
+    new McmodderConfigResourceFileListInteractor(
       this.getParent(),
       "mcmodderJsonStorage",
-      "已保存的 JSON 文件", {
-        fileName: new HeadConfig("文件名"),
-        size: new HeadConfig("数据大小", McmodderTable.DISPLAYRULE_SIZE)
-      }, null, (key, item) => ({
-        fileName: key,
-        size: McmodderUtils.getContextLength(JSON.stringify(item))
-      })
+      "已保存的物品 JSON 文件"
+    ),
+    new McmodderConfigResourceFileListInteractor(
+      this.getParent(),
+      "mcmodderRecipeJsonStorage",
+      "已保存的合成表 JSON 文件"
     ));
 
     resourceManagers.forEach(manager => {
       const li = $("<li>").appendTo(storages);
-      manager.$instance.appendTo(li);
+      manager.instance.appendTo(li);
     });
     
-    splashesManager.$instance.find("a").click(_e => {
-      if (splashesManager.$instance.find(`#${ Mcmodder.ID_SPLASH_COMPARE }`).length) return;
+    splashesManager.container.getHeader().click(_e => {
+      const splashCompare = splashesManager.instance.find(`#${ Mcmodder.ID_SPLASH_COMPARE }`);
+      if (splashCompare.length) {
+        if (McmodderUtils.isNodeHidden(splashCompare)) splashCompare.show();
+        else splashCompare.hide();
+        return;
+      }
       $(`<btn class="btn" id="${ Mcmodder.ID_SPLASH_COMPARE }">与公共标语库对比</btn>`)
-      .appendTo(splashesManager.$instance)
+      .appendTo(splashesManager.instance)
       .click(async e => {
         const button = $(e.currentTarget);
         button.addClass("disabled").append(`<i class="fa fa-pulse fa-spinner">`);

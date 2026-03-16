@@ -24,119 +24,36 @@
 .mcmodder-format-formatter {opacity: 0.5;}
 .mcmodder-format-placeholder {background-color: var(--mcmodder-tca3);}
 :root {
-  --mcmodder-badges: #fff8;
-  --mcmodder-bgn: #fff;
-  --mcmodder-bgd1: #f7f7f7;
-  --mcmodder-bgd2: #ddd;
-  --mcmodder-bgd3: #ccc;
-  --mcmodder-bgd4: #aaa;
-  --mcmodder-tx: #333;
-  --mcmodder-txd1: #555;
-  --mcmodder-txd2: #777;
-  --mcmodder-txd3: #999;
-  --mcmodder-btn: #6c757d;
-  --mcmodder-shadow: #bbb;
-  --mcmodder-editor: #15f;
-  --mcmodder-admin: #b3f;
-  --mcmodder-developer: #f51;
-  --mcmodder-jump: #15f;
-  --mcmodder-general: #f51;
-  --mcmodder-link: #06c;
-  --mcmodder-link-hover: #222;
-  --mcmodder-danger: #dc3545;
-  --mcmodder-channel-1: #334bdb;
-  --mcmodder-channel-2: #904623;
-  --mcmodder-almanacs-good: #f7f7b8;
-  --mcmodder-almanacs-bad: #ffceac;
-  --mcmodder-copyright-title: #3b566e;
-  --mcmodder-copyright-text: #6f8ba4;
-  --mcmodder-alert-primary-1: #004085;
-  --mcmodder-alert-primary-2: #cce5ff;
-  --mcmodder-alert-primary-3: #b8daff;
-  --mcmodder-alert-warning-1: #856404;
-  --mcmodder-alert-warning-2: #fff3cd;
-  --mcmodder-alert-warning-3: #ffeeba;
-  --mcmodder-verifyframe-error: #933;
-  --mcmodder-verifyframe-warning: #7c4916;
-  --mcmodder-verifyframe-info: #666;
-  --mcmodder-version-alpha-1: #f55;
-  --mcmodder-version-alpha-2: #faa8;
-  --mcmodder-version-beta-1: #55f;
-  --mcmodder-version-beta-2: #aaf8;
-  --mcmodder-version-release-1: #5a5;
-  --mcmodder-version-release-2: #afa8;
-  --mcmodder-platform-forge: #5b6197;
-  --mcmodder-platform-fabric: #8a7b71;
-  --mcmodder-platform-neoforge: #dc895c;
-  --mcmodder-platform-quilt: #8b61b4;
-  --mcmodder-platform-liteloader: #4c90de;
-  --mcmodder-txw: #fff;
-  --mcmodder-uknowtoomuch: #000;
   --mcmodder-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --mcmodder-cursor-hand: url(//www.mcmod.cn/images/cursor/hand.png), auto;
+  --mcmodder-animation-shinyborder: mcmodder-shinyborder 2s ease-in-out infinite alternate;
   --mcmodder-padwidth-1: 1em;
   --mcmodder-padwidth-2: 0.6em;
 }
 :root.dark {
-  --mcmodder-pre-ins: #beff7b;
-  --mcmodder-pre-del: #ff7b7b;
-  --mcmodder-badges: #1118;
-  --mcmodder-bgn: rgb(17, 17, 17);
-  --mcmodder-bgd1: #222;
-  --mcmodder-bgd2: #333;
-  --mcmodder-bgd3: #444;
-  --mcmodder-bgd4: #666;
-  --mcmodder-tx: #ddd;
-  --mcmodder-txd1: #bbb;
-  --mcmodder-txd2: #999;
-  --mcmodder-btn: #9ab;
-  --mcmodder-shadow: #111;
-  --mcmodder-editor: #28f;
-  --mcmodder-admin: #c6f;
-  --mcmodder-developer: #f82;
-  --mcmodder-jump: #28f;
-  --mcmodder-general: #f82;
-  --mcmodder-link: #6bf;
-  --mcmodder-link-hover: #ee6;
-  --mcmodder-danger: #faf;
-  --mcmodder-channel-1: #8af;
-  --mcmodder-channel-2: #fa8;
-  --mcmodder-almanacs-good: #442;
-  --mcmodder-almanacs-bad: #432;
-  --mcmodder-copyright-title: #8cf;
-  --mcmodder-copyright-text: #8bd;
-  --mcmodder-alert-primary-1: #bdf;
-  --mcmodder-alert-primary-2: #036;
-  --mcmodder-alert-primary-3: #27d;
-  --mcmodder-alert-warning-1: #fdc;
-  --mcmodder-alert-warning-2: #430;
-  --mcmodder-alert-warning-3: #860;
-  --mcmodder-verifyframe-error: #f55;
-  --mcmodder-verifyframe-warning: #da6;
-  --mcmodder-verifyframe-info: #aaa;
-  --mcmodder-uknowtoomuch: #444;
   --ck-color-base-foreground: #111;
-  --ck-color-base-background: var(--mcmodder-bg);
+  --ck-color-base-background: var(--mcmodder-color-background-transparent);
   --ck-color-base-border: #444;
-  --ck-color-base-text: var(--mcmodder-tx);
-  --ck-color-button-default-hover-background: var(--mcmodder-tca1);
-  --ck-color-button-on-hover-background: var(--mcmodder-tca1);
-  --ck-color-button-on-background: var(--mcmodder-tca1);
+  --ck-color-base-text: var(--mcmodder-color-text);
+  --ck-color-button-default-hover-background: var(--mcmodder-color-primary-transparent1);
+  --ck-color-button-on-hover-background: var(--mcmodder-color-primary-transparent1);
+  --ck-color-button-on-background: var(--mcmodder-color-primary-transparent1);
   --ck-color-link-default: #6bf;
 }
 .svg-platform-forge {
-  stroke: var(--mcmodder-platform-forge);
+  stroke: var(--mcmodder-color-platform-forge);
 }
 .svg-platform-fabric {
-  stroke: var(--mcmodder-platform-fabric);
+  stroke: var(--mcmodder-color-platform-fabric);
 }
 .svg-platform-neoforge {
-  stroke: var(--mcmodder-platform-neoforge);
+  stroke: var(--mcmodder-color-platform-neoforge);
 }
 .svg-platform-quilt {
-  stroke: var(--mcmodder-platform-quilt);
+  stroke: var(--mcmodder-color-platform-quilt);
 }
 .svg-platform-liteloader {
-  stroke: var(--mcmodder-platform-liteloader);
+  stroke: var(--mcmodder-color-platform-liteloader);
 }
 body,
 .common-menu-page a,
@@ -229,6 +146,16 @@ table th,
 .popover-body,
 .common-class-category li .normal.gray,
 .selfonly-switch-frame,
+.common-link-frame .title,
+.author-mods .title,
+.author-member .title,
+.author-partner .title,
+.page-header .title,
+.panel-title,
+.page-header .title,
+.common-center .right .tab-content ul.tab-ul p.title,
+.center-block-head .title,
+.center-content.admin-list .title,
 .fui-cross::before,
 .fui-info-circle::before,
 .fui-photo::before,
@@ -236,16 +163,17 @@ table th,
 .fui-chat::before,
 .fui-home::before,
 .fui-user::before {
-  color: var(--mcmodder-tx);
-  text-shadow: 1px 1px 1px var(--mcmodder-ts);
+  color: var(--mcmodder-color-text);
+  text-shadow: 1px 1px 1px var(--mcmodder-color-shadow);
 }
-.card-item p,
+.center-card-block.background .card-item .text p,
 .mcmodder-logger > *,
 .user-info > p,
 .block-left > p,
+.table-select-count > p,
 #structure-optimize-timer .info {
-  color: var(--mcmodder-txw);
-  text-shadow: 1px 1px 1px var(--mcmodder-ts);
+  color: #fff;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-shadow);
 }
 body .uknowtoomuch {
   text-shadow: none;
@@ -320,7 +248,7 @@ body .uknowtoomuch {
 .center-item-popover-amount,
 .center-item-popover-p,
 .center-item-popover-title {
-  color: var(--mcmodder-txd1);
+  color: var(--mcmodder-color-text-dark1);
 }
 .class_block .left .list .frame,
 .common-text-title-1,
@@ -343,24 +271,15 @@ th,
 .center-card-block.background .center-card-border,
 .center-card-block.badges .center-card-border,
 .center-card-block.tracker .center-card-border.rank-1 {
-  border-color: var(--mcmodder-bgd3);
+  border-color: var(--mcmodder-color-background-dark3);
 }
 a,
 .news_block .right .editor ul a,
 .common-imglist p.text a {
-  color: var(--mcmodder-link);
+  color: var(--mcmodder-color-link);
 }
-.common-center .right .tab-content ul.tab-ul p.title,
-.center-block-head .title,
-.center-content.admin-list .title,
 .center-sub-menu a:hover,
 .center-content.edit-chart-frame .title-main,
-.author-mods .title,
-.author-member .title,
-.author-partner .title,
-.page-header .title,
-.panel-title,
-.page-header .title,
 thead,
 a:hover,
 .rank-list-block a:hover,
@@ -378,7 +297,6 @@ a:hover,
 .common-rowlist-block .title .more a:hover,
 .common-imglist-block .title .more a:hover,
 .edit-tools a:hover,
-.common-link-frame .title,
 .verify-list-list td a.text-muted:hover,
 .nav-frame .icons a:hover .title,
 .common-center .icons a:hover .icon svg,
@@ -388,30 +306,33 @@ a:hover,
 .recent-buttons .refresh:hover,
 .container-more a:hover,
 .common-center .post-row .postname .tool li a:hover,
-.message-menu li a.active,
 .message-menu li a:hover,
-.message-submenu li.active a,
-.message-main .message-submenu li a:hover {
-  color: var(--mcmodder-link-hover);
+.message-main .message-submenu li a:hover,
+.copyright a:hover,
+.copyleft a:hover,
+.un_info li a:hover,
+.pages_system .Pbtn:hover,
+.pages_system .Pbtn_on:hover {
+  color: var(--mcmodder-color-accent-dark2);
 }
 .verify-list-list td a.text-muted:hover {
-  color: var(--mcmodder-link-hover) !important;
+  color: var(--mcmodder-color-accent-dark2) !important;
 }
 .common-center .right .tab-content li.tab-li .tips.red,
 .common-center .right .tab-content li.tab-li .tips.red a,
 .L1 {
-  color: var(--mcmodder-danger);
+  color: var(--mcmodder-color-text-danger);
 }
 .common-comment-block .comment-row-username a,
 .comment-reply-row-username a,
 .bd-callout p {
-  color: var(--mcmodder-btn);
+  color: var(--mcmodder-color-button);
 }
 .text-muted {
-  color: var(--mcmodder-btn) !important;
+  color: var(--mcmodder-color-button) !important;
 }
 .text-muted-muted {
-  color: var(--mcmodder-txd3) !important;
+  color: var(--mcmodder-color-text-dark3) !important;
 }
 th,
 .common-text table th,
@@ -420,8 +341,10 @@ th,
 .item-table-block .text,
 .common-user-card .card-container .tracker-frame .block .item,
 .nav-frame .buttons a:hover,
-.center-main.favorite .common-pages .page-link {
-  background-color: var(--mcmodder-bgd1);
+.center-main.favorite .common-pages .page-link,
+.class_block .left .list .items .item_hover,
+.class_block .right li i {
+  background-color: var(--mcmodder-color-background-dark1);
 }
 .item-category li,
 .common-text table th,
@@ -433,26 +356,34 @@ th,
 .status-block,
 .history-list,
 .nav-frame .buttons a {
-  background-color: var(--mcmodder-bg);
-  border-color: var(--mcmodder-bgd1);
+  background-color: var(--mcmodder-color-background-transparent);
+  border-color: var(--mcmodder-color-background-dark1);
+}
+.history-list-frame li,
+.history-list-head fieldset {
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .form-control {
   width: 100%;
   box-sizing: border-box;
   padding: 4px;
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
 }
 .form-control::placeholder,
 .center-content.lv-info .lv-title span,
 .common-comment-block .comment-row-userinfo,
-.center-task-block .task-item .text p {
-  color: var(--mcmodder-txd3);
+.center-task-block .task-item .text p,
+.history-list-frame li .time,
+.center-card-block.tracker .card-item .text p,
+.un_info p,
+.un_info span {
+  color: var(--mcmodder-color-text-dark3);
 }
 .form-control,
 .bootstrap-tagsinput,
 input {
-  border-color: var(--mcmodder-bgd1);
-  box-shadow: inset 0px 1px 0px var(--mcmodder-shadow);
+  border-color: var(--mcmodder-color-background-dark1);
+  box-shadow: inset 0px 1px 0px var(--mcmodder-color-shadow);
 }
 input,
 .form-control:focus,
@@ -462,8 +393,8 @@ body .tabbody #upload.panel,
 body .tabbody .panel,
 body #remote input.text,
 .common-comment-block textarea {
-  background-color: var(--mcmodder-bg);
-  color: var(--mcmodder-tx);
+  background-color: var(--mcmodder-color-background-transparent);
+  color: var(--mcmodder-color-text);
 }
 .item-img {
   margin-right: 5px;
@@ -476,11 +407,16 @@ body #remote input.text,
 }
 .item-ename {
   font-size: 12px;
-  color: var(--mcmodder-txd3);
+  color: var(--mcmodder-color-text-dark3);
 }
 .item-modabbr {
   font-size: 12px;
-  color: var(--mcmodder-txd1);
+  color: var(--mcmodder-color-text-dark1);
+}
+.item-shortcut {
+  float: right;
+  opacity: .5;
+  margin-right: .5em;
 }
 .mcmodder-task-tip {
   width: 320px;
@@ -547,7 +483,7 @@ body #remote input.text,
   border: 0;
   background-color: transparent;
   color: #d8d8d8;
-  cursor: url(//www.mcmod.cn/images/cursor/hand.png),auto;
+  cursor: var(--mcmodder-cursor-hand);
   display: inline-block;
 }
 #mcmodder-night-switch:focus,
@@ -568,54 +504,60 @@ body #remote input.text,
 }
 .relation-version-sort-button {
   margin-left: 5px;
-  cursor: url(//www.mcmod.cn/images/cursor/hand.png), auto;
+  cursor: var(--mcmodder-cursor-hand);
 }
 .center-setting-block .form-control[type=color] {
   width: 4em;
   height: 2em;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-light {
-  background: linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));
-  background-clip:text;color:transparent;
-  font-weight:bold;
-  text-shadow:1px 1px 1px #8884;
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
+  background-clip: text;
+  color: transparent;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #8884;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-light {
-  background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));
-  background-clip:text;color:transparent;text-shadow:1px 1px 1px #8884;
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
+  background-clip: text;
+  color: transparent;
+  text-shadow: 1px 1px 1px #8884;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-dark {
-  background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));
-  background-clip:text;color:transparent;font-weight:bold;text-shadow:1px 1px 1px #8884;
+  background: linear-gradient(45deg, var(--mcmodder-color-primary-dark2), var(--mcmodder-color-accent-dark2));
+  background-clip: text;
+  color: transparent;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #8884;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-dark {
-  background: linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));
-  background-clip:text;
+  background: linear-gradient(45deg, var(--mcmodder-color-primary-dark2), var(--mcmodder-color-accent-dark2));
+  background-clip: text;
   color:transparent;
-  text-shadow:1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px #8884;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-danger {
-  background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);
-  background-clip:text;
-  color:transparent;
-  font-weight:bold;
-  text-shadow:1px 1px 1px #8884;
+  background: linear-gradient(45deg, var(--mcmodder-color-danger-dark2), var(--mcmodder-color-danger-dark1));
+  background-clip: text;
+  color: transparent;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #8884;
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-danger {
-  background:linear-gradient(45deg,var(--mcmodder-tc3),#f99779);
-  background-clip:text;
-  color:transparent;
-  text-shadow:1px 1px 1px #8884;
+  background: linear-gradient(45deg, var(--mcmodder-color-danger-dark2), var(--mcmodder-color-danger-dark1));
+  background-clip: text;
+  color: transparent;
+  text-shadow: 1px 1px 1px #8884;
 }
 :not(.mcmodder-config-disable-gradient) .mcmodder-chroma {
   color: transparent;
-  background: linear-gradient(90deg,#32C5FF,#B620E0,#F7B500,#20E050,#32C5FF);
+  background: linear-gradient(90deg, #32C5FF, #B620E0, #F7B500, #20E050, #32C5FF);
   background-size: 100px;
   background-clip: text;
-  text-shadow:2px 2px 1px #8884;
-  animation: gradientText 3s infinite linear;
+  text-shadow: 2px 2px 1px #8884;
+  animation: mcmodder-shinytext 3s infinite linear;
 }
-@keyframes gradientText {
+@keyframes mcmodder-shinytext {
   0% {
     background-position: 0;
   }
@@ -623,26 +565,34 @@ html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-danger {
     background-position: 100px;
   }
 }
+@keyframes mcmodder-shinyborder {
+  from {
+    border-color: var(--mcmodder-color-primary);
+  }
+  to {
+    border-color: var(--mcmodder-color-accent);
+  }
+}
 html.mcmodder-config-disable-gradient .mcmodder-common-light {
-  color: var(--mcmodder-tc2);
+  color: var(--mcmodder-color-accent);
   font-weight: bold;
 }
 html.mcmodder-config-disable-gradient .mcmodder-slim-light {
-  color: var(--mcmodder-tc1);
+  color: var(--mcmodder-color-primary);
 }
 html.mcmodder-config-disable-gradient .mcmodder-common-dark {
- color: var(--mcmodder-td2);
+ color: var(--mcmodder-color-accent-dark2);
  font-weight: bold;
 }
 html.mcmodder-config-disable-gradient .mcmodder-slim-dark {
-  color: var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary-dark2);
 }
 html.mcmodder-config-disable-gradient .mcmodder-common-danger {
-  color: var(--mcmodder-tc3);
+  color: var(--mcmodder-color-danger);
   font-weight: bold;
 }
 html.mcmodder-config-disable-gradient .mcmodder-slim-danger {
-  color: var(--mcmodder-tc3);
+  color: var(--mcmodder-color-danger);
 }
 html.mcmodder-config-disable-gradient .mcmodder-chroma {
   color: red;
@@ -657,15 +607,15 @@ html:not(.view),
 body:not(.view),
 .search_box #key,
 .syntaxhighlighter table td.code .container textarea {
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
 }
 .checkbox label::before {
-  background-color: var(--mcmodder-bgn);
-  border-color: var(--mcmodder-bgd3);
+  background-color: var(--mcmodder-color-background);
+  border-color: var(--mcmodder-color-background-dark3);
 }
 .btn-light, .btn-outline-dark {
-  background-color: var(--mcmodder-bgd1);
-  color: var(--mcmodder-tx);
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
 }
 .col-lg-12.mcmodder-class-page,
 .col-lg-12.common-center {
@@ -729,15 +679,15 @@ body:not(.view),
   position: absolute;
   right: 0;
   bottom: -.25em;
-  color: var(--mcmodder-tc1);
-  text-shadow: 2px 2px 1px var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary);
+  text-shadow: 2px 2px 1px var(--mcmodder-color-primary-dark1);
 }
 .mcmodder-gui-out {
   position: absolute;
   right: 0;
   bottom: -.25em;
-  color: var(--mcmodder-tc2);
-  text-shadow: 2px 2px 1px var(--mcmodder-td2);
+  color: var(--mcmodder-color-accent);
+  text-shadow: 2px 2px 1px var(--mcmodder-color-accent-dark1);
 }
 .mcmodder-progress {
   position: relative;
@@ -746,10 +696,10 @@ body:not(.view),
   overflow: hidden;
   font-size: .75rem;
   border-radius: .25rem;
-  background-color: var(--mcmodder-ts);
+  background-color: var(--mcmodder-color-shadow);
 }
 .mcmodder-progress-bar {
-  background-color: var(--mcmodder-tca1);
+  background-color: var(--mcmodder-color-primary-transparent1);
   transition: width .6s ease;
   position: absolute;
   height: 100%;
@@ -758,8 +708,8 @@ body:not(.view),
   position: absolute;
   width: 100%;
   text-align: center;
-  color: var(--mcmodder-td1);
-  text-shadow: 1px 1px var(--mcmodder-bgn);
+  color: var(--mcmodder-color-primary-dark2);
+  text-shadow: 1px 1px var(--mcmodder-color-background);
 }
 .jsonframe-table {
   font-size: 14px;
@@ -773,7 +723,7 @@ body:not(.view),
   width: 100%;
   height: 100%;
   position: absolute;
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(3px) contrast(50%);
   opacity: 1;
   transition: opacity 0.8s ease-in-out 0s;
@@ -826,13 +776,13 @@ body:not(.view),
   }
 }
 .mcmodder-loading:before {
-  background-color: var(--mcmodder-tc1);
+  background-color: var(--mcmodder-color-primary);
   transform-origin: right center;
   left: calc(50% - 2em);
   animation: mcmodder-loading-first 1s ease-in-out 0s infinite alternate
 }
 .mcmodder-loading:after {
-  background-color: var(--mcmodder-tc2);
+  background-color: var(--mcmodder-color-accent);
   transform-origin: left center;
   right: calc(50% - 2em);
   animation: mcmodder-loading-second 1s ease-in-out 0s infinite alternate
@@ -890,25 +840,25 @@ body:not(.view),
   padding: .125em .8em .125em 1.65em;
 }
 #mcmodder-version-menu .versiontag-alpha {
-  color: var(--mcmodder-version-alpha-1);
-  background-color: var(--mcmodder-version-alpha-2);
+  color: var(--mcmodder-color-version-alpha-1);
+  background-color: var(--mcmodder-color-version-alpha-2);
 }
 #mcmodder-version-menu .versiontag-alpha::before {
-  background-color: var(--mcmodder-version-alpha-1);
+  background-color: var(--mcmodder-color-version-alpha-1);
 }
 #mcmodder-version-menu .versiontag-beta {
-  color: var(--mcmodder-version-beta-1);
-  background-color: var(--mcmodder-version-beta-2);
+  color: var(--mcmodder-color-version-beta-1);
+  background-color: var(--mcmodder-color-version-beta-2);
 }
 #mcmodder-version-menu .versiontag-beta::before {
-  background-color: var(--mcmodder-version-beta-1);
+  background-color: var(--mcmodder-color-version-beta-1);
 }
 #mcmodder-version-menu .versiontag-release {
-  color: var(--mcmodder-version-release-1);
-  background-color: var(--mcmodder-version-release-2);
+  color: var(--mcmodder-color-version-release-1);
+  background-color: var(--mcmodder-color-version-release-2);
 }
 #mcmodder-version-menu .versiontag-release::before {
-  background-color: var(--mcmodder-version-release-1);
+  background-color: var(--mcmodder-color-version-release-1);
 }
 .mcmodder-table,
 #block-selector {
@@ -920,7 +870,7 @@ body:not(.view),
   height: 2em;
   border-radius: .5em;
   padding: .3em;
-  border: 1px solid var(--mcmodder-tca2);
+  border: 1px solid var(--mcmodder-color-accent-transparent1);
   background-color: transparent;
 }
 #mcmodder-lv-input {
@@ -941,7 +891,7 @@ body:not(.view),
 }
 .mcmodder-table {
   margin-top: 0;
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
   overflow: hidden;
 }
 .mcmodder-table-empty {
@@ -955,7 +905,7 @@ body:not(.view),
   position: absolute;
   width: 100%;
   line-height: 100px;
-  color: gray;
+  color: var(--mcmodder-color-text-dark3);
   text-align: center;
 }
 .mcmodder-table:not(#block-selector) tbody {
@@ -969,7 +919,7 @@ body:not(.view),
 .mcmodder-table th {
   border-width: 1px;
   border-style: solid dashed;
-  border-color: var(--mcmodder-tc1) var(--mcmodder-tcaa1);
+  border-color: var(--mcmodder-color-primary) var(--mcmodder-color-primary-transparent2);
   text-align: center;
   max-width: 500px;
   text-overflow: ellipsis;
@@ -980,13 +930,13 @@ body:not(.view),
   content: "\f002  ";
 }
 .edit-dataverify-frame ul.error li {
-  color: var(--mcmodder-verifyframe-error);
+  color: var(--mcmodder-color-verifyframe-error);
 }
 .edit-dataverify-frame ul.warning li {
-  color: var(--mcmodder-verifyframe-warning);
+  color: var(--mcmodder-color-verifyframe-warning);
 }
 .edit-dataverify-frame ul.info li {
-  color: var(--mcmodder-verifyframe-info);
+  color: var(--mcmodder-color-verifyframe-info);
 }
 .mcmodder-data-frame {
   overflow: hidden;
@@ -1011,7 +961,7 @@ body:not(.view),
 }
 .mcmodder-data-frame .quote_text legend {
   font-size: 12px;
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
 }
 .mcmodder-data-frame.overflown {
   position: relative;
@@ -1023,7 +973,7 @@ body:not(.view),
   position: absolute;
   bottom: 0;
   width: 100%;
-  background-image: linear-gradient(180deg, #0000, var(--mcmodder-bgn));
+  background-image: linear-gradient(180deg, #0000, var(--mcmodder-color-background));
 }
 .comment-quote-block,
 .comment-skip-block .common-text table th,
@@ -1031,8 +981,8 @@ th,
 .common-class-category li .normal.gray,
 .center-item-popover-amount,
 #edui_fixedlayer .edui-default .edui-dialog-titlebar {
-  background-color: var(--mcmodder-bgd1);
-  border-color: var(--mcmodder-bgd2);
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark2);
   background-image: unset;
 }
 .mcmodder-mark-gold {
@@ -1054,8 +1004,8 @@ th,
 pre#mcmodder-text-result {
   font-family: var(--mcmodder-font-monospace);
   display: block;
-  border:1px solid var(--mcmodder-tca1);
-  color: var(--mcmodder-tx);
+  border:1px solid var(--mcmodder-color-primary-transparent1);
+  color: var(--mcmodder-color-text);
   max-height: 300px;
   padding: .25em;
   font-size: 12px;
@@ -1064,13 +1014,13 @@ pre del,
 #del_num {
   font-family: var(--mcmodder-font-monospace);
   text-decoration: none;
-  color: var(--mcmodder-pre-del);
+  color: var(--mcmodder-color-pre-del);
   background: #f333
 }
 pre ins,
 #ins_num {
   font-family: var(--mcmodder-font-monospace);
-  color: var(--mcmodder-pre-ins);
+  color: var(--mcmodder-color-pre-ins);
   text-decoration: none;
   background: #3f33
 }
@@ -1100,7 +1050,7 @@ pre ins,
 #item-icon-128x-preview-img {
   display: inline-block;
   margin: 10px 0;
-  border: 1px solid var(--mcmodder-bgd2);
+  border: 1px solid var(--mcmodder-color-background-dark2);
   border-radius: 5px;
   padding: 2px;
 }
@@ -1236,25 +1186,26 @@ body > .container > *,
 .page-header,
 .table-hover > tbody > tr:hover,
 .table-striped > tbody > tr:nth-of-type(n):hover {
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
 }
 #edui1 {
-  border-color: var(--mcmodder-bgd4);
+  border-color: var(--mcmodder-color-primary);
 }
 .bd-callout,
 .common-menu-page,
 .common-fuc-group li,
-.center-content.item-list li {
-  border-color: var(--mcmodder-bgd2);
+.center-content.item-list li,
+.class_block .left .list .block img {
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .common-menu-page li {
-  border-right-color: var(--mcmodder-bgd2);
-  border-top-color: var(--mcmodder-bgn);
+  border-right-color: var(--mcmodder-color-background-dark2);
+  border-top-color: var(--mcmodder-color-background);
 }
 .bs-popover-auto[x-placement^="right"] .arrow::after,
 .tooltip.top .tooltip-arrow,
 .bs-popover-right .arrow::after {
-  border-right-color: var(--mcmodder-bg);
+  border-right-color: var(--mcmodder-color-background-transparent);
 }
 .swal2-popup-wider {
   width: 80em;
@@ -1263,9 +1214,15 @@ body > .container > *,
   justify-content: center;
   margin-bottom: 0;
 }
+.swal2-popup .swal2-styled.swal2-confirm {
+  background-color: var(--mcmodder-color-primary-dark1);
+}
+.swal2-popup .swal2-styled.swal2-cancel {
+  background-color: var(--mcmodder-color-background-dark4);
+}
 .pagination .page-custom {
   line-height: 0;
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
   text-align: center;
   padding: 0 .5em 0 .5em;
 }
@@ -1275,27 +1232,28 @@ body > .container > *,
 }
 .mcmodder-text-stats > span {
   font-size: 14px;
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
   margin-right: .5em;
 }
 .common-rowlist-block .title,
 .common-imglist-block .title,
 .common-nav {
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
 }
 .bootstrap-select > .dropdown-toggle::after {
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
 }
 .common-center,
 .edui-default .edui-bubble .edui-popup-content::after,
 .tooltip-inner::after {
-  border-color: var(--mcmodder-bg);
+  border-color: var(--mcmodder-color-background-transparent);
 }
 .bs-tooltip-top .arrow::before {
-  border-top-color: var(--mcmodder-bg);
+  border-top-color: var(--mcmodder-color-background-transparent);
 }
-.swal2-popup .swal2-footer {
-  border-top-color: var(--mcmodder-bgd2);
+.swal2-popup .swal2-footer,
+.class_block .left .list .items {
+  border-top-color: var(--mcmodder-color-background-dark2);
 }
 #header-search-input,
 .common-fuc-group .action {
@@ -1315,28 +1273,28 @@ body .arrow {
   background-color: transparent !important;
 }
 .alert-primary {
-  background-color: var(--mcmodder-alert-primary-2);
-  border-color: var(--mcmodder-alert-primary-3);
+  background-color: var(--mcmodder-color-alert-primary-2);
+  border-color: var(--mcmodder-color-alert-primary-3);
 }
 .alert-primary p {
-  color: var(--mcmodder-alert-primary-1);
+  color: var(--mcmodder-color-alert-primary-1);
 }
 .alert-warning {
-  background-color: var(--mcmodder-alert-warning-2);
-  border-color: var(--mcmodder-alert-warning-3);
+  background-color: var(--mcmodder-color-alert-warning-2);
+  border-color: var(--mcmodder-color-alert-warning-3);
 }
 .alert-warning p {
-  color: var(--mcmodder-alert-warning-1);
+  color: var(--mcmodder-color-alert-warning-1);
 }
 .mcmodder-golden-alert {
-  background-color: var(--mcmodder-alert-warning-2);
+  background-color: var(--mcmodder-color-alert-warning-2);
   width: 100%;
   display: inline-block;
   text-align: center;
 }
 .edit-autolink-list li,
 .refresh-text {
-  cursor: url(//www.mcmod.cn/images/cursor/hand.png), auto;
+  cursor: var(--mcmodder-cursor-hand);
 }
 .edit-autolink-source {
   text-align: center;
@@ -1345,44 +1303,53 @@ body .arrow {
   font-size: 16px;
 }
 .edit-autolink-list li:not(.empty):not(.limit):hover {
-  background-color: var(--mcmodder-tca1);
+  background-color: var(--mcmodder-color-primary-transparent1);
 }
 .mcmodder-link-check {
-  background-color: var(--mcmodder-tcaa1);
+  background-color: var(--mcmodder-color-primary-transparent2);
   border-radius: 4px;
   margin: 0 2px 0 2px;
 }
 .mcmodder-link-warn {
-  border: 2px solid var(--mcmodder-tc3);
+  border: 2px solid var(--mcmodder-color-danger);
 }
 .center-block-head .text {
   font-size: 12px;
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
   margin-left: 1em;
 }
 .verify-list-search-area label span {
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
   margin-left: 0px;
+}
+.verify-action-btns button {
+  margin-right: .75em;
+}
+#mcmodder-tabedit-tip {
+  display: inline-block;
 }
 #item-table-item-frame .delete {
   position: absolute;
   bottom: 0px;
   right: 0px;
-  color: var(--mcmodder-tc3);
+  color: var(--mcmodder-color-danger);
+}
+#item-table-item-frame .delete:hover {
+  color: var(--mcmodder-color-danger-dark1);
 }
 #mcmodder-item-tab-edit td {
   text-wrap: nowrap;
 }
-#mcmodder-item-tab-edit tr:first-child() td {
+#mcmodder-item-tab-edit tr:first-child td {
   text-align: center;
 }
 #mcmodder-item-tab-edit td.input-head {
   text-align: right;
-  color: var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary-dark1);
 }
 #mcmodder-item-tab-edit td.output-head {
   text-align: right;
-  color: var(--mcmodder-td2);
+  color: var(--mcmodder-color-accent-dark1);
 }
 .mcmodder-almanacs i {
   background-image: url(https://i.mcmod.cn/editor/upload/20250731/1753943312_179043_WEbO.png);
@@ -1399,25 +1366,25 @@ body .arrow {
 .mcmodder-almanacs .date {
   line-height: 40px;
   font-size: 22px;
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
 }
 .mcmodder-almanacs .date:hover {
   text-decoration: none;
 }
 .mcmodder-almanacs .lore {
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
   margin-left: 30px;
   float: left;
 }
 .mcmodder-almanacs .good {
   position: relative;
   flex: 1;
-  background-color: var(--mcmodder-almanacs-good);
+  background-color: var(--mcmodder-color-almanacs-good);
 }
 .mcmodder-almanacs .bad {
   position: relative;
   flex: 1;
-  background-color: var(--mcmodder-almanacs-bad);
+  background-color: var(--mcmodder-color-almanacs-bad);
 }
 .mcmodder-almanacs .block {
   width: 50%;
@@ -1425,9 +1392,9 @@ body .arrow {
   font-size: 16px;
 }
 .mcmodder-almanacs .block .title {
-  color: var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary-dark1);
   font-weight: bold;
-  text-shadow: 2px 2px 2px var(--mcmodder-ts);
+  text-shadow: 2px 2px 2px var(--mcmodder-color-shadow);
 }
 .mcmodder-almanacs .more {
   float: right;
@@ -1438,7 +1405,7 @@ body .arrow {
   margin: 10px 0 0 10px;
   padding: 0 5px;
   border-radius: 5px;
-  border: 1px solid var(--mcmodder-bgd3);
+  border: 1px solid var(--mcmodder-color-background-dark3);
   text-decoration: none;
 }
 .common-center .center {
@@ -1469,16 +1436,16 @@ body .arrow {
 .text-dark,
 .item-table-block .NullItem,
 .item-table-block .NullItem a:hover {
-  color: var(--mcmodder-tx) !important;
+  color: var(--mcmodder-color-text) !important;
 }
 .mcmodder-mod-sort legend {
   font-size: 14px;
   width: auto;
   margin: 0 0 10px 10px;
-  color: var(--mcmodder-tx) !important;
+  color: var(--mcmodder-color-text) !important;
 }
 .mcmodder-mod-sort fieldset {
-  border: 1px solid var(--mcmodder-bgd2);
+  border: 1px solid var(--mcmodder-color-background-dark2);
   padding: 0;
   margin: 0;
   margin-bottom: 10px;
@@ -1496,24 +1463,70 @@ body .arrow {
 .mcmodder-admin-container .title::before {
   content: "✦ ";
 }
-.center-content.admin-list.mcmodder-admin-developer .title {
-  color: var(--mcmodder-developer);
+.center-content.admin-list .title.mcmodder-admin-developer {
+  color: var(--mcmodder-color-permission-developer);
 }
-.center-content.admin-list.mcmodder-admin-editor .title {
-  color: var(--mcmodder-editor);
+.center-content.admin-list .title.mcmodder-admin-editor {
+  color: var(--mcmodder-color-permission-editor);
 }
-.center-content.admin-list.mcmodder-admin-admin .title {
-  color: var(--mcmodder-admin);
+.center-content.admin-list .title.mcmodder-admin-admin {
+  color: var(--mcmodder-color-permission-admin);
+}
+.mcmodder-ranklist-container {
+  width: 33.333%;
+  display: inline-block;
+}
+.mcmodder-ranklist-container .avatar {
+  float: left;
+  width: 40px;
+  height: 40px;
+}
+.mcmodder-ranklist-container .name {
+  font-size: 14px;
+  height: 20px;
+  overflow: hidden;
+}
+.mcmodder-ranklist-container .me {
+  text-align: left;
+  font-weight: bold;
+  display: inline;
+  font-size: 14px;
+}
+.mcmodder-ranklist-container .content {
+  display: inline-block;
+  width: calc(100% - 40px);
+}
+.mcmodder-ranklist-container .rank-num {
+  margin-right: 4px;
+  display: inline;
+  font-size: 13px;
+}
+.mcmodder-ranklist-container .trophy {
+  margin-right: 4px;
+}
+.mcmodder-ranklist-container .trophy.gold {
+  color: goldenrod;
+}
+.mcmodder-ranklist-container .trophy.silver {
+  color: silver;
+}
+.mcmodder-ranklist-container .trophy.bronze {
+  color: brown;
+}
+.mcmodder-ranklist-container .quantity {
+  text-align: center;
+  display: inline;
+  position: absolute;
 }
 .center-content.item-list li.rank_1 {
-  background-color: var(--mcmodder-bgd1);
-  background-image: radial-gradient(at 60px 50px, var(--mcmodder-bgn) 20%, var(--mcmodder-bgd2));
+  background-color: var(--mcmodder-color-background-dark1);
+  background-image: radial-gradient(at 60px 50px, var(--mcmodder-color-background) 20%, var(--mcmodder-color-background-dark2));
 }
 .mcmodder-jump {
-  color: var(--mcmodder-jump);
+  color: var(--mcmodder-color-itemrelation-jump);
 }
 .mcmodder-general {
-  color: var(--mcmodder-general);
+  color: var(--mcmodder-color-itemrelation-general);
 }
 #mcmodder-mdeditor,
 div#editor-ueeditor,
@@ -1525,7 +1538,7 @@ div#editor-ueeditor,
 }
 .syntaxhighlighter {
   overflow: scroll;
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
 }
 .item-h5-ename::before {
   content: " "
@@ -1536,7 +1549,7 @@ div#editor-ueeditor,
 #mcmodder-json-compare-frame > .mcmodder-jsonframe {
   display: inline-block;
   width: 100%;
-  border: 1px solid var(--mcmodder-td2);
+  border: 1px solid var(--mcmodder-color-accent-dark1);
   vertical-align: top;
 }
 .mcmodder-contextmenu {
@@ -1544,10 +1557,10 @@ div#editor-ueeditor,
   top: 0;
   z-index: 1;
   padding: .2em;
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
   border-radius: .5em;
   font-size: 14px;
-  box-shadow: 0px 5px 15px var(--mcmodder-bgd4);
+  box-shadow: 0px 5px 15px var(--mcmodder-color-background-dark4);
   opacity: 1;
   transition: opacity 0.2s ease-out 0s, transform 0.2s cubic-bezier(.18,.89,.32,1.28) 0s;
 }
@@ -1574,12 +1587,12 @@ div#editor-ueeditor,
 .mcmodder-contextmenu.expand-right .arrow::before {
   left: calc(-2 * var(--mcmodder-padwidth-2));
   top: .25em;
-  border-right-color: var(--mcmodder-bgn);
+  border-right-color: var(--mcmodder-color-background);
 }
 .mcmodder-contextmenu.expand-left .arrow::before {
   right: calc(-2 * var(--mcmodder-padwidth-2));
   top: .25em;
-  border-left-color: var(--mcmodder-bgn);
+  border-left-color: var(--mcmodder-color-background);
 }
 .mcmodder-contextmenu ul {
   margin: 0;
@@ -1592,10 +1605,10 @@ div#editor-ueeditor,
   text-wrap: nowrap;
 }
 .mcmodder-contextmenu li.empty {
-  color: gray;
+  color: var(--mcmodder-color-text-dark3);
 }
 .mcmodder-contextmenu li:not(.empty):hover {
-  background-color: var(--mcmodder-tcaa1);
+  background-color: var(--mcmodder-color-primary-transparent2);
 }
 .jsonframe-menu {
   padding: 3px;
@@ -1607,7 +1620,7 @@ div#editor-ueeditor,
   position: fixed;
   top: 50px;
   z-index: 1;
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(10px);
 }
 .jsonframe-menucontent > * {
@@ -1627,7 +1640,7 @@ div#editor-ueeditor,
 }
 .jsonframe-content {
   min-height: 300px;
-  background-color: var(--mcmodder-tcaa2);
+  background-color: var(--mcmodder-color-accent-transparent2);
   width: 100%;
   overflow: scroll;
 }
@@ -1639,7 +1652,7 @@ div#editor-ueeditor,
   white-space: nowrap;
 }
 .mcmodder-table tr.selected {
-  box-shadow: 0 0 0 3px var(--mcmodder-tca2) inset;
+  box-shadow: 0 0 0 3px var(--mcmodder-color-accent-transparent1) inset;
   backdrop-filter: sepia(40%);
 }
 .mcmodder-table tr.selected:after {
@@ -1648,11 +1661,11 @@ div#editor-ueeditor,
   position: absolute;
   right: .25em;
   bottom: 0;
-  color: var(--mcmodder-td2);
+  color: var(--mcmodder-color-accent-dark1);
   font-family: FontAwesome;
 }
 .mcmodder-table tr.mcmodder-table-unsaved-tr.selected:after {
-  color: var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary-dark1);
 }
 .jsonframe-content table img {
   margin-bottom: 0;
@@ -1677,15 +1690,19 @@ div#editor-ueeditor,
 }
 .mcmodder-table-unsaved-td {
   font-weight: bold;
-  background-color: var(--mcmodder-tca1);
+  background-color: var(--mcmodder-color-primary-transparent1);
 }
 .mcmodder-table-unsaved-tr {
-  background-color: var(--mcmodder-tca1);
+  background-color: var(--mcmodder-color-primary-transparent1);
 }
 .jsonframe-export-text {
   text-align: center;
   font-size: 14px;
   margin: .5em 0 .5em 0;
+}
+.mcmodder-jsdiff-nodiffbytes {
+  font-size: 12px;
+  color: var(--mcmodder-color-text-dark3);
 }
 #mcmodder-profile-frame {
   max-height: 600px;
@@ -1694,13 +1711,13 @@ div#editor-ueeditor,
 .profile-option {
   position: relative;
   height: 100px;
-  border: 1px solid var(--mcmodder-tc1);
+  border: 1px solid var(--mcmodder-color-primary);
   margin-top: 3px;
   border-radius: 10px;
 }
 .profile-option.empty-profile {
   align-content: center;
-  color: gray;
+  color: var(--mcmodder-color-text-dark3);
 }
 .profile-option .avatar {
   width: 80px;
@@ -1715,10 +1732,11 @@ div#editor-ueeditor,
   border-radius: 50%;
 }
 .profile-selected {
-  background: linear-gradient(45deg, var(--mcmodder-tcaa1), var(--mcmodder-tcaa2));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary-transparent2), var(--mcmodder-color-accent-transparent2));
+  border-radius: 10px;
 }
 .profile-option:hover {
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
 }
 .profile-option .info {
   padding: 5px 10px 5px 100px;
@@ -1738,11 +1756,11 @@ div#editor-ueeditor,
   color: white;
 }
 .profile-option .text {
-  color: gray;
+  color: var(--mcmodder-color-text-dark2);
   font-size: 14px;
 }
 .profile-option .text .delete {
-  color: var(--mcmodder-tc3);
+  color: var(--mcmodder-color-danger);
   position: absolute;
   top: 5px;
   right: 5px;
@@ -1757,7 +1775,7 @@ div#editor-ueeditor,
   position: absolute;
   top: 100%;
   width: 100%;
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(10px);
   max-height: 300px;
   overflow: scroll;
@@ -1770,7 +1788,58 @@ div#editor-ueeditor,
   padding: .2em .8em;
 }
 .mcmodder-input-option.selected {
-  background-color: var(--mcmodder-tca1);
+  background-color: var(--mcmodder-color-primary-transparent1);
+}
+.mcmodder-collapsible-container {
+  border: 1px solid var(--mcmodder-color-primary);
+  border-radius: 1em;
+  margin: .5em 0;
+}
+.mcmodder-collapsible-header {
+  position: relative;
+  padding: .8em;
+  border-radius: 1em;
+  background-image: linear-gradient(45deg, var(--mcmodder-color-primary-background), var(--mcmodder-color-accent-background));
+  color: var(--mcmodder-color-primary-dark1);
+  font-weight: bold;
+  cursor: var(--mcmodder-cursor-hand);
+  user-select: none;
+}
+.mcmodder-collapsible-container.expanded .mcmodder-collapsible-header {
+  border-radius: 1em 1em 0 0;
+}
+.mcmodder-collapsible-header::after {
+  position: absolute;
+  content: "\f0d7";
+  font-family: "FontAwesome";
+  right: .8em;
+  transition: transform .3s;
+}
+.mcmodder-collapsible-container.expanded .mcmodder-collapsible-header::after {
+  transform: rotate(-180deg);
+}
+.mcmodder-collapsible-header:hover {
+  background-image: linear-gradient(45deg, var(--mcmodder-color-primary-transparent2), var(--mcmodder-color-accent-transparent2));
+}
+.mcmodder-collapsible-content {
+  display: none;
+}
+.mcmodder-collapsible-container.expanded .mcmodder-collapsible-content {
+  display: inherit;
+  padding: .8em;
+  border-top: 1px solid var(--mcmodder-color-primary-transparent1);
+}
+.mcmodder-collapsible-content > * {
+  transition: opacity .3s;
+  opacity: 0;
+}
+.mcmodder-collapsible-container.expanded .mcmodder-collapsible-content > * {
+  opacity: 1;
+}
+.mcmodder-storage .size {
+  position: absolute;
+  right: 2em;
+  font-weight: normal;
 }
 .mcmodder-keybind-input {
   width: 240px;
@@ -1789,14 +1858,14 @@ div#editor-ueeditor,
 .mcmodder-horizontal-divider {
   position: absolute;
   height: 100%;
-  background-color: var(--mcmodder-tc1);
+  background-color: var(--mcmodder-color-primary);
   left: 50%;
   width: 10px;
   cursor: col-resize;
   top: 0;
 }
 .mcmodder-horizontal-divider:hover {
-  background-color: var(--mcmodder-td1);
+  background-color: var(--mcmodder-color-primary-dark1);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -1807,7 +1876,7 @@ div#editor-ueeditor,
 .mcmodder-horizontal-flex-absolute {
   position: absolute;
   top: 0;
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(5px);
 }
 .mcmodder-horizontal-flex-left {
@@ -1869,13 +1938,13 @@ div#editor-ueeditor,
   color: lime;
 }
 .mcmodder-item-regname {
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
 }
 .mcmodder-item-classname {
-  color: var(--mcmodder-version-beta-1);
+  color: var(--mcmodder-color-version-beta-1);
 }
 .mcmodder-item-localecount {
-  color: var(--mcmodder-version-release-1);
+  color: var(--mcmodder-color-version-release-1);
 }
 .badge-row > * {
   padding: 0 .375em;
@@ -1902,9 +1971,15 @@ div#editor-ueeditor,
 .badge-row .text-muted-muted {
   background-color: #ddd5;
 }
+.text-success {
+  color: var(--mcmodder-color-text-success) !important;
+}
+.text-danger {
+  color: var(--mcmodder-color-text-danger) !important;
+}
 kbd {
-  color: var(--mcmodder-tx);
-  background-color: var(--mcmodder-bgd2);
+  color: var(--mcmodder-color-text);
+  background-color: var(--mcmodder-color-background-dark2);
   margin: 0 .05em;
   padding: 0 .2rem;
 }
@@ -1922,7 +1997,7 @@ kbd {
   margin: .2em .8em;
 }
 .mcmodder-mod-container legend a {
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
 }
 .oredict-item-list ul {
   display: grid;
@@ -1948,7 +2023,7 @@ kbd {
 .container-head .content,
 .common-center .post-row .postname .tool li a,
 .post-cc p, .post-cc a {
-  color: var(--mcmodder-txd2);
+  color: var(--mcmodder-color-text-dark2);
 }
 .class-menu-page,
 .link-list li.link-row,
@@ -1967,20 +2042,24 @@ kbd {
   border: unset;
 }
 .comment-channel-list li a.c1 {
-  color: var(--mcmodder-channel-1);
+  color: var(--mcmodder-color-channel-1);
 }
 .comment-channel-list li a.c2 {
-  color: var(--mcmodder-channel-2);
+  color: var(--mcmodder-color-channel-2);
 }
 .common-comment-block .comment-row,
 .common-comment-block .comment-editor {
-  border-bottom-color: var(--mcmodder-bgd2);
+  border-bottom-color: var(--mcmodder-color-background-dark2);
 }
 .m_center li a {
-  border-right-color: var(--mcmodder-bgd3);
+  border-right-color: var(--mcmodder-color-background-dark3);
 }
 .common-user-card .card-userinfo .exp-bar .progress-bar {
-  background-color: var(--mcmodder-txd2);
+  background-color: var(--mcmodder-color-text-dark2);
+}
+.mcmodder-visualeffect-container {
+  position: relative;
+  display: inherit;
 }
 html.dark #edui_fixedlayer .edui-default .edui-dialog-buttons .edui-button .edui-button-body,
 html.dark #edui_fixedlayer .edui-default .edui-dialog-closebutton .edui-button-body,
@@ -1993,22 +2072,21 @@ html.dark .edui-default .edui-tablepicker .edui-pickarea,
 html.dark .edui-default .edui-tablepicker .edui-pickarea .edui-overlay {
   filter: invert(80%);
 }
-html.dark .edui-default .edui-editor-toolbarboxouter,
+html .edui-default .edui-editor-toolbarboxouter,
 .banner .m_menu .m_center,
 .banner .m_menu .banner .m_menu {
-  background-image: none;
-  background-color: var(--mcmodder-bgd1);
-  border-bottom-color: var(--mcmodder-bgd2);
+  background-image: linear-gradient(to bottom, var(--mcmodder-color-background), var(--mcmodder-color-primary-background));
+  border-bottom-color: var(--mcmodder-color-primary-light);
 }
-html.dark .selectTdClass {
-  background-color: #07122d !important;
+.dark .selectTdClass {
+  background-color: var(--mcmodder-color-primary-light) !important;
 }
 footer h5 {
-  color: var(--mcmodder-copyright-title);
+  color: var(--mcmodder-color-copyright-title);
 }
 footer .copyright a,
 footer .copyleft a {
-  color: var(--mcmodder-copyright-text);
+  color: var(--mcmodder-color-copyright-text);
 }
 @font-face {
   font-family: 'iconfont';

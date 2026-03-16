@@ -2,6 +2,7 @@ import { GM_getValue } from "$";
 import { Mcmodder } from "../Mcmodder";
 import { HeadConfigs, McmodderTable } from "../table/Table";
 import { McmodderUtils } from "../Utils";
+import { McmodderCollapsible } from "../widget/Collapsible";
 
 export type ConfigParser = (config: string) => any;
 export type DataParser = (key: string, value: any) => any;
@@ -16,7 +17,8 @@ export class McmodderConfigResourceInteractor<McmodderTableData extends Object> 
   table: McmodderTable<McmodderTableData>;
   isLoaded: boolean;
   isShown: boolean;
-  $instance: JQuery;
+  readonly container: McmodderCollapsible;
+  readonly instance: JQuery;
   protected configParser: Function;
   protected dataParser: Function;
 
@@ -33,14 +35,13 @@ export class McmodderConfigResourceInteractor<McmodderTableData extends Object> 
     this.configParser = configParser || ((config: any) => JSON.parse(config || "{}"));
     this.dataParser = dataParser || ((_: any, item: any) => item);
 
-    this.$instance = $(`
-      <div>
-        <a>${ name }</a> = 
-        <span>${ McmodderUtils.getFormattedSize(GM_getValue(id)?.length) }</span>
-      </div>
+    this.container = new McmodderCollapsible(() => this._onClick());
+    this.container.getHeader().append(`
+      <span class="name">${ name }</span>
+      <span class="size">${ McmodderUtils.getFormattedSize(GM_getValue(id)?.length) }</span>
     `);
-    this.table.$instance.appendTo(this.$instance);
-    this.$instance.find("a").click(() => this._onClick());
+    this.container.getBody().append(this.table.$instance);
+    this.instance = this.container.getInstance();
   }
 
   load() {
@@ -60,7 +61,7 @@ export class McmodderConfigResourceInteractor<McmodderTableData extends Object> 
       this.isShown = true;
     }
     else {
-      this.table.hide();
+      // this.table.hide();
       this.isShown = false;
     }
   }

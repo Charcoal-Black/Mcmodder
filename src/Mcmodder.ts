@@ -49,7 +49,7 @@ export class Mcmodder {
   title = "";
   classRatingChart?: any;
   centerEditChart?: any;
-  css: Record<string, string> = {};
+  css = "";
   itemTypeList?: ItemTypeList;
   private msgAlertCount = 0;
   private readonly titleNode = $("title");
@@ -81,7 +81,7 @@ export class Mcmodder {
 
     this.cfgutils = new McmodderConfigUtils(this);
     ConfigLoader.run(this.cfgutils);
-    this.styleColors = McmodderUtils.styleColors(this.utils);
+    this.styleColors = McmodderUtils.getThemeColors(this.utils);
 
     this.advutils = new AdvancementUtils(this);
     AdvancementLoader.run(this.advutils);
@@ -584,8 +584,18 @@ export class Mcmodder {
         favUserOuterContainer.addClass(className);
       }
       
-      $(".header-user .header-layer-block li a").each((_, c) => {
-        $(c).replaceWith(`<a${$(c).text() === "退出登录" ? ' id="common-logout-btn"' : ` href="${ (c as HTMLLinkElement).href }" target="_blank"`}><i class="${(McmodderValues.iconMap as any)[$(c).text()]}" style="left: .5em;"/>${$(c).text()}<i class="fa fa-chevron-right" style="right: .5em;"/></a>`);
+      $(".header-user .header-layer-block li a").each((_, _c) => {
+        const c = $(_c);
+        const text = c.text();
+        c.replaceWith(`<a${c.text() === "退出登录" ? 
+        ` id="common-logout-btn"` : 
+        ` href="${
+          c.prop("href")
+        }" target="_blank"`}><i class="${
+          (McmodderValues.iconMap as any)[text]
+        }"/><span>${
+          text
+        }</span><i class="fa fa-chevron-right" /></a>`);
       });
     }
 
@@ -766,7 +776,7 @@ export class Mcmodder {
     }
 
     $(".common-background").remove();
-    $("#key").css("color", "var(--mcmodder-tx)");
+    $("#key").css("color", "var(--mcmodder-color-text)");
 
     window.addEventListener("scroll", () => {
       this.screenAttachedFrame.forEach(e => {

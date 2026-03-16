@@ -4,5 +4,5 @@ th,
 .table-bordered:not(.item-list-table) th,
 .table:not(.item-list-table) thead th,
 .common-text table {
-  border-color: var(--mcmodder-tc1);
+  border-color: var(--mcmodder-color-primary);
 }

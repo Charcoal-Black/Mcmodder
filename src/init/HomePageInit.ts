@@ -12,11 +12,11 @@ export class HomePageInit extends McmodderInit {
     if (typeof SearchOn != "undefined") SearchOn = () => {
       '搜索MOD/资料/教程..' == $('.search_box #key').val().trim() && (
         $('.search_box #key').val(''),
-        $('.search_box #key').css('color', 'var(--mcmodder-tx)')
+        $('.search_box #key').css('color', 'var(--mcmodder-color-text)')
       ),
       '搜索MOD/资料/教程..' == $('.m_center ._search .text').val().trim() && (
         $('.m_center ._search .text').val(''),
-        $('.m_center ._search .text').css('color', 'var(--mcmodder-tx)')
+        $('.m_center ._search .text').css('color', 'var(--mcmodder-color-text)')
       )
     }
 

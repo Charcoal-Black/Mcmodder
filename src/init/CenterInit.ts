@@ -1,5 +1,4 @@
 import { McmodderProfileData } from "../types";
-import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { CenterCardInit } from "./center/CenterCardInit";
 import { CenterHomeInit } from "./center/CenterHomeInit";
@@ -88,10 +87,6 @@ export class CenterInit extends McmodderInit {
     if (this.parent.utils.getConfig("expCalculator")) {
       this.centerRankObserver.observe($("#center-page-rank").get(0), { childList: true });
     }
-
-    // 愚人节彩蛋：签到旋转
-    if (this.parent.utils.getConfig("enableAprilFools")) /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
-      McmodderUtils.addStyle(this.parent.css.aprilfools);
 
     // 快捷获取背景图像
     const bgImg = window.getComputedStyle(document.body).backgroundImage.replace('url("', "").replace('")', "");

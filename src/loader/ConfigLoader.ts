@@ -9,7 +9,7 @@ export class ConfigLoader {
     .addConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", 
       McmodderConfigType.COLORPICKER, "#ff3030")
     .addConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。")
-    .addConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽脚本）")
+    .addConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
     .addConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")
     .addConfig("disableGradient", "禁用文字渐变", "勾选此项可能有助于提升性能。")
     .addConfig("adaptableNightMode", "夜间模式自适应", "夜间模式将跟随当前浏览器偏好设置而自动开启或关闭。启用此配置也将隐藏页面右上角的夜间模式开关。") 
@@ -86,6 +86,8 @@ export class ConfigLoader {
       McmodderConfigType.TEXT /* CONFIG_NUMBER_LIST */)
     .addConfig("autoVerifyDelay", "自动查询待审项", "当打开百科页面时，自动查询所管理模组的待审项，并弹出提示消息。设置相邻两次自动查询待审项之间的最短冷却时间，单位为小时，设置为小于 0.01 以禁用。",
       McmodderConfigType.NUMBER, 0, [0, null], McmodderPermission.MANAGER)
+    .addConfig("splitScreenOnVerify", "审核页面分屏", "在后台查看一个待审项时，其内容只会占据右半区域，左半部分依旧可预览列表中的其他待审项。",
+      McmodderConfigType.CHECKBOX, false, [null, null], McmodderPermission.MANAGER)
     .addConfig("itemListStylePreview", "样式管理预览", "编辑模组资料列表样式时，实时显示当前样式预览。",
       McmodderConfigType.CHECKBOX, false, [null, null], McmodderPermission.MANAGER)
     .addConfig("itemListStyleFix", "样式管理修复", "修复百科本体 Bug：原始字符串未转义导致当前样式无法显示。",

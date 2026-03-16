@@ -11,11 +11,17 @@ import svgPlatformLiteloader from "../assets/platform/liteloader.svg";
 import svgPlatformDefault from "../assets/platform/default.svg";
 
 export class ClassPageInit extends McmodderInit {
+
+  static classPageRegExp = /class\/[0-9]*\.html/;
+  static modpackPageRegExp = /modpack\/[0-9]*\.html/;
+  private isClassPage?: boolean;
+  private pageTypeName?: "模组" | "整合包";
+
   canRun() {
     return !this.parent.href.includes("/class/version/") &&
       !this.parent.href.includes("/modpack/version/") && 
-      (/class\/[0-9]*\.html/.test(this.parent.href) || 
-       /modpack\/[0-9]*\.html/.test(this.parent.href));
+      (ClassPageInit.classPageRegExp.test(this.parent.href) || 
+       ClassPageInit.modpackPageRegExp.test(this.parent.href));
   }
 
   private async syncSubscribeList(modID: number) {
@@ -36,6 +42,8 @@ export class ClassPageInit extends McmodderInit {
 
   run() {
     $(".common-center").addClass("mcmodder-class-page");
+    this.isClassPage = ClassPageInit.classPageRegExp.test(this.parent.href);
+    this.pageTypeName = this.isClassPage ? "模组" : "整合包";
 
     // 自动记忆前置Mod
     const classID = McmodderUtils.abstractLastFromURL(window.location.href, ["class", "modpack"]);
@@ -45,12 +53,12 @@ export class ClassPageInit extends McmodderInit {
     this.parent.utils.updateClassNameIDMap(modFullName, classID);
 
     if (this.parent.utils.getConfig("fastCopyName")) {
-      McmodderUtils.addClickCopyEvent(nameNode, "模组主要名称", className);
-      McmodderUtils.addClickCopyEvent(enameNode, "模组次要名称", classEname);
-      McmodderUtils.addClickCopyEvent(abbrNode, "模组缩写名称", classAbbr);
+      McmodderUtils.addClickCopyEvent(nameNode, this.pageTypeName + "主要名称", className);
+      McmodderUtils.addClickCopyEvent(enameNode, this.pageTypeName + "次要名称", classEname);
+      McmodderUtils.addClickCopyEvent(abbrNode, this.pageTypeName + "缩写名称", classAbbr);
     }
 
-    if (this.parent.utils.getConfig("rememberModRelation") && window.location.href.includes("/class/")) {
+    if (this.parent.utils.getConfig("rememberModRelation") && this.isClassPage) {
       let modDependences = this.parent.utils.getConfig(classID, "modDependences_v2", []), newDependences: number[] = [];
       let modExpansions = this.parent.utils.getConfig(classID, "modExpansions_v2", []), newExpansions: number[] = [];
       $("li.col-lg-12.relation").each((_, e) => {
@@ -172,7 +180,7 @@ export class ClassPageInit extends McmodderInit {
       });
       $(".mcmodder-class-info .author .fold").remove();
 
-      $(".col-lg-12.common-rowlist-2 li, .mcmodder-class-info .col-lg-4").each((i, c) => {
+      $(".col-lg-12.common-rowlist-2 li, .mcmodder-class-info .col-lg-4").each((_, c) => {
         const t = c.textContent;
         const d = t.split(t.includes("：") ? "：" : ": ");
         if (!isNaN(Number(d[1]))) d[1] = Number(d[1]).toLocaleString();
@@ -191,7 +199,7 @@ export class ClassPageInit extends McmodderInit {
               default: svg = svgPlatformDefault;
             }
             d[1] += `<a class="mcmodder-modloader" data-toggle="tooltip" data-original-title="${e}"><img src="${svg}">`;
-            if (a.length === 1) d[1] += `<span class="mcmodder-loadername" style="color: var(--mcmodder-platform-${a[0].toLowerCase()})">${a[0]}</span>`;
+            if (a.length === 1) d[1] += `<span class="mcmodder-loadername" style="color: var(--mcmodder-color-platform-${a[0].toLowerCase()})">${a[0]}</span>`;
             d[1] += "</a>";
           });
         }
@@ -199,17 +207,17 @@ export class ClassPageInit extends McmodderInit {
           const a = d[1].split(", ");
           a.forEach(e => {
             let r = e.slice(3, 5);
-            if (r === "需装") r = `<span style="color: var(--mcmodder-td1)"><i class="fa fa-check" />${r}</span>`;
-            else if (r === "无效") r = `<span style="color: gray"><i class="fa fa-ban" />${r}</span>`;
-            else if (r === "可选") r = `<span style="color: var(--mcmodder-td2)"><i class="fa fa-circle-o" />${r}</span>`;
-            $(`<li class="col-lg-6"><span class="title">${r}</span><span class="text">${e.slice(0, 3)}</span></li>`).insertAfter($(this).parent().children()[i - 1]);
+            if (r === "需装") r = `<span class="mcmodder-class-env-required"><i class="fa fa-check" />${r}</span>`;
+            else if (r === "无效") r = `<span class="mcmodder-class-env-invalid"><i class="fa fa-ban" />${r}</span>`;
+            else if (r === "可选") r = `<span class="mcmodder-class-env-optional"><i class="fa fa-circle-o" />${r}</span>`;
+            $(`<li class="col-lg-6"><span class="title">${r}</span><span class="text">${e.slice(0, 3)}</span></li>`).insertAfter($(c).prev());
           });
           c.remove();
         } else c.innerHTML = `<span class="title">${d[1]}</span><span class="text">${d[0]}</span>`;
         if (c.className === "col-lg-4") c.className = "col-lg-6";
       });
       $(".slider-block").remove();
-      $(".modlist-filter-block.auto button[type=submit]").css({ "background": "transparent", "color": "var(--mcmodder-tx)" });
+      $(".modlist-filter-block.auto button[type=submit]").css({ "background": "transparent", "color": "var(--mcmodder-color-text)" });
 
       const infoModpack = parseInt($(".infolist.modpack").text().slice(2));
       const infoServerCount = parseInt($(".infolist.server-count").text().slice(2));
@@ -288,25 +296,26 @@ export class ClassPageInit extends McmodderInit {
         button.find("span").text("努力加载中...");
         button.find("i").attr("class", "fa fa-pulse fa-spinner");
         this.parent.utils.createRequest({
-          url: `https://www.mcmod.cn/class/edit/${classID}/`,
+          url: `https://www.mcmod.cn/${ this.isClassPage ? "class" : "modpack" }/edit/${ classID }/`,
           method: "GET",
           onload: resp => {
             if (!resp.responseXML) return;
             const doc = $(resp.responseXML);
             if (doc.find(".edit-unlogining").length) {
               if (doc.find(".edit-unlogining").text().includes("登录")) McmodderUtils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
-              else McmodderUtils.commonMsg("受本模组区域限制，无法直接获取高级信息...", false);
+              else McmodderUtils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
               button.removeClass("disabled");
               button.find("span").text("展开高级信息");
               button.find("i").attr("class", "fas fa-chevron-down");
               return;
             }
-            const infoModID = doc.find("#class-modid").val();
+            const infoModID = this.isClassPage ? doc.find("#class-modid").val() : undefined;
             const infoCFID = doc.find("#class-cfprojectid").val();
             const infoMRID = doc.find("#class-mrprojectid").val();
-            if (infoModID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter($(".col-lg-6").last()).find("a"), "MODID ");
-            if (infoCFID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter($(".col-lg-6").last()).find("a"), "CFID ");
-            if (infoMRID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter($(".col-lg-6").last()).find("a"), "MRID ");
+            const lastElement = $(".col-lg-6").last();
+            if (infoModID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
+            if (infoCFID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
+            if (infoMRID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
             button.remove();
           }
         });

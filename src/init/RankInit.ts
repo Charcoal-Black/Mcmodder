@@ -20,60 +20,62 @@ export class RankInit extends McmodderInit {
   private work(contentRank: JQuery): UserRankData {
     if (contentRank.find(".empty").length) return { value: 0, rate: 100 };
     let contentList = contentRank.find("ul > li");
-    $('<div><ul class="mcmodder-ranklist-1"/></div><div><ul class="mcmodder-ranklist-2"/></div><div><ul class="mcmodder-ranklist-3"/></div>').appendTo(contentRank).css({ "width": "33.333%", "display": "inline-block" });
+    $(`
+      <div class="mcmodder-ranklist-container"><ul class="mcmodder-ranklist-1" /></div>
+      <div class="mcmodder-ranklist-container"><ul class="mcmodder-ranklist-2" /></div>
+      <div class="mcmodder-ranklist-container"><ul class="mcmodder-ranklist-3" /></div>
+    `).appendTo(contentRank);
     const maxValue = parseFloat(contentList.first().find("span.score").text());
     const listLength = contentList.length;
     let totalValue = 0, totalRate = 0, r = 0;
     for (const _i in contentList.toArray()) {
       const i = Number(_i);
-      let li = null, rank = null, e = contentList.eq(i);
+      let li = $("<li>"), rank = null, e = contentList.eq(i);
 
       if (i < listLength / 3)
-        li = $("<li>").appendTo(contentRank.find(".mcmodder-ranklist-1"));
+        li.appendTo(contentRank.find(".mcmodder-ranklist-1"));
       else if (i < listLength * 2 / 3)
-        li = $("<li>").appendTo(contentRank.find(".mcmodder-ranklist-2"));
+        li.appendTo(contentRank.find(".mcmodder-ranklist-2"));
       else
-        li = $("<li>").appendTo(contentRank.find(".mcmodder-ranklist-3"));
+        li.appendTo(contentRank.find(".mcmodder-ranklist-3"));
 
       let div = $('<div>').appendTo(li).css("display", "inline-block");
       let quantity = e.attr("data-content");
-      if (quantity.includes("字节")) quantity = quantity.replace("字节", " B").replace('(约', '<span style="color: gray; display: inline">(~').replace("个汉字)", "汉字)</span>");
-      else quantity = quantity.replace("次", " 次");
+      if (quantity.includes("字节")) {
+        quantity = quantity.replace("字节", " B")
+        .replace('(约', '<span style="color: var(--mcmodder-color-text-dark3); display: inline">(~')
+        .replace("个汉字)", "汉字)</span>");
+      } else {
+        quantity = quantity.replace("次", " 次");
+      }
       let href = e.find("a").first().prop("href");
       let rate = parseFloat(e.find("span.score").text());
       if (isNaN(rate)) rate = 0;
       totalRate += rate;
       let userName = e.find("a.name").text();
 
-      $("<i>").appendTo(div).css({
-        "float": "left",
-        "background-image": `url("${e.find("img").attr("src")}")`,
-        "background-size": "cover",
-        "width": "40px",
-        "height": "40px"
+      $(`<i class="avatar">`).appendTo(div).css({
+        "background-image": `url("${e.find("img").attr("src")}")`
       });
-      div = $("<div>").appendTo(li).css({
-        "display": "inline-block",
-        "width": "calc(100% - 40px)"
-      });
+      div = $(`<div class="content">`).appendTo(li);
       if (i > 0 && e.attr("data-content") != contentList.eq(i - 1).attr("data-content")) r = i;
       switch (Number(r)) {
-        case 0: rank = '<i class="fa fa-trophy" style="margin-right: 4px; color:goldenrod"></i>'; break;
-        case 1: rank = '<i class="fa fa-trophy" style="margin-right: 4px; color:silver"></i>'; break;
-        case 2: rank = '<i class="fa fa-trophy" style="margin-right: 4px; color:brown"></i>'; break;
-        default: rank = '<span style="margin-right: 4px; display: inline; font-size: 13px" class="mcmodder-common-light">#' + (Number(r) + 1) + '</span>';
+        case 0: rank = '<i class="fa fa-trophy trophy gold'; break;
+        case 1: rank = '<i class="fa fa-trophy trophy silver'; break;
+        case 2: rank = '<i class="fa fa-trophy trophy bronze'; break;
+        default: rank = '<span style="rank-num" class="mcmodder-common-light">#' + (Number(r) + 1) + '</span>';
       }
       div.html(`
-        <p style="font-size: 14px; height: 20px; overflow: hidden;">
+        <p class="name">
           ${rank}
-          <a style="text-align: left; font-weight: bold; display: inline; font-size: 14px;" href="${href}" target="_blank">
+          <a class="me" href="${href}" target="_blank">
             ${userName + ((userName === this.parent.currentUsername) ? " (我)" : "")}
           </a>
           (${rate}%) 
         </p>
-        <div class="progress" style="width: 100%;height: 20px;position:relative">
+        <div class="progress" style="width: 100%; height: 20px; position:relative">
           <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${rate / maxValue * 100.0}%;">
-            <span style="text-align: center; display: inline; position: absolute">${quantity}</span>
+            <span class="quantity">${quantity}</span>
           </div>
         </div>`
       );

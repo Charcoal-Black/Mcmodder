@@ -8,20 +8,20 @@
 }
 .btn,
 .btn-dark {
-  background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));
-  color: var(--mcmodder-tx);
-  border-color: 1px solid var(--mcmodder-bg);
+  background:linear-gradient(45deg, var(--mcmodder-color-primary-light), var(--mcmodder-color-accent-light));
+  color: var(--mcmodder-color-text);
+  border-color: 1px solid var(--mcmodder-color-background-transparent);
 }
 .dropdown-item.active {
-  background:linear-gradient(45deg,var(--mcmodder-td1),var(--mcmodder-td2));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
 .tooltip-inner,
 body .edui-default .edui-bubble .edui-popup-content {
-  background-color: var(--mcmodder-bgn);
-  color: var(--mcmodder-tx);
+  background-color: var(--mcmodder-color-background);
+  color: var(--mcmodder-color-text);
 }
 .btn-outline-dark {
-  border-color:var(--mcmodder-tda1)
+  border-color: var(--mcmodder-color-primary-dark1-transparent1)
 }
 .common-imglist a[rel=nofollow] img,
 .sidebar .user-info img {
@@ -30,7 +30,7 @@ body .edui-default .edui-bubble .edui-popup-content {
 .common-rowlist-block .title,
 .common-imglist-block .title,
 .popover-header {
-  background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2));
+  background: linear-gradient(90deg, var(--mcmodder-color-primary-transparent1), var(--mcmodder-color-accent-transparent1));
 }
 body > .content,
 .fold-list-object-ul .count,
@@ -52,12 +52,12 @@ body > .content,
 .mcmodder-title,
 .modal-title,
 .tools-title {
-  text-decoration: underline 4px var(--mcmodder-tc1);
+  text-decoration: underline 4px var(--mcmodder-color-primary);
   text-underline-position: under;
   position: relative;
   line-height: 2;
   font-size: 24px;
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
 }
 .header-layer .title,
 .center-content.admin-list .title,
@@ -65,39 +65,14 @@ body > .content,
 .common-center .right .tab-content ul.tab-ul p.title,
 .mcmodder-subtitle,
 .col-form-label {
-  text-decoration: underline 3px var(--mcmodder-tc1);
+  text-decoration: underline 3px var(--mcmodder-color-primary);
   text-underline-position: under;
   position: relative;
   line-height: 2;
   font-size: 18px;
   font-weight: unset;
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
 }
-/* .common-center .maintext .itemname .name h5::after,
-.itemname h5::after,
-.center-block-head .title::after,
-.common-center .post-row .postname .name h5::after,
-.common-center .right .class-title h3::after,
-.mcmodder-data-frame .class-title h3::after,
-.common-comment-block .comment-title::after,
-.mcmodder-title::after,
-.modal-title::after,
-.tools-title::after,
-.header-layer .title::after,
-.center-content.admin-list .title::after,
-.modlist-filter-block .title::after,
-.common-center .right .tab-content ul.tab-ul p.title::after,
-.mcmodder-subtitle::after,
-.col-form-label::after {
-  position: absolute;
-  content: "";
-  width: 80%;
-  background-image: linear-gradient(90deg, var(--mcmodder-td1), var(--mcmodder-tcaa2));
-  height: .125em;
-  bottom: .25em;
-  left: 0;
-  border-radius: .0625em;
-} */
 .itemname h5 {
   margin: 0 0 .5em 0;
 }
@@ -141,7 +116,7 @@ body > .content,
 .class-info-left .col-lg-6 .title,
 .verify-rowlist .title,
 .class-excount .infos .span .n {
-  color: var(--mcmodder-tx);
+  color: var(--mcmodder-color-text);
   justify-content: center;
   display: flex;
   width: 100%;
@@ -153,6 +128,10 @@ body > .content,
 .center-total li .title {
   overflow: unset;
 }
+.class-excount:not(.mcmodder-disable-modern) {
+  padding: 0;
+  border-radius: 1em;
+}
 .class-excount,
 .comment-dl-tips {
   width: unset;
@@ -161,7 +140,7 @@ body > .content,
 .center-total li .title,
 .class-info-left .col-lg-6 .text,
 .verify-rowlist .text {
-  color: var(--mcmodder-txd1);
+  color: var(--mcmodder-color-text-dark1);
   text-align: center;
   display: block;
   width: 100%;
@@ -170,22 +149,22 @@ body > .content,
 .common-center .maintext .item-give {
   width: unset;
   border: unset;
-  background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2))
+  background: linear-gradient(90deg,var(--mcmodder-color-primary-transparent1),var(--mcmodder-color-accent-transparent1))
 }
 .common-center .maintext .item-give span {
   font-size: 14px;
   color: unset;
-  font-family: consolas, monospace;
+  font-family: var(--mcmodder-font-monospace);
 }
 body .common-nav {
   padding: 0 .8em;
   margin-top: 4em;
 }
 .item-dict a {
-  color: var(--mcmodder-tx);
-  font-family: consolas, monospace;
+  color: var(--mcmodder-color-text);
+  font-family: var(--mcmodder-font-monospace);
   border-radius: 10px;
-  background: linear-gradient(90deg,var(--mcmodder-tca1),var(--mcmodder-tca2));
+  background: linear-gradient(90deg,var(--mcmodder-color-primary-transparent1),var(--mcmodder-color-accent-transparent1));
   padding: 5px;
   margin-right: .5em;
 }
@@ -196,8 +175,7 @@ body .common-nav {
 .common-center .right .class-relation-list .relation li,
 .item-search-frame,
 .item-used-frame {
-  padding-bottom: .3em;
-  border-bottom: 2px dashed var(--mcmodder-tca1);
+  border-bottom: 2px dashed var(--mcmodder-color-primary-transparent1);
 }
 .col-lg-6 {
   padding: 0;
@@ -208,8 +186,8 @@ body .header-layer {
   padding-left: 3em !important;
   padding-right: 3em !important;
   backdrop-filter: blur(10px);
-  background-color: var(--mcmodder-bgn);
-  border-color: var(--mcmodder-bgd2)
+  background-color: var(--mcmodder-color-background);
+  border-color: var(--mcmodder-color-background-dark2)
 }
 .header-layer .header-layer-block {
   width: 250px;
@@ -230,7 +208,7 @@ body .header-layer {
 .center-main.favorite .favorite-fold-fuc i,
 .common-center .right .class-relation-list .relation i,
 .center-main.attitude li i {
-  color: var(--mcmodder-td1);
+  color: var(--mcmodder-color-primary-dark1);
   margin-right: .5em
 }
 .class-excount .star .fire i {
@@ -244,13 +222,13 @@ body .header-layer {
 .center-menu li:hover a,
 .common-menu-page li,
 .common-menu-page li.active,
-.common-menu-page li.hover {
+.common-menu-page li:hover {
   border-top: 0;
   border-bottom: 0;
 }
 .center-content.lv-info .lv-bar .progress-bar,
 #mcmodder-progress {
-  background: linear-gradient(90deg,var(--mcmodder-tc1),var(--mcmodder-tc2));
+  background: linear-gradient(90deg,var(--mcmodder-color-primary),var(--mcmodder-color-accent));
 }
 .common-center .right .class-info .class-info-left .author li {
   height: 60px;
@@ -280,6 +258,10 @@ body .header-layer {
 .common-center .right .class-info .class-info-left .author li .member .name {
   max-width: 245px;
 }
+.common-select, .header-search form {
+  border-width: 1px;
+  animation: var(--mcmodder-animation-shinyborder);
+}
 .structure-block-label .item-table-hover-t1,
 .structure-block-label .item-table-hover-t2 {
   color: #ddd !important;
@@ -287,24 +269,16 @@ body .header-layer {
 .common-fuc-group .action {
   padding: 2px;
 }
-@keyframes mcmodder-tooltip-gradient {
-  from {
-    border-color: var(--mcmodder-tc1);
-  }
-  to {
-    border-color: var(--mcmodder-tc2);
-  }
-}
 .tooltip-inner,
 body .edui-default .edui-bubble .edui-popup-content {
   max-width: unset;
   border-radius: 1rem;
   padding: 1em 2em;
-  animation: fadeIn .3s ease-out forwards, mcmodder-tooltip-gradient 2s ease-in-out infinite alternate;
+  animation: fadeIn .3s ease-out forwards, var(--mcmodder-animation-shinyborder);
   border: 2px solid;
   position: relative;
   box-shadow: 0 0 10px #8888;
-  background-color: var(--mcmodder-bgn);
+  background-color: var(--mcmodder-color-background);
 }
 .swiper-wrapper.page-ul {
   position: relative;
@@ -318,7 +292,7 @@ body .edui-default .edui-bubble .edui-popup-content {
 .mcmodder-swiper-cursor {
   height: 100%;
   width: 50px;
-  background-image: linear-gradient(90deg, var(--mcmodder-td1), var(--mcmodder-td2));
+  background-image: linear-gradient(90deg, var(--mcmodder-color-primary-dark1), var(--mcmodder-color-accent-dark1));
   border-radius: 1.5px;
   transition: margin-left .3s;
 }
@@ -334,7 +308,7 @@ body .edui-default .edui-bubble .edui-popup-content {
 }
 .class-excount .star .block-left,
 .bootstrap-tagsinput .tag {
-  background: linear-gradient(45deg,var(--mcmodder-tc1), var(--mcmodder-tc2));
+  background: linear-gradient(45deg,var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
 body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   position: fixed;
@@ -374,7 +348,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   width: 110px;
   height: 110px;
   padding: 2px;
-  background-color: var(--mcmodder-badges);
+  background-color: var(--mcmodder-color-badges);
   border-radius: 50%;
   margin-bottom: 0.8em;
 }
@@ -417,14 +391,31 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: gray;
+  color: var(--mcmodder-color-text-dark2);
   text-wrap: nowrap;
+}
+@keyframes mcmodder-favuser-hover {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+.mcmodder-favuser a:hover .avatar {
+  animation: mcmodder-favuser-hover .5s both 1;
+}
+.mcmodder-favuser a:hover .nickname {
+  color: var(--mcmodder-color-accent-dark1);
 }
 .user-fav .avatar {
   position: relative;
 }
 .user-fav .avatar img {
-  border: 2px solid var(--mcmodder-tc1);
+  border: 2px solid var(--mcmodder-color-primary);
 }
 .mcmodder-favuser .user-fav .avatar:before {
   position: absolute;
@@ -434,7 +425,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 .mcmodder-favuser.pin .user-fav .avatar:before {
   top: -.4em;
   content: "\f08d";
-  color: var(--mcmodder-tc1);
+  color: var(--mcmodder-color-primary);
   transform: rotate(45deg);
 }
 .mcmodder-favuser.star .user-fav .avatar:before {
@@ -448,7 +439,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   color: #f55;
 }
 .syntaxhighlighter {
-  background-color: var(--mcmodder-bg);
+  background-color: var(--mcmodder-color-background-transparent);
 }
 .header-layer {
   position: relative;
@@ -463,6 +454,15 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 }
 .mcmodder-class-init.col-lg-12.right {
   padding-right: 280px;
+}
+.mcmodder-class-env-required {
+  color: var(--mcmodder-color-primary-dark1);
+}
+.mcmodder-class-env-optional {
+  color: var(--mcmodder-color-accent-dark1);
+}
+.mcmodder-class-env-invalid {
+  color: var(--mcmodder-color-text-dark3);
 }
 @media (min-width: 1281px) {
   .common-center .right .class-info .class-info-left.mcmodder-class-source-info,
@@ -583,7 +583,6 @@ body > .container > *,
 .common-world-gen-data,
 .header-search form .class-info-right > ul,
 .item-text > .item-info-table,
-.class-excount:not(.mcmodder-disable-modern),
 .common-text-menu,
 .mcmodder-presubmit-editor,
 #mcmodder-text-result,
@@ -597,7 +596,7 @@ body > .container > *,
 .btn {
   border-radius: 1em;
   padding: .1em .8em;
-  box-shadow: var(--mcmodder-shadow) 0px 2px 4px 0px;
+  box-shadow: var(--mcmodder-color-shadow) 0px 2px 4px 0px;
 }
 #edui1 {
   border-radius: 1em;
@@ -610,7 +609,7 @@ body .edui-default .edui-editor-iframeholder {
 }
 .mcmodder-gui-alert {
   max-width: 60%;
-  background: linear-gradient(45deg,var(--mcmodder-tca1),var(--mcmodder-tca2));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary-transparent1), var(--mcmodder-color-accent-transparent1));
   line-height: 1.8
 }
 .mcmodder-logger {
@@ -680,27 +679,56 @@ body .edui-default .edui-editor-iframeholder {
   display: inline-block;
   width: 20%;
 }
-.header-layer-block a {
-  color: var(--mcmodder-btn);
+.header-layer-block ul {
+  line-height: 1;
+}
+.header-layer-block li a,
+.header-layer-block li a span {
+  color: var(--mcmodder-color-button);
+}
+.header-layer-block li a:hover,
+.header-layer-block li a:hover span {
+  color: var(--mcmodder-color-accent-dark2);
 }
 .header-layer-block li {
   position: relative;
+  height: 2em;
+  line-height: 2em;
+}
+.header-layer-block li a {
+  transition: transform;
+}
+.header-layer-block li a i:first-child {
+  left: 5px;
+}
+.header-layer-block li a i:last-child {
+  transition: right .3s;
+  right: 5px;
+}
+.header-layer-block li a:hover i:last-child {
+  right: 0;
 }
 .header-user:not(.unlogin) li {
   width: 180px;
 }
-.header-layer-block .fa {
+.header-layer-block li a > * {
   position: absolute;
   top: 50%;
-  transform: translate(0, -50%);
-  color: #666;
+  transform: translateY(-50%);
+  color: var(--mcmodder-color-text-dark2);
+}
+.header-layer .header-layer-block li a span {
+  font-size: 16px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
 }
 body .edui-default span.edui-clickable {
-  color: var(--mcmodder-link);
+  color: var(--mcmodder-color-link);
   text-decoration: unset;
 }
 body .edui-default span.edui-clickable:hover {
-  color: var(--mcmodder-link-hover);
+  color: var(--mcmodder-color-link-hover);
 }
 body .edui-default .edui-toolbar .edui-button .edui-state-checked .edui-button-wrap,
 body .edui-default .edui-toolbar .edui-splitbutton .edui-state-checked .edui-splitbutton-body,
@@ -709,16 +737,19 @@ body .edui-default .edui-menu-body .edui-state-hover,
 body .edui-default .edui-list .edui-state-hover,
 body .edui-default .edui-toolbar .edui-splitbutton .edui-state-opened .edui-splitbutton-body,
 body .edui-default .edui-toolbar .edui-menubutton .edui-state-opened .edui-menubutton-body {
-  background-color: var(--mcmodder-tca1);
-  border-color: var(--mcmodder-ta1);
+  background-color: var(--mcmodder-color-primary-transparent1);
+  border-color: var(--mcmodder-color-primary-dark1);
 }
 body .edui-default .edui-editor-toolbarboxinner {
   padding: 2px .4em;
 }
+.common-pages .page-item a:hover {
+  background-color: var(--mcmodder-color-accent) !important;
+}
 .common-pages .page-item .page-link {
   background-color: transparent;
-  border-color: var(--mcmodder-badges);
-  color: var(--mcmodder-btn);
+  border-color: var(--mcmodder-color-badges);
+  color: var(--mcmodder-color-button);
 }
 .common-pages .page-item.active .page-link,
 .badge,
@@ -729,21 +760,21 @@ body .edui-default .edui-editor-toolbarboxinner {
 .center-main.favorite .common-pages .page-item.active .page-link,
 .center-main.favorite .favorite-fold-list a.active,
 .center-main.favorite .favorite-slot-menu ol a.active {
-  background-color: var(--mcmodder-tcaa1);
-  color: var(--mcmodder-td1);
-  border-color: var(--mcmodder-badges);
-  text-shadow: 1px 1px 1px var(--mcmodder-badges);
+  background-color: var(--mcmodder-color-primary-transparent2);
+  color: var(--mcmodder-color-primary-dark2);
+  border-color: var(--mcmodder-color-badges);
+  text-shadow: 1px 1px 1px var(--mcmodder-color-badges);
 }
 .center-main.favorite .favorite-fold-list a.active span {
   color: inherit;
 }
 .modlist-filter-block ul:not(.common-class-category) li.main span,
 .center-item-popover-b {
-  background:linear-gradient(45deg,var(--mcmodder-tc1),var(--mcmodder-tc2));
+  background:linear-gradient(45deg,var(--mcmodder-color-primary),var(--mcmodder-color-accent));
 }
 .form-control:focus {
-  border-color: var(--mcmodder-tc2);
-  box-shadow: 0 0 0 .2em var(--mcmodder-tcaa2);
+  border-color: var(--mcmodder-color-accent);
+  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
 }
 .fixed-top {
   position: fixed;
@@ -752,7 +783,7 @@ body .edui-default .edui-editor-toolbarboxinner {
 }
 .item-table-block .power_area,
 .common-center .right .class-relation-list fieldset {
-  border-color: var(--mcmodder-tca1);
+  border-color: var(--mcmodder-color-primary-transparent1);
   border-radius: .8em;
 }
 .common-center .right .class-info .class-info-right {
@@ -792,15 +823,11 @@ body .edui-default .edui-editor-toolbarboxinner {
   font-size: 16px;
 }
 .mcmodder-content-block:hover {
-  background-color: aliceblue;
-}
-.dark .mcmodder-content-block:hover {
-  background-color: #012;
+  background-color: var(--mcmodder-color-accent-background);
 }
 .common-center .right .class-info .mcver ul ul li {
   margin-right: unset;
 }
-.modal-content,
 footer,
 .un_links,
 .under,
@@ -909,6 +936,7 @@ body .header-container {
 }
 .class-excount .star .block-left {
   text-shadow: 2px 2px 2px #333;
+  border-radius: 1em 0;
 }
 .center-block-head .more {
   right: 2em;
@@ -919,7 +947,7 @@ body .header-container {
   border-bottom-right-radius: 1em;
 }
 .header-right .header-user .header-user-avatar img {
-  border-color: var(--mcmodder-badges);
+  border-color: var(--mcmodder-color-badges);
 }
 .common-center .class-edit-block {
   width: unset;
@@ -1047,18 +1075,17 @@ body .edui-default .edui-toolbar .edui-colorbutton .edui-colorlump {
 .common-text p {
   width: 100%;
 }
-.checkbox-danger input[type="checkbox"]:checked + label::before,
-.checkbox-danger input[type="radio"]:checked + label::before,
 .radio label::after {
-  background-color: var(--mcmodder-tc1);
-  border-color: var(--mcmodder-tc1);
+  background-color: var(--mcmodder-color-primary);
+  border-color: var(--mcmodder-color-primary);
 }
 .checkbox label::after,
 .common-center .right .tab-content li.tab-li .tips,
 .dropdown-item,
-.checkbox-danger input[type="checkbox"]:checked + label::after,
-.checkbox-danger input[type="radio"]:checked + label::after {
-  color: var(--mcmodder-td1);
+.message-menu li a.active,
+.message-submenu li.active a,
+.pages_system .Pbtn_on {
+  color: var(--mcmodder-color-primary-dark2);
 }
 .center-total ul {
   display: grid;
@@ -1081,22 +1108,12 @@ body .edui-default .edui-toolbar .edui-colorbutton .edui-colorlump {
 .modal-open {
   overflow: scroll;
 }
-#verify-window .modal-dialog {
-  width: 100%;
-  margin: 0;
-}
-#verify-window .modal-content {
-  border-radius: 0;
-}
-#verify-window .modal-backdrop {
-  background-color: var(--mcmodder-bgn);
-}
-#connect-frame-sub > #verify-window {
-  display: none !important;
+#verify-window-label {
+  display: inline-block;
 }
 .mcmodder-verifywindow-empty {
   font-size: 24px;
-  color: var(--mcmodder-tc1);
+  color: var(--mcmodder-color-primary);
   text-align: center;
   margin-top: 45vh;
 }
@@ -1114,12 +1131,10 @@ body .edui-default .edui-toolbar .edui-colorbutton .edui-colorlump {
 .modal-content,
 .header-search form,
 .searchbox,
-.radio label::before,
-.checkbox label::before,
 .popover-header {
-  background: var(--mcmodder-bg) !important;
-  border-color: var(--mcmodder-bgd3);
-  color: var(--mcmodder-tx);
+  background: var(--mcmodder-color-background) !important;
+  border-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
 }
 body .edui-default .edui-toolbar .edui-button .edui-state-hover .edui-button-wrap,
 body .edui-default .edui-toolbar .edui-splitbutton .edui-state-hover .edui-splitbutton-body,
@@ -1128,9 +1143,9 @@ body .edui-default .edui-toolbar .edui-menubutton .edui-state-hover .edui-menubu
 #swal2-content .common-mcicon-frame li:hover,
 .dropdown-item:focus,
 .dropdown-item:hover {
-  background-color: var(--mcmodder-tca1);
-  border-color: var(--mcmodder-tc1);
-  color: var(--mcmodder-tx);
+  background-color: var(--mcmodder-color-primary-transparent1);
+  border-color: var(--mcmodder-color-primary);
+  color: var(--mcmodder-color-text);
 }
 body .edui-default .edui-editor-toolbarbox {
   box-shadow: none;
