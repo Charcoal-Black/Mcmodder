@@ -42,14 +42,14 @@ export class StyleLoader {
   }
 
   static async run(parent: Mcmodder) {
-    const module = import.meta.glob('../css/*.css', { query: "?raw" });
-    const baseCss = (await module["../css/base.css"]() as any).default as string;
-    const mcmodderUICss = (await module["../css/mcmodderUI.css"]() as any).default as string;
-    const aprilFoolsCss = (await module["../css/aprilFools.css"]() as any).default as string;
-    const tableThemeColorCss = (await module["../css/tableThemeColor.css"]() as any).default as string;
-    const tableLeftAlignCss = (await module["../css/tableLeftAlign.css"]() as any).default as string;
-    const tabSelectorInfoCss = (await module["../css/tabSelectorInfo.css"]() as any).default as string;
-    const splitScreenOnVerifyCss = (await module["../css/splitScreenOnVerify.css"]() as any).default as string;
+    const module = import.meta.glob('../css/*.css', { query: "?raw", eager: true });
+    const baseCss = (module["../css/base.css"] as any).default as string;
+    const mcmodderUICss = (module["../css/mcmodderUI.css"] as any).default as string;
+    const aprilFoolsCss = (module["../css/aprilFools.css"] as any).default as string;
+    const tableThemeColorCss = (module["../css/tableThemeColor.css"] as any).default as string;
+    const tableLeftAlignCss = (module["../css/tableLeftAlign.css"] as any).default as string;
+    const tabSelectorInfoCss = (module["../css/tabSelectorInfo.css"] as any).default as string;
+    const splitScreenOnVerifyCss = (module["../css/splitScreenOnVerify.css"] as any).default as string;
 
     const basePalette: McmodderPalette = {
       "background": "#fff",
@@ -240,5 +240,10 @@ export class StyleLoader {
     McmodderUtils.addStyle(style);
 
     parent.updateNightMode();
+    const splashScreen = document.getElementById("mcmodder-splash-screen");
+    if (splashScreen) {
+      splashScreen.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
+      setTimeout(() => splashScreen.remove(), 300);
+    }
   }
 }

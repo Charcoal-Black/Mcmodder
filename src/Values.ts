@@ -68,8 +68,8 @@ export class McmodderValues {
   static readonly mcmodderVersion = GM_info.script.version || "Unknown";
   static readonly MAX_REQUEST_COUNT = 10000;
   static readonly MAX_RECIPE_LENGTH = 100;
-  static readonly headerContainerHeight = $(".top-main, .header-container, #top").get(0)?.getBoundingClientRect()?.height || 50; // 50
-  static readonly errorMessage = typeof PublicLangData != "undefined" ? PublicLangData.warning.inform : {};
+  static get headerContainerHeight() { return $(".top-main, .header-container, #top").get(0)?.getBoundingClientRect()?.height || 50; } // 50
+  static get errorMessage() { return typeof PublicLangData != "undefined" ? PublicLangData.warning.inform : {}; }
   
   static readonly iconMap = {
     "后台管理": "fa fa-university",

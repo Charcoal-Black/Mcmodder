@@ -14,7 +14,7 @@ export default defineConfig({
         license: "AGPL-3.0",
         icon: 'https://www.mcmod.cn/static/public/images/favicon.ico',
         namespace: 'http://www.mcmod.cn/',
-        "run-at": 'document-end',
+        "run-at": 'document-start',
         match: ['https://*.mcmod.cn/*'],
         exclude: [
           "https://api.mcmod.cn/*",
