@@ -407,7 +407,7 @@ export class McmodderUtils {
   }
 
   static versionArrayToString(arr: number[]) {
-    if (arr[1] === 1) return "远古版本"; // 远古版本统一视为 1.1.0
+    if (arr[0] === 1 && arr[1] === 1) return "远古版本"; // 远古版本统一视为 1.1.0
     if (!arr[2]) arr = arr.slice(0, 2);
     return arr.join(".");
   }
@@ -661,7 +661,7 @@ export class McmodderUtils {
   }
 
   static addStyle(value: string, id = "", doc = document) {
-    if (doc.getElementById(id)) return;
+    if (id && doc.getElementById(id)) return;
     let style = $('<style type="text/css">').appendTo($("head", doc)).html(value);
     if (id) style.attr("id", id);
   }

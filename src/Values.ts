@@ -113,14 +113,18 @@ export class McmodderValues {
   static readonly supportedImageSuffix = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
   static readonly importableKeys = ["name", "englishName", "registerName", "metadata", "OredictList",
     "type", "maxStackSize", "maxDurability", "smallIcon", "largeIcon"];
-
+  //用于 < 26.1的版本列表
   static readonly allVersionList = [
     [], [], [5], [2], [2, 3, 7], [2], [4], // 1.6-
     [2, 4, 5, 8, 9, 10], [0, 8, 9], [0, 4], // 1.7 ~ 1.9
     [0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2], // 1.11 ~ 1.13
     [0, 1, 2, 3, 4], [0, 1, 2], [0, 1, 2, 3, 4, 5], // 1.14 ~ 1.16
     [0, 1], [0, 1, 2], [0, 1, 2, 3, 4], // 1.17 ~ 1.19
-    [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] // 1.20 ~ 1.21
+    [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11] // 1.20 ~ 1.21
+  ];
+  //26.1以后的版本列表 YY.D.H
+  static readonly newVersionList = [
+    [[], [0]] // 26: 26.0(none), 26.1([0])
   ];
 
   static readonly loaderSupportVersions = {

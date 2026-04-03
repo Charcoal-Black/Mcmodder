@@ -177,8 +177,11 @@ table th,
 }
 body .uknowtoomuch {
   text-shadow: none;
-  background-color: var(--mcmodder-uknowtoomuch) !important;
-  color: var(--mcmodder-uknowtoomuch) !important;
+  background-color: var(--mcmodder-color-uknowtoomuch) !important;
+  color: var(--mcmodder-color-uknowtoomuch) !important;
+}
+body .uknowtoomuch:hover {
+  color: var(--mcmodder-color-uknowtoomuch-hover) !important;
 }
 .common-center .right .class-info .col-lg-4,
 .content,

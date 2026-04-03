@@ -326,7 +326,7 @@ export class ClassPageInit extends McmodderInit {
     if (this.parent.utils.getConfig("compactSupportedVersions")) {
       type MCVersion = [number, number, number];
       type MCVersionRange = [MCVersion?, MCVersion?];
-      let startIndex: number, minorIndex: number, versionRanges: MCVersionRange[], currentRange: MCVersionRange;
+      let startIndex: number, patchIndex: number, versionRanges: MCVersionRange[], currentRange: MCVersionRange;
       $(".mcver > ul > ul").each((_, versionListNode) => {
         versionRanges = [];
         currentRange = [];
@@ -338,24 +338,39 @@ export class ClassPageInit extends McmodderInit {
           while (verArray.length < 3) verArray.push(0);
           return verArray;
         });
+        
         for (let ver of versionList) {
-          const major = ver[1];
-          const minor = ver[2];
-          minorIndex = 0;
-          for (const index in McmodderValues.allVersionList[major]) { // 查找当前版本在支持版本列表中的索引
-            if (McmodderValues.allVersionList[major][index] === minor) {
-              minorIndex = Number(index);
-              break;
+          const major = ver[0];
+          const minor = ver[1];
+          const patch = ver[2];
+          patchIndex = 0;
+          // 根据版本格式获取对应的版本列表
+          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
+          const series = minor;
+
+          if (list) {
+            for (const index in list) {
+              if (list[index] === patch) {
+                patchIndex = Number(index);
+                break;
+              }
             }
           }
-          if (!currentRange || !currentRange.length || currentRange[0]![1] > major ||
-            (currentRange[0]![1] === major && minorIndex + 1 != startIndex)) { // 新建一个版本区间
+
+          let isSameSeries = false;
+          if (currentRange && currentRange.length) {
+            const prevMajor = currentRange[0]![0];
+            const prevSeries = currentRange[0]![1];
+            isSameSeries = (prevSeries === series) && (prevMajor === major);
+          }
+
+          if (!currentRange || !currentRange.length || !isSameSeries || patchIndex + 1 != startIndex) { // 新建一个版本区间
             currentRange = [Array.from(ver) as MCVersion, Array.from(ver) as MCVersion];
             versionRanges.push(currentRange);
-            startIndex = minorIndex;
+            startIndex = patchIndex;
           }
-          else if (minorIndex + 1 === startIndex) { // 将当前版本与最近的版本区间合并
-            startIndex = minorIndex;
+          else if (patchIndex + 1 === startIndex) { // 将当前版本与最近的版本区间合并
+            startIndex = patchIndex;
             currentRange[0] = Array.from(ver) as MCVersion;
           }
         }
@@ -364,13 +379,20 @@ export class ClassPageInit extends McmodderInit {
         versionRanges.forEach(versionRange => { // 将所有版本区间写入页面
           if (versionRange.length < 2) return;
           let rangeContent;
-          let major = versionRange[0]![1];
-          let minorList = McmodderValues.allVersionList[major];
-          let minorOld = versionRange[0]![2];
-          let minorNew = versionRange[1]![2];
-          if (minorList.length > 1 && minorOld === minorList[0] && minorNew === minorList[minorList.length - 1]) rangeContent = `1.${major}.x`;
-          else if (minorOld === minorNew) rangeContent = McmodderUtils.versionArrayToString(versionRange[0]!);
-          else rangeContent = `${McmodderUtils.versionArrayToString(versionRange[1]!)}-${McmodderUtils.versionArrayToString(versionRange[0]!)}`
+          const major = versionRange[0]![0];
+          const minor = versionRange[0]![1];
+          const patchOld = versionRange[0]![2];
+          const patchNew = versionRange[1]![2];
+          
+          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
+
+          if (list && list.length > 1 && patchOld === list[0] && patchNew === list[list.length - 1]) {
+            rangeContent = major === 1 ? `1.${minor}.x` : `${major}.${minor}.x`;
+          } else if (patchOld === patchNew) {
+            rangeContent = McmodderUtils.versionArrayToString(versionRange[0]!);
+          } else {
+            rangeContent = `${McmodderUtils.versionArrayToString(versionRange[1]!)}-${McmodderUtils.versionArrayToString(versionRange[0]!)}`;
+          }
 
           $versionListNode.append(`<li class="text-danger mcmodder-compactedmcver"><a target="_blank" class="mcmodder-content-block">${rangeContent}</a></li>`);
         });
