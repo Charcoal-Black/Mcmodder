@@ -148,7 +148,8 @@ export class StyleLoader {
       "platform-neoforge": "#dc895c",
       "platform-quilt": "#8b61d4",
       "platform-liteloader": "#4c90de",
-      "uknowtoomuch": "#000"
+      "uknowtoomuch": "#000",
+      "uknowtoomuch-hover": "#fff"
     }, []);
     const otherPaletteNightCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(nightPalette.background, backgroundAlpha),
@@ -180,7 +181,8 @@ export class StyleLoader {
       "verifyframe-error": "#f55",
       "verifyframe-warning": "#da6",
       "verifyframe-info": "#aaa",
-      "uknowtoomuch": "#444"
+      "uknowtoomuch": "#444",
+      "uknowtoomuch-hover": "#ddd"
     }, []);
 
     const css = {
