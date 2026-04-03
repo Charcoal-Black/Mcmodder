@@ -344,8 +344,8 @@ export class ClassPageInit extends McmodderInit {
           const minor = ver[1];
           const patch = ver[2];
           patchIndex = 0;
-
-          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[`${major}.${minor}`];
+          // 根据版本格式获取对应的版本列表
+          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
           const series = minor;
 
           if (list) {
@@ -384,7 +384,7 @@ export class ClassPageInit extends McmodderInit {
           const patchOld = versionRange[0]![2];
           const patchNew = versionRange[1]![2];
           
-          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[`${major}.${minor}`];
+          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
 
           if (list && list.length > 1 && patchOld === list[0] && patchNew === list[list.length - 1]) {
             rangeContent = major === 1 ? `1.${minor}.x` : `${major}.${minor}.x`;
