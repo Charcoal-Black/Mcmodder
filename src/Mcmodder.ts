@@ -312,7 +312,7 @@ export class Mcmodder {
 
   updateSplashListData() {
     const splashes_old: string[] = GM_getValue("mcmodderSplashList").split("\n");
-    let splashes = "", count: [string, number][] = [], flag: boolean;
+    let splashes: string[] = [], count: [string, number][] = [], flag: boolean;
     splashes_old.pop();
     for (let i = 1; i < splashes_old.length; i++) {
       flag = true;
@@ -324,8 +324,8 @@ export class Mcmodder {
       });
       if (flag) count.push([splashes_old[i], 1]);
     }
-    count.forEach(e => splashes += ("0," + e[0] + "," + e[1] + "\n"));
-    GM_setValue("mcmodderSplashList_v2", splashes);
+    count.forEach(e => splashes.push(`0,${ e[0] },${ e[1] }`));
+    GM_setValue("mcmodderSplashList_v2", splashes.join("\n"));
     GM_setValue("mcmodderSplashList", "");
   }
 

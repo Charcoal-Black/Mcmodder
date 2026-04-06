@@ -13,11 +13,11 @@ export abstract class McmodderDynamicRequestQueue extends McmodderRequestQueue {
     super(parent, id, 1, minInterval, logger);
   }
 
-  getResultInitializer(_requestLength?: number) {
+  override getResultInitializer(_requestLength?: number) {
     return [];
   }
 
-  storeResult(result: RequestResult) {
+  override storeResult(result: RequestResult) {
     if (!this.execution) return;
     const canRestore = result?.success && result?.value;
     if (canRestore) {

@@ -68,8 +68,14 @@ export class McmodderValues {
   static readonly mcmodderVersion = GM_info.script.version || "Unknown";
   static readonly MAX_REQUEST_COUNT = 10000;
   static readonly MAX_RECIPE_LENGTH = 100;
-  static get headerContainerHeight() { return $(".top-main, .header-container, #top").get(0)?.getBoundingClientRect()?.height || 50; } // 50
-  static get errorMessage() { return typeof PublicLangData != "undefined" ? PublicLangData.warning.inform : {}; }
+
+  static get headerContainerHeight() {
+    return $(".top-main, .header-container, #top").get(0)?.getBoundingClientRect()?.height || 50;
+  }
+
+  static get errorMessage() {
+    return typeof PublicLangData != "undefined" ? PublicLangData.warning.inform : {};
+  }
   
   static readonly iconMap = {
     "后台管理": "fa fa-university",
@@ -120,11 +126,11 @@ export class McmodderValues {
     [0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2], // 1.11 ~ 1.13
     [0, 1, 2, 3, 4], [0, 1, 2], [0, 1, 2, 3, 4, 5], // 1.14 ~ 1.16
     [0, 1], [0, 1, 2], [0, 1, 2, 3, 4], // 1.17 ~ 1.19
-    [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11] // 1.20 ~ 1.21
+    [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] // 1.20 ~ 1.21
   ];
   //26.1以后的版本列表 YY.D.H
   static readonly newVersionList = [
-    [[], [0]] // 26: 26.0(none), 26.1([0])
+    [[], [0, 1]] // 26: 26.0(none), 26.1([0, 1])
   ];
 
   static readonly loaderSupportVersions = {

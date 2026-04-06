@@ -1,5 +1,5 @@
+import { McmodderTableDataMap } from "../../types";
 import { McmodderEditableTable } from "../EditableTable";
-import { McmodderTableDataMap } from "../Table";
 import { Command } from "./Command";
 
 export class PasteCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
@@ -22,7 +22,7 @@ export class PasteCommand<McmodderTableData extends Object> extends Command<Mcmo
     }
   }
 
-  redo() {
+  override redo() {
     if (this.pastedData) {
       this.self.insertMultipleRowWithDataMap(this.pastedData);
     }

@@ -143,7 +143,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
   protected parseText(text: string) {
     let success = 0, fail = 0, save: McmodderTableData[] | undefined;
     try {
-      save = JSON.parse(text); 
+      save = JSON.parse(text);
       success = 1;
     } catch (err) {
       this.onCaughtParseException(err);
@@ -165,8 +165,9 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     // 处理重名
     if (Object.keys(this.selectionList).includes(saveAs)) {
       let i = 2, dot = saveAs.lastIndexOf("."), main = saveAs.slice(0, dot), extension = saveAs.slice(dot + 1);
-      while (Object.keys(this.selectionList).includes(`${main}(${i}).${extension}`)) i++;
-      saveAs = `${main}(${i}).${extension}`;
+      let newName;
+      while ((newName = `${ main }(${ i }).${ extension }`) && Object.keys(this.selectionList).includes(newName)) i++;
+      saveAs = newName!;
     }
     const {success, fail, result} = this.parseText(text);
     if (success) {
@@ -312,45 +313,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     McmodderUtils.commonMsg("此功能尚未完工，敬请期待~");
   }
 
-  more() {
-    swal.fire({
-      title: "更多操作",
-      html: `
-      <p class="text-muted" style="font-size: 14px;">
-        <hr>
-        <p align="center">
-          <button id="jsonframe-autolink" class="btn">加入自动链接数据库</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong>**已拥有百科内资料 ID 的物品中**</strong>搜索~</p>
-      </p>`,
-        /*<hr>
-        <p align="center">
-          <button id="jsonframe-autolink" class="btn">清除所有格式化代码</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">清除所有原版可用的格式化代码。</p>
-      </p>*/
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: "完事了"
-    });
-    
-    let autolink = $("#jsonframe-autolink").click(_ => {
-      swal.close();
-      let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
-      if (linking.includes(this.activeFileName)) {
-        linking = linking.filter(e => e != this.activeFileName);
-        autolink.text("加入自动链接数据库");
-      }
-      else {
-        linking.push(this.activeFileName);
-        autolink.text("移出自动链接数据库");
-      }
-      this.parent.utils.setConfig("jsonDatabase", linking);
-    });
-    let linking = this.parent.utils.getConfig("jsonDatabase") || [];
-    if (linking.includes(this.activeFileName)) autolink.text("移出自动链接数据库");
-    
-  }
+  protected abstract more(): void;
 
   fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState> {
     return new Promise(resolve => swal.fire({

@@ -59,8 +59,10 @@ export class ClassPageInit extends McmodderInit {
     }
 
     if (this.parent.utils.getConfig("rememberModRelation") && this.isClassPage) {
-      let modDependences = this.parent.utils.getConfig(classID, "modDependences_v2", []), newDependences: number[] = [];
-      let modExpansions = this.parent.utils.getConfig(classID, "modExpansions_v2", []), newExpansions: number[] = [];
+      const modDependences = this.parent.utils.getConfigAsNumberList(classID, "modDependences_v2");
+      const modExpansions = this.parent.utils.getConfigAsNumberList(classID, "modExpansions_v2");
+      const newDependences: number[] = [];
+      const newExpansions: number[] = [];
       $("li.col-lg-12.relation").each((_, e) => {
         let target = $(e);
         target.find("a[data-toggle=tooltip]").each((_, a) => {

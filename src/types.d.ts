@@ -35,7 +35,10 @@ export type PaletteModifierStep = Record<string, PaletteModifier>;
 export type PaletteModifierSchedule = PaletteModifierStep[];
 
 export interface McmodderItemData {
-  /** 该物品的百科资料 ID */
+  /**
+   * 该物品的百科资料 ID，
+   * 未绑定百科资料时为 `0`
+   */
   id: number;
   /**
    * 该物品的在百科中的资料类型编号，
@@ -119,7 +122,10 @@ export interface McmodderItemData {
    * 合法的例子: `[1,2]`
    */
   harvestTools?: string;
-  /** 最大堆叠（百科旧版也称“最大叠加”，今已更正） */
+  /**
+   * 最大堆叠（百科旧版也称“最大叠加”，今已更正）
+   * 一些环境下使用别名 `maxStacksSize`，脚本统一使用 `maxStackSize`
+   */
   maxStackSize?: number;
   /** 最大耐久 */
   maxDurability?: number;
@@ -184,14 +190,20 @@ export interface AutoLinkOredictEntry extends AutoLinkBaseEntry {
 }
 export type AutoLinkEntries = AutoLinkBaseEntry[];
 
+export type McmodderRecipeIngredient = string | string[];
 export interface McmodderRecipeData {
-  in_id?: Record<string, string>;
-  out_id?: Record<string, string>;
+  in_id?: Record<string, McmodderRecipeIngredient>;
+  out_id?: Record<string, McmodderRecipeIngredient>;
   in_num?: Record<string, number>;
   out_num?: Record<string, number>;
   in_chance?: Record<string, number>;
   out_chance?: Record<string, number>;
+  power_num?: Record<string, string>;
   gui_id: string;
+}
+export interface McmodderSimpleRecipeData extends McmodderRecipeData {
+  in_id?: Record<string, string>;
+  out_id?: Record<string, string>;
 }
 export type McmodderRecipeList = McmodderRecipeData[];
 
@@ -293,13 +305,40 @@ export interface AdvancementData {
   level?: number
 }
 
+export type McmodderTableAcceptable = Record<string, any>;
+export interface HeadConfig<T> {
+  readonly name: string;
+  readonly displayRule?: McmodderTableDisplayRule<T>;
+}
+export type HeadConfigs<T> = Record<string, HeadConfig<T>>;
+export type HeadConfigInitializer<T> = string | [string, McmodderTableDisplayRule<T>];
+export type HeadConfigsInitializer<T> = Record<string, HeadConfigInitializer<T>>;
+
+export type EditConfigs<T> = {
+  [P in keyof T as T[P] extends undefined ? P : never]: McmodderTableInputData & { optional: true };
+} & {
+  [P in keyof T as T[P] extends undefined ? never : P]: McmodderTableInputData;
+};  // Record<keyof T, McmodderInputData>;
+export type EditConfigInitializer = null | undefined | McmodderInputType | McmodderInputLimit | McmodderInputData | McmodderTableInputData | {readonly: true};
+export type EditConfigsInitializer<T> = Record<keyof T, EditConfigInitializer>;
+
+export interface McmodderTableRowData<T> {
+  content: T;
+  selected?: boolean;
+  edited?: Partial<T>;
+}
+
+export type McmodderTableDataMap<T extends Object> = Record<number, T>;
+export type McmodderTableRowSelection = number[];
+export type McmodderTableDataList<T extends Object> = T[];
+
 export interface McmodderTableRowRange {
   l: number;
   r: number;
 }
 
-export type McmodderTableDisplayRule<McmodderTableData> = (unit: any, row: McmodderTableData) =>
-  string | number | null | undefined;
+export type McmodderTableDisplayRule<McmodderTableData> = (unit: any, row: Partial<McmodderTableData>) =>
+  JQuery | string | number | null | undefined;
 
 export interface ClassNameData {
   className: string,
@@ -318,17 +357,37 @@ export interface McmodderKeyData {
 
 export type ItemCustomTypeList = ItemTypeData[];
 
-export type ConfigValueNumericRange = [number | null, number | null];
-export type ConfigValueSet = Record<number, string>;
-export type ConfigValueRange = ConfigValueNumericRange | ConfigValueSet;
+export type InputValueNumericRange = [number | null, number | null];
+export type InputValueSet = Record<number, string>;
+export type InputValueRange = InputValueNumericRange | InputValueSet;
 
-export type McmodderConfigData = {
-  title: string;
-  description: string;
-  type: McmodderConfigType;
-  value: any | null;
-  range: ConfigValueRange;
-  permission: McmodderPermission;
+type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
+
+export interface McmodderInputLimit {
+  readonly type: McmodderInputType;
+  readonly range?: InputValueRange;
+}
+
+export interface McmodderInputData extends McmodderInputLimit {
+  readonly value: any;
+}
+
+export interface McmodderTableInputData extends McmodderInputData {
+  readonly customName?: string;
+  readonly readonly?: boolean;
+  readonly optional?: boolean;
+}
+
+export interface InputValidInfo<T> {
+  readonly msg?: string;
+  readonly isok: boolean;
+  readonly final?: T;
+}
+
+export interface McmodderConfigData extends McmodderInputData {
+  readonly title: string;
+  readonly description: string;
+  readonly permission: McmodderPermission;
 }
 
 export interface PreSubmitData {
@@ -439,6 +498,11 @@ export interface ItemJsonFrameApplication {
   op: string;
 }
 
+export interface RecipeJsonFrameGuiBound {
+  guiID: string;
+  mcmodID: number;
+}
+
 export interface RequestData {
   config: GmXmlhttpRequestOption<"text", any>;
 }
@@ -463,6 +527,8 @@ export type RequestQueuePreExecution = Partial<RequestQueueExecution>;
 export type RequestQueueBackupData = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
 }
+
+export type McmodderMapKeyHandler = (data: any) => any;
 
 export interface StructureEditorBlocktype {
   itemID: number;

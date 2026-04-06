@@ -1,9 +1,8 @@
 import { Mcmodder } from "../Mcmodder";
-import { ConfigValueRange, McmodderConfigData } from "../types";
+import { InputValueRange, McmodderConfigData } from "../types";
 import { StorageBuffer } from "../StorageBuffer";
 
-export const enum McmodderConfigType {
-  DEFAULT = -1,
+export const enum McmodderInputType {
   CHECKBOX,
   NUMBER,
   TEXT,
@@ -24,13 +23,12 @@ export const enum McmodderPermission {
 export class McmodderConfigUtils {
 
   static defaultValue = {
-    [McmodderConfigType.DEFAULT]: "",
-    [McmodderConfigType.CHECKBOX]: false,
-    [McmodderConfigType.NUMBER]: 0,
-    [McmodderConfigType.TEXT]: "",
-    [McmodderConfigType.COLORPICKER]: "#000",
-    [McmodderConfigType.KEYBIND]: new Object,
-    [McmodderConfigType.DROPDOWN_MENU]: 0
+    [McmodderInputType.CHECKBOX]: false,
+    [McmodderInputType.NUMBER]: 0,
+    [McmodderInputType.TEXT]: "",
+    [McmodderInputType.COLORPICKER]: "#000",
+    [McmodderInputType.KEYBIND]: new Object,
+    [McmodderInputType.DROPDOWN_MENU]: 0
   }
 
   parent: Mcmodder;
@@ -43,15 +41,15 @@ export class McmodderConfigUtils {
     this.buffer = new StorageBuffer(this.parent);
   }
 
-  addConfig(id: string, title: string, description: string, type = McmodderConfigType.CHECKBOX, 
-    value: any = null, range?: ConfigValueRange, permission = McmodderPermission.NONE) {
+  addConfig(id: string, title: string, description: string, type = McmodderInputType.CHECKBOX, 
+    value: any = null, range?: InputValueRange, permission = McmodderPermission.NONE) {
     this.data[id] = {
       title: title,
       description: description,
       type: type,
       value: value,
-      range: range || [null, null],
-      permission: permission
+      permission: permission,
+      ...(range != undefined && { range })
     };
     if (this.parent.utils.getConfig(id) === undefined) {
       this.parent.utils.setConfig(id, value || McmodderConfigUtils.defaultValue[type]);

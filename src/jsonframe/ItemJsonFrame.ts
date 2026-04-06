@@ -1,18 +1,19 @@
 import { GM_openInTab } from "$";
 import { McmodderLoggerFrame } from "../widget/logger/LoggerFrame";
 import { Mcmodder } from "../Mcmodder";
-import { ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData, McmodderItemList } from "../types";
+import { ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData, McmodderItemList, McmodderTableRowSelection } from "../types";
 import { Pagination } from "../widget/Pagination";
 import { McmodderDetailedItemListRequestQueue } from "../requestqueue/DetailedItemRequestQueue";
 import { McmodderInferItemListRequestQueue } from "../requestqueue/InferRequestQueue";
 import { BatchCommand } from "../table/command/BatchCommand";
 import { EditRowCommand } from "../table/command/EditRowCommand";
 import { McmodderEditableTable } from "../table/EditableTable";
-import { HeadConfig, HeadReadonlyConfig, McmodderTable, McmodderTableRowSelection } from "../table/Table";
+import { McmodderTable } from "../table/Table";
 import { McmodderUtils } from "../Utils";
 import { JsonFrame } from "./JsonFrame";
 import { McmodderValues } from "../Values";
 import { InputList, InputRecommendation } from "../widget/InputList";
+import { McmodderInputType } from "../config/ConfigUtils";
 
 export interface McmodItemEditorInnerData {
   content: string,
@@ -56,23 +57,27 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     super(id, parent);
 
     this.table = new McmodderEditableTable<McmodderItemData>(parent, {class: "table jsonframe-table"}, {
-      smallIcon: new HeadConfig("小", McmodderTable.DISPLAYRULE_IMAGE_BASE64),
-      largeIcon: new HeadConfig("大", McmodderTable.DISPLAYRULE_IMAGE_BASE64),
-      id: new HeadConfig("资料 ID", McmodderTable.DISPLAYRULE_LINK_ITEM),
-      branch: new HeadConfig("分支"),
-      relation: new HeadReadonlyConfig("关联", (_, data) => {
+      itemType: ["类型", (type, item) => {
+        const element = parent.utils.getItemTypeHTML(type, item.classID);
+        return element.length > 0 ? element : null;
+      }],
+      smallIcon: ["小", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
+      largeIcon: ["大", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
+      id: ["资料 ID", McmodderTable.DISPLAYRULE_LINK_ITEM],
+      branch: "分支",
+      relation: ["关联", (_, data) => {
         if (data.generalParent) return `<span class="mcmodder-general"><strong>综合父资料</strong></span> <span class="text-muted">(${ data.generalNum })</span>`;
         if (data.generalTo) return `<span class="mcmodder-general">综合</span>至 <a class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.generalTo }">${ data.generalTo }</a>`;
         if (data.jumpTo) return `<span class="mcmodder-jump">合并</span>至 <a class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.jumpTo }">${ data.jumpTo }</a>`
         return null;
-      }),
-      name: new HeadConfig("主要名称", McmodderUtils.getFormattedCodeDecoratedHTML),
-      englishName: new HeadConfig("次要名称", McmodderUtils.getFormattedCodeDecoratedHTML),
-      creativeTabName: new HeadConfig("分类"),
-      type: new HeadConfig("种类"),
-      registerName: new HeadConfig("注册名", data => `<span class="mcmodder-monospace">${ data }</span>`),
-      metadata: new HeadConfig("元数据", McmodderTable.DISPLAYRULE_NUMBER),
-      OredictList: new HeadConfig("矿物词典/物品标签", data => {
+      }],
+      name: ["主要名称", McmodderUtils.getFormattedCodeDecoratedHTML],
+      englishName: ["次要名称", McmodderUtils.getFormattedCodeDecoratedHTML],
+      creativeTabName: "分类",
+      type: "种类",
+      registerName: ["注册名", McmodderTable.DISPLAYRULE_MONOSPACE],
+      metadata: ["元数据", McmodderTable.DISPLAYRULE_NUMBER],
+      OredictList: ["矿物词典/物品标签", data => {
         if (!data || data.charAt(0) != "[") return data;
         let res = "";
         const entries = data.slice(1, -1).split(",") as string[];
@@ -81,9 +86,59 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
           res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="https://www.mcmod.cn/oredict/${ entry }-1.html">${ entry }</a>`;
         });
         return res;
-      }),
-      maxStackSize: new HeadConfig("最大堆叠", McmodderTable.DISPLAYRULE_NUMBER),
-      maxDurability: new HeadConfig("最大耐久", McmodderTable.DISPLAYRULE_NUMBER),
+      }],
+      maxStackSize: ["最大堆叠", McmodderTable.DISPLAYRULE_NUMBER],
+      maxDurability: ["最大耐久", McmodderTable.DISPLAYRULE_NUMBER],
+    }, {
+      id: McmodderInputType.NUMBER,
+      itemType: {
+        type: McmodderInputType.NUMBER,
+        value: 1
+      },
+      classID: McmodderInputType.NUMBER,
+      classAbbr: null,
+      className: null,
+      classEname: null,
+      registerName: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      metadata: {
+        type: McmodderInputType.NUMBER,
+        optional: true
+      },
+      smallIcon: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      largeIcon: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      name: McmodderInputType.TEXT,
+      englishName: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      creativeTabName: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      branch: {
+        type: McmodderInputType.TEXT,
+        optional: true
+      },
+      type: null,
+      jumpTo: null,
+      jumpParent: null,
+      generalTo: null,
+      generalParent: null,
+      generalNum: null,
+      OredictList: null,
+      harvestTools: null,
+      maxStackSize: McmodderInputType.NUMBER,
+      maxDurability: McmodderInputType.NUMBER,
+      content: null
     }, () => {
       this.updateToolBar();
     });
@@ -111,6 +166,46 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     .addTool("submitedit", "提交所有改动至百科", () => !!(this.activeFileName && this.table!.unsavedUnitCount), () => this.submitEdit(), true);
 
     this.table.$instance.appendTo(this.content);
+  }
+
+  protected more() {
+    swal.fire({
+      title: "更多操作",
+      html: `
+      <p class="text-muted" style="font-size: 14px;">
+        <hr>
+        <p align="center">
+          <button id="jsonframe-autolink" class="btn">加入自动链接数据库</button>
+        </p>
+        <p class="text-muted jsonframe-export-text">在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong>**已拥有百科内资料 ID 的物品中**</strong>搜索~</p>
+      </p>`,
+        /*<hr>
+        <p align="center">
+          <button id="jsonframe-autolink" class="btn">清除所有格式化代码</button>
+        </p>
+        <p class="text-muted jsonframe-export-text">清除所有原版可用的格式化代码。</p>
+      </p>*/
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: "完事了"
+    });
+    
+    let autolink = $("#jsonframe-autolink").click(_ => {
+      swal.close();
+      let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
+      if (linking.includes(this.activeFileName)) {
+        linking = linking.filter(e => e != this.activeFileName);
+        autolink.text("加入自动链接数据库");
+      }
+      else {
+        linking.push(this.activeFileName);
+        autolink.text("移出自动链接数据库");
+      }
+      this.parent.utils.setConfig("jsonDatabase", linking);
+    });
+    let linking = this.parent.utils.getConfig("jsonDatabase") || [];
+    if (linking.includes(this.activeFileName)) autolink.text("移出自动链接数据库");
+    
   }
 
   setExecuteButtonState(disable: boolean) {
@@ -230,14 +325,18 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     this.logger.scrollToBottom();
   }
 
-  protected parseText(text: string) {
+  protected override parseText(text: string) {
     let success = 0, fail = 0, save: McmodderItemData[] = [];
     const entries = text.split('\n');
     entries.forEach(item => {
       item = item.trim();
       if (!item) return;
       try {
-        const data: McmodderItemData = JSON.parse(item);
+        const data = JSON.parse(item) as McmodderItemData & {maxStacksSize?: number};
+        if (data.hasOwnProperty("maxStacksSize")) {
+          data.maxStackSize = data.maxStacksSize;
+          delete data.maxStacksSize;
+        }
         data.smallIcon = McmodderUtils.appendBase64ImgPrefix(data.smallIcon);
         data.largeIcon = McmodderUtils.appendBase64ImgPrefix(data.largeIcon);
         success++;
@@ -399,7 +498,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         creativeTabName: categoryArray.length ? categoryArray.join(":") : "",
         branch: branchName,
       };
-      if (config.typeID != 1) itemData.itemType = config.typeID;
+      itemData.itemType = config.typeID;
       this.logger.success(`[${ itemData.id }] ${ McmodderUtils.getItemFullName(itemData.name, itemData.englishName) }`);
 
       // 处理合并资料
@@ -434,6 +533,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
           const childID = McmodderUtils.abstractIDFromURL(s.next().find("a").first().attr("href"), "item");
           const generalData: McmodderItemData = {
             id: childID,
+            itemType: config.typeID,
             smallIcon: "",
             largeIcon: "",
             name: b.text(),
@@ -443,7 +543,6 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
             branch: branchName,
             classID: config.classID
           };
-          if (config.typeID != 1) generalData.itemType = config.typeID;
           itemList.push(generalData);
           this.logger.success(`[${ generalData.id }] ${ McmodderUtils.getItemFullName(generalData.name, generalData.englishName) }`);
         }
@@ -736,16 +835,16 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       cancelButtonText: "完事了"
     });
     let fileTable = new McmodderTable<ItemJsonFrameApplication>(this.parent, {}, {
-      user: new HeadConfig("发表者", McmodderTable.DISPLAYRULE_LINK_CENTER_WITH_NAME),
-      pid: new HeadConfig("所属楼层编号", data => {
+      user: ["发表者", McmodderTable.DISPLAYRULE_LINK_CENTER_WITH_NAME],
+      pid: ["所属楼层编号", data => {
         return `<a target="_blank" href="https://bbs.mcmod.cn/forum.php?mod=redirect&goto=findpost&ptid=1281&pid=${ data }">${ data }</da>`
-      }),
-      name: new HeadConfig("文件名"),
-      size: new HeadConfig("文件大小"),
-      info: new HeadConfig("额外信息", McmodderTable.DISPLAYRULE_HOVER),
-      op: new HeadConfig("操作", data => {
+      }],
+      name: "文件名",
+      size: "文件大小",
+      info: ["额外信息", McmodderTable.DISPLAYRULE_HOVER],
+      op: ["操作", data => {
         return `<a class="jsonframe-bbs-filedl" data-url="${ data }">下载并导入</a>`
-      })
+      }]
     });
     fileTable.$instance.appendTo(".jsonframe-bbs-filelist");
 
@@ -762,7 +861,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     pagination.$instance.insertAfter(".jsonframe-bbs-filelist");
   }
 
-  private convertToImportableFormat(data: McmodderItemData) {
+  private convertToImportableFormat(data: Partial<McmodderItemData>) {
     const entry: Record<string, any> = {};
     for (const key of McmodderValues.importableKeys) {
       let value = (data as any)[key];

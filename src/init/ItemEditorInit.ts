@@ -80,7 +80,7 @@ export class ItemEditorInit extends McmodderInit {
     const jsonUploader = $('<input id="mcmodder-json-upload mcmodder-monospace" class="form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">')
     .insertBefore($(".tab-ul").first())
     .change(_ => {
-      let data: McmodderItemData;
+      let data: McmodderItemData & {maxStacksSize?: number};
       try {
         data = JSON.parse(jsonUploader.val());
       } catch (e) {
@@ -96,7 +96,7 @@ export class ItemEditorInit extends McmodderInit {
           $("[data-multi-id=oredict]").prev().children().val(e).trigger("focusout");
         });
         if (data.maxDurability) $("#item-damage").val(data.maxDurability);
-        $("#item-maxstack").val(data.maxStackSize || "");
+        $("#item-maxstack").val(data.maxStackSize || data.maxStacksSize || "");
         $("#item-regname").val(data.registerName || "");
         if (data.metadata) $("#item-metadata").val(data.metadata);
       } catch (e) {

@@ -109,7 +109,9 @@ export class StyleLoader {
     const textShadowAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("textShadowAlpha")), 0, 255) / 0xFF;
     const otherPaletteBaseCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(basePalette.background, backgroundAlpha),
-      "shadow": "#FFF0",
+      "text-shadow": "#FFF0",
+      "text-shadow-strong": "#8884",
+      "box-shadow": "#8884",
       "pre-ins": "#406619",
       "pre-del": "#b30000",
       "text-success": "#28a745",
@@ -153,7 +155,9 @@ export class StyleLoader {
     }, []);
     const otherPaletteNightCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(nightPalette.background, backgroundAlpha),
-      "shadow": McmodderUtils.setColorAlpha(nightPalette.background, textShadowAlpha),
+      "text-shadow": McmodderUtils.setColorAlpha(nightPalette.background, textShadowAlpha),
+      "text-shadow-strong": "#0004",
+      "box-shadow": "#0008",
       "pre-ins": "#beff7b",
       "pre-del": "#ff7b7b",
       "text-success": "#5f5",
@@ -240,6 +244,9 @@ export class StyleLoader {
 
     parent.css = style;
     McmodderUtils.addStyle(style);
+
+    const radiusRatio: number | undefined = parent.utils.getConfig("radiusRatio");
+    document.documentElement.style.setProperty("--mcmodder-ratio-radius", (radiusRatio === undefined ? 1 : radiusRatio).toString());
 
     parent.updateNightMode();
     const splashScreen = document.getElementById("mcmodder-splash-screen");

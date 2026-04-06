@@ -1,6 +1,7 @@
 import { GM_getValue } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { HeadConfigs, McmodderTable } from "../table/Table";
+import { McmodderTable } from "../table/Table";
+import { HeadConfigsInitializer } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderCollapsible } from "../widget/Collapsible";
 
@@ -22,13 +23,13 @@ export class McmodderConfigResourceInteractor<McmodderTableData extends Object> 
   protected configParser: Function;
   protected dataParser: Function;
 
-  constructor(parent: Mcmodder, id: string, name: string, headOptions: HeadConfigs<McmodderTableData>, 
+  constructor(parent: Mcmodder, id: string, name: string, headConfigs: HeadConfigsInitializer<McmodderTableData>, 
       configParser?: ConfigParser | null, dataParser?: DataParser | null) {
     this.parent = parent;
     this.id = id;
     this.table = new McmodderTable(parent, {
       id: McmodderConfigResourceInteractor.getTableID(id),
-    }, headOptions);
+    }, headConfigs);
     this.table.hide();
     this.isLoaded = false;
     this.isShown = false;

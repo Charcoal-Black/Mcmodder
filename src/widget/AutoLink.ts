@@ -178,18 +178,10 @@ export class McmodderAutoLink {
     }'; this.onerror=null;" width="32" height="32">`);
     const itemA = $(`<a>`).appendTo(itemLi);
 
-    const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
-      (entry.classID === item.classID || entry.classID === 0) &&
-      (entry.typeID || 1) === item.itemType
-    );
-    if (matchedTypeList && matchedTypeList.length) {
-      const matchedType = matchedTypeList[0];
-      const iconFont = $(`<span class="iconfont icon">`).css("color", matchedType.color);
-      if (matchedType.classID === 0) iconFont.html(matchedType.icon);
-      else iconFont.html(`<i class="fa ${ matchedType.icon }"></i>`);
-      iconFont.appendTo(itemA);
-      itemLi.attr("data-original-title", `${ matchedType.text } - ID:${ item.id } ${ fullName } - ${ classFullName }`);
-    }
+    const matchedType = this.parent.utils.getItemTypeData(item.classID, item.itemType);
+    this.parent.utils.getItemTypeHTML(matchedType).appendTo(itemA);
+    const typename = matchedType?.text ? matchedType.text + " - " : "";
+    itemLi.attr("data-original-title", `${ typename }ID:${ item.id } ${ fullName } - ${ classFullName }`);
 
     itemA.append(` <span class="item-id mcmodder-slim-dark">${ item.id }</span> `);
     if (classFullName) itemA.append(`<span class="item-modabbr">[${ classAbbr || classEname || className }]</span> `);
@@ -570,11 +562,11 @@ export class McmodderAutoLink {
         }
 
         // 提升前置与附属模组物品权重
-        if (this.parent.utils.getConfig(item.classID, "modDependences_v2")?.includes(classID)) {
+        if (this.parent.utils.getConfigAsNumberList(item.classID, "modDependences_v2").includes(classID)) {
           totalScore += 7;
           tag.isModDependenceMatches = true;
         }
-        else if (this.parent.utils.getConfig(item.classID, "modExpansions_v2")?.includes(classID)) {
+        else if (this.parent.utils.getConfigAsNumberList(item.classID, "modExpansions_v2").includes(classID)) {
           totalScore += 7;
           tag.isModExpansionMatches = true;
         }

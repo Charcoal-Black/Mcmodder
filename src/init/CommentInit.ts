@@ -143,15 +143,27 @@ export class CommentInit extends McmodderInit {
   }
 
   private lieqi(target: JQuery) {
-    const attritudeClass = `.fa-thumbs-up, .fa-grin-tears, .fa-heart, .fa-flushed, 
-      .fa-thumbs-down, .fa-lemon, .fa-horse-head, .fa-heart-broken, 
-      .fa-angry, .fa-tired, .fa-snowflake, .fa-handshake`;
-    const attritudeList = attritudeClass.split(", ");
-    const attritudeFace = target.find(attritudeClass);
-    attritudeFace.each((_, d) => {
-      attritudeList.forEach(t => $(d).removeClass(t.slice(1)));
-      $(d).parents("[title]").first().attr("title", "猎奇");
-    }).addClass("fa-surprise");
+    const attitudeList = [
+      "fa-thumbs-up",
+      "fa-grin-tears",
+      "fa-heart",
+      "fa-flushed",
+      "fa-thumbs-down",
+      "fa-lemon",
+      "fa-horse-head",
+      "fa-heart-broken",
+      "fa-angry",
+      "fa-tired",
+      "fa-snowflake",
+      "fa-handshake"
+    ]
+    attitudeList.forEach(attitude => {
+      target.find(`.${ attitude }`).each(_e => {
+        const e = $(_e);
+        e.removeClass(attitude).addClass("fa-surprise");
+        e.parents("[title]").first().attr("title", "猎奇");
+      });
+    });
   }
 
   private setReplyLink(target: JQuery) {

@@ -7,16 +7,22 @@ import { DeleteRowCommand } from "./command/DeleteRowCommand";
 import { EditCommand } from "./command/EditCommand";
 import { InsertRowCommand } from "./command/InsertRowCommand";
 import { PasteCommand } from "./command/PasteCommand";
-import { HeadConfigs, McmodderTable, McmodderTableDataList, McmodderTableDataMap, McmodderTableRowData, McmodderTableRowSelection } from "./Table";
+import { McmodderTable } from "./Table";
+import { McmodderConfigUtils, McmodderInputType } from "../config/ConfigUtils";
+import { EditConfigInitializer, EditConfigs, EditConfigsInitializer, HeadConfigsInitializer, InputSuccessfulChangeCallBack, InputValueNumericRange, McmodderTableAcceptable, McmodderTableDataList, McmodderTableDataMap, McmodderTableInputData, McmodderTableRowData, McmodderTableRowSelection } from "../types";
+import { McmodderNumberInput } from "../widget/input/NumberInput";
+import { McmodderBaseInput } from "../widget/input/Input";
+import { McmodderTextInput } from "../widget/input/TextInput";
 
-export class McmodderEditableTable<McmodderTableData extends Object> extends McmodderTable<McmodderTableData> {
+export class McmodderEditableTable<McmodderTableData extends McmodderTableAcceptable> extends McmodderTable<McmodderTableData> {
 
   static readonly CLASSNAME_UNSAVED_TR = "mcmodder-table-unsaved-tr";
   static readonly CLASSNAME_UNSAVED_TD = "mcmodder-table-unsaved-td";
   static readonly CLASSNAME_MOUSEOVER_TR = "mcmodder-table-mouseover-tr";
   static readonly CLASSNAME_MOUSEOVER_TD = "mcmodder-table-mouseover-td";
 
-  onEdit: Function;
+  readonly editConfigs: EditConfigs<McmodderTableData>;
+  readonly onEdit: Function;
   unsavedUnitCount: number;
   selectedRowCount: number;
   isShiftKeyPressed: boolean;
@@ -28,8 +34,42 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
   
   private prevHoverIndex?: number;
 
-  constructor(parent: Mcmodder, attr: object, headOptions: HeadConfigs<McmodderTableData>, onEdit?: Function) {
-    super(parent, attr, headOptions);
+  private static parseEditConfigInitializer(config: EditConfigInitializer): McmodderTableInputData {
+    let result;
+    if (config === undefined || config === null) {
+      config = {
+        readonly: true
+      };
+    }
+    if (typeof config === "number") {
+      result = {
+        type: config,
+        value: McmodderConfigUtils.defaultValue[config as McmodderInputType]
+      }
+    }
+    else {
+      result = McmodderUtils.simpleDeepCopy(config) as any;
+      if (result.readonly) {
+        if (result) result.type = McmodderInputType.TEXT;
+        result.value = McmodderConfigUtils.defaultValue[McmodderInputType.TEXT];
+      }
+      if (result.value === undefined) {
+        result.value = McmodderConfigUtils.defaultValue[result.type as McmodderInputType];
+      }
+    }
+    return result;
+  }
+
+  constructor(parent: Mcmodder, attr: object, headConfigs: HeadConfigsInitializer<McmodderTableData>, editConfigs: EditConfigsInitializer<McmodderTableData>, onEdit?: Function) {
+    super(parent, attr, headConfigs);
+
+    // edit config init
+    (Object.keys(editConfigs) as (keyof McmodderTableData)[]).forEach(key => {
+      editConfigs[key] = McmodderEditableTable.parseEditConfigInitializer(editConfigs[key]);
+    });
+    this.editConfigs = editConfigs as unknown as EditConfigs<McmodderTableData>; // doge
+
+    // other init
     this.onEdit = onEdit || (() => {});
     this.unsavedUnitCount = 0;
     this.selectedRowCount = 0;
@@ -61,9 +101,16 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
     }
   }
 
-  renderUnit(data: McmodderTableRowData<McmodderTableData>, key: string) {
-    let res = super.renderUnit(data, key);
-    if (this.headConfigs[key]?.readonly) res.attr("data-readonly", "1");
+  override renderUnit(data: McmodderTableRowData<McmodderTableData>, key: string) {
+    const res = super.renderUnit(data, key);
+    if (!this.editConfigs.hasOwnProperty(key)) {
+      res.attr("data-readonly", "1");
+      return res;
+    }
+    if ((this.editConfigs as any)[key]?.readonly) {
+      res.attr("data-readonly", "1");
+      return res;
+    }
     else {
       let original = (data.content as any)[key];
       if (original === undefined || original === null) original = "";
@@ -80,7 +127,7 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
     return res;
   }
 
-  renderRow(index: number) {
+  override renderRow(index: number) {
     const res = super.renderRow(index);
     const data = this.currentData[index];
     if (data.edited && Object.keys(data.edited).length) {
@@ -103,7 +150,7 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
   copyRow(selection = this.getSelection()) {
     this.clipboard = new Array(selection.length);
     selection.forEach((row, index) => {
-      this.clipboard[index] = McmodderUtils.simpleDeepCopy(this.currentData[row]);
+      this.clipboard[index] = McmodderUtils.simpleDeepCopy(this.currentData[row].content);
       // delete this.clipboard[index]._selected;
     });
   }
@@ -119,7 +166,7 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
   }
 
   deleteRow(index: number): McmodderTableDataMap<McmodderTableData> {
-    let deletedData = McmodderUtils.simpleDeepCopy(this.currentData[index]);
+    let deletedData = McmodderUtils.simpleDeepCopy(this.currentData[index].content);
     this.currentData.splice(index, 1);
     this.refreshAll();
     return { [index]: deletedData };
@@ -177,16 +224,26 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
     this.insertRow(key, dataMap[key]);
   }
 
-  insertRow(index: number, newData = new Object) {
+  private createDefaultRowData() {
+    const result: Partial<McmodderTableData> = {};
+    (Object.keys(this.editConfigs) as (keyof EditConfigs<McmodderTableData>)[]).forEach(key => {
+      const editConfig = this.editConfigs[key];
+      if (!editConfig.optional) result[key] = this.editConfigs[key].value;
+    });
+    return result as McmodderTableData;
+  }
+
+  insertRow(index: number, newData?: McmodderTableData) {
+    if (!newData) newData = this.createDefaultRowData();
     if (index < 0 || index > this.currentData.length) return;
-    this.currentData.splice(index, 0, McmodderUtils.simpleDeepCopy(newData));
+    this.currentData.splice(index, 0, {content: McmodderUtils.simpleDeepCopy(newData)});
     this.refreshAll();
   }
 
   insertMultipleRowWithArray(index: number, dataList: McmodderTableDataList<McmodderTableData>) {
     let l = this.currentData.slice(0, index);
     let r = this.currentData.slice(index);
-    this.currentData = l.concat(McmodderUtils.simpleDeepCopy(dataList)).concat(r);
+    this.currentData = l.concat(McmodderUtils.simpleDeepCopy(dataList.map(e => ({content: e})))).concat(r);
     this.refreshAll();
   }
 
@@ -285,33 +342,64 @@ export class McmodderEditableTable<McmodderTableData extends Object> extends Mcm
     this.hoveringIndex = null;
   }
 
+  private createInputNode(
+    key: keyof EditConfigs<McmodderTableData>,
+    value: unknown,
+    inputData: McmodderTableInputData,
+    onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>
+  ): McmodderBaseInput {
+    const displayName = inputData.customName || this.headConfigs[key].name || String(key);
+    switch (inputData.type) {
+      case McmodderInputType.NUMBER: return new McmodderNumberInput(
+        displayName,
+        value as number,
+        inputData.range as InputValueNumericRange,
+        onSuccessfulChange
+      );
+      default: return new McmodderTextInput(
+        displayName,
+        value as string,
+        onSuccessfulChange
+      )
+    }
+  }
+
   private onDblclick(e: JQueryMouseEventObject) {
     const target = $(e.currentTarget);
-    const content = target.attr("data-value") || target.attr("data-original") || "";
+    const index = this.getElementIndex(target);
+    const inputData = this.currentData[this.getElementIndex(target)];
+    const key = target.attr("data-key");
+    const value = inputData.edited?.hasOwnProperty(key) ? inputData.edited[key] : inputData.content[key];
+    if (!this.editConfigs.hasOwnProperty(key)) {
+      throw new Error("Unexpected data key.");
+    }
     target.empty();
-    $('<input class="form-control mcmodder-table-input">').val(content).appendTo(target).focus().blur(f => {
-      const self = f.currentTarget as HTMLInputElement;
-      const key = target.attr("data-key") as keyof McmodderTableData;
-      const index = this.getElementIndex(target);
-      this.execute(new EditCommand(this, index, key, self.value));
-    })
-    .keydown(f => {
+    const typedKey = key as keyof EditConfigs<McmodderTableData>;
+    const editConfig = this.editConfigs[typedKey] as McmodderTableInputData;
+    const nonNullValue = value === undefined ? editConfig.value : value;
+    const input = this.createInputNode(typedKey, nonNullValue, editConfig, info => {
+      this.execute(new EditCommand(this, index, key, info.final));
+    });
+    input.getInstance().addClass("mcmodder-table-input").appendTo(target).focus().keydown(f => {
       const self = f.currentTarget as HTMLInputElement;
       if (f.key === "Enter") {
         self.blur();
       }
       else if (f.key === "Escape") {
         f.preventDefault();
-        self.value = content;
+        self.value = value;
         self.blur();
       }
       else if (f.key === "Shift") {
         f.stopPropagation();
       }
+    })
+    .blur(_f => {
+      target.replaceWith(this.renderUnit(inputData, key));
     });
   }
 
-  bindEvents() {
+  override bindEvents() {
     super.bindEvents();
 
     $(document.body).keydown(e => {

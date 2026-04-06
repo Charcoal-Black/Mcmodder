@@ -1,7 +1,7 @@
 import { GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
 import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, HSL, HSLA, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
+import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
@@ -63,11 +63,11 @@ export class McmodderUtils {
     return 0;
   }
 
-  static simpleDeepCopy(obj: any) {
+  static simpleDeepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
   }
 
-  static complexDeepCopy(obj: any) {
+  static complexDeepCopy<T>(obj: T) {
     // TODO ...
     return McmodderUtils.simpleDeepCopy(obj);
   }
@@ -100,8 +100,10 @@ export class McmodderUtils {
     return entry;
   }
 
-  getConfigAsNumberList(key?: string | number | null, item = "mcmodderSettings", defaultValue: any = undefined) {
-    return (this.getConfig(key, item, defaultValue) || "").replaceAll(" ", "").split(",").map(Number) as number[];
+  getConfigAsNumberList(key?: string | number | null, item = "mcmodderSettings") {
+    let config = this.getConfig(key, item, []) || "";
+    if (typeof config === "string") config = config.replaceAll(" ", "").split(",");
+    return config.map(Number) as number[];
   }
 
   getAllConfig(item = "mcmodderSettings", defaultValue?: any) {
@@ -907,6 +909,28 @@ export class McmodderUtils {
     return classNameIDMap[className];
   }
 
+  getItemTypeData(classID: number, itemType: number | undefined) {
+    const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
+      (entry.classID === classID || entry.classID === 0) &&
+      (entry.typeID || 1) === (itemType || 1)
+    );
+    return matchedTypeList?.length ? matchedTypeList[0] : undefined;
+  }
+
+  getItemTypeHTML(...args: [classID: number, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
+    let itemType;
+    if (args.length === 1) {
+      itemType = args[0];
+    } else {
+      itemType = this.getItemTypeData(args[0], args[1]);
+    }
+    if (!itemType) return $();
+    const iconFont = $(`<span class="iconfont icon">`).css("color", itemType.color);
+    if (itemType.classID === 0) iconFont.html(itemType.icon);
+    else iconFont.html(`<i class="fa ${itemType.icon}"></i>`);
+    return iconFont;
+  }
+
   static updateAllTooltip() {
     return $().tooltip ?
       $('[data-toggle="tooltip"]').tooltip({
@@ -952,11 +976,14 @@ export class McmodderUtils {
     const command = itemRow.find(".item-give")?.attr("data-command")?.slice(9)?.split(" ");
     const righttable = itemRow.find(".righttable tbody > tr");
     const nav = $doc.find(".common-nav li");
+    const classID = McmodderUtils.abstractIDFromURL(nav.eq(4).find("a").attr("href"), "class");
+    const itemType = Number(nav.eq(6).find("a").attr("href").split(`/item/list/${ classID }-`)[1].slice(0, -5));
     const res: McmodderItemData = {
       id: McmodderUtils.abstractIDFromURL(itemRow.find(".tool a").first().prop("href"), "item/edit"),
-      classID: McmodderUtils.abstractIDFromURL(nav.eq(4).find("a").attr("href"), "class"),
+      classID: classID,
       name: keywords[0],
       englishName: keywords[1],
+      itemType: itemType,
       smallIcon: "",
       largeIcon: "",
       creativeTabName: righttable.eq(3).find("a")?.text(),
@@ -967,8 +994,6 @@ export class McmodderUtils {
       res.maxStackSize = Number(command[1]) || 1;
       if (command.length > 2) res.metadata = Number(command[2]) || 0;
     }
-    const itemType = Number(nav.eq(6).find("a").attr("href").split(`/item/list/${ res.classID }-`)[1].slice(0, -5));
-    if (itemType != 1) res.itemType = itemType; 
     McmodderUtils.deleteEmptyProperties(res);
     return res;
   }

@@ -1,7 +1,7 @@
 import { GM_openInTab } from "$";
 import { Mcmodder } from "./Mcmodder";
 import { CFVersionData, MRVersionData, VersionCompareData, VersionData } from "./types";
-import { HeadConfig, McmodderTable } from "./table/Table";
+import { McmodderTable } from "./table/Table";
 import { McmodderUtils } from "./Utils";
 
 export class VersionHelper {
@@ -34,29 +34,30 @@ export class VersionHelper {
     </div>`).insertBefore(".version-menu, .version-content-empty");
 
     this.table = new McmodderTable<VersionCompareData>(parent, {id: "mcmodder-version-menu"}, {
-      fileID: new HeadConfig("文件ID"),
-      releaseType: new HeadConfig("发布状态", data => {
+      fileID: "文件ID",
+      releaseType: ["发布状态", data => {
         const state = (data as string).toLowerCase();
         return `<span class="badge versiontag versiontag-${ state }">${ data }</span>`
-      }),
-      displayName: new HeadConfig("文件名称"),
-      gameVersions: new HeadConfig("支持 MC 版本"),
-      releaseTime: new HeadConfig("更新日期", McmodderTable.DISPLAYRULE_DATE_MILLISEC_EN),
-      mcmodVer: new HeadConfig("对应日志版本号"),
-      mcmodMcver: new HeadConfig("对应日志支持版本"),
-      mcmodDate: new HeadConfig("对应日志收录日期", (data: Date | null | undefined, row) => {
+      }],
+      displayName: "文件名称",
+      gameVersions: "支持 MC 版本",
+      releaseTime: ["更新日期", McmodderTable.DISPLAYRULE_DATE_MILLISEC_EN],
+      mcmodVer: "对应日志版本号",
+      mcmodMcver: "对应日志支持版本",
+      mcmodDate: ["对应日志收录日期", (data: Date | null | undefined, row) => {
         if (!data) return "-";
         const str = data.toLocaleDateString();
         const logTime = data.valueOf();
-        const releaseTime = row.releaseTime.valueOf();
+        const releaseTime = row.releaseTime?.valueOf();
+        if (!releaseTime) return "未知";
         if (Math.abs(logTime - releaseTime) <= 8.64e7) return str;
         return `<span class="mcmodder-slim-danger" data-toggle="tooltip" data-original-title="与实际更新日期存在较大误差">${ str } <i class="fa fa-warning"></i></span>`;
-      }),
-      options: new HeadConfig("操作", (_, data) => {
-        if (data.mcmodDate) return null;
+      }],
+      options: ["操作", (_, data) => {
+        if (data.mcmodDate || !data.displayName || !data.releaseTime) return null;
         if (data.platform === 1) return `<a href="/class/version/add/${ McmodderUtils.abstractLastFromURL(window.location.href, "version") }/?cfid=${data.cfid}&fileid=${data.fileID}&ver=${VersionHelper.parseCFFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
         if (data.platform === 2) return `<a href="/class/version/add/${ McmodderUtils.abstractLastFromURL(window.location.href, "version") }/?mrid=${data.mrid}&fileid=${data.fileID}&ver=${VersionHelper.parseMRFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
-      })
+      }]
     });
     this.table.$instance.appendTo(this.menu.find("fieldset"));
 

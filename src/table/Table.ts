@@ -1,39 +1,10 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderTableDisplayRule, McmodderTableRowRange } from "../types";
+import { HeadConfig, HeadConfigInitializer, HeadConfigs, HeadConfigsInitializer, McmodderTableAcceptable, McmodderTableDataList, McmodderTableRowData, McmodderTableRowRange } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { ProgressBar } from "../widget/progress/ProgressBar";
 
-export class HeadConfig<McmodderTableData> {
-  name: string;
-  displayRule?: McmodderTableDisplayRule<McmodderTableData>;
-  readonly: boolean;
-  constructor(name: string, displayRule?: McmodderTableDisplayRule<McmodderTableData>, readonly?: boolean) {
-    this.name = name;
-    this.displayRule = displayRule;
-    this.readonly = !!readonly;
-  }
-}
-
-export class HeadReadonlyConfig<McmodderTableData> extends HeadConfig<McmodderTableData> {
-  constructor(name: string, displayRule?: McmodderTableDisplayRule<McmodderTableData>) {
-    super(name, displayRule, true);
-  }
-}
-
-export type HeadConfigs<McmodderTableData> = Record<string, HeadConfig<McmodderTableData>>;
-
-export interface McmodderTableRowData<McmodderTableData> {
-  content: McmodderTableData;
-  selected?: boolean;
-  edited?: Partial<McmodderTableData>;
-}
-
-export type McmodderTableDataMap<McmodderTableData extends Object> = Record<number, McmodderTableData>;
-export type McmodderTableRowSelection = number[];
-export type McmodderTableDataList<McmodderTableData extends Object> = McmodderTableData[];
-
-export class McmodderTable<McmodderTableData extends Object> {
+export class McmodderTable<McmodderTableData extends McmodderTableAcceptable> {
 
   static readonly ROW_EXPAND = 2;
   static readonly THROTTLE_INTERVAL = 16; // ~60 FPS
@@ -41,6 +12,7 @@ export class McmodderTable<McmodderTableData extends Object> {
 
   static readonly DISPLAYRULE_NUMBER = (data: string | number) => data ? Number(data).toLocaleString() : "-";
   static readonly DISPLAYRULE_ARRAY = (data: (string | number)[]) => data.join(", ");
+  static readonly DISPLAYRULE_MONOSPACE = (data: string) => data ? `<span class="mcmodder-monospace">${ data }</span>` : "-";
   static readonly DISPLAYRULE_DATE_MILLISEC_EN = (data: string | number) => (new Date(data)).toLocaleDateString();
   static readonly DISPLAYRULE_DATE_MILLISEC_ZH = (data: string | number) => McmodderUtils.getFormattedChineseDate(new Date(Number(data)));
   static readonly DISPLAYRULE_TIME_MILLISEC = (data: string | number) => (new Date(data)).toLocaleString();
@@ -63,26 +35,36 @@ export class McmodderTable<McmodderTableData extends Object> {
     return `<a data-toggle="tooltip" data-html="true" data-original-title="${ data.replaceAll('"', '\\"').replaceAll(/\n+/g, "<br>") }">${ omittedText }</a>`
   }
 
-  parent: Mcmodder;
-  $instance: JQuery;
-  instance: Element;
-  $table: JQuery;
-  $thead: JQuery;
-  $tbody: JQuery;
-  $marginTop: JQuery;
-  $marginBottom: JQuery;
-  $empty: JQuery;
-  $loadingOverlay: JQuery;
+  readonly parent: Mcmodder;
+  readonly $instance: JQuery;
+  readonly instance: Element;
+  readonly $table: JQuery;
+  readonly $thead: JQuery;
+  readonly $tbody: JQuery;
+  readonly $marginTop: JQuery;
+  readonly $marginBottom: JQuery;
+  readonly $empty: JQuery;
+  readonly $loadingOverlay: JQuery;
   isLoading: boolean;
   renderingRows: McmodderTableRowRange;
-  screenContainableRows: number = 1;
+  screenContainableRows = 1;
   rowHeight: number;
   loadingProgress: ProgressBar;
-  headConfigs: HeadConfigs<McmodderTableData> = {};
+  readonly headConfigs: HeadConfigs<McmodderTableData> = {};
 
   protected currentData: McmodderTableRowData<McmodderTableData>[];
 
-  constructor(parent: Mcmodder, attr: Object, headOptions: HeadConfigs<McmodderTableData>) {
+  private static parseHeadConfigInitializer<T>(config: HeadConfigInitializer<T>): HeadConfig<T> {
+    if (typeof config === "string") return {
+      name: config
+    };
+    return {
+      name: config[0],
+      displayRule: config[1]
+    };
+  }
+
+  constructor(parent: Mcmodder, attr: Object, headConfigs: HeadConfigsInitializer<McmodderTableData>) {
     this.parent = parent;
     this.$instance = $(`
       <div class="mcmodder-table-container">
@@ -117,7 +99,15 @@ export class McmodderTable<McmodderTableData extends Object> {
       .addClass("mcmodder-table-loading-progress")
       .appendTo(this.$instance.find(".mcmodder-table-loading-container"))
       .hide();
-    this.setheadOptions(headOptions);
+
+    // head config init
+    const headConfigsConstructor: Partial<HeadConfigs<McmodderTableData>> = {};
+    Object.keys(headConfigs).forEach(key => {
+      headConfigsConstructor[key] = McmodderTable.parseHeadConfigInitializer(headConfigs[key]);
+    });
+    this.headConfigs = headConfigsConstructor as HeadConfigs<McmodderTableData>;
+    this.initHeadConfigs();
+
     this.updateScreenContainableRows();
     this.bindEvents();
     this.refreshAll();
@@ -219,9 +209,8 @@ export class McmodderTable<McmodderTableData extends Object> {
     }
   }
   
-  setheadOptions(headOptions: HeadConfigs<McmodderTableData>) {
-    this.headConfigs = headOptions;
-    Object.keys(headOptions).forEach(key => {
+  private initHeadConfigs() {
+    Object.keys(this.headConfigs).forEach(key => {
       this.$thead.append(`<th>${ this.headConfigs[key].name }</th>`);
     });
   }

@@ -124,7 +124,7 @@ export abstract class McmodderRequestQueue {
   }
 
   protected backup() {
-    const data = McmodderUtils.simpleDeepCopy(this.execution);
+    const data = McmodderUtils.simpleDeepCopy(this.execution) as any;
     data.runningIndex = Array.from(this.execution!.runningIndex!);
     this.backupManager.backup(data);
   }

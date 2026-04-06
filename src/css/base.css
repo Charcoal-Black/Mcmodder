@@ -1,3 +1,15 @@
+@property --mcmodder-ratio-radius {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 100%;
+}
+
+@property --mcmodder-oredict-column {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 4;
+}
+
 .mcmodder-format-color {text-shadow: 1px 1px #8888;}
 .mcmodder-format-color-0 {color: #000000;}
 .mcmodder-format-color-1 {color: #0000AA;}
@@ -27,8 +39,17 @@
   --mcmodder-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --mcmodder-cursor-hand: url(//www.mcmod.cn/images/cursor/hand.png), auto;
   --mcmodder-animation-shinyborder: mcmodder-shinyborder 2s ease-in-out infinite alternate;
-  --mcmodder-padwidth-1: 1em;
-  --mcmodder-padwidth-2: 0.6em;
+  --mcmodder-width-radius: calc(1em * var(--mcmodder-ratio-radius));
+  --mcmodder-width-padding-1: 1em;
+  --mcmodder-width-padding-2: .8em;
+  --mcmodder-width-padding-3: .6em;
+}
+@media (max-width: 500px) {
+  :root {
+    --mcmodder-width-padding-1: .5em;
+    --mcmodder-width-padding-2: .4em;
+    --mcmodder-width-padding-3: .3em;
+  }
 }
 :root.dark {
   --ck-color-base-foreground: #111;
@@ -164,7 +185,7 @@ table th,
 .fui-home::before,
 .fui-user::before {
   color: var(--mcmodder-color-text);
-  text-shadow: 1px 1px 1px var(--mcmodder-color-shadow);
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow);
 }
 .center-card-block.background .card-item .text p,
 .mcmodder-logger > *,
@@ -173,7 +194,7 @@ table th,
 .table-select-count > p,
 #structure-optimize-timer .info {
   color: #fff;
-  text-shadow: 1px 1px 1px var(--mcmodder-color-shadow);
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow);
 }
 body .uknowtoomuch {
   text-shadow: none;
@@ -386,7 +407,7 @@ th,
 .bootstrap-tagsinput,
 input {
   border-color: var(--mcmodder-color-background-dark1);
-  box-shadow: inset 0px 1px 0px var(--mcmodder-color-shadow);
+  box-shadow: inset 0px 1px 0px var(--mcmodder-color-box-shadow);
 }
 input,
 .form-control:focus,
@@ -518,46 +539,46 @@ html:not(.mcmodder-config-disable-gradient) .mcmodder-common-light {
   background-clip: text;
   color: transparent;
   font-weight: bold;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-light {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
   background-clip: text;
   color: transparent;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-dark {
   background: linear-gradient(45deg, var(--mcmodder-color-primary-dark2), var(--mcmodder-color-accent-dark2));
   background-clip: text;
   color: transparent;
   font-weight: bold;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-dark {
   background: linear-gradient(45deg, var(--mcmodder-color-primary-dark2), var(--mcmodder-color-accent-dark2));
   background-clip: text;
   color:transparent;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-danger {
   background: linear-gradient(45deg, var(--mcmodder-color-danger-dark2), var(--mcmodder-color-danger-dark1));
   background-clip: text;
   color: transparent;
   font-weight: bold;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-slim-danger {
   background: linear-gradient(45deg, var(--mcmodder-color-danger-dark2), var(--mcmodder-color-danger-dark1));
   background-clip: text;
   color: transparent;
-  text-shadow: 1px 1px 1px #8884;
+  text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow-strong);
 }
 :not(.mcmodder-config-disable-gradient) .mcmodder-chroma {
   color: transparent;
   background: linear-gradient(90deg, #32C5FF, #B620E0, #F7B500, #20E050, #32C5FF);
   background-size: 100px;
   background-clip: text;
-  text-shadow: 2px 2px 1px #8884;
+  text-shadow: 2px 2px 1px var(--mcmodder-color-text-shadow-strong);
   animation: mcmodder-shinytext 3s infinite linear;
 }
 @keyframes mcmodder-shinytext {
@@ -638,7 +659,7 @@ body:not(.view),
   bottom: 1em;
   right: 0;
   color: white;
-  text-shadow: 3px 3px 1px #8888;
+  text-shadow: 3px 3px 1px var(--mcmodder-color-text-shadow-strong);
   font-size: 1.875em;
 }
 .mcmodder-changelog-subtitle {
@@ -699,7 +720,7 @@ body:not(.view),
   overflow: hidden;
   font-size: .75rem;
   border-radius: .25rem;
-  background-color: var(--mcmodder-color-shadow);
+  background-color: var(--mcmodder-color-box-shadow);
 }
 .mcmodder-progress-bar {
   background-color: var(--mcmodder-color-primary-transparent1);
@@ -809,7 +830,7 @@ body:not(.view),
   overflow: scroll;
 }
 #mcmodder-verify-window-frame {
-  padding: 1em;
+  padding: var(--mcmodder-width-padding-1);
 }
 #mcmodder-verify-window-frame .TableBlock {
   position: relative;
@@ -825,7 +846,7 @@ body:not(.view),
   display: inline;
 }
 #mcmodder-version-menu {
-  margin-top: var(--mcmodder-padwidth-1);
+  margin-top: var(--mcmodder-width-padding-1);
 }
 #mcmodder-version-menu .versiontag::before {
   position: absolute;
@@ -834,7 +855,7 @@ body:not(.view),
   content: "";
   border-radius: 50%;
   top: 50%;
-  left: .8em;
+  left: var(--mcmodder-width-padding-2);
   transform: translateY(-50%);
   opacity: 0.5;
 }
@@ -871,7 +892,7 @@ body:not(.view),
 #mcmodder-editbyte {
   width: 5em;
   height: 2em;
-  border-radius: .5em;
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
   padding: .3em;
   border: 1px solid var(--mcmodder-color-accent-transparent1);
   background-color: transparent;
@@ -1223,6 +1244,10 @@ body > .container > *,
 .swal2-popup .swal2-styled.swal2-cancel {
   background-color: var(--mcmodder-color-background-dark4);
 }
+.pagination {
+  text-wrap: nowrap;
+  overflow: scroll;
+}
 .pagination .page-custom {
   line-height: 0;
   background-color: var(--mcmodder-color-background);
@@ -1242,6 +1267,9 @@ body > .container > *,
 .common-imglist-block .title,
 .common-nav {
   background-color: var(--mcmodder-color-background-transparent);
+}
+.common-icon-text.edit-history {
+  width: 100%;
 }
 .bootstrap-select > .dropdown-toggle::after {
   color: var(--mcmodder-color-text);
@@ -1354,6 +1382,10 @@ body .arrow {
   text-align: right;
   color: var(--mcmodder-color-accent-dark1);
 }
+#mcmodder-item-tab-edit td.fuel-head {
+  text-align: right;
+  color: var(--mcmodder-color-danger-dark1);
+}
 .mcmodder-almanacs i {
   background-image: url(https://i.mcmod.cn/editor/upload/20250731/1753943312_179043_WEbO.png);
   width: 40px;
@@ -1397,7 +1429,7 @@ body .arrow {
 .mcmodder-almanacs .block .title {
   color: var(--mcmodder-color-primary-dark1);
   font-weight: bold;
-  text-shadow: 2px 2px 2px var(--mcmodder-color-shadow);
+  text-shadow: 2px 2px 2px var(--mcmodder-color-text-shadow);
 }
 .mcmodder-almanacs .more {
   float: right;
@@ -1460,8 +1492,17 @@ body .arrow {
 #mcmodder-unique-splashes {
   margin-top: 1em;
 }
+.center-content.admin-list {
+  width: 100%;
+}
 .mcmodder-admin-container {
   display: flex;
+  overflow: scroll;
+}
+@media (max-width: 500px) {
+  .mcmodder-admin-container {
+    flex-direction: column;
+  }
 }
 .mcmodder-admin-container .title::before {
   content: "✦ ";
@@ -1475,29 +1516,66 @@ body .arrow {
 .center-content.admin-list .title.mcmodder-admin-admin {
   color: var(--mcmodder-color-permission-admin);
 }
+.rank-head-frame fieldset {
+  border-color: var(--mcmodder-color-background-dark2);
+}
+.rank-list-block:first-child {
+  border-right-color: var(--mcmodder-color-background-dark2);
+}
+.rank-list-block li {
+  width: auto;
+  display: block;
+  margin: 0;
+  padding: 6px;
+}
+.rank-list-block li.hover {
+  background-color: var(--mcmodder-color-danger-transparent1);
+}
+.rank-list-block .progress {
+  border-radius: .0rem;
+}
 .mcmodder-ranklist-container {
-  width: 33.333%;
-  display: inline-block;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 .mcmodder-ranklist-container .avatar {
+  display: inline-block;
+}
+.mcmodder-ranklist-container .avatar i {
   float: left;
   width: 40px;
   height: 40px;
+  background-size: cover;
 }
 .mcmodder-ranklist-container .name {
   font-size: 14px;
   height: 20px;
   overflow: hidden;
+  text-wrap: nowrap;
 }
 .mcmodder-ranklist-container .me {
   text-align: left;
   font-weight: bold;
-  display: inline;
+  display: inline-block;
   font-size: 14px;
+  max-width: calc(100% - 6em);
+  overflow: clip;
+  text-overflow: ellipsis;
 }
 .mcmodder-ranklist-container .content {
   display: inline-block;
   width: calc(100% - 40px);
+}
+.mcmodder-ranklist-container .content .progress {
+  width: 100%;
+  height: 20px;
+  position: relative;
+}
+.rank-list-block.edit-num .mcmodder-ranklist-container .content .progress-bar {
+  background-color: var(--mcmodder-color-primary-light);
+}
+.rank-list-block.edit-byte .mcmodder-ranklist-container .content .progress-bar {
+  background-color: var(--mcmodder-color-accent-light);
 }
 .mcmodder-ranklist-container .rank-num {
   margin-right: 4px;
@@ -1520,6 +1598,11 @@ body .arrow {
   text-align: center;
   display: inline;
   position: absolute;
+  color: var(--mcmodder-color-text);
+}
+.mcmodder-ranklist-container .quantity .muted {
+  color: var(--mcmodder-color-text-dark3);
+  display: inline;
 }
 .center-content.item-list li.rank_1 {
   background-color: var(--mcmodder-color-background-dark1);
@@ -1561,7 +1644,7 @@ div#editor-ueeditor,
   z-index: 1;
   padding: .2em;
   background-color: var(--mcmodder-color-background);
-  border-radius: .5em;
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
   font-size: 14px;
   box-shadow: 0px 5px 15px var(--mcmodder-color-background-dark4);
   opacity: 1;
@@ -1588,12 +1671,12 @@ div#editor-ueeditor,
   height: 0;
 }
 .mcmodder-contextmenu.expand-right .arrow::before {
-  left: calc(-2 * var(--mcmodder-padwidth-2));
+  left: calc(-2 * var(--mcmodder-width-padding-3));
   top: .25em;
   border-right-color: var(--mcmodder-color-background);
 }
 .mcmodder-contextmenu.expand-left .arrow::before {
-  right: calc(-2 * var(--mcmodder-padwidth-2));
+  right: calc(-2 * var(--mcmodder-width-padding-3));
   top: .25em;
   border-left-color: var(--mcmodder-color-background);
 }
@@ -1788,20 +1871,20 @@ div#editor-ueeditor,
   width: 100%;
   display: block;
   font-size: 1rem;
-  padding: .2em .8em;
+  padding: .2em var(--mcmodder-width-padding-2);
 }
 .mcmodder-input-option.selected {
   background-color: var(--mcmodder-color-primary-transparent1);
 }
 .mcmodder-collapsible-container {
   border: 1px solid var(--mcmodder-color-primary);
-  border-radius: 1em;
+  border-radius: var(--mcmodder-width-radius);
   margin: .5em 0;
 }
 .mcmodder-collapsible-header {
   position: relative;
-  padding: .8em;
-  border-radius: 1em;
+  padding: var(--mcmodder-width-padding-2);
+  border-radius: var(--mcmodder-width-radius);
   background-image: linear-gradient(45deg, var(--mcmodder-color-primary-background), var(--mcmodder-color-accent-background));
   color: var(--mcmodder-color-primary-dark1);
   font-weight: bold;
@@ -1809,13 +1892,13 @@ div#editor-ueeditor,
   user-select: none;
 }
 .mcmodder-collapsible-container.expanded .mcmodder-collapsible-header {
-  border-radius: 1em 1em 0 0;
+  border-radius: var(--mcmodder-width-radius) var(--mcmodder-width-radius) 0 0;
 }
 .mcmodder-collapsible-header::after {
   position: absolute;
   content: "\f0d7";
   font-family: "FontAwesome";
-  right: .8em;
+  right: var(--mcmodder-width-padding-2);
   transition: transform .3s;
 }
 .mcmodder-collapsible-container.expanded .mcmodder-collapsible-header::after {
@@ -1829,7 +1912,7 @@ div#editor-ueeditor,
 }
 .mcmodder-collapsible-container.expanded .mcmodder-collapsible-content {
   display: inherit;
-  padding: .8em;
+  padding: var(--mcmodder-width-padding-2);
   border-top: 1px solid var(--mcmodder-color-primary-transparent1);
 }
 .mcmodder-collapsible-content > * {
@@ -1890,7 +1973,7 @@ div#editor-ueeditor,
 }
 .mcmodder-horizontal-window {
   position: absolute;
-  padding: 1em;
+  padding: var(--mcmodder-width-padding-1);
   max-height: 100vh;
   overflow: scroll;
   width: 100%;
@@ -1954,30 +2037,30 @@ div#editor-ueeditor,
 }
 .badge-row > *:first-child {
   padding-left: .625em;
-  border-top-left-radius: 1em;
-  border-bottom-left-radius: 1em;
+  border-top-left-radius: var(--mcmodder-width-radius);
+  border-bottom-left-radius: var(--mcmodder-width-radius);
 }
 .badge-row > *:last-child {
   padding-right: .625em;
-  border-top-right-radius: 1em;
-  border-bottom-right-radius: 1em;
+  border-top-right-radius: var(--mcmodder-width-radius);
+  border-bottom-right-radius: var(--mcmodder-width-radius);
 }
 .badge-row .text-muted {
   background-color: #aaa5;
 }
-.badge-row .text-success {
+.badge-row .text-success, .badge.badge-success {
   background-color: #5f55;
 }
-.badge-row .text-danger {
+.badge-row .text-danger, .badge.badge-danger{
   background-color: #f555;
 }
 .badge-row .text-muted-muted {
   background-color: #ddd5;
 }
-.text-success {
+.text-success, .badge-success {
   color: var(--mcmodder-color-text-success) !important;
 }
-.text-danger {
+.text-danger, .badge-danger {
   color: var(--mcmodder-color-text-danger) !important;
 }
 kbd {
@@ -1986,18 +2069,13 @@ kbd {
   margin: 0 .05em;
   padding: 0 .2rem;
 }
-@property --mcmodder-oredict-column {
-  syntax: "<integer>";
-  inherits: true;
-  initial-value: 4;
-}
 .mcmodder-mod-container {
   display: grid;
   grid-template-columns: repeat(var(--mcmodder-oredict-column), 1fr);
   grid-column-gap: .375em;
 }
 .mcmodder-mod-container legend {
-  margin: .2em .8em;
+  margin: .2em var(--mcmodder-width-padding-2);
 }
 .mcmodder-mod-container legend a {
   color: var(--mcmodder-color-text-dark2);
@@ -2007,7 +2085,7 @@ kbd {
   grid-column-gap: .375em;
 }
 .oredict-item-list li {
-  margin: .2em .8em;
+  margin: .2em var(--mcmodder-width-padding-2);
   padding: 0;
 }
 .oredict-item-list {
@@ -2043,6 +2121,16 @@ kbd {
 #server-tool .action {
   background: transparent;
   border: unset;
+}
+.modlist-block {
+  padding: 0;
+}
+.modlist-block .cover img {
+  border-top-left-radius: var(--mcmodder-width-radius);
+  border-top-right-radius: var(--mcmodder-width-radius);
+}
+.modlist-block .title {
+  padding: 0 .5em;
 }
 .comment-channel-list li a.c1 {
   color: var(--mcmodder-color-channel-1);

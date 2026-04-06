@@ -1,4 +1,4 @@
-import { HeadConfig, McmodderTable } from "../table/Table";
+import { McmodderTable } from "../table/Table";
 import { McmodderTimer } from "../widget/Timer";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
@@ -16,17 +16,17 @@ export class PreSubmitInit extends McmodderInit {
     const preSubmitFrame = $('<div class="presubmit-list"><span class="mcmodder-subtitle">等待提交的预编辑</span></div>').appendTo(".verify-list-frame");
     
     const preSubmitTable = new McmodderTable<PreSubmitData>(this.parent, {}, {
-      createTime: new HeadConfig("保存时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC),
-      lastSubmitTime: new HeadConfig("待审项提交时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC),
-      title: new HeadConfig("页面概述", (title, data) => {
+      createTime: ["保存时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC],
+      lastSubmitTime: ["待审项提交时间", McmodderTable.DISPLAYRULE_TIME_MILLISEC],
+      title: ["页面概述", (title, data) => {
         let res = `<a target="_blank" href="${ data.url }">${ title }</a>`;
         if (data.errState) res += `<br><span class="mcmodder-slim-danger">（试图提交时出现异常：${McmodderValues.errorMessage[data.errState]}）</span>`;
         return res;
-      }),
-      option: new HeadConfig("操作", (_, __) => `
+      }],
+      option: ["操作", (_, __) => `
         <button class="btn btn-sm mcmodder-presubmit-edit">修改</button>
         <button class="btn btn-sm mcmodder-presubmit-delete">删除</button>
-      `)
+      `]
     });
     preSubmitTable.$instance.appendTo(preSubmitFrame);
     preSubmitTable.setAllData(preSubmitList);

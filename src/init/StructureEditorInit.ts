@@ -1,5 +1,5 @@
 import { StructureEditorBlocktype } from "../types";
-import { HeadConfig, McmodderTable } from "../table/Table";
+import { McmodderTable } from "../table/Table";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
 import { McmodderValues } from "../Values";
@@ -130,22 +130,22 @@ export class StructureEditorInit extends McmodderInit {
 
     let blockList = $(`<div>方块列表：</div>`).appendTo(".info-frame");
     let blockListTable = new McmodderTable<StructureEditorBlocktype>(this.parent, {id: "block-selector"}, {
-      op: new HeadConfig("操作", (_, __) => {
+      op: ["操作", (_, __) => {
         const id = McmodderUtils.randStr(8);
         return `
           <div class="radio">
             <input id="block-selector-${ id }" name="blocktype" type="radio">
             <label for="block-selector-${ id }">选取</label>
           </div>`;
-      }),
-      blockName: new HeadConfig("方块名称"),
-      class: new HeadConfig("所属模组"),
-      textures: new HeadConfig("右-左-上-下-前-后", data => {
+      }],
+      blockName: "方块名称",
+      class: "所属模组",
+      textures: ["右-左-上-下-前-后", data => {
         let res = "";
         data.forEach((face: string) => res += `<img src="${ face }" width="24">`);
         return res;
-      }),
-      itemID: new HeadConfig("对应资料ID", McmodderTable.DISPLAYRULE_LINK_ITEM)
+      }],
+      itemID: ["对应资料ID", McmodderTable.DISPLAYRULE_LINK_ITEM]
     });
     blockListTable.$instance.appendTo(blockList);
     blockListTable.showLoading();

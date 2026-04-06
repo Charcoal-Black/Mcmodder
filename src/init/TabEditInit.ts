@@ -4,52 +4,250 @@ import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 import { GeneralEditInit } from "./GeneralEditInit";
+import { McmodderItemData, McmodderRecipeData, McmodderRecipeIngredient, McmodderSimpleRecipeData } from "../types";
+import { McmodderMap } from "../map/Map";
+import { ItemDisplay } from "../widget/ItemDisplay";
 
 interface CurrentUsedData {
   item: string[];
   oredict: string[];
 }
 
+class RecipeDisplay {
+  private readonly tab: TabEditInit;
+  private readonly recipe: McmodderSimpleRecipeData;
+  private readonly instance: JQuery;
+  private readonly itemMap: McmodderMap<McmodderItemData>;
+  private readonly tagMap: McmodderMap<McmodderItemData>;
+
+  constructor(tab: TabEditInit, recipe: McmodderSimpleRecipeData) {
+    this.tab = tab;
+    this.recipe = recipe;
+    this.itemMap = this.tab.itemMap;
+    this.tagMap = this.tab.tagMap;
+    this.instance = $(`<div class="item-table-hover mcmodder-tag"></div>`);
+    if (recipe.in_id) {
+      Object.keys(recipe.in_id).forEach(key => {
+        const id = recipe.in_id![key];
+        const count = recipe.in_num ? recipe.in_num[key] : undefined;
+        const chance = recipe.in_chance ? recipe.in_chance[key] : undefined;
+        const itemDisplay = new ItemDisplay(this.itemMap, this.tagMap, id, count, chance)
+        itemDisplay.instance.appendTo(this.instance);
+      });
+    }
+    if (recipe.out_id) {
+      Object.keys(recipe.out_id).forEach(key => {
+        const id = recipe.out_id![key];
+        const count = recipe.out_num ? recipe.out_num[key] : undefined;
+        const chance = recipe.out_chance ? recipe.out_chance[key] : undefined;
+        const itemDisplay = new ItemDisplay(this.itemMap, this.tagMap, id, count, chance);
+        itemDisplay.instance.appendTo(this.instance);
+      });
+    }
+    
+    this.instance.click(_e => this.write(this.recipe));
+  }
+
+  getInstance() {
+    return this.instance;
+  }
+  
+  private async write(recipe: McmodderSimpleRecipeData) {
+    const writeSingle = (data: Record<string, string | number> | undefined, id: string) => {
+      const all = this.tab.getTableInputElement(id).val("");
+      if (!data) return;
+      Object.keys(data).forEach(num => {
+        all.find(`[data-part=${ num }]`).val(data[num]);
+      });
+      all.change();
+    }
+    await this.tab.setGui(1); // 不确定，暂且是 1
+    writeSingle(recipe.in_id, "slot-in-item");
+    writeSingle(recipe.in_num, "slot-in-number");
+    writeSingle(recipe.in_chance, "slot-in-chance");
+    writeSingle(recipe.out_id, "slot-out-item");
+    writeSingle(recipe.out_num, "slot-out-number");
+    writeSingle(recipe.out_chance, "slot-out-chance");
+    writeSingle(recipe.power_num, "slot-power-number");
+  }
+}
+
 export class TabEditInit extends McmodderInit {
-  isReady = false;
-  guiFrame?: Element;
-  slotFrame?: Element;
-  modID: number = 1;
-  modName = "";
-  dependences: number[] = [];
-  expansions: number[] = [];
-  recipeTable: JQuery = $();
+  itemMap = new McmodderMap<McmodderItemData>("registerName");
+  tagMap = new McmodderMap<McmodderItemData>("OredictList");
+  private isReady = false;
+  private guiFrame?: Element;
+  private slotFrame?: Element;
+  private modID = 1;
+  // private modName = "";
+  private dependences: number[] = [];
+  // private expansions: number[] = [];
+  private recipeTable = $();
+  private frame = $();
+  private recipeFrame?: JQuery;
+  private onGuiOpen = async () => {};
 
   canRun() {
     return this.parent.href.includes("/item/tab/") && 
       !this.parent.href.includes(".html");
   }
 
-  // private readonly guiObserver = new MutationObserver(mutationList => {
-  //   if (!this.guiFrame || !this.slotFrame) return;
-  //   for (let mutation of mutationList) {
-  //     if (mutation.type === "childList") {
-  //       try {
-  //         if ((mutation.target as HTMLElement).tagName === "DIV") {
-  //           this.guiObserver.disconnect();
-  //           this.slotObserver.disconnect();
-  //           this.updateTabFrame();
-  //           setTimeout(() => this.guiObserver.observe(this.guiFrame!, {
-  //             childList: true,
-  //             subtree: true
-  //           }), 1e3);
-  //           setTimeout(() => this.slotObserver.observe(this.slotFrame!, {
-  //             attributes: true,
-  //             childList: true,
-  //             subtree: true
-  //           }), 1e3);
-  //         }
-  //       } catch (e) {
-  //         // awa?
-  //       }
-  //     }
-  //   }
-  // });
+  private parseRecipeRegisterName(recipe: McmodderRecipeData) {
+    const work = (idList: Record<string, McmodderRecipeIngredient> | undefined) => {
+      Object.keys(idList || {}).forEach(key => {
+        const data = idList![key];
+        if (data instanceof Array) {
+          data.map(id => {
+            const res = this.itemMap.get(id);
+            if (res instanceof Array) {
+              return res[0].id.toString();
+            }
+            return id;
+          });
+        }
+        else {
+          const res = this.itemMap.get(data);
+          if (res instanceof Array) {
+            idList![key] = res[0].id.toString();
+          }
+        }
+      });
+    }
+    const result = McmodderUtils.simpleDeepCopy(recipe);
+    work(result.in_id);
+    work(result.out_id);
+    return result;
+  }
+
+  private splitRecipe(recipe: McmodderRecipeData, targetOutputID: number) { // 需要注册名已经解析为数字 ID 的配方数据
+    const result: McmodderSimpleRecipeData[] = [];
+    const inputKeys = Object.keys(recipe.in_id || {});
+    const outputKeys = Object.keys(recipe.out_id || {});
+    const keys = inputKeys.concat(outputKeys);
+    const splitIndex = inputKeys.length;
+    const targetOutputStrID = targetOutputID.toString();
+    const idExcludedRecipe = McmodderUtils.simpleDeepCopy(recipe);
+    delete idExcludedRecipe.in_id;
+    delete idExcludedRecipe.out_id;
+    
+    const work = (keyIndex: number, currentRecipe: McmodderRecipeData) => {
+      // 递归大手子梅开二度
+      if (keyIndex >= keys.length) {
+        result.push(Object.assign(currentRecipe, idExcludedRecipe) as McmodderSimpleRecipeData);
+        return;
+      }
+      const key = keys[keyIndex];
+      if (keyIndex < splitIndex) {
+        const data = recipe.in_id![key];
+        const newRecipe = McmodderUtils.simpleDeepCopy(currentRecipe);
+        if (data instanceof Array) {
+          data.forEach(id => {
+            newRecipe.in_id![key] = id;
+            work(keyIndex + 1, newRecipe);
+          });
+        }
+        else {
+          newRecipe.in_id![key] = data;
+          work(keyIndex + 1, newRecipe);
+        }
+      }
+      else {
+        const data = recipe.out_id![keys[keyIndex]];
+        const newRecipe = McmodderUtils.simpleDeepCopy(currentRecipe);
+        if (data instanceof Array) {
+          if (data.includes(targetOutputStrID)) {
+            newRecipe.out_id![key] = targetOutputStrID;
+            work(keyIndex + 1, newRecipe);
+          }
+          else {
+            data.forEach(id => {
+              newRecipe.out_id![key] = id;
+              work(keyIndex + 1, newRecipe);
+            });
+          }
+        }
+        else {
+          newRecipe.out_id![key] = data;
+          work(keyIndex + 1, newRecipe);
+        }
+      }
+    }
+
+    work(0, {
+      gui_id: recipe.gui_id,
+      in_id: {},
+      out_id: {}
+    });
+    
+    return result;
+  }
+
+  private initRecipeSelector() {
+    this.recipeFrame = $(`
+      <div class="recipe-frame">
+        <p class="title">匹配到的配方:</p>
+        <div class="tab-content">
+          <div id="recipe-item" class="tab-pane active show"></div>
+        </div>
+      </div>`)
+    .appendTo("#item-table-item-frame");
+    const recipeContainer = this.recipeFrame.find("#recipe-item");
+
+    // 尝试搜索此物品的标签，同时为 ItemDisplay 构造 itemMap 和 tagMap
+    const itemFiles = this.parent.utils.getConfig("mcmodderJsonStorage");
+    let oredict: string[] | undefined;
+    Object.values(itemFiles).forEach(file => {
+      this.itemMap.add(file as McmodderItemData[]);
+      this.tagMap.add(file as McmodderItemData[]);
+      (file as McmodderItemData[]).forEach(item => {
+        if (item.id === Number(nItemID)) {
+          oredict = item.OredictList?.split(",");
+        }
+      });
+    });
+
+    const files = this.parent.utils.getConfig("mcmodderRecipeJsonStorage");
+    Object.values(files).forEach(file => {
+      (file as McmodderRecipeData[]).forEach(recipe => {
+        if (!recipe.out_id) return;
+        const parsedRecipe = this.parseRecipeRegisterName(recipe);
+        const splitedRecipeList = this.splitRecipe(parsedRecipe, Number(nItemID));
+        splitedRecipeList.forEach(recipe => {
+          Object.values(recipe.out_id!).forEach(id => {
+            if (id === nItemID || oredict?.includes(id)) {
+              new RecipeDisplay(this, recipe).getInstance().appendTo(recipeContainer);
+            }
+          });
+        });
+      });
+    });
+  }
+
+  public getTableInputElement(id: string | null, part?: string | number | null) {
+    if (part === undefined) {
+      return this.recipeTable.find(`[data-multi-id=${ id }]`);
+    }
+    return this.recipeTable.find(`[data-multi-id=${ id }][data-part=${ part }]`).first();
+  }
+
+  private getGuiInputElement(id: string | null, part?: string | number | null) {
+    if (part === undefined) {
+      return $(`.gui [data-multi-id=${ id }]`);
+    }
+    return $(`.gui [data-multi-id=${ id }][data-part=${ part }]`).first();
+  }
+
+  private getGui() {
+    return Number($("#item-table-gui-select").val());
+  }
+
+  public async setGui(id: number) {
+    if (this.getGui() === id) return;
+    return new Promise<void>(resolve => {
+      this.onGuiOpen = async () => resolve();
+      $("#item-table-gui-select").selectpicker("val", id.toString());
+    });
+  }
 
   private readonly slotObserver = new MutationObserver(mutationList => {
     if (!this.guiFrame || !this.slotFrame) return;
@@ -60,19 +258,13 @@ export class TabEditInit extends McmodderInit {
           // this.guiObserver.disconnect();
           this.slotObserver.disconnect();
 
-          $(`#mcmodder-item-tab-edit [data-multi-id=${
-            target.getAttribute("data-multi-id")
-          }][data-part=${
+          this.getTableInputElement(
+            target.getAttribute("data-multi-id"),
             target.getAttribute("data-part")
-          }]`)
-          .first()
+          )
           .val((mutation.target as HTMLInputElement).value)
           .change();
 
-          // this.guiObserver.observe(this.guiFrame, {
-          //   childList: true,
-          //   subtree: true
-          // });
           this.slotObserver.observe($(".gui")[0], {
             attributes: true,
             childList: true,
@@ -104,19 +296,7 @@ export class TabEditInit extends McmodderInit {
       const target = $(item);
       if (target.hasClass("mcmodder-tag")) return;
       target.addClass("mcmodder-tag");
-      // 高亮选取建议
-      /* const itemModName = target.attr("data-original-title").split("<b>")[1].split("</b>")[0].replace("...", "");
-      if (this.modName.includes(itemModName)) McmodderUtils.highlight(target, "gold");
-      else {
-        for (let i of this.dependences) {
-          if (i.includes(itemModName)) McmodderUtils.highlight(target, "aqua");
-          else {
-            for (let i of this.expansions) {
-              if (i.includes(itemModName)) McmodderUtils.highlight(target, "pink");
-            }
-          }
-        }
-      } */
+      
       if ((item as HTMLElement).style.backgroundColor) item.parentNode?.insertBefore(item, item.parentNode.childNodes[pt++]);
 
       // 显示详细信息
@@ -153,7 +333,7 @@ export class TabEditInit extends McmodderInit {
 
     if (!this.guiFrame || !this.slotFrame) return;
 
-    $("div#item-table-gui-frame hr").remove();
+    this.frame.find("hr").remove();
     if ($("#mcmodder-tabedit-tip").length) return;
     $(`<span id="mcmodder-tabedit-tip" class="mcmodder-slim-dark">
       提示：巧妙运用
@@ -181,6 +361,11 @@ export class TabEditInit extends McmodderInit {
       chanceEditable: false,
       unit: ""
     }));
+    let fuel = {
+      valid: false,
+      number: "",
+      unit: ""
+    };
     let extra = new Array(McmodderValues.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
@@ -189,7 +374,7 @@ export class TabEditInit extends McmodderInit {
     }));
 
     const slotlist = $(".gui").find("input.value");
-    const tablist = $("#item-table-gui-frame > .tab-li");
+    const tablist = this.frame.find("> .tab-li");
     slotlist.each((_, _slot) => {
       const slot = $(_slot);
       const value = slot.val().trim();
@@ -228,6 +413,12 @@ export class TabEditInit extends McmodderInit {
         case "slot-out-chance": {
           output[dataId].chance = value;
           output[dataId].chanceEditable = true;
+          break;
+        }
+        case "slot-fuel-number": {
+          fuel.valid = true;
+          fuel.number = value;
+          fuel.unit = unit;
           break;
         }
         case "slot-power-number": {
@@ -360,6 +551,31 @@ export class TabEditInit extends McmodderInit {
       }).css("cursor", "no-drop");
     }
 
+    if (fuel.valid) {
+      recipeTr = $("<tr>").appendTo(recipeTbody);
+      $(`<td class="fuel-head" data-toggle="tooltip" title="燃料">
+        <strong>
+          <i class="fa fa-fire" />
+          ${ fuel.unit }
+        </strong>
+      </td>`)
+      .appendTo(recipeTr)
+      .css("align", "right");
+
+      recipeTd = $("<td>").appendTo(recipeTr);
+
+      recipeTd = $("<td>").appendTo(recipeTr);
+      recipeInput = $("<input>").appendTo(recipeTd).attr({
+        "data-part": 1,
+        "data-id": 1,
+        "data-multi-id": "slot-out-number",
+        "data-multi-name": "item-table-data",
+        "data-multi-enable": true,
+        "class": "form-control slot-text slot-text1",
+        "placeholder": "1"
+      }).val(fuel.number);
+    }
+
     for (let i in extra) {
       if (!extra[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
@@ -397,7 +613,7 @@ export class TabEditInit extends McmodderInit {
     recipeTbody.on("change", "input", e => {
       const c = $(e.currentTarget);
       const v = c.val().trim();
-      const valueInput = $(`#item-table-gui-frame input[data-multi-id=${c.attr("data-multi-id")}][data-part=${c.attr("data-part")}]`);
+      const valueInput = this.getGuiInputElement(c.attr("data-multi-id"), c.attr("data-part"));
       valueInput.val(v);
       if (c.attr("data-multi-id").indexOf("-item") > -1) {
         if (!isNaN(Number(v))) {
@@ -408,7 +624,7 @@ export class TabEditInit extends McmodderInit {
       if (c.attr("data-multi-id") === "slot-out-item") {
         let flag = false;
         const submitButton = $("#edit-submit-button");
-        $(`#item-table-gui-frame input[data-multi-id=${c.attr("data-multi-id")}]`).each((_, i) => {
+        this.getGuiInputElement("slot-out-item").each((_, i) => {
           if (flag) return;
           let e = (i as HTMLInputElement).value;
           if (e && e != nItemID && !isNaN(Number(e))) {
@@ -456,11 +672,12 @@ export class TabEditInit extends McmodderInit {
       childList: true,
       subtree: true
     });
+    this.onGuiOpen();
   }
 
   run() {
-    const frame = $("#item-table-gui-frame");
-    const gui = frame.find(".gui");
+    this.frame = $("#item-table-gui-frame");
+    const gui = this.frame.find(".gui");
     if (gui.length) {
       this.work();
     }
@@ -474,17 +691,19 @@ export class TabEditInit extends McmodderInit {
         });
       });
     })
-    .observe(frame.get(0), {
+    .observe(this.frame.get(0), {
       childList: true,
       subtree: true
     });
+
+    this.initRecipeSelector();
   }
 
   work() {
     this.isReady = true;
     new GeneralEditInit(this.parent).run();
-    this.guiFrame = $("#item-table-gui-frame").get(0);
-    this.slotFrame = $(".gui").get(0);
+    this.guiFrame = this.frame.get(0);
+    this.slotFrame = this.frame.find(".gui").get(0);
     $("#edit-page-2").attr("class", "tab-pane active");
     $(".swiper-container").remove();
     if (!this.guiFrame) return;
@@ -505,14 +724,14 @@ export class TabEditInit extends McmodderInit {
     this.parent.updateScreenAttachedFrame(ingredientSelectWindow.get(0) as HTMLElement);
 
     this.modID = Number($(".common-nav li:not(.line):nth-child(5) a").first().prop("href").split("/class/")[1].split(".html")[0]);
-    this.modName = $(".common-nav li:not(.line):nth-child(5) a").text();
+    // this.modName = $(".common-nav li:not(.line):nth-child(5) a").text();
 
     // v1.6 更新后，前置/拓展模组信息仅记录模组 ID，旧信息全部删除
     GM_setValue("modDependences", "");
     GM_setValue("modExpansions", "");
 
-    this.dependences = this.parent.utils.getConfig(this.modID, "modDependences_v2", []);
-    this.expansions = this.parent.utils.getConfig(this.modID, "modExpansions_v2", []);
+    this.dependences = this.parent.utils.getConfigAsNumberList(this.modID, "modDependences_v2");
+    // this.expansions = this.parent.utils.getConfigAsNumberList(this.modID, "modExpansions_v2");
     if (this.parent.utils.getConfig("tabSelectorInfo")) {
       let itemSearchObserver = new MutationObserver((_mutationList, itemSearchObserver) => {
         itemUsedObserver.disconnect();
@@ -547,10 +766,10 @@ export class TabEditInit extends McmodderInit {
       <input id="mcmodder-gui-lock" type="checkbox">
         <label for="mcmodder-gui-lock">锁定当前 GUI</label>
       </div>`).appendTo($("#item-table-gui-select").parent());
-    let guiLocker = this.parent.utils.getConfig("guiLocker");
+    let guiLocker = Number(this.parent.utils.getConfig("guiLocker"));
     if (guiLocker > 0) {
       $("input#mcmodder-gui-lock").click();
-      $("#item-table-gui-select").selectpicker("val", guiLocker);
+      this.setGui(guiLocker);
     }
     $("input#mcmodder-gui-lock").bind("change", () => {
       let l = $("input#mcmodder-gui-lock").prop("checked");
@@ -570,7 +789,7 @@ export class TabEditInit extends McmodderInit {
     // 快速设置无序
     $("input#mcmodder-shapeless-lock").bind("change", _e => {
       let l = $("input#mcmodder-shapeless-lock").prop("checked");
-      this.parent.utils.setConfig("shapelessLocker", l.toString());
+      this.parent.utils.setConfig("shapelessLocker", l);
       if (l) $("#item-table-data-orderly-1").click();
     });
 

@@ -1,5 +1,5 @@
+import { McmodderTableDataMap } from "../../types";
 import { McmodderEditableTable } from "../EditableTable";
-import { McmodderTableDataMap } from "../Table";
 import { Command } from "./Command";
 
 export class DeleteRowCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {

@@ -1,5 +1,5 @@
+import { McmodderTableDataMap, McmodderTableRowSelection } from "../../types";
 import { McmodderEditableTable } from "../EditableTable";
-import { McmodderTableDataMap, McmodderTableRowSelection } from "../Table";
 import { Command } from "./Command";
 
 export class DeleteMultipleRowCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {

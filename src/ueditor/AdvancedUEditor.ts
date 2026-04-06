@@ -158,13 +158,13 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.anonymiseUknowtoomuch();
   }
 
-  widthAutoResize() {
+  override widthAutoResize() {
     if (!this.$outerFrame) return;
     super.widthAutoResize();
     this.mdEditor?.css("height", this.$outerFrame.css("height"));
   }
 
-  resizeHeight(height: number) {
+  override resizeHeight(height: number) {
     super.resizeHeight(height);
     (this.mdEditor?.get(0) as HTMLElement)?.style?.setProperty("height", $("#editor-ueeditor").css("height"), "important");
   }
@@ -315,7 +315,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     return true;
   }
 
-  updateEditorStats() {
+  override updateEditorStats() {
     if (!this.isEditorFullScreen()) this.heightAutoResize();
     if (this.currentTextLength <= this.autoUpdateEditorStatsThreshold) {
       this.calculateBytes();

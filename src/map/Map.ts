@@ -1,19 +1,17 @@
-type McmodderMapKeyHandler = (data: any) => any;
+import { McmodderMapKeyHandler } from "../types";
+
 export class McmodderMap<T extends object> {
   private readonly map = new Map<any, T[]>();
-  private readonly list: T[];
   private readonly key: keyof T;
   private readonly keyHandler?: McmodderMapKeyHandler;
 
-  constructor(list: T[], key: keyof T, keyHandler?: McmodderMapKeyHandler) {
-    this.list = list;
+  constructor(key: keyof T, keyHandler?: McmodderMapKeyHandler) {
     this.key = key;
     this.keyHandler = keyHandler;
-    this.init();
   }
 
-  private init() {
-    this.list.forEach(data => {
+  add(list: T[]) {
+    list.forEach(data => {
       this.push(data);
     });
   }
@@ -42,5 +40,9 @@ export class McmodderMap<T extends object> {
 
   get(mapKey: any) {
     return this.map.get(mapKey);
+  }
+
+  clear() {
+    this.map.clear();
   }
 }

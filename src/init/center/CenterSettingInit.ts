@@ -1,18 +1,18 @@
-import { McmodderConfigInteractor } from "../../config/ConfigInterface";
 import { McmodderConfigResourceInteractor } from "../../config/ConfigResourceInteractor";
-import { McmodderConfigType } from "../../config/ConfigUtils";
+import { McmodderInputType } from "../../config/ConfigUtils";
 import { Mcmodder } from "../../Mcmodder";
 import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData } from "../../types";
-import { HeadConfig, McmodderTable } from "../../table/Table";
+import { McmodderTable } from "../../table/Table";
 import { McmodderTimer } from "../../widget/Timer";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
 import { McmodderConfigResourceFileListInteractor } from "../../config/ConfigResouceFileListInteractor";
+import { McmodderConfigInteractor } from "../../config/ConfigInteractor";
 
 export class CenterSettingInit extends CenterBaseInit {
   private async accessPublicSplashList(manager: McmodderConfigResourceInteractor<McmodderSplashData>) {
-    const data = manager.table.getAllData().map(data => data.content);
+    const data = manager.table.getAllData().map(data => data.content).filter(data => data) as string[];
     if (!data.length) {
       McmodderUtils.commonMsg("还没有记录任何标语呢... 用“闪烁标语追踪器”记录一些标语后再试试？");
       return;
@@ -126,7 +126,7 @@ export class CenterSettingInit extends CenterBaseInit {
     Object.keys(this.getParent().cfgutils.data).forEach(key => {
       const data = this.getParent().cfgutils.data[key];
       if (data.permission && permission < data.permission) return;
-      if (data.type === McmodderConfigType.KEYBIND && 
+      if (data.type === McmodderInputType.KEYBIND && 
         McmodderUtils.isMobileClient()) return;
       const entry = new McmodderConfigInteractor(key, this.getParent().cfgutils);
       entry.$instance.appendTo(content);
@@ -166,9 +166,9 @@ export class CenterSettingInit extends CenterBaseInit {
       this.getParent(),
       "mcmodderSplashList_v2",
       "已记录的闪烁标语", {
-        time: new HeadConfig("时间", data => data ? (new Date(data)).toLocaleString() : "未知"),
-        content: new HeadConfig("记录内容"),
-        num: new HeadConfig("次数", McmodderTable.DISPLAYRULE_NUMBER)
+        time: ["时间", (data: number) => data ? (new Date(data)).toLocaleString() : "未知"],
+        content: "记录内容",
+        num: ["次数", McmodderTable.DISPLAYRULE_NUMBER]
       },
       config => config?.split("\n") || [], // 最后一项是空，不考虑
       (_, data) => {
@@ -186,8 +186,8 @@ export class CenterSettingInit extends CenterBaseInit {
       this.getParent(),
       "modDependences_v2",
       "已记录的模组前置信息", {
-        id: new HeadConfig("模组编号", McmodderTable.DISPLAYRULE_LINK_CLASS),
-        children: new HeadConfig("记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY)
+        id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CLASS],
+        children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY]
       }, null, (key, item) => new Object({
         id: key,
         children: item
@@ -197,8 +197,8 @@ export class CenterSettingInit extends CenterBaseInit {
       this.getParent(),
       "modExpansions_v2",
       "已记录的模组拓展信息", {
-        id: new HeadConfig("模组编号", McmodderTable.DISPLAYRULE_LINK_CENTER),
-        children: new HeadConfig("记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY)
+        id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CENTER],
+        children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY],
       }, null, (key, item) => new Object({
         id: key,
         children: item
@@ -208,14 +208,14 @@ export class CenterSettingInit extends CenterBaseInit {
       this.getParent(),
       "rankdata",
       "已保存的贡献榜数据", {
-        date: new HeadConfig("日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH),
-        byteTop1: new HeadConfig("字数榜首", rawData => {
-          const data = rawData.split(","); // [userID, bytes, ratio]
+        date: ["日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH],
+        byteTop1: ["字数榜首", (rawData: string) => {
+          const data = rawData.split(",") as unknown as [number, number, number]; // [userID, bytes, ratio]
           return `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(data[0]) }">${ data[0] }</a> 
             (${ data[1].toLocaleString() } 字节, ${ (data[2] * 100).toFixed(1) }%)`;
-        }),
-        totalEdited: new HeadConfig("前 60 名总编辑字数", data => `${data.toLocaleString()} 字节`),
-        size: new HeadConfig("数据大小", McmodderTable.DISPLAYRULE_SIZE)
+        }],
+        totalEdited: ["前 60 名总编辑字数", (data: number) => `${data.toLocaleString()} 字节`],
+        size: ["数据大小", McmodderTable.DISPLAYRULE_SIZE]
       }, null, (key, item) => {
         let list = JSON.parse(item) as McmodderRankStorageData, sum = 0;
         list.forEach(user => sum += user.value);
