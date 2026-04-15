@@ -26,3 +26,16 @@ jobs:
         with:
           name: dist
           path: dist/
+  release:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[release]')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create v${{ env.VERSION }} --generate-notes
