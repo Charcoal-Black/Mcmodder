@@ -2163,6 +2163,10 @@ html.dark .edui-default .edui-tablepicker .edui-pickarea,
 html.dark .edui-default .edui-tablepicker .edui-pickarea .edui-overlay {
   filter: invert(80%);
 }
+html.dark .common-comment-block textarea,
+html.dark .common-comment-block input {
+  color: var(--mcmodder-color-text) !important;
+}
 html .edui-default .edui-editor-toolbarboxouter,
 .banner .m_menu .m_center,
 .banner .m_menu .banner .m_menu {
