@@ -45,7 +45,8 @@ jobs:
             TAG="${TAG}_${counter}"
           fi
           echo "TAG_NAME=$TAG" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ env.TAG_NAME }} --generate-notes
+        run: gh release create ${{ env.TAG_NAME }} --title "v${{ env.VERSION }}" --generate-notes
