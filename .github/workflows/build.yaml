@@ -34,8 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+      - run: |
+          VERSION=$(jq -r .version package.json)
+          TAG="v$VERSION"
+          if [ -n "$(git ls-remote --tags origin refs/tags/$TAG)" ]; then
+            counter=1
+            while [ -n "$(git ls-remote --tags origin refs/tags/${TAG}_${counter})" ]; do
+              counter=$((counter + 1))
+            done
+            TAG="${TAG}_${counter}"
+          fi
+          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
 
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create v${{ env.VERSION }} --generate-notes
+        run: gh release create ${{ env.TAG_NAME }} --generate-notes
