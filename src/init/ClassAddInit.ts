@@ -11,20 +11,18 @@ export class ClassAddInit extends McmodderInit {
     crashList.children().first().append(` (${crashList.find(".text-danger").length.toLocaleString()})`);
   }
 
-  private runCrashProtector() {
+  private async runCrashProtector() {
     $("#mcmodder-crash-protector").html("[刷新中...]");
-    this.parent.utils.createRequest({
-      url: "https://www.mcmod.cn/class/add/",
-      method: "GET",
-      onload: resp => {
-        if (!resp.responseXML) return;
-        let d = $(resp.responseXML);
-        $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(d.find("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html());
-        $("#mcmodder-crash-protector").html("[刷新]");
-        McmodderUtils.commonMsg("刷新成功！");
-        this.refreshCrashList();
-      }
+    const resp = await this.parent.utils.createRequest({
+      url: `${ this.parent.hostname }/class/add/`,
+      method: "GET"
     });
+    if (!resp.responseXML) return;
+    const doc = $(resp.responseXML);
+    $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(doc.find("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html());
+    $("#mcmodder-crash-protector").html("[刷新]");
+    McmodderUtils.commonMsg("刷新成功！");
+    this.refreshCrashList();
   }
 
   run() {

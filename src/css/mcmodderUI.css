@@ -8,12 +8,22 @@
 }
 .btn,
 .btn-dark {
-  background:linear-gradient(45deg, var(--mcmodder-color-primary-light), var(--mcmodder-color-accent-light));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary-light), var(--mcmodder-color-accent-light));
   color: var(--mcmodder-color-text);
   border-color: 1px solid var(--mcmodder-color-background-transparent);
 }
+.dropdown-menu > .active > a,
+.dropdown-menu > .active > a:hover,
+.dropdown-menu > .active > a:focus {
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
+}
 .dropdown-item.active {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
+}
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  color: var(--mcmodder-color-text);
+  background-color: var(--mcmodder-color-accent-transparent1);
 }
 .tooltip-inner,
 body .edui-default .edui-bubble .edui-popup-content {
@@ -47,7 +57,7 @@ body > .content,
 .center-block-head .title,
 .common-center .post-row .postname .name h5,
 .common-center .right .class-title h3,
-.mcmodder-data-frame .class-title h3,
+.mcmodder-preview-frame .class-title h3,
 .common-comment-block .comment-title,
 .mcmodder-title,
 .modal-title,
@@ -296,13 +306,13 @@ body .edui-default .edui-bubble .edui-popup-content {
   border-radius: 1.5px;
   transition: margin-left .3s;
 }
-.common-center .right {
-  padding-left: 280px;
-}
 .col-lg-12.server-listtype-switch {
   padding-left: 1em;
 }
 .bs-tooltip-auto[x-placement^="top"] .arrow::before,
+.bs-tooltip-auto[x-placement^="right"] .arrow::before,
+.bs-tooltip-auto[x-placement^="bottom"] .arrow::before,
+.bs-tooltip-auto[x-placement^="left"] .arrow::before,
 .bs-tooltip-top .arrow::before {
   backdrop-filter: blur(10px);
 }
@@ -444,16 +454,22 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 .header-layer {
   position: relative;
 }
-.common-center .left,
-.common-center .right:not(.col-lg-12) {
-  width: 275px;
-}
-.common-center .left {
-  position: absolute;
-  left: 0;
-}
-.mcmodder-class-init.col-lg-12.right {
-  padding-right: 280px;
+@media (min-width: 741px) {
+  .common-center .left,
+  .common-center .right:not(.col-lg-12) {
+    width: 275px;
+  }
+  .common-center .left {
+    position: absolute;
+    left: 0;
+  }
+  .mcmodder-class-init.col-lg-12.right {
+    padding-left: 280px;
+    padding-right: 280px;
+  }
+  .common-center .right {
+    padding-left: 280px;
+  }
 }
 .mcmodder-class-env-required {
   color: var(--mcmodder-color-primary-dark1);
@@ -772,7 +788,8 @@ body .edui-default .edui-editor-toolbarboxinner {
 .center-item-popover-b {
   background:linear-gradient(45deg,var(--mcmodder-color-primary),var(--mcmodder-color-accent));
 }
-.form-control:focus {
+.form-control:focus,
+.mcmodder-slider-tap.focus {
   border-color: var(--mcmodder-color-accent);
   box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
 }
@@ -811,7 +828,8 @@ body .edui-default .edui-editor-toolbarboxinner {
   padding: 0;
   margin: 0;
 }
-.common-center .right .class-post-frame .post-block .info {
+.common-center .right .class-post-frame .post-block .info,
+.edit-tools > span {
   padding: .2em var(--mcmodder-width-padding-3);
 }
 .class-item-type li {
@@ -837,6 +855,9 @@ footer,
 .popover {
   backdrop-filter: blur(20px) brightness(140%);
 }
+.footer {
+  border-top-color: var(--mcmodder-color-background-dark1);
+}
 .sidebar {
   background: #3d464daa;
   backdrop-filter: blur(5px);
@@ -846,6 +867,10 @@ footer,
 }
 .common-center .item-data {
   width: 220px;
+  position: relative;
+  z-index: 1;
+  float: right;
+  padding: var(--mcmodder-width-padding-2);
 }
 body .header-container {
   background-image: linear-gradient(#434c53aa, #3c454caa);
@@ -855,8 +880,7 @@ body .header-container {
 .btn,
 .alert,
 .bootstrap-tagsinput,
-.bootstrap-tagsinput .tag,
-.common-item-mold-list {
+.bootstrap-tagsinput .tag {
   border-radius: var(--mcmodder-width-radius);
   box-shadow: rgba(50, 50, 100, 0.3) 0px 2px 4px 0px;
 }
@@ -900,11 +924,6 @@ body .header-container {
   width: 10em;
   display: inline-block;
 }
-.common-center .item-data {
-  position: relative;
-  z-index: 1;
-  float: right;
-}
 .common-text .common-text-menu {
   width: calc(100% - 2 * var(--mcmodder-width-padding-3));
 }
@@ -931,8 +950,10 @@ body .header-container {
 .common-text .item-info-table table {
   width: 100%;
 }
-.message-main {
-  padding-left: 200px !important;
+@media (min-width: 581px) {
+  .message-main {
+    padding-left: 200px !important;
+  }
 }
 .class-excount .star .block-left {
   text-shadow: 2px 2px 2px #333;
@@ -1010,6 +1031,12 @@ body .edui-default .edui-toolbar .edui-colorbutton .edui-colorlump {
   bottom: -1px;
   left: 4px;
 }
+body .edui-default .edui-toolbar .edui-combox .edui-combox-body {
+  border-color: var(--mcmodder-color-background-dark2);
+}
+body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
+  border-left-color: var(--mcmodder-color-background-dark2);
+}
 .mcmodder-edui-box {
   text-align: center;
   line-height: 1.45;
@@ -1074,6 +1101,10 @@ body .edui-default .edui-toolbar .edui-colorbutton .edui-colorlump {
 }
 .common-text p {
   width: 100%;
+}
+.radio label::before {
+  background-color: var(--mcmodder-color-background);
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .radio label::after {
   background-color: var(--mcmodder-color-primary);

@@ -134,7 +134,7 @@ export class CommentInit extends McmodderInit {
       const t = messageCenter.appendChild(t1);
       McmodderUtils.addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
       $(t).append('<div><ul class="comment-floor"></ul></div>');
-      McmodderUtils.addScript(t, "get_comment(comment_container,comment_type);var isUEReady=0;if($(\".comment-editor-area .editor-frame\").length>0&&0==isUEReady)var ueObj=$.ajax({url:\"//www.mcmod.cn/static/ueditor/\",async:!0,type:\"post\",data:{type:\"comment\"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(\".comment-editor-area .editor-frame .load\").html(ueObj.responseText),isUEReady=1}});");
+      McmodderUtils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(\".comment-editor-area .editor-frame\").length>0&&0==isUEReady)var ueObj=$.ajax({url:\"${ this.parent.hostname }/static/ueditor/\",async:!0,type:\"post\",data:{type:\"comment\"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(\".comment-editor-area .editor-frame .load\").html(ueObj.responseText),isUEReady=1}});`);
       if ($(".comment-close").length && $(".comment-dl-tips").length) {
         // messageCenter.insertBefore($(".common-comment-block.lazy", messageCenter).get(0), $(".comment-dl-tips", messageCenter).get(0));
         $(".comment-close").remove();
@@ -158,7 +158,7 @@ export class CommentInit extends McmodderInit {
       "fa-handshake"
     ]
     attitudeList.forEach(attitude => {
-      target.find(`.${ attitude }`).each(_e => {
+      target.find(`.${ attitude }`).each((_, _e) => {
         const e = $(_e);
         e.removeClass(attitude).addClass("fa-surprise");
         e.parents("[title]").first().attr("title", "猎奇");

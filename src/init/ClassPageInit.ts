@@ -230,7 +230,7 @@ export class ClassPageInit extends McmodderInit {
       if (infoModpack) $(`<li class="col-lg-6"><span class="title">${infoModpack}</span><span class="text"><a target="_blank" href="/modpack.html?mod=${classID}">整合包已收录</a></span></li>`).insertAfter($(".col-lg-6").last());
       if (infoServerCount) $(`<li class="col-lg-6"><span class="title">${infoServerCount}</span><span class="text"><a target="_blank" href="https://play.mcmod.cn/list/?classid=${classID}">服务器已安装</a></span></li>`).insertAfter($(".col-lg-6").last());
       if (infoServerPre) $(`<li class="col-lg-6"><span class="title">${infoServerPre}%</span><span class="text">模组服安装率</span></li>`).insertAfter($(".col-lg-6").last());
-      if (infoWorldgen) $(`<li class="col-lg-6"><span class="title">${infoWorldgen}</span><span class="text"><a target="_blank" href="https://www.mcmod.cn/worldgen.html?mod=${classID}">资源分布数据</a></span></li>`).insertAfter($(".col-lg-6").last());
+      if (infoWorldgen) $(`<li class="col-lg-6"><span class="title">${infoWorldgen}</span><span class="text"><a target="_blank" href="${ this.parent.hostname }/worldgen.html?mod=${classID}">资源分布数据</a></span></li>`).insertAfter($(".col-lg-6").last());
       if (infoDownload) $(`<li class="col-lg-6"><span class="title">${infoDownload}</span><span class="text">本站下载量</span></li>`).insertAfter($(".col-lg-6").last());
 
       // 启用悬浮链接提示兼容
@@ -298,28 +298,28 @@ export class ClassPageInit extends McmodderInit {
         button.find("span").text("努力加载中...");
         button.find("i").attr("class", "fa fa-pulse fa-spinner");
         this.parent.utils.createRequest({
-          url: `https://www.mcmod.cn/${ this.isClassPage ? "class" : "modpack" }/edit/${ classID }/`,
-          method: "GET",
-          onload: resp => {
-            if (!resp.responseXML) return;
-            const doc = $(resp.responseXML);
-            if (doc.find(".edit-unlogining").length) {
-              if (doc.find(".edit-unlogining").text().includes("登录")) McmodderUtils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
-              else McmodderUtils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
-              button.removeClass("disabled");
-              button.find("span").text("展开高级信息");
-              button.find("i").attr("class", "fas fa-chevron-down");
-              return;
-            }
-            const infoModID = this.isClassPage ? doc.find("#class-modid").val() : undefined;
-            const infoCFID = doc.find("#class-cfprojectid").val();
-            const infoMRID = doc.find("#class-mrprojectid").val();
-            const lastElement = $(".col-lg-6").last();
-            if (infoModID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
-            if (infoCFID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
-            if (infoMRID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
-            button.remove();
+          url: `${ this.parent.hostname }/${ this.isClassPage ? "class" : "modpack" }/edit/${ classID }/`,
+          method: "GET"
+        })
+        .then(resp => {
+          if (!resp.responseXML) return;
+          const doc = $(resp.responseXML);
+          if (doc.find(".edit-unlogining").length) {
+            if (doc.find(".edit-unlogining").text().includes("登录")) McmodderUtils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
+            else McmodderUtils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
+            button.removeClass("disabled");
+            button.find("span").text("展开高级信息");
+            button.find("i").attr("class", "fas fa-chevron-down");
+            return;
           }
+          const infoModID = this.isClassPage ? doc.find("#class-modid").val() : undefined;
+          const infoCFID = doc.find("#class-cfprojectid").val();
+          const infoMRID = doc.find("#class-mrprojectid").val();
+          const lastElement = $(".col-lg-6").last();
+          if (infoModID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
+          if (infoCFID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
+          if (infoMRID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
+          button.remove();
         });
       }).insertAfter($(".col-lg-6").last());
     }

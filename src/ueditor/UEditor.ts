@@ -8,6 +8,8 @@ export class McmodderUEditor {
   parent: Mcmodder;
   outerFrame?: Element;
   $outerFrame?: JQuery;
+  innerFrame?: Element;
+  $innerFrame?: JQuery;
   frame?: HTMLElement;
   toolbar?: JQuery;
   iframe?: HTMLIFrameElement;
@@ -35,6 +37,8 @@ export class McmodderUEditor {
 
     this.outerFrame = $(iframe).parents("#editor-ueeditor").get(0) as HTMLElement;
     this.$outerFrame = $(this.outerFrame);
+    this.innerFrame = $(iframe).parents("#edui1").get(0) as HTMLElement;
+    this.$innerFrame = $(this.innerFrame);
     this.frame = this.outerFrame.childNodes.item(0) as HTMLElement;
     this.toolbar = this.$outerFrame.find(".edui-toolbar");
     this.iframe = iframe;
@@ -75,10 +79,8 @@ export class McmodderUEditor {
 
     this.updateEditorStats();
 
-    this.$document.find("body").off("keydown").bind({
-      keyup: () => this.updateEditorStats(),
-      paste: () => this.updateEditorStats(),
-      dragover: () => this.updateEditorStats()
+    this.editor.addListener("contentChange", () => {
+      this.updateEditorStats()
     });
   }
 
@@ -111,8 +113,7 @@ export class McmodderUEditor {
   }
 
   widthAutoResize() {
-    const checked = $("#mcmodder-option-md").prop("checked");
-    $("#mcmodder-mdeditor, #editor-ueeditor").css("width", checked ? "50%" : "100%");
+    // $("#mcmodder-mdeditor, #editor-ueeditor").css("width", "100%");
     $("#edui1, #edui1_iframeholder").css("width", "100%");
   }
 

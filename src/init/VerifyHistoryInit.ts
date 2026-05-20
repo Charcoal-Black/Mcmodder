@@ -19,17 +19,17 @@ export class VerifyHistoryInit extends McmodderInit {
       }
       let getHistoryPage = (id: number) => {
         this.parent.utils.createRequest({
-          url: `https://www.mcmod.cn/verify.html?${param}&page=${id}`,
+          url: `${ this.parent.hostname }/verify.html?${ param }&page=${ id }`,
           method: "GET",
-          headers: { "Content-Type": "text/html; charset=UTF-8" },
-          onload: resp => {
-            if (!resp.responseXML) return;
-            let d = $(resp.responseXML);
-            d.find(".verify-list-list-table tbody").children().appendTo(".verify-list-list-table tbody");
-            McmodderUtils.commonMsg(`成功加载第 ${id} / ${maxPage} 页~`);
-            if (id < maxPage && !this.stopExpand) setTimeout(() => getHistoryPage(++id), 1e3);
-            else new VerifyPageInit(this.parent).run();
-          }
+          headers: { "Content-Type": "text/html; charset=UTF-8" }
+        })
+        .then(resp => {
+          if (!resp.responseXML) return;
+          let d = $(resp.responseXML);
+          d.find(".verify-list-list-table tbody").children().appendTo(".verify-list-list-table tbody");
+          McmodderUtils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
+          if (id < maxPage && !this.stopExpand) setTimeout(() => getHistoryPage(++id), 1e3);
+          else new VerifyPageInit(this.parent).run();
         })
       }
       McmodderUtils.commonMsg("准备自动展开，可随时按 Ctrl + C 取消~");

@@ -337,8 +337,8 @@ export class EditorInit extends McmodderInit {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                  "Origin": "https://www.mcmod.cn",
-                  "Referer": "https://www.mcmod.cn/",
+                  "Origin": this.parent.hostname,
+                  "Referer": `${ this.parent.hostname }/`,
                   "Priority": "u=0",
                   "Sec-Fetch-Dest": "empty",
                   "Sec-Fetch-Mode": "cors",

@@ -12,6 +12,9 @@
     "isolatedModules": false,
     "moduleDetection": "force",
     "noEmit": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "checkJs": false,
 
     /* Linting */
     "strict": true,

@@ -5,10 +5,10 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoCheckinScheduleRequest extends ScheduleRequestType {
-  protected priority = 10;
+  protected override readonly priority = 10;
   async run(list: ScheduleRequestUtils) {
     list.create(McmodderUtils.getStartTime(new Date), "autoCheckin", this.parent.currentUID);
-    const resp = await this.parent.utils.createAsyncRequest({
+    const resp = await this.parent.utils.createRequest({
       url: "https://center.mcmod.cn/action/doUserCheckIn/",
       method: "POST",
       headers: {

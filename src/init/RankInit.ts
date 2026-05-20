@@ -103,22 +103,22 @@ export class RankInit extends McmodderInit {
       let getRankData = (t: number) => {
         if (this.parent.utils.getConfig((t - 24 * 60 * 60).toString(), "rankData")) return; // 一天误差
         this.parent.utils.createRequest({
-          url: `https://www.mcmod.cn/rank.html?starttime=${t}&endtime=${t}`,
+          url: `${ this.parent.hostname }/rank.html?starttime=${ t }&endtime=${ t }`,
           method: "GET",
-          headers: { "Content-Type": "text/html; charset=UTF-8" },
-          onload: resp => {
-            let rawData: UserRankRecordData[] = [];
-            let d = $("<html>").html(resp.responseText.replaceAll("src=", "data-src="));
-            d.find(".rank-list-block:nth-child(1) li").each((_, e) => {
-              rawData.push({
-                value: Number($(e).attr("data-content").split("字节")[0].replaceAll(",", "")),
-                user: Number($("a", e).attr("href").split("center.mcmod.cn/")[1].split("/")[0])
-              });
+          headers: { "Content-Type": "text/html; charset=UTF-8" }
+        })
+        .then(resp => {
+          let rawData: UserRankRecordData[] = [];
+          let d = $("<html>").html(resp.responseText.replaceAll("src=", "data-src="));
+          d.find(".rank-list-block:nth-child(1) li").each((_, e) => {
+            rawData.push({
+              value: Number($(e).attr("data-content").split("字节")[0].replaceAll(",", "")),
+              user: Number($("a", e).attr("href").split("center.mcmod.cn/")[1].split("/")[0])
             });
-            let data = JSON.stringify(rawData);
-            this.parent.utils.setConfig(t - 24 * 60 * 60, data, "rankData");
-            McmodderUtils.commonMsg(`成功保存${ McmodderUtils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ McmodderUtils.getFormattedSize(data.length) })`);
-          }
+          });
+          let data = JSON.stringify(rawData);
+          this.parent.utils.setConfig(t - 24 * 60 * 60, data, "rankData");
+          McmodderUtils.commonMsg(`成功保存${ McmodderUtils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ McmodderUtils.getFormattedSize(data.length) })`);
         });
         if (t <= Math.min(endTime, Date.now() / 1e3 - 24 * 60 * 60)) setTimeout(() => getRankData(t + 24 * 60 * 60), minimumRequestInterval);
       }

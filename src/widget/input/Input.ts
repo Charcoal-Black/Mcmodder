@@ -15,7 +15,11 @@ export abstract class McmodderBaseInput {
 
   protected abstract getInstanceHTML(): JQuery;
 
-  protected abstract getCurrentValue(): any;
+  getInputNode() {
+    return this.instance;
+  }
+
+  abstract getCurrentValue(): any;
 
   protected abstract setDisplayValue(value: any): void;
 
@@ -29,7 +33,7 @@ export abstract class McmodderBaseInput {
     this.title = title;
     this.value = value;
     this.instance = this.getInstanceHTML();
-    this.instance.bind(this.getEventType(), () => this.onChange(this.getCurrentValue()));
+    this.getInputNode().bind(this.getEventType(), () => this.onChange(this.getCurrentValue()));
     this.setDisplayValue(value);
     this.onSuccessfulChange = onSuccessfulChange;
   }
@@ -54,7 +58,7 @@ export abstract class McmodderInput<T> extends McmodderBaseInput {
     super(title, value, onSuccessfulChange);
   }
 
-  protected abstract override getCurrentValue(): T;
+  abstract override getCurrentValue(): T;
 
   protected abstract override setDisplayValue(value: T): void;
 

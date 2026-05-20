@@ -191,30 +191,30 @@ export class VerifyPageInit extends McmodderInit {
         let t = 0, index = 0;
         let doUrge = (id: number) => {
           this.parent.utils.createRequest({
-            url: "https://www.mcmod.cn/action/edit/doUrge/",
+            url: `${ this.parent.hostname }/action/edit/doUrge/`,
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
               "X-Requested-With": "XMLHttpRequest",
-              "Origin": "https://www.mcmod.cn",
+              "Origin": this.parent.hostname,
               "Referer": window.location.href,
               "Priority": "u=0",
               "Pragma": "no-cache",
               "Cache-Control": "no-cache"
             },
-            data: $.param({ nVerifyID: id }),
-            onload: resp => {
-              const state = JSON.parse(resp.responseText).state;
-              if (state === 0) {
-                t++;
-                $(urgeList[index]).html("催审成功").attr("class", "ml-1 text-muted");
-              };
-              if (verifyList.length > index + 1) {
-                setTimeout(() => doUrge(verifyList[++index]), 3e2);
-                return;
-              }
-              else b.html(`一键催审 (${t}项已处理)`);
+            data: $.param({ nVerifyID: id })
+          })
+          .then(resp => {
+            const state = JSON.parse(resp.responseText).state;
+            if (state === 0) {
+              t++;
+              $(urgeList[index]).html("催审成功").attr("class", "ml-1 text-muted");
+            };
+            if (verifyList.length > index + 1) {
+              setTimeout(() => doUrge(verifyList[++index]), 3e2);
+              return;
             }
+            else b.html(`一键催审 (${t}项已处理)`);
           });
         }
         if (verifyList[0]) doUrge(verifyList[0]);

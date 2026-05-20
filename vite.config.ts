@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import monkey from 'vite-plugin-monkey';
+import monkey, { cdn } from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
-        version: "2.0.4",
+        version: "2.0.5",
         description: "Mcmodder",
         license: "AGPL-3.0",
         icon: 'https://www.mcmod.cn/static/public/images/favicon.ico',
@@ -42,8 +42,21 @@ export default defineConfig({
           "api.modrinth.com",
           "raw.githubusercontent.com",
           "hub.gitmirror.com"
+        ],
+        require: [
+          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/xml/xml.min.js",
+          "https://unpkg.com/turndown/dist/turndown.js",
+          "https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"
         ]
       },
-    }),
-  ],
+      build: {
+        externalGlobals: {
+          "codemirror": "CodeMirror",
+          "turndown": "TurndownService"
+        }
+      }
+    })
+  ]
 });

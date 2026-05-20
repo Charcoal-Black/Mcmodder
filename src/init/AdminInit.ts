@@ -32,28 +32,28 @@ export class AdminInit extends McmodderInit {
               url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
               method: "POST",
               headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-              data: $.param({ data: JSON.stringify({ classID: id }) }),
-              onload: resp => {
-                const state = JSON.parse(resp.responseText)?.state;
-                if (state === undefined || state > 0) {
-                  console.error("返回状态异常: ", resp);
-                  return;
-                }
-                let n = Number($(JSON.parse(resp.responseText).html).find(".selectJump").next().text().slice(4, -2).replaceAll(",", ""));
-                if (n > 0 && t === 0) $("button.btn:nth-child(2)").first().click();
-                t += n;
-                if (n > 0) {
-                  const li = $("ul.dropdown-menu:nth-child(1)").children().eq(index).addClass("mcmodder-mark-gold");
-                  const firstChild = li.children().first();
-                  firstChild.find(".mcmodder-admin-verify-notify").remove();
-                  firstChild.append(`<span class="mcmodder-admin-verify-notify text-danger">${ n }个待审！</span>`).removeClass("disabled");
-                }
-                if (modList.length > index + 1) {
-                  getUnverifiedNumber(modList[++index]);
-                  return;
-                }
-                else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`).removeClass("disabled");
+              data: $.param({ data: JSON.stringify({ classID: id }) })
+            })
+            .then(resp => {
+              const state = JSON.parse(resp.responseText)?.state;
+              if (state === undefined || state > 0) {
+                console.error("返回状态异常: ", resp);
+                return;
               }
+              let n = Number($(JSON.parse(resp.responseText).html).find(".selectJump").next().text().slice(4, -2).replaceAll(",", ""));
+              if (n > 0 && t === 0) $("button.btn:nth-child(2)").first().click();
+              t += n;
+              if (n > 0) {
+                const li = $("ul.dropdown-menu:nth-child(1)").children().eq(index).addClass("mcmodder-mark-gold");
+                const firstChild = li.children().first();
+                firstChild.find(".mcmodder-admin-verify-notify").remove();
+                firstChild.append(`<span class="mcmodder-admin-verify-notify text-danger">${ n }个待审！</span>`).removeClass("disabled");
+              }
+              if (modList.length > index + 1) {
+                getUnverifiedNumber(modList[++index]);
+                return;
+              }
+              else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`).removeClass("disabled");
             });
           };
           if (modList) getUnverifiedNumber(modList[1]);
@@ -69,7 +69,7 @@ export class AdminInit extends McmodderInit {
         // 单项审核界面
         // 分屏
         let singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
-        if (this.parent.utils.getConfig("splitScreenOnVerify")) {
+        if (this.parent.utils.getConfig("splitScreenOnVerify") && !this.parent.isMobileClient) {
           const connectedFrame = document.getElementById("connect-frame");
           if (!connectedFrame) return;
           const verifyContainer = $("<div>").appendTo(connectedFrame);
@@ -108,25 +108,28 @@ export class AdminInit extends McmodderInit {
             });
             verifyFrame.find("> hr").remove();
             verifyFrame.find(".verify-action-btns br").remove();
-            verifyFrame.find("#verify-pass-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
-            verifyFrame.find("#verify-refund-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
-            verifyFrame.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${
-              McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
-            } 以快速聚焦)`);
-            $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
-              if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
-                e.stopPropagation();
-                verifyFrame.find("#verify-pass-btn:not(.edit)").click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
-                e.stopPropagation();
-                verifyFrame.find("#verify-refund-btn:not(.edit)").click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
-                e.preventDefault();
-                verifyFrame.find("#verify-reason").focus();
-              }
-            });
+
+            if (!this.parent.isMobileClient) {
+              verifyFrame.find("#verify-pass-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
+              verifyFrame.find("#verify-refund-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
+              verifyFrame.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${
+                McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
+              } 以快速聚焦)`);
+              $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
+                if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+                  e.stopPropagation();
+                  verifyFrame.find("#verify-pass-btn:not(.edit)").click();
+                }
+                else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+                  e.stopPropagation();
+                  verifyFrame.find("#verify-refund-btn:not(.edit)").click();
+                }
+                else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+                  e.preventDefault();
+                  verifyFrame.find("#verify-reason").focus();
+                }
+              });
+            }
           }
         }
 
@@ -163,7 +166,7 @@ export class AdminInit extends McmodderInit {
       "MC百科后台管理中心": _mutation => {
         $("td:first-child()").each((_, c) => {
           const n = c.textContent;
-          c.innerHTML = `<a href="https://www.mcmod.cn/center/${ n }" target="_blank">${ n }</a>`;
+          c.innerHTML = `<a href="https://center.mcmod.cn/${ n }" target="_blank">${ n }</a>`;
         })
       },
       "样式管理": _mutation => {

@@ -1,6 +1,8 @@
+import { diffChars, diffWords, diffLines } from "diff";
 import { TextCompareMode } from "./types";
-import { McmodderUtils } from "./Utils";
 import { McmodderValues } from "./Values";
+
+const JsDiff: Record<TextCompareMode, any> = { diffChars, diffWords, diffLines };
 
 export class TextCompareFrame {
   insertPos: Element | JQuery;
@@ -67,16 +69,9 @@ export class TextCompareFrame {
     "diffChars": "按字对比"
   }
 
-  async ready() {
-    if (this.isReady) return;
-    await McmodderUtils.loadScript(document.head, undefined, McmodderValues.assets.js.jsdiff);
-    this.isReady = true;
-  }
-
-  async performCompare() {
+  performCompare() {
 
     this.resultFrame.html(`<img src="${McmodderValues.assets.mcmod.loading}"></img>`);
-    await this.ready();
 
     let mode = this.getDefaultMode(this.textA.length, this.textB.length);
     let diff = JsDiff[mode](this.textA, this.textB); // 避免正文对比耗费过长的时间

@@ -52,6 +52,8 @@ export class McmodderTable<McmodderTableData extends McmodderTableAcceptable> {
   loadingProgress: ProgressBar;
   readonly headConfigs: HeadConfigs<McmodderTableData> = {};
 
+  onRefresh?: () => void;
+
   protected currentData: McmodderTableRowData<McmodderTableData>[];
 
   private static parseHeadConfigInitializer<T>(config: HeadConfigInitializer<T>): HeadConfig<T> {
@@ -327,6 +329,7 @@ export class McmodderTable<McmodderTableData extends McmodderTableAcceptable> {
     } else {
       this.$empty.hide();
     }
+    this.onRefresh?.();
   }
 
   empty() {

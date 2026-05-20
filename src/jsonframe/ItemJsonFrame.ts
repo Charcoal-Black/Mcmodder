@@ -83,7 +83,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         const entries = data.slice(1, -1).split(",") as string[];
         entries.forEach(entry => {
           entry = entry.trim();
-          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="https://www.mcmod.cn/oredict/${ entry }-1.html">${ entry }</a>`;
+          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ this.parent.hostname }/oredict/${ entry }-1.html">${ entry }</a>`;
         });
         return res;
       }],
@@ -139,9 +139,10 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       maxStackSize: McmodderInputType.NUMBER,
       maxDurability: McmodderInputType.NUMBER,
       content: null
-    }, () => {
-      this.updateToolBar();
     });
+    this.table.onEdit = () => {
+      this.updateToolBar();
+    };
 
     this.initClassSearchFrame();
 
@@ -149,7 +150,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
     this.table.contextMenu.addOption("syncRow", "从百科同步此行数据", e => {
       const index = this.table!.getElementIndex(e.target);
-      return !!(index >= 0 && this.table!.getData(index)?.id && this.parent.currentUID && this.manualRequestQueue.isIdle);
+      return !!(index >= 0 && this.table!.getEditorData(index, "id") && this.parent.currentUID && this.manualRequestQueue.isIdle);
     }, e => this.preSyncRow(this.table!.getElementIndex(e.target)))
 
     .addOption("syncMultipleRow", "从百科同步所有选中行数据", _e => {
@@ -458,7 +459,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
   async getItemListFromPage(url: string, itemList: McmodderItemList, branchName: string, config: ItemJsonFrameConfig) {
     let jumpList = [], generalList = [], repeatedData;
-    let resp = await this.parent.utils.createAsyncRequest({
+    let resp = await this.parent.utils.createRequest({
       url: url,
       method: "GET"
     });
@@ -513,8 +514,8 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       s = c.attr("data-loop");
       if (s) {
         generalList.push(itemData.id);
-        resp = await this.parent.utils.createAsyncRequest({
-          url: `https://www.mcmod.cn/item/${itemData.id}.html`,
+        resp = await this.parent.utils.createRequest({
+          url: McmodderUtils.getItemURLByID(itemData.id),
           method: "GET",
           anonymous: true
         });
@@ -585,8 +586,8 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     } */
 
     // 获取分支情况
-    const resp = await this.parent.utils.createAsyncRequest({ 
-      url: `https://www.mcmod.cn/item/list/${ classID }-${ typeID }.html`,
+    const resp = await this.parent.utils.createRequest({ 
+      url: `${ this.parent.hostname }/item/list/${ classID }-${ typeID }.html`,
       method: "GET"
     });
     if (!resp.responseXML) return [];
@@ -604,7 +605,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     config.classID = classID;
     for (let i in branchList) {
       this.logger.log(`展开分支 [${ branchList[i] }] ${ branchNameList[i] || "默认分支" }`);
-      await this.getItemListFromPage(`https://www.mcmod.cn/item/list/${ branchList[i] }.html`, itemList, branchNameList[i], config);
+      await this.getItemListFromPage(`${ this.parent.hostname }/item/list/${ branchList[i] }.html`, itemList, branchNameList[i], config);
       this.logger.log(`展开分支 [${ branchList[i] }] ${ branchNameList[i] || "默认分支" } 完成`);
     }
 
@@ -617,8 +618,8 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
   async performClassSearch(classID: number, typeID: number) {
     // STEP 0: 前置数据收集
     this.logger.log(`打开模组页 ${ classID }`);
-    const resp = await this.parent.utils.createAsyncRequest({
-      url: `https://www.mcmod.cn/class/${ classID }.html`,
+    const resp = await this.parent.utils.createRequest({
+      url: McmodderUtils.getClassURLByID(classID),
       method: "GET",
       anonymous: true
     });
@@ -683,7 +684,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
   private async getJSONFromURL(url: string, table: McmodderTable<ItemJsonFrameApplication>) {
     table.showLoading();
     table.empty();
-    let resp = await this.parent.utils.createAsyncRequest({ url: url, method: "GET" });
+    let resp = await this.parent.utils.createRequest({ url: url, method: "GET" });
     if (!resp.responseXML) return;
     let doc = $(resp.responseXML);
     if (doc.find("title").text() === "页面重载开启") {
@@ -741,9 +742,9 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
   private async syncRow(selection: McmodderTableRowSelection) {
     const length = selection.length;
-    const itemList = new Array(length);
+    const itemList: McmodderItemData[] = new Array(length);
     for (const i in selection) {
-      itemList[i] = McmodderUtils.simpleDeepCopy(this.table!.getData(selection[i]));
+      itemList[i] = McmodderUtils.simpleDeepCopy(this.table!.getEditorRowData(selection[i]));
     }
     await this.manualRequestQueue.run(itemList);
     const batch = new BatchCommand(this.table!);
@@ -756,7 +757,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
   async preManualSubmitRow(index: number) {
     const data = this.table!.getData(index);
     if (data.id) {
-      this.manualSubmitRow(`https://www.mcmod.cn/item/edit/${ data.id }/`, index);
+      this.manualSubmitRow(`${ this.parent.hostname }/item/edit/${ data.id }/`, index);
       return;
     }
     let modID = data.classID || Number(this.activeFileName.split("-")[0]);
@@ -779,7 +780,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       }
     });
     if (modID) {
-      this.manualSubmitRow(`https://www.mcmod.cn/item/add/${ modID }/`, index);
+      this.manualSubmitRow(`${ this.parent.hostname }/item/add/${ modID }/`, index);
     }
   }
 
@@ -806,7 +807,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
   async downloadAndImportFile(url: string) {
     // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
-    let resp = await this.parent.utils.createAsyncRequest({ url: url });
+    let resp = await this.parent.utils.createRequest({ url: url });
     let headers = resp.responseHeaders;
     if (!headers.includes("content-type: application/octet-stream")) {
       McmodderUtils.commonMsg("下载失败...", false);

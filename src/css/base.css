@@ -47,8 +47,8 @@
 @media (max-width: 500px) {
   :root {
     --mcmodder-width-padding-1: .5em;
-    --mcmodder-width-padding-2: .4em;
-    --mcmodder-width-padding-3: .3em;
+    /* --mcmodder-width-padding-2: .4em; */
+    /* --mcmodder-width-padding-3: .3em; */
   }
 }
 :root.dark {
@@ -186,6 +186,10 @@ table th,
 .fui-user::before {
   color: var(--mcmodder-color-text);
   text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow);
+}
+.modlist-filter-block ul:not(.common-class-category) li.main a:hover {
+  color: var(--mcmodder-color-text);
+  background-color: var(--mcmodder-color-accent-transparent1);
 }
 .center-card-block.background .card-item .text p,
 .mcmodder-logger > *,
@@ -336,16 +340,40 @@ a:hover,
 .copyleft a:hover,
 .un_info li a:hover,
 .pages_system .Pbtn:hover,
-.pages_system .Pbtn_on:hover {
+.pages_system .Pbtn_on:hover,
+.result-item a:hover,
+.item-list-table .item-list-type-right li .more:hover,
+.item-list-switch li a:hover,
+.item-list-switch-fold a:hover,
+.item-list-style-setting a:hover {
   color: var(--mcmodder-color-accent-dark2);
 }
 .verify-list-list td a.text-muted:hover {
   color: var(--mcmodder-color-accent-dark2) !important;
 }
+.result-item .head em,
+.result-item .body em {
+  color: var(--mcmodder-color-danger-dark2);
+}
+.common-text-red,
+.item-list-table .item-list-type-right li .null {
+  color: var(--mcmodder-color-danger-dark2) !important;
+}
+.common-text-red:hover,
+.item-list-table .item-list-type-right li .null:hover {
+  color: var(--mcmodder-color-danger-dark1) !important;
+}
+.result-item .foot,
+.result-item .foot a {
+  color: var(--mcmodder-color-link-foot);
+}
 .common-center .right .tab-content li.tab-li .tips.red,
 .common-center .right .tab-content li.tab-li .tips.red a,
 .L1 {
   color: var(--mcmodder-color-text-danger);
+}
+.result-item a:visited {
+  color: var(--mcmodder-color-link-visited);
 }
 .common-comment-block .comment-row-username a,
 .comment-reply-row-username a,
@@ -366,6 +394,8 @@ th,
 .common-user-card .card-container .tracker-frame .block .item,
 .nav-frame .buttons a:hover,
 .center-main.favorite .common-pages .page-link,
+.center-main.favorite .favorite-fold-info .fold-cover,
+.center-main.favorite .favorite-slot-ul.rectangle li .cover,
 .class_block .left .list .items .item_hover,
 .class_block .right li i {
   background-color: var(--mcmodder-color-background-dark1);
@@ -379,12 +409,23 @@ th,
 .slider-block,
 .status-block,
 .history-list,
-.nav-frame .buttons a {
+.nav-frame .buttons a,
+.modlist-filter-block.mcver ul .group,
+.modlist-filter-block ul:not(.common-class-category) li.main a {
   background-color: var(--mcmodder-color-background-transparent);
   border-color: var(--mcmodder-color-background-dark1);
 }
+.verify-list-list-head fieldset,
 .history-list-frame li,
-.history-list-head fieldset {
+.history-list-head fieldset,
+.modlist-block,
+.modlist-block .items,
+.modlist-block .cover img,
+.common-nav,
+.common-text .common-text-menu,
+.common-comment-block textarea,
+.center-main.favorite .favorite-slot-ul.rectangle li .cover img,
+.modlist-filter-block ul:not(.common-class-category) li.main a {
   border-color: var(--mcmodder-color-background-dark2);
 }
 .form-control {
@@ -392,6 +433,10 @@ th,
   box-sizing: border-box;
   padding: 4px;
   color: var(--mcmodder-color-text);
+}
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: var(--mcmodder-color-background-dark1);
 }
 .form-control::placeholder,
 .center-content.lv-info .lv-title span,
@@ -406,7 +451,7 @@ th,
 .form-control,
 .bootstrap-tagsinput,
 input {
-  border-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark2);
   box-shadow: inset 0px 1px 0px var(--mcmodder-color-box-shadow);
 }
 input,
@@ -419,6 +464,11 @@ body #remote input.text,
 .common-comment-block textarea {
   background-color: var(--mcmodder-color-background-transparent);
   color: var(--mcmodder-color-text);
+}
+.input-group-text {
+  color: var(--mcmodder-color-text-dark2);
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .item-img {
   margin-right: 5px;
@@ -530,9 +580,15 @@ body #remote input.text,
   margin-left: 5px;
   cursor: var(--mcmodder-cursor-hand);
 }
+.mcmodder-numberinput-container {
+  display: inline-block;
+}
 .center-setting-block .form-control[type=color] {
   width: 4em;
   height: 2em;
+}
+#mcmodder-update-check-manual {
+  margin: 0 var(--mcmodder-width-padding-3);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-light {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
@@ -629,17 +685,22 @@ html.mcmodder-config-disable-gradient .mcmodder-chroma {
 }
 html:not(.view),
 body:not(.view),
-.search_box #key,
-.syntaxhighlighter table td.code .container textarea {
+.search_box #key {
   background-color: var(--mcmodder-color-background);
 }
 .checkbox label::before {
   background-color: var(--mcmodder-color-background);
   border-color: var(--mcmodder-color-background-dark3);
 }
-.btn-light, .btn-outline-dark {
+.item-list-table th,
+.btn-light,
+.btn-outline-dark {
   background-color: var(--mcmodder-color-background-dark1);
   color: var(--mcmodder-color-text);
+}
+.item-list-table th,
+.item-list-table td {
+  border-color: var(--mcmodder-color-background-dark3);
 }
 .col-lg-12.mcmodder-class-page,
 .col-lg-12.common-center {
@@ -737,6 +798,9 @@ body:not(.view),
 }
 .jsonframe-table {
   font-size: 14px;
+}
+.mcmodder-guibound-container td {
+  height: 300px;
 }
 .mcmodder-table-container {
   position: relative;
@@ -962,14 +1026,14 @@ body:not(.view),
 .edit-dataverify-frame ul.info li {
   color: var(--mcmodder-color-verifyframe-info);
 }
-.mcmodder-data-frame {
+.mcmodder-preview-frame {
   overflow: hidden;
   max-width: 600px;
-  max-height:400px;
+  max-height: 400px;
   text-align: left;
   display: inline-block
 }
-.mcmodder-data-frame img {
+.mcmodder-preview-frame img {
   max-height: 135px;
   max-width: 240px;
 }
@@ -983,14 +1047,14 @@ body:not(.view),
   vertical-align: top;
   margin: 2em 1em 0 0;
 }
-.mcmodder-data-frame .quote_text legend {
+.mcmodder-preview-frame .quote_text legend {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);
 }
-.mcmodder-data-frame.overflown {
+.mcmodder-preview-frame.overflown {
   position: relative;
 }
-.mcmodder-data-frame.overflown:after {
+.mcmodder-preview-frame.overflown:after {
   content: "......";
   vertical-align: bottom;
   text-align: center;
@@ -1024,6 +1088,11 @@ th,
 .mcmodder-mark-greenyellow {
   background-color: #bf34;
   border: 1px solid #bf38;
+}
+pre {
+  background-color: var(--mcmodder-color-background-dark1);
+  font-family: var(--mcmodder-font-monospace);
+  line-height: 1.3em;
 }
 pre#mcmodder-text-result {
   font-family: var(--mcmodder-font-monospace);
@@ -1178,7 +1247,6 @@ body > .container > *,
 .center-content.admin-list a,
 .center-card-border,
 .common-center .post-row .postname .tool li a,
-.edit-tools a,
 .center-main.attitude li,
 .bootstrap-tagsinput .tag,
 .list_item,
@@ -1197,7 +1265,6 @@ body > .container > *,
 .exp-rate .text-muted,
 .class_block .left .list .name,
 .class_block .right .list,
-.modlist-filter-block ul:not(.common-class-category) li.main a,
 .center-main.favorite .favorite-fold-list a,
 .news_block .right .count,
 .center-main.favorite .favorite-slot-menu ol a,
@@ -1219,14 +1286,35 @@ body > .container > *,
 .common-menu-page,
 .common-fuc-group li,
 .center-content.item-list li,
-.class_block .left .list .block img {
+.class_block .left .list .block img,
+.news_block .left .block img,
+.news_block .right .editor,
+.list_block .menu li a,
+.list_block .menu li a:hover,
+.list_block .menu li a.on,
+.az_block .switch li,
+.az_block .switch li:hover,
+.az_block .switch li.on,
+.chart_block .menu,
+.chart_block .list,
+.chart_block #chart_1 .menu,
+.class_block .left .more a,
+.un_links li img,
+.logreg-suggest .member li,
+#register-email-check-btn {
   border-color: var(--mcmodder-color-background-dark2);
+}
+.under {
+  background: none;
 }
 .common-menu-page li {
   border-right-color: var(--mcmodder-color-background-dark2);
   border-top-color: var(--mcmodder-color-background);
 }
+.bs-popover-auto[x-placement^="top"] .arrow::after,
 .bs-popover-auto[x-placement^="right"] .arrow::after,
+.bs-popover-auto[x-placement^="bottom"] .arrow::after,
+.bs-popover-auto[x-placement^="left"] .arrow::after,
 .tooltip.top .tooltip-arrow,
 .bs-popover-right .arrow::after {
   border-right-color: var(--mcmodder-color-background-transparent);
@@ -1317,6 +1405,13 @@ body .arrow {
 .alert-warning p {
   color: var(--mcmodder-color-alert-warning-1);
 }
+.alert-danger {
+  background-color: var(--mcmodder-color-alert-danger-2);
+  border-color: var(--mcmodder-color-alert-danger-3);
+}
+.alert-danger p {
+  color: var(--mcmodder-color-alert-danger-1);
+}
 .mcmodder-golden-alert {
   background-color: var(--mcmodder-color-alert-warning-2);
   width: 100%;
@@ -1324,7 +1419,8 @@ body .arrow {
   text-align: center;
 }
 .edit-autolink-list li,
-.refresh-text {
+.refresh-text,
+.mcmodder-copyable {
   cursor: var(--mcmodder-cursor-hand);
 }
 .edit-autolink-source {
@@ -1386,7 +1482,7 @@ body .arrow {
   text-align: right;
   color: var(--mcmodder-color-danger-dark1);
 }
-.mcmodder-almanacs i {
+.mcmodder-almanacs .icon {
   background-image: url(https://i.mcmod.cn/editor/upload/20250731/1753943312_179043_WEbO.png);
   width: 40px;
   height: 40px;
@@ -1397,37 +1493,56 @@ body .arrow {
 .mcmodder-almanacs .content {
   width: 100%;
   display: flex;
+  gap: var(--mcmodder-width-padding-1);
 }
-.mcmodder-almanacs .date {
+.mcmodder-almanacs .title-container .title {
   line-height: 40px;
   font-size: 22px;
   color: var(--mcmodder-color-text);
 }
-.mcmodder-almanacs .date:hover {
+.mcmodder-almanacs .title-container .title:hover {
   text-decoration: none;
+}
+.mcmodder-almanacs .date {
+  margin-left: var(--mcmodder-width-padding-2);
 }
 .mcmodder-almanacs .lore {
   color: var(--mcmodder-color-text-dark2);
   margin-left: 30px;
   float: left;
 }
-.mcmodder-almanacs .good {
+.mcmodder-almanacs .content .good,
+.mcmodder-almanacs .content .bad {
   position: relative;
   flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  padding: calc(var(--mcmodder-width-padding-2) * .5) var(--mcmodder-width-padding-2);
+  gap: var(--mcmodder-width-padding-3);
+}
+.mcmodder-almanacs .content .empty::before {
+  content: "暂无数据";
+  font-size: 16px;
+  color: var(--mcmodder-color-text-dark3);
+  text-align: center;
+  line-height: 3em;
+  display: inline-block;
+  width: 100%;
+}
+.mcmodder-almanacs .good {
   background-color: var(--mcmodder-color-almanacs-good);
 }
 .mcmodder-almanacs .bad {
-  position: relative;
-  flex: 1;
   background-color: var(--mcmodder-color-almanacs-bad);
 }
 .mcmodder-almanacs .block {
-  width: 50%;
-  display: inline-block;
   font-size: 16px;
+  padding: .2em .5em;
+  border: 1px solid var(--mcmodder-color-primary-dark2-transparent1);
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
 }
 .mcmodder-almanacs .block .title {
-  color: var(--mcmodder-color-primary-dark1);
+  color: var(--mcmodder-color-primary-dark2);
   font-weight: bold;
   text-shadow: 2px 2px 2px var(--mcmodder-color-text-shadow);
 }
@@ -1442,6 +1557,7 @@ body .arrow {
   border-radius: 5px;
   border: 1px solid var(--mcmodder-color-background-dark3);
   text-decoration: none;
+  user-select: none;
 }
 .common-center .center {
   max-width: unset;
@@ -1489,8 +1605,9 @@ body .arrow {
 .mcmodder-mod-sort fieldset:last-child {
   margin-bottom:0
 }
-#mcmodder-unique-splashes {
-  margin-top: 1em;
+#mcmodder-unique-splashes,
+.edit-page-title {
+  margin-top: var(--mcmodder-width-padding-2);
 }
 .center-content.admin-list {
   width: 100%;
@@ -1614,10 +1731,83 @@ body .arrow {
 .mcmodder-general {
   color: var(--mcmodder-color-itemrelation-general);
 }
-#mcmodder-mdeditor,
-div#editor-ueeditor,
+.mcmodder-editor-container {
+  display: flex;
+}
+div#editor-ueeditor {
+  margin: 0;
+}
+#editor-ueeditor:not(script) {
+  display: flex;
+  width: 100%;
+  gap: var(--mcmodder-width-padding-2);
+}
+#editor-ueeditor.vertical {
+  flex-direction: column;
+}
+#editor-ueeditor > * {
+  flex: 1;
+}
 .mcmodder-option-bar .checkbox {
   display: inline-block;
+}
+.checkbox input[type="checkbox"]:disabled + label::before,
+.checkbox input[type="radio"]:disabled + label::before {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+.mcmodder-slider-container {
+  display: inline-block;
+  width: 250px;
+}
+.mcmodder-slider-bar {
+  margin: 0 1em;
+  height: 6px;
+  background-color: var(--mcmodder-color-primary-light);
+  /* background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3); */
+  border-radius: 3px;
+  position: relative;
+  cursor: var(--mcmodder-cursor-hand);
+}
+.mcmodder-slider-tap {
+  height: 16px;
+  width: 16px;
+  background-color: var(--mcmodder-color-primary);
+  /* background-color: var(--mcmodder-color-background-dark3);
+  border: 1px solid var(--mcmodder-color-background-dark4); */
+  border-radius: 8px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  left: 100%;
+  cursor: grab;
+  user-select: none;
+  transition: background-color .2s ease-in-out, border-color .2s ease-in-out;
+}
+.mcmodder-slider-tap:hover,
+.mcmodder-slider-tap.focus,
+.center-main.favorite .favorite-slot-menu ol a:hover {
+  background-color: var(--mcmodder-color-accent);
+  /* border-color: var(--mcmodder-color-accent-dark1); */
+}
+.mcmodder-tool-bar {
+  margin-bottom: var(--mcmodder-width-padding-2);
+}
+#mcmodder-mdeditor,
+#mcmodder-htmleditor {
+  overflow: scroll;
+  border: 1px solid var(--mcmodder-color-primary);
+  border-radius: var(--mcmodder-width-radius);
+  background-color: var(--mcmodder-color-background-transparent);
+}
+#mcmodder-mdeditor .title,
+#mcmodder-htmleditor .title {
+  padding: .2em var(--mcmodder-width-padding-2);
+  color: var(--mcmodder-color-primary-dark2);
+}
+#mcmodder-json-upload {
+  font-size: 14px;
+  margin-top: var(--mcmodder-width-padding-2);
 }
 #mcmodder-markdown-it {
   display: block;
@@ -1994,6 +2184,9 @@ div#editor-ueeditor,
   position: relative;
   background-size: cover;
 }
+.mcmodder-item-display.empty {
+  border: 2px dashed var(--mcmodder-color-primary);
+}
 .mcmodder-item-display > * {
   font-family: Unifont;
   text-shadow: 1px 1px 0 black;
@@ -2032,6 +2225,42 @@ div#editor-ueeditor,
 .mcmodder-item-localecount {
   color: var(--mcmodder-color-version-release-1);
 }
+.mcmodder-recipe-display,
+#item-table-item-frame .item-table-hover.mcmodder-recipe-display {
+  display: flex;
+  gap: .2em;
+  justify-content: center;
+  height: auto;
+  padding: .2em;
+  position: relative;
+}
+.mcmodder-recipe-arrow {
+  background-image: url(https://i.mcmod.cn/editor/upload/20241018/1729266514_179043_vZVb.png);
+  height: 32px;
+  width: 64px;
+  display: inline-block;
+  background-size: cover;
+  margin-left: 5px;
+  margin-right: 5px;
+  position: relative;
+}
+.mcmodder-recipe-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  right: var(--mcmodder-width-padding-3);
+  color: var(--mcmodder-color-danger-dark2);
+  font-size: 16px;
+}
+.mcmodder-tab-item-icon {
+  background-image: url(https://i.mcmod.cn/editor/upload/20241019/1729313235_179043_fNWH.png);
+  width: 34px;
+  height: 34px;
+  display: inline-block;
+  position: absolute;
+  left: 12px;
+}
 .badge-row > * {
   padding: 0 .375em;
 }
@@ -2065,7 +2294,7 @@ div#editor-ueeditor,
 }
 kbd {
   color: var(--mcmodder-color-text);
-  background-color: var(--mcmodder-color-background-dark2);
+  background-color: var(--mcmodder-color-background-dark1);
   margin: 0 .05em;
   padding: 0 .2rem;
 }
@@ -2103,7 +2332,11 @@ kbd {
 .item-table-tips,
 .container-head .content,
 .common-center .post-row .postname .tool li a,
-.post-cc p, .post-cc a {
+.post-cc p,
+.post-cc a,
+.un_info li strong,
+.common-text figcaption,
+.common-text .figcaption {
   color: var(--mcmodder-color-text-dark2);
 }
 .class-menu-page,
@@ -2141,6 +2374,54 @@ kbd {
 .common-comment-block .comment-row,
 .common-comment-block .comment-editor {
   border-bottom-color: var(--mcmodder-color-background-dark2);
+}
+.comment-attitude.up.colourful,
+.comment-attitude.up.colourful:hover {
+  color: var(--mcmodder-color-attitude-up);
+}
+.comment-attitude.grintears.colourful,
+.comment-attitude.grintears.colourful:hover {
+  color: var(--mcmodder-color-attitude-grintears);
+}
+.comment-attitude.heart.colourful,
+.comment-attitude.heart.colourful:hover {
+  color: var(--mcmodder-color-attitude-heart);
+}
+.comment-attitude.flushed.colourful,
+.comment-attitude.flushed.colourful:hover {
+  color: var(--mcmodder-color-attitude-flushed);
+}
+.comment-attitude.down.colourful,
+.comment-attitude.down.colourful:hover {
+  color: var(--mcmodder-color-attitude-down);
+}
+.comment-attitude.lemon.colourful,
+.comment-attitude.lemon.colourful:hover {
+  color: var(--mcmodder-color-attitude-lemon);
+}
+.comment-attitude.horsehead.colourful,
+.comment-attitude.horsehead.colourful:hover {
+  color: var(--mcmodder-color-attitude-horsehead);
+}
+.comment-attitude.heartbroken.colourful,
+.comment-attitude.heartbroken.colourful:hover {
+  color: var(--mcmodder-color-attitude-heartbroken);
+}
+.comment-attitude.angry.colourful,
+.comment-attitude.angry.colourful:hover {
+  color: var(--mcmodder-color-attitude-angry);
+}
+.comment-attitude.tired.colourful,
+.comment-attitude.tired.colourful:hover {
+  color: var(--mcmodder-color-attitude-tired);
+}
+.comment-attitude.snowflake.colourful,
+.comment-attitude.snowflake.colourful:hover {
+  color: var(--mcmodder-color-attitude-snowflake);
+}
+.comment-attitude.handshake.colourful,
+.comment-attitude.handshake.colourful:hover {
+  color: var(--mcmodder-color-attitude-handshake);
 }
 .m_center li a {
   border-right-color: var(--mcmodder-color-background-dark3);
@@ -2182,6 +2463,16 @@ footer h5 {
 footer .copyright a,
 footer .copyleft a {
   color: var(--mcmodder-color-copyright-text);
+}
+.top-main .info .login a.qq {
+  margin-left: 1em;
+  display: inline-block;
+  width: 63px;
+}
+.top-main .info .login a.qq img {
+  position: absolute;
+  right: 0;
+  top: calc(50% - 13px);
 }
 @font-face {
   font-family: 'iconfont';

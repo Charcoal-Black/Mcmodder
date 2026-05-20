@@ -17,11 +17,11 @@ export class McmodderTextInput extends McmodderInput<string> {
     return { isok: true, final: newValue };
   }
 
-  protected getCurrentValue() {
+  override getCurrentValue() {
     return this.instance.val();
   }
 
-  protected setDisplayValue(value: string) {
+  protected override setDisplayValue(value: string) {
     this.instance.val(value);
   }
 }

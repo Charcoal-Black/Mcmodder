@@ -2,24 +2,29 @@ import { Mcmodder } from "../Mcmodder";
 import { AutoLinkAuthorEntry, AutoLinkClassEntry, AutoLinkEntries, AutoLinkItemEntry, AutoLinkOredictEntry, AutoLinkSearchTag, McmodderAuthorData, McmodderClassData, McmodderItemData, McmodderItemList, McmodderOredictData } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
+import { McmodderCheckboxInput } from "./input/CheckboxInput";
 
 export class McmodderAutoLink { 
 
-  private editor: any;
-  private parent: Mcmodder;
-  private itemSourceList: McmodderItemList;
+  private readonly editor: any;
+  private readonly parent: Mcmodder;
+  private readonly itemSourceList: McmodderItemList;
   private searchResultEntries?: AutoLinkEntries;
   private frame?: JQuery;
   private search?: JQuery;
+  private searchButton?: JQuery;
   private resultFrame?: JQuery;
   private resultList?: JQuery;
   private input?: JQuery;
   private linkStyleTitle?: JQuery;
   private linkStyleFrame?: JQuery;
   private searchSourceSetting?: JQuery;
+  private sourceInputLocal?: McmodderCheckboxInput;
+  private sourceInputOnline?: McmodderCheckboxInput;
   private searchText?: string;
   private searchKeywords?: string[];
   private resultListItems?: JQuery[];
+  private isPending = false;
 
   static readonly AUTOLINK_KEYWORD_MAXLENGTH = 10;
 
@@ -72,22 +77,29 @@ export class McmodderAutoLink {
         <label for="edit-autolink-style-space">在链接前后加空格</label>
       </div>
     </div>`).appendTo(this.frame).hide();
-    this.searchSourceSetting = $(`
-    <div class="edit-autolink-source">
-      <div class="checkbox">
-        <input id="edit-autolink-source-local" name="edit-autolink-source" type="checkbox">
-        <label for="edit-autolink-source-local">本地搜索</label>
-      </div>
-      <div class="checkbox">
-        <input id="edit-autolink-source-online" name="edit-autolink-source" type="checkbox">
-        <label for="edit-autolink-source-online">联网搜索</label>
-      </div>
-    </div>`).appendTo(this.frame);
+    this.searchSourceSetting = $(`<div class="edit-autolink-source">`).appendTo(this.frame);
+
+    this.sourceInputLocal = new McmodderCheckboxInput(
+      "本地搜索",
+      this.parent.utils.getConfig("autolinkSourceLocal") ?? false,
+      info => this.parent.utils.setConfig("autolinkSourceLocal", info.final),
+      "edit-autolink-source-local", true
+    );
+    this.sourceInputOnline = new McmodderCheckboxInput(
+      "联网搜索",
+      this.parent.utils.getConfig("autolinkSourceOnline") ?? false,
+      info => this.parent.utils.setConfig("autolinkSourceOnline", info.final),
+      "edit-autolink-source-online", true
+    );
+    this.sourceInputLocal.getInstance().appendTo(this.searchSourceSetting);
+    this.sourceInputOnline.getInstance().appendTo(this.searchSourceSetting);
 
     if (!this.itemSourceList.length) this.searchSourceSetting.hide();
     else this.searchSourceSetting.show();
 
-    $(".edit-autolink-search button").click(e => {
+    this.searchButton = $(".edit-autolink-search button").click(e => {
+      if (this.isPending) return;
+      this.isPending = true;
       e.preventDefault();
       this.onSearch();
     });
@@ -125,8 +137,8 @@ export class McmodderAutoLink {
     swal.close();
 
     let link;
-    if (type === "item" || type === "class") link = `https://www.mcmod.cn/${ type }/${ id }.html`;
-    else if (type === "oredict") link = `https://www.mcmod.cn/${ type }/${ id }-1.html`;
+    if (type === "item" || type === "class") link = `${ this.parent.hostname }/${ type }/${ id }.html`;
+    else if (type === "oredict") link = `${ this.parent.hostname }/${ type }/${ id }-1.html`;
 
     let res = `<a href="${ link }" target="_blank" title="${ content }">${ content }</a>`;
     if (appendSpace) res = `&nbsp;${ res }&nbsp;`;
@@ -144,9 +156,19 @@ export class McmodderAutoLink {
   }
 
   onSearch() {
+    this.isPending = true;
+    this.searchButton?.attr("disabled", "1");
+    this.searchButton?.addClass("disabled");
     this.searchText = this.search?.find("input[name=key]").val().trim();
     this.searchKeywords = this.searchText?.split(/\s+/).slice(0, McmodderAutoLink.AUTOLINK_KEYWORD_MAXLENGTH); // 原生最大长度为4
-    this.performSearch();
+    this.performSearch().catch(e => {
+      McmodderUtils.commonMsg(e, false);
+    })
+    .finally(() => {
+      this.isPending = false;
+      this.searchButton?.removeAttr("disabled");
+      this.searchButton?.removeClass("disabled");
+    });
   }
 
   renderSingleItem(item: McmodderItemData) {
@@ -293,7 +315,7 @@ export class McmodderAutoLink {
     if (!this.shouldHideSelectedContentStyle()) preferredStyle = 0;
     else {
       preferredStyle = this.parent.utils.getConfig("preferredAutolinkStyle");
-      if (preferredStyle === undefined) preferredStyle = 1;
+      if (preferredStyle === undefined || preferredStyle === 0) preferredStyle = 1;
     }
     this.linkStyleFrame.find(`#edit-autolink-style-text-${ preferredStyle }`).click();
     if (preferredStyle) this.linkStyleFrame.on("click", "[name=edit-autolink-style-text]", _ => {
@@ -304,13 +326,13 @@ export class McmodderAutoLink {
   }
 
   async performOnlineSearch() {
-    let resp = await this.parent.utils.createAsyncRequest({
-      url: "https://www.mcmod.cn/object/UEAutolink/",
+    let resp = await this.parent.utils.createRequest({
+      url: `${ this.parent.hostname }/object/UEAutolink/`,
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "X-Requested-With": "XMLHttpRequest",
-        "Origin": "https://www.mcmod.cn",
+        "Origin": this.parent.hostname,
         "Referer": this.parent.href,
         "Priority": "u=0",
         "Pragma": "no-cache",
@@ -464,8 +486,8 @@ export class McmodderAutoLink {
       searchOnline = true;
     }
     else {
-      searchLocal = this.searchSourceSetting.find("#edit-autolink-source-local").prop("checked");
-      searchOnline = this.searchSourceSetting.find("#edit-autolink-source-online").prop("checked");
+      searchLocal = this.sourceInputLocal!.getCurrentValue();
+      searchOnline = this.sourceInputOnline!.getCurrentValue();
     }
     
     if (!this.searchText || !this.searchText.length) {

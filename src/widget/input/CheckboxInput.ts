@@ -5,6 +5,7 @@ import { McmodderInput } from "./Input";
 export class McmodderCheckboxInput extends McmodderInput<boolean> {
   private readonly id: string;
   private readonly withLabel: boolean;
+  private readonly withTooltip: string | undefined;
 
   getID() {
     return this.id;
@@ -18,16 +19,20 @@ export class McmodderCheckboxInput extends McmodderInput<boolean> {
     );
   }
 
+  override getInputNode() {
+    return this.instance.children().first();
+  }
+
   protected override getEventType() {
     return "click";
   }
 
-  protected getCurrentValue() {
-    return !!this.instance.children().first().prop("checked");
+  override getCurrentValue() {
+    return !!this.getInputNode().prop("checked");
   }
 
-  protected setDisplayValue(value: boolean) {
-    this.instance.children().first().prop("checked", value);
+  protected override setDisplayValue(value: boolean) {
+    this.getInputNode().prop("checked", value);
   }
 
   protected override checkIsValid(newValue: boolean) {
@@ -35,16 +40,28 @@ export class McmodderCheckboxInput extends McmodderInput<boolean> {
     return { isok: false };
   }
 
-  constructor(title: string, value: boolean, onSuccessfulChange: InputSuccessfulChangeCallBack<boolean>, id?: string, withLabel?: boolean) {
+  click() {
+    this.getInputNode().click();
+  }
+
+  constructor(title: string, value: boolean, onSuccessfulChange: InputSuccessfulChangeCallBack<boolean>, id?: string, withLabel?: boolean, withTooltip?: string) {
     super(title, value, onSuccessfulChange);
     this.id = id || McmodderUtils.randStr(8);
     this.withLabel = !!withLabel;
-    this.instance.find("input").attr({
+    this.withTooltip = withTooltip;
+    this.getInputNode().attr({
       "id": `settings-${ this.id }`,
       "data-id": this.id
     });
     if (this.withLabel) {
       this.instance.append(`<label for="settings-${ this.id }">${ this.title }</label>`);
+    }
+    if (this.withTooltip) {
+      this.instance.attr({
+        "data-toggle": "tooltip",
+        "data-original-title": withTooltip
+      });
+      this.instance.tooltip();
     }
   }
 }

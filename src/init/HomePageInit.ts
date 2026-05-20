@@ -5,9 +5,16 @@ import { McmodderInit } from "./Init";
 
 export class HomePageInit extends McmodderInit {
   canRun() {
-    return this.parent.href === "https://www.mcmod.cn/";
+    return this.parent.href === `${ this.parent.hostname }/`;
   }
   run() {
+    // v3 QQ快捷登录
+    $(`<a class="qq">
+      <img alt="QQ登录" src="${ this.parent.hostname }/plugs/loginConnect/qqConnect/img/Connect_logo_7.png">
+    </a>`)
+    .appendTo(".login")
+    .click(() => McmodderUtils.toQzoneLogin());
+
     // 函数覆写以兼容夜间模式
     if (typeof SearchOn != "undefined") SearchOn = () => {
       '搜索MOD/资料/教程..' == $('.search_box #key').val().trim() && (
@@ -28,21 +35,9 @@ export class HomePageInit extends McmodderInit {
         this.parent.utils.setConfig("almanacsList", "");
       }
 
-      $(".news_block").first().after(`
-        <div class="news_block mcmodder-almanacs">
-          <div class="title">
-            <i></i>
-            <a class="date" href="/tools/almanacs" target="_blank"></a>
-            <div class="more"></div>
-          </div>
-          <div class="content">
-            <div class="good"></div>
-            <div class="bad"></div>
-          </div>
-        </div>`);
-
       const almanacs = new McmodderAlmanacs(this.parent);
       almanacs.get(McmodderUtils.getStartTime(new Date(), 0));
+      almanacs.getInstance().insertAfter($(".news_block").first());
     }
   }
 }

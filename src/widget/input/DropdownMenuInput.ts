@@ -9,11 +9,11 @@ export class McmodderDropdownInput extends McmodderInput<number> {
     return $(`<select class="selectpicker">`);
   }
 
-  protected getCurrentValue() {
-    return Number(this.instance.find("select").val());
+  override getCurrentValue() {
+    return Number(this.instance.val());
   }
 
-  protected setDisplayValue(value: number) {
+  protected override setDisplayValue(value: number) {
     this.instance.selectpicker("val", value.toString());
   }
 
@@ -28,6 +28,10 @@ export class McmodderDropdownInput extends McmodderInput<number> {
     };
   }
 
+  override getInstance() {
+    return super.getInstance().parent();
+  }
+
   constructor(title: string, value: number, range: InputValueSet, onSuccessfulChange: InputSuccessfulChangeCallBack<number>) {
     super(title, value, onSuccessfulChange);
     this.range = range;
@@ -38,5 +42,6 @@ export class McmodderDropdownInput extends McmodderInput<number> {
       if (this.value === num) content += " (默认)";
       option.html(content).appendTo(this.instance);
     });
+    this.setDisplayValue(this.value);
   }
 }

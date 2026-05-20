@@ -1,4 +1,4 @@
-import { GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
+import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
 import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
 import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
@@ -28,6 +28,14 @@ export class McmodderUtils {
       navigator.userAgent.match(/iPhone/i));
   }
 
+  static toQzoneLogin() {
+    window.open(
+      `${ McmodderValues.hostname }/plugs/loginConnect/qqConnect/oauth/index.php`,
+      'TencentLogin',
+      'width=755,height=515,menubar=0,scrollbars=0,resizable=0,status=1,titlebar=0,toolbar=0,location=1'
+    );
+  }
+
   static commonMsg(message: string, isok: boolean = true, title: string = "") {
     if (typeof common_msg != "function") return;
     common_msg(title || (isok ? "提示" : "错误"), message, isok ? "ok" : "err");
@@ -45,7 +53,7 @@ export class McmodderUtils {
     }
   }
 
-  static clamp(value: number, min: number, max: number) {
+  static clamp(value: number, min = 0, max = 1) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
@@ -174,7 +182,7 @@ export class McmodderUtils {
     GM_setValue("userProfile", JSON.stringify(profiles));
   }
 
-  getProfileAbstract(target: number | McmodderProfileData, plainText = false) {
+  getProfileAbstract(target: number | McmodderProfileData, showLv = false, plainText = false) {
     const profile = typeof target === "number" ? this.getAllProfile(target) : target;
     if (!Object.keys(profile).length) {
       const text = "用户信息获取失败...";
@@ -190,6 +198,7 @@ export class McmodderUtils {
     }
     
     const content = [profile.userGroup];
+    if (showLv) content.push(`Lv.${ profile.lv }`);
     if (profile.editNum) content.push(`${ profile.editNum.toLocaleString() } 次编辑`);
     if (profile.editByte) content.push(`${ profile.editByte.toLocaleString() } 字节`)
     if (profile.expirationDate && !plainText) {
@@ -389,7 +398,7 @@ export class McmodderUtils {
   static getImageURLByItemID(id: number, width = 32, ver = 0) {
     const validSize = [32, 36, 128, 144];
     if (!validSize.includes(width)) {
-      console.error(`Highlight color parameter must be within: [${ validSize.join(", ") }]`);
+      console.error(`Image size parameter must be within: [${ validSize.join(", ") }]`);
       return "";
     }
     if (!id) return `https://i.mcmod.cn/item/icon/${ width }x${ width }/0.png?v=${ ver }`;
@@ -397,11 +406,11 @@ export class McmodderUtils {
   }
 
   static getItemURLByID(id: number) {
-    return `https://www.mcmod.cn/item/${ id }.html`;
+    return `${ McmodderValues.hostname }/item/${ id }.html`;
   }
 
   static getClassURLByID(id: number) {
-    return `https://www.mcmod.cn/class/${ id }.html`;
+    return `${ McmodderValues.hostname }/class/${ id }.html`;
   }
 
   static getCenterURLByID(id: number) {
@@ -558,7 +567,7 @@ export class McmodderUtils {
       r: rgb.r,
       g: rgb.g,
       b: rgb.b,
-      a: this.clamp(alpha, 0, 1)
+      a: this.clamp(alpha)
     } as RGBA);
   }
 
@@ -668,6 +677,25 @@ export class McmodderUtils {
     if (id) style.attr("id", id);
   }
 
+  static loadStyle(loc: Element, content?: string | null, href?: string | null, type?: string | null, id?: string) {
+    if (id && loc.ownerDocument.getElementById(id)) {
+      return new Promise<void>(resolve => {
+        resolve();
+      })
+    }
+    return new Promise<void>((resolve, reject) => {
+      let link = document.createElement("link");
+      link.type = type ? type : "text/css";
+      link.rel = "stylesheet";
+      if (id) link.id = id;
+      if (href) link.href = href;
+      if (content) link.innerHTML = content;
+      link.onload = () => resolve();
+      link.onerror = () => reject();
+      loc.appendChild(link);
+    });
+  }
+
   static addScript(loc: Element, content: string | null, src?: string, type?: string) {
     let script = document.createElement("script");
     script.type = type ? type : "text/JavaScript";
@@ -680,13 +708,19 @@ export class McmodderUtils {
   }
 
   static loadScript(loc: Element, content?: string | null, src?: string | null, type?: string | null, id?: string) {
-    return new Promise<void>(resolve => {
+    if (id && loc.ownerDocument.getElementById(id)) {
+      return new Promise<void>(resolve => {
+        resolve();
+      })
+    }
+    return new Promise<void>((resolve, reject) => {
       let script = document.createElement("script");
       script.type = type ? type : "text/JavaScript";
       if (id) script.id = id;
       if (src) script.src = src;
       if (content) script.innerHTML = content;
       script.onload = () => resolve();
+      script.onerror = () => reject();
       loc.appendChild(script);
     });
   }
@@ -789,27 +823,38 @@ export class McmodderUtils {
     return lastRequestTime;
   }
 
-  createRequest(config: GmXmlhttpRequestOption<"text", any>) {
-    const lastRequestTime = this.updateRequestTime(), now = (new Date()).getTime();
-    setTimeout(() => {
-      const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
-      if (logs.length >= McmodderValues.MAX_REQUEST_COUNT / 10) logs.shift();
-      let content = `${lastRequestTime}:${config.url}`;
-      if (config.data) content += `(${config.data})`;
-      logs.push(content);
-      GM_setValue("mcmodderLogger", logs.join(";"));
-      // console.debug("Send request: ", config);
-      GM_xmlhttpRequest(config);
-      // let response = await fetch(url, config);
-      // response.text().then(promise => onload(promise));
-    }, (lastRequestTime - now));
-  }
-
-  async createAsyncRequest(config: GmXmlhttpRequestOption<"text", any>): Promise<GmResponseEvent<"text", any>> {
+  createRequest(config: GmXmlhttpRequestOption<"text", any>): Promise<GmResponseEvent<"text", any>> {
     const lastRequestTime = this.updateRequestTime(), now = (new Date()).getTime();
     return new Promise(resolve => {
       setTimeout(() => {
-        config.onload = resp => resolve(resp);
+        config.onload = resp => {
+          const str = resp.responseText?.trim() ?? "";
+          if (str.startsWith("<script>") && str.endsWith("</script>")) {
+            const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
+            if (yxdTokenList) {
+              const url = new URL(resp.finalUrl);
+              const hostname = url.hostname;
+              const pathname = url.pathname;
+              const index = pathname.lastIndexOf("/");
+              const path = "/" + pathname.slice(1, index);
+              const yxdToken = yxdTokenList[0].slice(11, -1);
+              GM_cookie.set({
+                name: "yxd_token",
+                value: yxdToken,
+                domain: hostname,
+                path: path
+              }, err => {
+                if (err) {
+                  console.warn("Failed to set `yxd_token!`");
+                } else {
+                  this.createRequest(config).then(resp => resolve(resp));
+                }
+              });
+            }
+          } else {
+            resolve(resp);
+          }
+        }
         const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
         if (logs.length >= McmodderValues.MAX_REQUEST_COUNT / 10) logs.shift();
         let content = `A${lastRequestTime}:${config.url}`;
@@ -882,11 +927,11 @@ export class McmodderUtils {
     return name.replace(/[\\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
   }
 
-  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string) {
-    node.click(e => {
-      const text = copyData || e.currentTarget.textContent;
+  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | (() => string)) {
+    node.addClass("mcmodder-copyable").click(e => {
+      const text = typeof copyData === "function" ? copyData() : (copyData || e.currentTarget.textContent);
       navigator.clipboard.writeText(text);
-      McmodderUtils.commonMsg(`${ typeName }名称已成功复制到剪贴板~ (${ text })`);
+      McmodderUtils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
     });
   }
 
@@ -942,8 +987,8 @@ export class McmodderUtils {
 
   async getItemByID(id: string | number) {
     id = Number(id);
-    const resp = await this.createAsyncRequest({
-      url: `https://www.mcmod.cn/item/${ id }.html`,
+    const resp = await this.createRequest({
+      url: `${ this.parent.hostname }/item/${ id }.html`,
       method: "GET",
       redirect: "manual",
       anonymous: true
@@ -958,8 +1003,8 @@ export class McmodderUtils {
   async getDetailedItemByID(id: string | number) {
     if (!this.parent.currentUID) return;
     id = Number(id);
-    const resp = await this.createAsyncRequest({
-      url: `https://www.mcmod.cn/item/edit/${ id }/`,
+    const resp = await this.createRequest({
+      url: `${ this.parent.hostname }/item/edit/${ id }/`,
       method: "GET",
       redirect: "manual"
     });
