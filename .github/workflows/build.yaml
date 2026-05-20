@@ -37,7 +37,9 @@ jobs:
       - run: |
           VERSION=$(jq -r .version package.json)
           TAG="v$VERSION"
+          IS_NEW_VERSION="true"
           if [ -n "$(git ls-remote --tags origin refs/tags/$TAG)" ]; then
+            IS_NEW_VERSION="false"
             counter=1
             while [ -n "$(git ls-remote --tags origin refs/tags/${TAG}_${counter})" ]; do
               counter=$((counter + 1))
@@ -46,7 +48,12 @@ jobs:
           fi
           echo "TAG_NAME=$TAG" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "IS_NEW_VERSION=$IS_NEW_VERSION" >> $GITHUB_ENV
 
-      - env:
+      - name: Create Release
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ env.TAG_NAME }} --title "v${{ env.VERSION }}" --generate-notes
+          VERSION: ${{ env.VERSION }}
+          TAG_NAME: ${{ env.TAG_NAME }}
+          IS_NEW_VERSION: ${{ env.IS_NEW_VERSION }}
+        run: node .github/workflows/release.cjs
