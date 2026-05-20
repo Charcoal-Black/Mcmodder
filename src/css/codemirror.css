@@ -43,20 +43,45 @@
 .cm-s-mcmodder span.cm-hr {color: var(--mcmodder-color-cm-hr-universal);}
 .cm-s-mcmodder span.cm-link {color: var(--mcmodder-color-cm-link-universal);}
 
+.syntaxhighlighter,
 .syntaxhighlighter.java {
-  background-color:var(--mcmodder-color-background-dark1);
+  background-color: var(--mcmodder-color-background-dark1);
   border-radius: var(--mcmodder-width-padding-2);
   border: 1px solid var(--mcmodder-color-background-dark2);
 }
-.syntaxhighlighter.java .line.alt1 {
-  background-color: var(--mcmodder-color-background-dark1);
-}
+.syntaxhighlighter .line,
+.syntaxhighlighter .line.alt1,
+.syntaxhighlighter .line.alt2,
+.syntaxhighlighter.java .line,
+.syntaxhighlighter.java .line.alt1,
 .syntaxhighlighter.java .line.alt2 {
   background-color: var(--mcmodder-color-background-dark1);
 }
-.syntaxhighlighter.java .gutter .line {
-  border-right-width: 1px;
-  border-color: var(--mcmodder-color-background-dark2);
+.syntaxhighlighter table td.code,
+.syntaxhighlighter table td.gutter {
+  background-color: transparent;
+}
+.syntaxhighlighter .line.highlighted.alt1,
+.syntaxhighlighter .line.highlighted.alt2 {
+  background-color: var(--mcmodder-color-sh-highlighted-bg-universal);
+}
+.syntaxhighlighter .line.highlighted.number {
+  color: var(--mcmodder-color-text);
+}
+.syntaxhighlighter table caption {
+  color: var(--mcmodder-color-text);
+}
+.syntaxhighlighter .gutter {
+  color: var(--mcmodder-color-text-dark2);
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.syntaxhighlighter .gutter .line {
+  border-right: 3px solid var(--mcmodder-color-sh-gutter-theme-universal);
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.syntaxhighlighter .gutter .line.highlighted {
+  background-color: var(--mcmodder-color-sh-gutter-theme-universal);
+  color: white;
 }
 .syntaxhighlighter table td.code .container textarea {
   background-color: var(--mcmodder-color-background);
@@ -69,37 +94,220 @@
 .syntaxhighlighter table td.gutter .line {
   line-height: 1.3em;
 }
+.syntaxhighlighter.collapsed {
+  overflow: visible;
+}
+.syntaxhighlighter.collapsed .toolbar {
+  color: var(--mcmodder-color-link);
+  background: var(--mcmodder-color-background);
+  border: 1px solid var(--mcmodder-color-sh-gutter-theme-universal);
+}
+.syntaxhighlighter.collapsed .toolbar a {
+  color: var(--mcmodder-color-link);
+}
+.syntaxhighlighter.collapsed .toolbar a:hover {
+  color: var(--mcmodder-color-danger);
+}
+.syntaxhighlighter .toolbar {
+  color: white;
+  background: var(--mcmodder-color-sh-gutter-theme-universal);
+  border: 0;
+}
+.syntaxhighlighter .toolbar a {
+  color: white;
+}
+.syntaxhighlighter .toolbar a:hover {
+  color: black;
+}
+.syntaxhighlighter .plain,
+.syntaxhighlighter .plain a {
+  color: var(--mcmodder-color-text);
+}
+.syntaxhighlighter .comments,
+.syntaxhighlighter .comments a {
+  color: var(--mcmodder-color-sh-comment-universal);
+}
+.syntaxhighlighter .string,
+.syntaxhighlighter .string a {
+  color: var(--mcmodder-color-sh-string-universal);
+}
+.syntaxhighlighter .keyword {
+  color: var(--mcmodder-color-sh-keyword-universal);
+  font-weight: bold;
+}
+.syntaxhighlighter .preprocessor {
+  color: var(--mcmodder-color-sh-preprocessor-universal);
+}
+.syntaxhighlighter .variable {
+  color: var(--mcmodder-color-sh-variable-universal);
+}
+.syntaxhighlighter .value {
+  color: var(--mcmodder-color-sh-value-universal);
+}
+.syntaxhighlighter .functions {
+  color: var(--mcmodder-color-sh-functions-universal);
+}
+.syntaxhighlighter .constants {
+  color: var(--mcmodder-color-sh-constants-universal);
+}
+.syntaxhighlighter .script {
+  font-weight: bold;
+  color: var(--mcmodder-color-sh-keyword-universal);
+  background-color: none;
+}
+.syntaxhighlighter .color1,
+.syntaxhighlighter .color1 a {
+  color: var(--mcmodder-color-sh-color1-universal);
+}
+.syntaxhighlighter .color2,
+.syntaxhighlighter .color2 a {
+  color: var(--mcmodder-color-sh-color2-universal);
+}
+.syntaxhighlighter .color3,
+.syntaxhighlighter .color3 a {
+  color: var(--mcmodder-color-sh-color3-universal);
+}
+.syntaxhighlighter-tools {
+  margin: 0;
+  font-size: 14px;
+  position: absolute;
+  right: 0;
+  z-index: 9;
+  background-color: var(--mcmodder-color-background);
+  padding-left: 5px;
+}
+.syntaxhighlighter-tools a {
+  margin-right: 5px;
+  color: inherit;
+  text-decoration: none;
+}
+.syntaxhighlighter-tools.cb {
+  background-color: var(--mcmodder-color-cb-tools-bg-universal);
+}
+.syntaxhighlighter-tools.cb a {
+  color: var(--mcmodder-color-cb-tools-color-universal);
+}
+.syntaxhighlighter.cb,
+.syntaxhighlighter.cb .line {
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.syntaxhighlighter.cb .line {
+  border-color: var(--mcmodder-color-cb-line-border-universal);
+  color: var(--mcmodder-color-cb-line-color-universal);
+  white-space: initial;
+}
+.syntaxhighlighter.cb .plain {
+  color: var(--mcmodder-color-cb-plain-universal);
+}
+.syntaxhighlighter.cb .functions {
+  color: var(--mcmodder-color-cb-functions-universal);
+}
+.syntaxhighlighter.cb .selector {
+  color: var(--mcmodder-color-cb-selector-universal);
+}
+.syntaxhighlighter.cb .nbt {
+  color: var(--mcmodder-color-cb-nbt-universal);
+}
+.syntaxhighlighter.java .line.highlighted.alt1,
+.syntaxhighlighter.java .line.highlighted.alt2 {
+  background-color: var(--mcmodder-color-java-highlighted-bg-universal);
+}
+.syntaxhighlighter.java .line.highlighted.number {
+  color: white;
+}
+.syntaxhighlighter.java .gutter {
+  color: var(--mcmodder-color-text-dark2);
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.syntaxhighlighter.java .gutter .line {
+  border-right: 3px solid var(--mcmodder-color-java-gutter-theme-universal);
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.syntaxhighlighter.java .gutter .line.highlighted {
+  background-color: var(--mcmodder-color-java-gutter-theme-universal);
+  color: white;
+}
+.syntaxhighlighter.java.collapsed .toolbar {
+  color: var(--mcmodder-color-cm-comment-universal);
+  background: var(--mcmodder-color-background);
+  border: 1px solid var(--mcmodder-color-java-gutter-theme-universal);
+}
+.syntaxhighlighter.java.collapsed .toolbar a {
+  color: var(--mcmodder-color-cm-comment-universal);
+}
+.syntaxhighlighter.java.collapsed .toolbar a:hover {
+  color: var(--mcmodder-color-cm-variable-universal);
+}
+.syntaxhighlighter.java .toolbar {
+  color: var(--mcmodder-color-text-dark2);
+  background: var(--mcmodder-color-java-gutter-theme-universal);
+  border: 0;
+}
+.syntaxhighlighter.java .toolbar a {
+  color: var(--mcmodder-color-text-dark2);
+}
+.syntaxhighlighter.java .toolbar a:hover {
+  color: red;
+}
+.syntaxhighlighter.java,
+.syntaxhighlighter.java .line,
 .syntaxhighlighter.java .plain,
 .syntaxhighlighter.java .plain a {
-  color: var(--mcmodder-color-text);
+  color: var(--mcmodder-color-java-plain-universal);
 }
 .syntaxhighlighter.java .comments,
 .syntaxhighlighter.java .comments a {
-  color: var(--mcmodder-color-cm-comment-universal);
+  color: var(--mcmodder-color-java-comments-universal);
 }
 .syntaxhighlighter.java .string,
 .syntaxhighlighter.java .string a {
-  color: var(--mcmodder-color-cm-string-universal);
+  color: var(--mcmodder-color-java-string-universal);
 }
 .syntaxhighlighter.java .keyword {
-  color: var(--mcmodder-color-cm-keyword-universal);
+  color: var(--mcmodder-color-java-keyword-universal);
+  font-weight: bold;
 }
 .syntaxhighlighter.java .preprocessor {
-  color: var(--mcmodder-color-cm-meta-universal);
+  color: var(--mcmodder-color-java-preprocessor-universal);
 }
 .syntaxhighlighter.java .variable {
-  color: var(--mcmodder-color-cm-variable-universal);
+  color: var(--mcmodder-color-java-variable-universal);
 }
 .syntaxhighlighter.java .value {
-  color: var(--mcmodder-color-cm-number-universal);
+  color: var(--mcmodder-color-java-value-universal);
 }
 .syntaxhighlighter.java .functions {
-  color: var(--mcmodder-color-cm-def-universal);
+  color: var(--mcmodder-color-java-functions-universal);
 }
 .syntaxhighlighter.java .constants {
-  color: var(--mcmodder-color-cm-variable-2-universal);
+  color: var(--mcmodder-color-java-constants-universal);
+}
+.syntaxhighlighter.java .script {
+  font-weight: bold;
+  color: var(--mcmodder-color-cm-keyword-universal);
+  background-color: none;
 }
 .syntaxhighlighter.java .color1,
 .syntaxhighlighter.java .color1 a {
   color: var(--mcmodder-color-text-dark2);
+}
+.syntaxhighlighter.java .color2,
+.syntaxhighlighter.java .color2 a {
+  color: var(--mcmodder-color-cm-def-universal);
+}
+.syntaxhighlighter.java .color3,
+.syntaxhighlighter.java .color3 a {
+  color: red;
+}
+.syntaxhighlighter.java .xml .keyword {
+  color: var(--mcmodder-color-java-xml-keyword-universal);
+  font-weight: normal;
+}
+.syntaxhighlighter.java .xml .color1,
+.syntaxhighlighter.java .xml .color1 a {
+  color: var(--mcmodder-color-java-xml-color1-universal);
+}
+.syntaxhighlighter.java .xml .string {
+  font-style: italic;
+  color: var(--mcmodder-color-java-xml-string-universal);
 }
