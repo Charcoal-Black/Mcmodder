@@ -1,6 +1,4 @@
 import { GTCEuEnergyFrame } from "../integration/GTCEuEnergyFrame";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 
 export class ItemTabInit extends McmodderInit {
@@ -16,7 +14,7 @@ export class ItemTabInit extends McmodderInit {
     }
 
     // 紧凑合成表
-    if (!this.parent.utils.getConfig("compactedTablist")) return;
+    /* if (!this.parent.utils.getConfig("compactedTablist")) return;
     McmodderUtils.addStyle(`
       .item-table-block p {
         display: inline; margin: 2px;
@@ -150,10 +148,10 @@ export class ItemTabInit extends McmodderInit {
         case 48: x = 34, y = 68; break; // 酿造台
         case 209863: x = 68, y = 68; break; // 砂轮
       }
-      $(p).html(`<span style="background-image: url(${McmodderValues.assets.progress2}); height: 32px; width: 64px; display: inline-block; background-size: cover; margin-left: 5px; margin-right: 5px; position: relative;">${guiID ? ((x < 0) ? '<span class="mcmodder-tab-item-icon" style="background-image: url(//i.mcmod.cn/item/icon/32x32/' + Math.floor(guiID / 1e4) + '/' + guiID + '.png); width: 32px; height: 32px; display: inline-block; position: absolute; left: 12px; background-size: cover;"></span>' : '<span class="mcmodder-tab-item-icon" style="background-image: url(' + McmodderValues.assets.sprite + '); background-position: -' + x + 'px -' + y + 'px; width: 34px; height: 34px; display: inline-block; position: absolute; left: 12px;"></span>') : ''}</span>`);
+      $(p).html(`<span class="mcmodder-recipe-arrow">${guiID ? ((x < 0) ? '<span class="mcmodder-tab-item-icon" style="background-image: url(//i.mcmod.cn/item/icon/32x32/' + Math.floor(guiID / 1e4) + '/' + guiID + '.png); width: 32px; height: 32px; display: inline-block; position: absolute; left: 12px; background-size: cover;"></span>' : '<span class="mcmodder-tab-item-icon" style="background-image: url(' + McmodderValues.assets.sprite + '); background-position: -' + x + 'px -' + y + 'px; width: 34px; height: 34px; display: inline-block; position: absolute; left: 12px;"></span>') : ''}</span>`);
     });
     $("div.item-table-frame > table.item-table-block td.text.item-table-count span.noecho").remove();
     $("fieldset.power_area > p:not(fieldset.power_area > p:last-child())").append(" ·");
-    $(".item-table-tips").remove();
+    $(".item-table-tips").remove(); */
   }
 }

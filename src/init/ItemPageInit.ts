@@ -37,7 +37,7 @@ export class ItemPageInit extends McmodderInit {
       }
       c.html(s);
       if (this.parent.utils.getConfig("fastCopyName")) {
-        McmodderUtils.addClickCopyEvent(c.find("a"), "物品");
+        McmodderUtils.addClickCopyEvent(c.find("a"), "物品名称");
       }
     });
 
@@ -133,7 +133,7 @@ export class ItemPageInit extends McmodderInit {
       $('.item-content > *:not(.item-data) a:not([href="javascript:void(0);"])')
       .filter((_, c) => !!(c.textContent && (c.parentNode as Element)?.tagName != "LEGEND"))
       .each((_, a) => {
-        const key = a.textContent, value = (a as HTMLLinkElement).href.replace("https://www.mcmod.cn", "");
+        const key = a.textContent, value = (a as HTMLLinkElement).href.replaceAll(/https:\/\/www1?\.mcmod\.cn/g, "");
         if (this.parent.utils.getConfig("linkMark")) $(a).after(`<code class="mcmodder-link-check">${value}</code>`);
         if (!linkMap.has(key)) linkMap.set(key, value);
         else if (linkMap.get(key) != value) warnList.push(key);

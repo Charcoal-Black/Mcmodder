@@ -63,7 +63,10 @@ export class ItemEditorInit extends McmodderInit {
       $(`#item-${ id }-preview-img`).attr("src", target.val().trim());
       $(`#${ id }-editor`).val(target.val().trim());
     });
-    $("#icon-32x-editor, #icon-128x-editor").attr("class", "form-control").bind("change", e => {
+    $("#icon-32x-editor, #icon-128x-editor")
+    .addClass("form-control")
+    .addClass("mcmodder-monospace")
+    .bind("change", e => {
       const input = e.currentTarget as HTMLInputElement;
       $("#" + input.id.replace("-editor", ""))
       .val(input.value.trim())
@@ -77,7 +80,7 @@ export class ItemEditorInit extends McmodderInit {
     // $(document).on("click", () => this.updateItemTooltip());
 
     // JSON 快速手导
-    const jsonUploader = $('<input id="mcmodder-json-upload mcmodder-monospace" class="form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">')
+    const jsonUploader = $('<input id="mcmodder-json-upload" class="mcmodder-monospace form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">')
     .insertBefore($(".tab-ul").first())
     .change(_ => {
       let data: McmodderItemData & {maxStacksSize?: number};
@@ -89,15 +92,21 @@ export class ItemEditorInit extends McmodderInit {
       }
       try {
         $("[data-multi-id=name]").val(data.name);
-        $("[data-multi-id=ename]").val(data.englishName || "");
+        if (data.englishName != data.name) {
+          $("[data-multi-id=ename]").val(data.englishName || "");
+        }
         $("#icon-32x").val(data.smallIcon || "").change();
         $("#icon-128x").val(data.largeIcon || "").change();
         if (data.OredictList) data.OredictList.slice(1, data.OredictList.length - 1).split(", ").forEach(e => {
-          $("[data-multi-id=oredict]").prev().children().val(e).trigger("focusout");
+          $("[data-multi-id=oredict]").prev().children().val(e).focusout();
         });
         if (data.maxDurability) $("#item-damage").val(data.maxDurability);
         $("#item-maxstack").val(data.maxStackSize || data.maxStacksSize || "");
-        $("#item-regname").val(data.registerName || "");
+        let regName = data.registerName || "";
+        if (data.type == "Entity") {
+          regName = regName.replace(":entities/", ":");
+        }
+        $("#item-regname").val(regName);
         if (data.metadata) $("#item-metadata").val(data.metadata);
       } catch (e) {
         if (e instanceof TypeError) McmodderUtils.commonMsg(e.toString(), false);

@@ -46,7 +46,7 @@ export class McmodderDetailedItemListRequestQueue extends McmodderRequestQueue {
         }
         requestList[i] = {
           config: {
-            url: `https://www.mcmod.cn/item/edit/${ itemList[i].id }/`,
+            url: `${ this.parent.hostname }/item/edit/${ itemList[i].id }/`,
             method: "GET",
             redirect: "manual"
           }

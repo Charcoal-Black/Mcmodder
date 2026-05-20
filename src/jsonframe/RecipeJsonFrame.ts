@@ -1,21 +1,25 @@
 import { McmodderMap } from "../map/Map";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderItemData, McmodderJsonStorage, McmodderRecipeData, McmodderRecipeIngredient, RecipeJsonFrameGuiBound } from "../types";
+import { McmodderItemData, McmodderRecipeData, McmodderRecipeIngredient, McmodderJsonStorage, RecipeJsonFrameGuiBound } from "../types";
 import { McmodderEditableTable } from "../table/EditableTable";
 import { McmodderTable } from "../table/Table";
 import { ItemDisplay } from "../widget/ItemDisplay";
 import { JsonFrame } from "./JsonFrame";
 import { McmodderInputType } from "../config/ConfigUtils";
 import { McmodderUtils } from "../Utils";
+import { McmodderCollapsible } from "../widget/Collapsible";
+import { McmodderValues } from "../Values";
 
 export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
   protected getConfigName() {
     return "mcmodderRecipeJsonStorage";
   }
   override readonly table: McmodderEditableTable<McmodderRecipeData>;
+  private guiBoundTable?: McmodderEditableTable<RecipeJsonFrameGuiBound>;
   private readonly itemMap = new McmodderMap<McmodderItemData>("registerName");
   private readonly tagMap = new McmodderMap<McmodderItemData>("OredictList");
   private readonly guiMap = new McmodderMap<RecipeJsonFrameGuiBound>("guiID");
+  readonly guiBindFrame = new McmodderCollapsible;
   private guiBound?: RecipeJsonFrameGuiBound[];
 
   private readonly itemListDisplay = (
@@ -49,7 +53,7 @@ export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
     super(id, parent);
 
     // map init
-    const selection: McmodderJsonStorage = this.parent.utils.getAllConfig("mcmodderJsonStorage", {});
+    const selection: McmodderJsonStorage<McmodderItemData> = this.parent.utils.getAllConfig("mcmodderJsonStorage", {});
     Object.values(selection).forEach(content => {
       this.itemMap.add(content);
       this.tagMap.add(content);
@@ -63,26 +67,27 @@ export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
       output: ["输出", this.itemOutputDisplay],
       power_text: ["额外数据", McmodderTable.DISPLAYRULE_ARRAY]
     }, {
-      in_id: {readonly: true},
-      out_id: {readonly: true},
-      in_num: {readonly: true},
-      out_num: {readonly: true},
-      in_chance: {readonly: true},
-      out_chance: {readonly: true},
-      power_num: {readonly: true},
+      in_id: null,
+      out_id: null,
+      in_num: null,
+      out_num: null,
+      in_chance: null,
+      out_chance: null,
+      power_num: null,
       gui_id: McmodderInputType.TEXT
-    }, () => {
-      this.updateToolBar();
     });
+    this.table.onEdit = () => {
+      this.updateToolBar();
+    };
 
-    this.addTool("bindGui", "绑定百科GUI", () => !!this.activeFileName, () => this.bindGui());
+    this.initBindFrame();
 
     this.table.$instance.appendTo(this.content);
   }
 
   private updateGuiBound() {
     this.guiMap.clear();
-    this.guiBound = this.parent.utils.getAllConfig("guiBound") || [];
+    this.guiBound = this.parent.utils.getAllConfig("guiBound") || McmodderValues.defaultGuiBound;
     this.guiMap.add(this.guiBound!);
   }
 
@@ -99,19 +104,8 @@ export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
     return set;
   }
 
-  private bindGui() {
-    swal.fire({
-      title: "绑定百科GUI",
-      html: `<div class="jsonframe-bindgui-frame" />`,
-      customClass: "swal2-popup-wider",
-      showConfirmButton: false,
-      showCancelButton: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      cancelButtonText: "完事了"
-    });
-
-    const fileTable = new McmodderEditableTable<RecipeJsonFrameGuiBound>(this.parent, {}, {
+  private initBindFrame() {
+    this.guiBoundTable = new McmodderEditableTable<RecipeJsonFrameGuiBound>(this.parent, {}, {
       guiID: ["GUI 注册名", McmodderTable.DISPLAYRULE_MONOSPACE],
       mcmodID: "对应百科 ID",
       img: ["GUI 图片", (_, data) => {
@@ -120,11 +114,22 @@ export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
     }, {
       guiID: null,
       mcmodID: McmodderInputType.NUMBER
-    }, () => {
-      fileTable.saveAll();
-      this.parent.utils.setAllConfig("guiBound", fileTable.getAllData());
     });
+    this.table.onRefresh = () => {
+      this.updateBindFrame();
+    }
+    this.guiBoundTable.onEdit = () => {
+      this.guiBoundTable!.saveAll();
+      this.parent.utils.setAllConfig("guiBound", this.guiBoundTable!.getAllData().filter(bound => bound.mcmodID > 0));
+    };
 
+    this.updateBindFrame();
+
+    this.guiBindFrame.setHeader("绑定 GUI");
+    this.guiBindFrame.setContent(this.guiBoundTable.$instance);
+  }
+
+  private updateBindFrame() {
     const content: RecipeJsonFrameGuiBound[] = [];
     this.getCurrentGuiSet().forEach(id => {
       const bound = this.guiMap.get(id);
@@ -133,8 +138,6 @@ export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
         mcmodID: bound ? bound[0].mcmodID : 0
       });
     });
-    fileTable.setAllData(content);
-
-    fileTable.$instance.appendTo(".jsonframe-bindgui-frame");
+    this.guiBoundTable!.setAllData(content);
   }
 }

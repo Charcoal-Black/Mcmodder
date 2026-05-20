@@ -37,8 +37,9 @@ export class Mcmodder {
   scheduleRequestUtils: ScheduleRequestUtils;
   storageBuffer: StorageBuffer;
   initList: McmodderInit[] = [];
-  isV4: boolean;
-  isMac: boolean;
+  readonly isV4: boolean;
+  readonly isMac: boolean;
+  readonly isMobileClient: boolean;
   href: string;
   ueditorFrame: McmodderUEditor[];
   screenAttachedFrame: ScreenAttachedFrameData[];
@@ -51,18 +52,22 @@ export class Mcmodder {
   centerEditChart?: any;
   css = "";
   itemTypeList?: ItemTypeList;
+  readonly hostname: string;
   private msgAlertCount = 0;
   private readonly titleNode = $("title");
+  private readonly linkContentDictionary: Record<string, string> = {};
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
     this.isMac = McmodderUtils.isMac();
+    this.isMobileClient = McmodderUtils.isMobileClient();
     this.currentUsername = ($(".header-user-name").get(0)?.childNodes[0] as HTMLElement)?.innerHTML || "";
     this.currentUID = Number($(".header-user-name a, .name.top-username a, .profilebox").first().attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
     this.href = window.location.href;
     MemuCommandLoader.run();
     this.title = this.titleNode.html().replace(" - MC百科|最大的Minecraft中文MOD百科", "");
+    this.hostname = McmodderValues.hostname;
 
     // Echarts 图表相关兼容
     if (typeof echarts != "undefined") {
@@ -117,64 +122,102 @@ export class Mcmodder {
       $(".common-imglist li, .item-list-type-right span, .relation a").off();
       $("a").filter((_, e) => {
         const href = (e as HTMLLinkElement).href;
-        return /\/\/www.mcmod.cn\/item\/[0-9]*\.html/.test(href) || /\/\/www.mcmod.cn\/class\/[0-9]*\.html/.test(href);
+        return /\/\/www1?\.mcmod\.cn\/item\/[0-9]*\.html/.test(href) || /\/\/www1?\.mcmod\.cn\/class\/[0-9]*\.html/.test(href);
       }).filter((_, _c) => {
         const c = $(_c);
-        if (Array.from(c.parent().prop("classList")).includes("item-table-hover")) return false;
+        if (c.parents(".mcmodder-item-link").length) return false;
+        if (c.parent().hasClass("item-table-hover")) return false;
         return true;
       }).addClass("mcmodder-item-link").removeAttr("title");
       $(".modlist-block .title a").removeClass("mcmodder-item-link");
+      $(".mcmodder-item-link[data-toggle=tooltip]:not([data-html])").each((_, e) => {
+        $(e).tooltip("dispose");
+        e.outerHTML = e.outerHTML;
+      })
       $(".mcmodder-item-link").each((_, e) => {
         const href = (e as HTMLLinkElement).href;
         $(e).attr({
-          "data-source-id": href.split("mcmod.cn/")[1],
+          "data-source-url": href.split("mcmod.cn/")[1],
           "data-toggle": "tooltip",
           "data-html": "true",
-          "data-original-title": `<div class="mcmodder-data-frame maintext" data-source-id="${href.split("mcmod.cn/")[1]}">
-            <div class="mcmodder-loading"></div>
-          </div>`
+          "data-original-title": `
+            <div class="mcmodder-preview-container" data-source-url="${ href.split("mcmod.cn/")[1] }">
+              <div class="mcmodder-preview-frame maintext">
+                <div class="mcmodder-loading"></div>
+              </div>
+            </div>
+          `
         });
       });
-      $(document).on("mouseover", ".mcmodder-item-link", async e => {
-        let c = e.currentTarget as HTMLLinkElement;
-        await McmodderUtils.sleep(1e3);
-        let f = $(`.mcmodder-data-frame[data-source-id="${$(c).attr("data-source-id")}"]`);
-        if (!$(c).attr("aria-describedby")) return;
-        if (f.attr("data-status")) return;
-        f.attr("data-status", "pending");
-        let resp = await this.utils.createAsyncRequest({
-          url: c.href,
+      $(document).on("mouseenter", ".mcmodder-item-link", async e => {
+        await McmodderUtils.sleep(250);
+        const target = e.currentTarget as HTMLLinkElement;
+        const sourceUrl = $(target).attr("data-source-url");
+        const previewContainer = $(`.mcmodder-preview-container[data-source-url="${ sourceUrl }"]`);
+        const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
+        if (!$(target).attr("aria-describedby")) return;
+        if (previewFrame.attr("data-status")) return;
+        const storagedContent = this.linkContentDictionary[sourceUrl];
+        if (storagedContent != undefined) {
+          previewFrame.attr("data-status", "fulfilled");
+          $(target).attr("data-original-title", storagedContent);
+          previewFrame.children().html(storagedContent);
+        }
+        previewFrame.attr("data-status", "pending");
+        await McmodderUtils.sleep(750);
+        const resp = await this.utils.createRequest({
+          url: target.href,
           method: "GET",
           anonymous: true
         });
         if (!resp.responseXML) return;
-        if (f.attr("data-status") === "fulfilled") return;
-        f.attr("data-status", "fulfilled");
-        let d = $(resp.responseXML);
-        d.find(".itemname > .tool").remove();
-        d.find(".quote_text legend a").last().remove();
-        f.html(d.find(".item-content, .class-menu-main .text-area.font14").first().html());
-        if (f.text() === "暂无简介，欢迎协助完善。") f.html('<span class="mcmodder-common-danger">该资料正文暂无介绍...</span>');
-        if ($(c).attr("data-source-id").includes("item/")) d.find(".itemname").first().insertBefore(f.children().first()).find("h5").each((_, h5) => {
-          let l = d.find("meta[name=keywords]").attr("content").split(","), s = h5.textContent;
-          if (l[1]) s = ("<a>" + s).replace(` (${l[1]})`, `</a> <span class="item-h5-ename"><a>${l[1]}</a></span>`);
-          else s = `<a>${ s }</a>`;
-          h5.innerHTML = s;
-        });
-        else if ($(c).attr("data-source-id").includes("class/")) d.find(".class-title").first().insertBefore(f.children().first());
-        let g = d.find(".item-data .item-info-table").first().removeClass("righttable").insertBefore(f);
-        let showImg = (c: Element) => c.outerHTML = c.outerHTML.replaceAll("data-src=", "src=");
-        g.find("img").each((_, c) => {
-          showImg(c);
-        });
-        if (this.utils.getConfig("hoverImage")) {
-          f.find("img").each((_, c) => {
-            showImg(c);
-            $(c).attr("src", $(c).attr("data-src"));
+        if (previewFrame.attr("data-status") === "fulfilled") return;
+        const doc = $(resp.responseXML);
+        doc.find(".itemname > .tool").remove();
+        doc.find(".quote_text legend a").last().remove();
+        previewFrame.html(doc.find(".item-content, .class-menu-main .text-area.font14").first().html());
+        if (previewFrame.text() === "暂无简介，欢迎协助完善。") {
+          previewFrame.html('<span class="mcmodder-common-danger">该资料正文暂无介绍...</span>');
+        }
+        if (sourceUrl.includes("item/")) {
+          doc.find(".itemname")
+          .first()
+          .insertBefore(previewFrame.children().first())
+          .find("h5")
+          .each((_, h5) => {
+            const keywords = doc.find("meta[name=keywords]").attr("content").split(",");
+            let textContent = h5.textContent;
+            if (keywords[1]) {
+              textContent = ("<a>" + textContent)
+              .replace(` (${keywords[1]})`, `</a> <span class="item-h5-ename"><a>${ keywords[1] }</a></span>`);
+            } else {
+              textContent = `<a>${ textContent }</a>`;
+            }
+            h5.innerHTML = textContent;
           });
         }
-        g.find("tr").last().remove();
-        $(c).attr("data-original-title", f.parent().html());
+        else if (sourceUrl.includes("class/")) {
+          doc.find(".class-title")
+          .first()
+          .insertBefore(previewFrame.children().first());
+        }
+        const rightTable = doc.find(".item-data .item-info-table").first();
+        rightTable.removeClass("righttable").insertBefore(previewFrame);
+        let showImg = (c: Element) => c.outerHTML = c.outerHTML.replaceAll("data-src=", "src=");
+        rightTable.find("img").each((_, img) => {
+          showImg(img);
+        });
+        if (this.utils.getConfig("hoverImage")) {
+          previewFrame.find("img").each((_, img) => {
+            showImg(img);
+            $(img).attr("src", $(img).attr("data-src"));
+          });
+        }
+        rightTable.find("tr").last().remove();
+        const final = previewContainer.prop("outerHTML");
+        $(target).attr("data-original-title", final);
+        this.linkContentDictionary[sourceUrl] = final;
+        previewFrame.attr("data-status", "fulfilled");
       });
     }
     McmodderUtils.updateAllTooltip();
@@ -336,8 +379,8 @@ export class Mcmodder {
 
   trackSplash() {
     let splashText = "";
-    if (this.href === "https://www.mcmod.cn/") splashText = $(".ooops .text").first().text();
-    else if (this.href === "https://www.mcmod.cn/v4/") splashText = $(".splash span").first().text();
+    if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
+    else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
     splashText = splashText.replace(this.currentUsername || "百科酱", "%s");
     let splashes: string[] = GM_getValue("mcmodderSplashList_v2")?.split("\n") || [], flag = 0, index = -1;
     splashes.forEach((e, i) => {
@@ -435,7 +478,7 @@ export class Mcmodder {
     const icon = $("#mcmodder-pagewidth-switch i");
     if (this.utils.getConfig("preferredWiderScreen")) {
       this.preferredWiderScreen = true;
-      McmodderUtils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: 6em;}`, "mcmodder-pagewidth-controller");
+      McmodderUtils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: calc(6 * var(--mcmodder-width-padding-1));}`, "mcmodder-pagewidth-controller");
       icon.attr("class", "fa fa-compress");
     } else {
       this.preferredWiderScreen = false;
@@ -459,8 +502,8 @@ export class Mcmodder {
   }
 
   main() {
-    if (this.utils.getConfig("forceV4") && (this.href === "https://www.mcmod.cn/")) {
-      window.location.href = "https://www.mcmod.cn/v4/";
+    if (this.utils.getConfig("forceV4") && (this.href === `${ this.hostname }/`)) {
+      window.location.href = `${ this.hostname }/v4/`;
     }
     if (this.utils.getConfig("useNotoSans")) {
       this.applyCustomFont();
@@ -468,7 +511,7 @@ export class Mcmodder {
 
     // 关闭主页&整合包区广告
     $("span")
-    .filter((_, e) => $(e).attr("style") === "position: absolute;color: #555;border-radius: 5px;border: 1px solid #555;font-size: 12px;padding: 0 2px;left:5px;top:5px;bottom:auto;right:auto;background:RGBA(255,255,255,.45);")
+    .filter((_, e) => $(e).attr("style") === McmodderValues.adTitleCss)
     .html('<a>× 广告</a>').find("a").click(e => {
       $(e.currentTarget).parent().parent().hide();
     });
@@ -488,8 +531,8 @@ export class Mcmodder {
 
     // 闪烁标语追踪器
     if (this.utils.getConfig("enableSplashTracker") &&
-      (this.href === "https://www.mcmod.cn/" ||
-        this.href === "https://www.mcmod.cn/v4/") ||
+      (this.href === `${ this.hostname }/` ||
+        this.href === `${ this.hostname }/v4/`) ||
       this.href === "https://play.mcmod.cn/") {
       setTimeout(() => this.trackSplash(), 3e2);
     }
@@ -527,7 +570,12 @@ export class Mcmodder {
     $(".mold, .progress-list, .class-item-type li, .post-block, .tag li, .mcver li a, .tools-list li a, .edit-tools span, .comment-row, .comment-channel-list li a, .class-relation-list .relation li, .btn, .mcmodder-gui-alert, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-block.badges, .center-card-border, .modlist-block, .common-center .maintext .item-give, .common-center .post-row .postname .tool li a").addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
-    if (this.utils.getConfig("defaultBackground") != "none") $("body").filter((_, c) => $(c).css("background-image") === "none").css({ "background": `url(${this.utils.getConfig("defaultBackground") || "https://s21.ax1x.com/2025/01/05/pE9Avh4.jpg"}) fixed`, "background-size": "cover" });
+    if (this.utils.getConfig("defaultBackground") != "none") {
+      $("body").filter((_, c) => $(c).css("background-image") === "none").css({
+        "background": "var(--mcmodder-image-background)",
+        "background-size": "cover"
+      });
+    }
 
     // 个人菜单
     if (this.utils.getConfig("mcmodderUI")) {
@@ -570,7 +618,7 @@ export class Mcmodder {
         const favUserContent = favUserContainer.find(".content");
         userList.forEach(uid => {
           const profile: McmodderProfileData = this.utils.getAllProfile(uid);
-          const node = $(`<a class="user" title="${ profile.nickname } · ${ this.utils.getProfileAbstract(profile, true) }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
+          const node = $(`<a class="user" title="${ profile.nickname } · ${ this.utils.getProfileAbstract(profile, true, true) }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
             <div class="avatar">
               <img alt="${ profile.nickname }" src="${ profile.avatar }">
             </div>
@@ -658,7 +706,7 @@ export class Mcmodder {
       $('<button id="mcmodder-message-center" data-toggle="tooltip" data-original-title="消息中心"><i class="fa fa-bell-o"></i></button>')
       .appendTo(".header-container .header-search")
       .click(() => {
-        GM_openInTab("https://www.mcmod.cn/message/", { active: true });
+        GM_openInTab(`${ this.hostname }/message/`, { active: true });
         this.notifyUnreadMessage(0);
       });
     }
@@ -707,24 +755,30 @@ export class Mcmodder {
     const autoNotifyDelay = this.utils.getConfig("alwaysNotify");
     if (!window.location.href.includes("https://admin.mcmod.cn/") && typeof fuc_topmenu_sync != "undefined" && autoNotifyDelay && autoNotifyDelay >= 0.1) setInterval(() => {
       this.utils.createRequest({
-        url: "https://www.mcmod.cn/frame/CommonHeader/",
+        url: `${ this.hostname }/frame/CommonHeader/`,
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           "X-Requested-With": "XMLHttpRequest",
-          "Origin": "https://www.mcmod.cn",
+          "Origin": this.hostname,
           "Referer": window.location.href,
           "Priority": "u=0",
           "Pragma": "no-cache",
           "Cache-Control": "no-cache"
         },
-        data: "version=4.0",
-        onload: resp => {
+        data: "version=4.0"
+      }).then(resp => {
+        try {
           let data = JSON.parse(resp.responseText);
           if (data.state || !data.user.login || !data.user.msg_count) {
             this.notifyUnreadMessage(0);
           } else {
             this.notifyUnreadMessage(data.user.msg_count);
+          }
+        }
+        catch (e) {
+          if (e instanceof SyntaxError) {
+            console.error("Failed to parse data: " + resp.responseText);
           }
         }
       });
@@ -742,7 +796,7 @@ export class Mcmodder {
       }, 1e3);
     }
 
-    if (this.href.includes("www.mcmod.cn") && !this.href.includes("tools/cbcreator") && this.utils.getConfig("enableLive2D")) {
+    if (this.href.startsWith(this.hostname) && !this.href.includes("tools/cbcreator") && this.utils.getConfig("enableLive2D")) {
 
       const waifuFrame = $(`<div class="waifu">
         <div class="waifu-tips" style="opacity: 0;"></div>
@@ -758,12 +812,12 @@ export class Mcmodder {
       </div>`).prependTo("body");
       new DraggableFrame(waifuFrame);
 
-      $('<link rel="stylesheet" type="text/css" href="//www.mcmod.cn/live2d/waifu.css">').appendTo("head");
+      $(`<link rel="stylesheet" type="text/css" href="${ this.hostname }/live2d/waifu.css">`).appendTo("head");
 
       $(`
-        <script src="//www.mcmod.cn/live2d/waifu-tips.js" />
-        <script src="//www.mcmod.cn/live2d/live2d.js" />
-        <script type="text/javascript">initModel("//www.mcmod.cn/live2d/")</script>
+        <script src="${ this.hostname }/live2d/waifu-tips.js" />
+        <script src="${ this.hostname }/live2d/live2d.js" />
+        <script type="text/javascript">initModel("${ this.hostname }/live2d/")</script>
       `).appendTo("body");
 
       $(document).on("click", ".waifu-tool .fui-cross", _ => {

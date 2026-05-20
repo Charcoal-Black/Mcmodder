@@ -5,7 +5,7 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
-  protected priority = 200;
+  protected override readonly priority = 200;
   async run(list: ScheduleRequestUtils) {
     list.create(Date.now() + this.parent.utils.getConfig("preSubmitCheckInterval") * 60 * 60 * 1000, "autoHandlePreSubmit", this.parent.currentUID);
     const preSubmitList: (PreSubmitData | null)[] = (this.parent.utils.getProfile("preSubmitList") as PreSubmitData[]).filter(e => !e.errState);
@@ -13,7 +13,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
     if (!preSubmitList.length) return;
     for (let i in preSubmitList) {
       const e = preSubmitList[i]!;
-      let resp = await this.parent.utils.createAsyncRequest({
+      let resp = await this.parent.utils.createRequest({
         url: e.url,
         method: "GET"
       });
@@ -22,7 +22,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       if (doc.find(".edit-user-alert.locked").length) continue;
       f = false;
       e.config.data = `data=${ encodeURIComponent(JSON.stringify(e.rawData)) }`;
-      resp = await this.parent.utils.createAsyncRequest(e.config);
+      resp = await this.parent.utils.createRequest(e.config);
       console.log(resp);
       if (resp.status != 200) {
         McmodderUtils.commonMsg(`${resp.status} ${resp.statusText}`, false);

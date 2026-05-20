@@ -3,25 +3,34 @@ import { McmodderInput } from "./Input";
 
 export class McmodderNumberInput extends McmodderInput<number> {
   private static readonly emptyRange: InputValueNumericRange = [null, null];
-  private readonly range: InputValueNumericRange;
+  protected readonly range: InputValueNumericRange;
 
-  constructor(title: string, value: number, range: InputValueNumericRange | undefined, onSuccessfulChange: InputSuccessfulChangeCallBack<Number>) {
+  constructor(title: string, value: number, range: InputValueNumericRange | undefined, onSuccessfulChange: InputSuccessfulChangeCallBack<number>) {
     super(title, value, onSuccessfulChange);
     this.range = range || McmodderNumberInput.emptyRange;
+    if (this.range[0] != null && this.range[1] != null && this.range[1] <= this.range[0]) {
+      throw new Error("范围右端点须大于左端点。");
+    }
   }
 
   protected getInstanceHTML() {
     return $(`
-      <input class="form-control" placeholder="${ this.title }..">
+      <div class="mcmodder-numberinput-container">
+        <input class="form-control" placeholder="${ this.title }..">
+      </div>
     `);
   }
 
-  protected getCurrentValue() {
-    return Number(this.instance.val());
+  override getInputNode() {
+    return this.instance.find("input");
   }
 
-  protected setDisplayValue(value: number) {
-    this.instance.val(value.toString());
+  override getCurrentValue() {
+    return Number(this.getInputNode().val());
+  }
+
+  protected override setDisplayValue(value: number) {
+    this.getInputNode().val(Number(Number(value).toFixed(10)));
   }
 
   protected override checkIsValid(newValue: number) {

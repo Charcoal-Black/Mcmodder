@@ -1,6 +1,7 @@
 import { Mcmodder } from "../Mcmodder";
 import { McmodderPalette, PaletteModifierSchedule, PaletteModifierStep } from "../types";
 import { McmodderUtils } from "../Utils";
+import { McmodderValues } from "../Values";
 
 export class StyleLoader {
 
@@ -25,7 +26,9 @@ export class StyleLoader {
           }
         } else {
           const newPrefixList = Array.from(prefixList);
-          newPrefixList.push(prefix);
+          if (prefixList) {
+            newPrefixList.push(prefix);
+          }
           work(schedule, stepIndex, modifier.converter(currentColor), newPrefixList, resultList);
         }
       });
@@ -50,6 +53,7 @@ export class StyleLoader {
     const tableLeftAlignCss = (module["../css/tableLeftAlign.css"] as any).default as string;
     const tabSelectorInfoCss = (module["../css/tabSelectorInfo.css"] as any).default as string;
     const splitScreenOnVerifyCss = (module["../css/splitScreenOnVerify.css"] as any).default as string;
+    const codemirrorCss = (module["../css/codemirror.css"] as any).default as string;
 
     const basePalette: McmodderPalette = {
       "background": "#fff",
@@ -105,6 +109,41 @@ export class StyleLoader {
       paletteTransparentStep
     ]);
 
+    const codemirrorPalette: McmodderPalette = {
+      "cm-keyword": "#708",
+      "cm-atom": "#219",
+      "cm-number": "#164",
+      "cm-def": "#00f",
+      "cm-variable": "#000",
+      "cm-variable-2": "#05a",
+      "cm-variable-3": "#085",
+      "cm-property": "#000",
+      "cm-operator": "#000",
+      "cm-comment": "#a50",
+      "cm-string": "#a11",
+      "cm-string-2": "#f50",
+      "cm-meta": "#555",
+      "cm-error": "#f00",
+      "cm-qualifier": "#555",
+      "cm-builtin": "#30a",
+      "cm-bracket": "#cc7",
+      "cm-tag": "#170",
+      "cm-attribute": "#00c",
+      "cm-header": "#a0a",
+      "cm-quote": "#090",
+      "cm-hr": "#999",
+      "cm-link": "#00c"
+    }
+    const codemirrorPaletteCss = this.applyPaletteModifier(codemirrorPalette, [{
+      "universal": { converter: color => color }
+    }]);
+    const codemirrorPaletteNightCss = this.applyPaletteModifier(codemirrorPalette, [{
+      "universal": { converter: color => {
+        const brightness = McmodderUtils.colorToHSL(color).l;
+        return McmodderUtils.setColorBrightness(color, 100 - brightness);
+      } }
+    }]);
+
     const backgroundAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("backgroundAlpha")), 128, 255) / 0xFF;
     const textShadowAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("textShadowAlpha")), 0, 255) / 0xFF;
     const otherPaletteBaseCss = this.applyPaletteModifier({
@@ -116,6 +155,7 @@ export class StyleLoader {
       "pre-del": "#b30000",
       "text-success": "#28a745",
       "text-danger": "#dc3545",
+      "text-info": "#31708f",
       "badges": "#fff8",
       "button": "#6c757d",
       "permission-editor": "#15f",
@@ -124,10 +164,12 @@ export class StyleLoader {
       "itemrelation-jump": "#15f",
       "itemrelation-general": "#f51",
       "link": "#06c",
+      "link-visited": "#551a8b",
+      "link-foot": "#008000",
       "channel-1": "#334bdb",
       "channel-2": "#904623",
-      "almanacs-good": "#f7f7b8",
-      "almanacs-bad": "#ffceac",
+      "almanacs-good": "#f7f7b880",
+      "almanacs-bad": "#ffceac80",
       "copyright-title": "#3b566e",
       "copyright-text": "#6f8ba4",
       "alert-primary-1": "#004085",
@@ -136,6 +178,9 @@ export class StyleLoader {
       "alert-warning-1": "#856404",
       "alert-warning-2": "#fff3cd",
       "alert-warning-3": "#ffeeba",
+      "alert-danger-1": "#721c24",
+      "alert-danger-2": "#f8d7da",
+      "alert-danger-3": "#f5c6cb",
       "verifyframe-error": "#933",
       "verifyframe-warning": "#7c4916",
       "verifyframe-info": "#666",
@@ -151,7 +196,19 @@ export class StyleLoader {
       "platform-quilt": "#8b61d4",
       "platform-liteloader": "#4c90de",
       "uknowtoomuch": "#000",
-      "uknowtoomuch-hover": "#fff"
+      "uknowtoomuch-hover": "#fff",
+      "attitude-up": "#09f",
+      "attitude-grintears": "#ad901c",
+      "attitude-heart": "#c03",
+      "attitude-flushed": "#000",
+      "attitude-down": "#222",
+      "attitude-lemon": "#938626",
+      "attitude-horsehead": "#74260c",
+      "attitude-heartbroken": "#900",
+      "attitude-angry": "#f30",
+      "attitude-tired": "#960",
+      "attitude-snowflake": "#39c",
+      "attitude-handshake": "#363"
     }, []);
     const otherPaletteNightCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(nightPalette.background, backgroundAlpha),
@@ -162,6 +219,7 @@ export class StyleLoader {
       "pre-del": "#ff7b7b",
       "text-success": "#5f5",
       "text-danger": "#faa",
+      "text-info": "#4be",
       "badges": "#1118",
       "button": "#9ab",
       "permission-editor": "#28f",
@@ -170,10 +228,12 @@ export class StyleLoader {
       "itemrelation-jump": "#28f",
       "itemrelation-general": "#f82",
       "link": "#6bf",
+      "link-visited": "#96c",
+      "link-foot": "#3a3",
       "channel-1": "#8af",
       "channel-2": "#fa8",
-      "almanacs-good": "#442",
-      "almanacs-bad": "#432",
+      "almanacs-good": "#4428",
+      "almanacs-bad": "#4328",
       "copyright-title": "#8cf",
       "copyright-text": "#8bd",
       "alert-primary-1": "#bdf",
@@ -182,12 +242,36 @@ export class StyleLoader {
       "alert-warning-1": "#fdc",
       "alert-warning-2": "#430",
       "alert-warning-3": "#860",
+      "alert-danger-1": "#fcc",
+      "alert-danger-2": "#411",
+      "alert-danger-3": "#822",
       "verifyframe-error": "#f55",
       "verifyframe-warning": "#da6",
       "verifyframe-info": "#aaa",
       "uknowtoomuch": "#444",
-      "uknowtoomuch-hover": "#ddd"
+      "uknowtoomuch-hover": "#ddd",
+      "attitude-up": "#09f",
+      "attitude-grintears": "#db1",
+      "attitude-heart": "#f14",
+      "attitude-flushed": "#fff",
+      "attitude-down": "#666",
+      "attitude-lemon": "#a93",
+      "attitude-horsehead": "#d64",
+      "attitude-heartbroken": "#a11",
+      "attitude-angry": "#f30",
+      "attitude-tired": "#b71",
+      "attitude-snowflake": "#7ac",
+      "attitude-handshake": "#383",
     }, []);
+
+    const bg = parent.utils.getConfig("defaultBackground") || McmodderValues.assets.bg;
+    const bgNight = parent.utils.getConfig("defaultNightBackground") || McmodderValues.assets.nightMode.bg;
+    const otherCss = `
+      --mcmodder-image-background: ${ bg === "none" ? "none" : `url(${ bg }) fixed` };
+    `
+    const otherNightCss = `
+      --mcmodder-image-background: ${ bgNight === "none" ? "none" : `url(${ bgNight }) fixed` };
+    `
 
     const css = {
       themeColor: `
@@ -195,13 +279,17 @@ export class StyleLoader {
         ${ basePaletteBackgroundCss }
         ${ basePaletteTextCss }
         ${ themePaletteBaseCss }
+        ${ codemirrorPaletteCss }
         ${ otherPaletteBaseCss }
+        ${ otherCss }
       }
       :root.dark {
         ${ nightPaletteBackgroundCss }
         ${ nightPaletteTextCss }
         ${ themePaletteNightCss }
+        ${ codemirrorPaletteNightCss }
         ${ otherPaletteNightCss }
+        ${ otherNightCss }
       }`,
       base: baseCss,
       mcmodderUI: mcmodderUICss,
@@ -209,7 +297,8 @@ export class StyleLoader {
       tableThemeColor: tableThemeColorCss,
       tableLeftAlign: tableLeftAlignCss,
       tabSelectorInfo: tabSelectorInfoCss,
-      splitScreenOnVerify: splitScreenOnVerifyCss
+      splitScreenOnVerify: splitScreenOnVerifyCss,
+      codemirrorCss: codemirrorCss
     };
 
     const htmlNode = $("html");
@@ -238,6 +327,9 @@ export class StyleLoader {
     if (parent.utils.getConfig("splitScreenOnVerify")) {
       style += css.splitScreenOnVerify;
     }
+    // if (parent.utils.getConfig("markdownIt")) {
+    style += css.codemirrorCss;
+    // }
     if (parent.utils.getConfig("enableAprilFools")) { /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
       style += css.aprilFools;
     }

@@ -44,13 +44,13 @@ export class VersionEditInit extends McmodderInit {
       const fileid = param.get("fileid");
       let resp, data;
       if (source === 1) {
-        resp = await this.parent.utils.createAsyncRequest({
+        resp = await this.parent.utils.createRequest({
           url: `https://www.curseforge.com/api/v1/mods/${id}/files/${fileid}/change-log`,
           method: "GET"
         });
         data = JSON.parse(resp.responseText).changelogBody;
       } else if (source === 2) {
-        resp = await this.parent.utils.createAsyncRequest({
+        resp = await this.parent.utils.createRequest({
           url: `https://api.modrinth.com/v2/version/${fileid}`,
           method: "GET"
         });

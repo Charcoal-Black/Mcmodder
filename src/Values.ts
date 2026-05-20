@@ -1,5 +1,5 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
-import { ItemCustomTypeList } from "./types";
+import { ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
 
 export class McmodderValues {
 
@@ -8,16 +8,18 @@ export class McmodderValues {
       GM_openInTab("https://center.mcmod.cn/#/setting/", { active: true });
     },
     structureEditor: function () {
-      GM_openInTab("https://www.mcmod.cn/mcmodder/structureeditor/", { active: true });
+      GM_openInTab(`${ McmodderValues.hostname }/mcmodder/structureeditor/`, { active: true });
     },
     jsonHelper: function () {
-      GM_openInTab("https://www.mcmod.cn/mcmodder/jsonhelper/", { active: true });
+      GM_openInTab(`${ McmodderValues.hostname }/mcmodder/jsonhelper/`, { active: true });
     },
     exportLogs: function () {
       $("html").empty().html('若遇封IP，请在向作者反馈时发送下列内容，并告知具体封禁时间（精确到秒）以及被封禁时已打开的百科页面数量。下列内容可能包含敏感信息，可考虑私信发送。<textarea id="mcmodder-log-export" style="min-height: 800px; min-width: 100%;">');
       $("#mcmodder-log-export").val(GM_getValue("mcmodderSettings") + "\n" + GM_getValue("scheduleRequestList") + "\n" + GM_getValue("mcmodderLogger"));
     }
   } as const;
+
+  static readonly hostname = window.location.href.startsWith("https://www1.mcmod.cn/") ? "https://www1.mcmod.cn" : "https://www.mcmod.cn";
 
   static readonly assets = {
     almanacs: 'https://i.mcmod.cn/editor/upload/20250731/1753943312_179043_WEbO.png',
@@ -26,6 +28,7 @@ export class McmodderValues {
     sprite: 'https://i.mcmod.cn/editor/upload/20241019/1729313235_179043_fNWH.png',
     cake: 'https://i.mcmod.cn/editor/upload/20250802/1754100170_179043_DWqe.png',
     candle: 'https://i.mcmod.cn/editor/upload/20250802/1754100652_179043_shqU.png',
+    bg: 'https://s21.ax1x.com/2025/01/05/pE9Avh4.jpg',
     mcmod: {
       js: {
         bootstrap: "/static/public/js/bootstrap.min.js",
@@ -36,7 +39,7 @@ export class McmodderValues {
         threeOrbitControls: "/static/public/plug/three/three.orbit-controls.min.js",
         threeTween: "/static/public/plug/three/three.tween.min.js",
         structureBrowser: "/static/public/js/item/mc.structure_browser.functions.js",
-        item: "/static/public/js/item/mc.item.functions.js"
+        item: "/static/public/js/item/mc.item.functions.js",
       },
       css: {
         bootstrapSelect: "/static/public/css/bootstrap-select.min.css",
@@ -46,8 +49,8 @@ export class McmodderValues {
       aprilFools: {
         mcr: "https://i.mcmod.cn/editor/upload/20230331/1680246648_2_vWiM.gif"
       },
-      imagesNone: 'https://www.mcmod.cn/pages/class/images/none.jpg',
-      loading: 'https://www.mcmod.cn/static/public/images/loading-colourful.gif',
+      imagesNone: `${ this.hostname }/pages/class/images/none.jpg`,
+      loading: `${ this.hostname }/static/public/images/loading-colourful.gif`,
       iconStyleSample: 'https://i.mcmod.cn/editor/upload/20210506/1620236406_2_BaUm.png',
       emptyItemIcon32x: "https://i.mcmod.cn/item/icon/32x32/0.png",
       emptyItemIcon128x: "https://i.mcmod.cn/item/icon/128x128/0.png",
@@ -57,10 +60,19 @@ export class McmodderValues {
       }
     },
     js: {
-      jsdiff: "https://kmcha.com/static/js/diff.js", // https://github.com/kpdecker/jsdiff
-      markdownit: "https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.1/markdown-it.min.js"
+      markdownit: "https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.1/markdown-it.min.js",
+      turndown: "https://cdnjs.cloudflare.com/ajax/libs/turndown/7.2.1/turndown.min.js",
+      codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
+      codemirrorMod: {
+        htmlEmbedded: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/htmlembedded/htmlembedded.min.js",
+        markdown: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js"
+      }
+    },
+    css: {
+      codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css"
     },
     nightMode: {
+      bg: "https://s41.ax1x.com/2026/05/13/peXw6Sg.png",
       imagesNone: 'https://i.mcmod.cn/editor/upload/20241213/1734019784_179043_sDxX.jpg'
     }
   } as const;
@@ -98,6 +110,8 @@ export class McmodderValues {
     "社群任务": "fa fa-calendar-check-o",
     "社群勋章": "fa fa-trophy"
   } as const;
+
+  static readonly adTitleCss = "position: absolute;color: #555;border-radius: 5px;border: 1px solid #555;font-size: 12px;padding: 0 2px;left:5px;top:5px;bottom:auto;right:auto;background:RGBA(255,255,255,.45);";
 
   static readonly maxLevel = 30;
   static readonly expRequisition = [0, 20, 20, 200, 240, 480, 960, 1728, 2918, 4597, 6698,
@@ -212,6 +226,17 @@ export class McmodderValues {
     { classID: 2021, typeID: 191, text: "编辑规范", icon: "fa-book", color: "#000" },
     { classID: 12850, typeID: 246, text: "材料类型", icon: "fa-sitemap", color: "#0a9" },
     { classID: 23974, typeID: 319, text: "材料类型", icon: "fa-sitemap", color: "#0a9" }
+  ];
+
+  static readonly defaultGuiBound: RecipeJsonFrameGuiBound[] = [
+    { guiID: "minecraft:crafting", mcmodID: 1 },
+    { guiID: "minecraft:smelting", mcmodID: 2 },
+    { guiID: "minecraft:blasting", mcmodID: 797 },
+    { guiID: "minecraft:smoking", mcmodID: 923 },
+    { guiID: "minecraft:campfire_smoking", mcmodID: 1083 },
+    { guiID: "minecraft:stonecutting", mcmodID: 421 },
+    { guiID: "minecraft:smithing", mcmodID: 1222 }, // TODO 1.19- 使用 ID=404 的 GUI
+    { guiID: "minecraft:brewing", mcmodID: 282 }
   ];
 
   static readonly defaultTemplateList = [{

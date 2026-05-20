@@ -97,7 +97,7 @@ export class CenterInit extends McmodderInit {
 
     // 近期编辑记录
     $("div.bbs-link").append(`
-      <p align="right"><a href="https://www.mcmod.cn/verify.html?order=createtime&userid=${ this.getPageUID() }" target="_blank">查看近期提交审核列表</a></p>
+      <p align="right"><a href="${ this.parent.hostname }/verify.html?order=createtime&userid=${ this.getPageUID() }" target="_blank">查看近期提交审核列表</a></p>
     `);
   }
 }

@@ -10,6 +10,12 @@ export class McmodderKeybindInput extends McmodderInput<McmodderKeyData> {
 
   constructor(title: string, value: McmodderKeyData, onSuccessfulChange: InputSuccessfulChangeCallBack<McmodderKeyData>) {
     super(title, value, onSuccessfulChange);
+
+    this.getInputNode()
+    .focus(e => this.keybindOnFocus(e))
+    .keydown(e => this.keybindOnKeydown(e))
+    .keyup(e => this.keybindOnKeyup(e))
+    .blur(e => this.keybindOnBlur(e));
   }
 
   protected getInstanceHTML() {
@@ -18,11 +24,11 @@ export class McmodderKeybindInput extends McmodderInput<McmodderKeyData> {
     `);
   }
 
-  protected getCurrentValue() {
+  override getCurrentValue() {
     return this.keyLastData || {};
   }
 
-  protected setDisplayValue(value: McmodderKeyData) {
+  protected override setDisplayValue(value: McmodderKeyData) {
     this.instance.val(McmodderUtils.keyToString(value));
   }
 

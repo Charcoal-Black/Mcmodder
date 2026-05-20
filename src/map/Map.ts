@@ -42,6 +42,12 @@ export class McmodderMap<T extends object> {
     return this.map.get(mapKey);
   }
 
+  getKeyOrDefault(mapKey: any, targetKey: keyof T, defaultValue: any) {
+    const result = this.get(mapKey);
+    if (result != undefined) return result[0][targetKey];
+    return defaultValue;
+  }
+
   clear() {
     this.map.clear();
   }

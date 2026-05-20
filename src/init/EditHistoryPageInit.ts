@@ -13,30 +13,30 @@ export class EditHistoryPageInit extends McmodderInit {
   }
   private getHistoryPage(id: number, maxPage: number) {
     this.parent.utils.createRequest({
-      url: `https://www.mcmod.cn/history.html?starttime=${ this.startTime }&endtime=${ this.endTime }&page=${ id }`,
+      url: `${ this.parent.hostname }/history.html?starttime=${ this.startTime }&endtime=${ this.endTime }&page=${ id }`,
       method: "GET",
       headers: { "Content-Type": "text/html; charset=UTF-8" },
-      onload: resp => {
-        if (!resp.responseXML) {
-          McmodderUtils.commonMsg("加载历史编辑记录失败...", false);
-          return;
-        };
-        let d = $(resp.responseXML);
-        d.find(".history-list-frame ul").children().appendTo(".history-list-frame ul");
-        McmodderUtils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
-        if (id < maxPage && !this.stopExpand) setTimeout(() => this.getHistoryPage(++id, maxPage), 1e3);
-        else {
-          $('<input id="mcmodder-history-search" class="form-control" placeholder="输入编辑记录内容以筛选...">')
-          .appendTo($(".history-list-head").first())
-          .bind("change", e => {
-            let s = (e.currentTarget as HTMLInputElement).value;
-            $(".history-list-frame li").each(li => {
-              if (!$(li).text().includes(s)) $(li).hide();
-              else $(li).removeAttr("style");
-            });
+    })
+    .then(resp => {
+      if (!resp.responseXML) {
+        McmodderUtils.commonMsg("加载历史编辑记录失败...", false);
+        return;
+      };
+      let d = $(resp.responseXML);
+      d.find(".history-list-frame ul").children().appendTo(".history-list-frame ul");
+      McmodderUtils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
+      if (id < maxPage && !this.stopExpand) setTimeout(() => this.getHistoryPage(++id, maxPage), 1e3);
+      else {
+        $('<input id="mcmodder-history-search" class="form-control" placeholder="输入编辑记录内容以筛选...">')
+        .appendTo($(".history-list-head").first())
+        .bind("change", e => {
+          let s = (e.currentTarget as HTMLInputElement).value;
+          $(".history-list-frame li").each(li => {
+            if (!$(li).text().includes(s)) $(li).hide();
+            else $(li).removeAttr("style");
           });
-          this.parent.updateItemTooltip();
-        }
+        });
+        this.parent.updateItemTooltip();
       }
     });
   }

@@ -66,8 +66,8 @@ export class CenterTaskInit extends CenterBaseInit {
     progressBar.$instance.appendTo(".progress-container");
     do {
       endTime = Math.min(now, McmodderUtils.getStartTime(startTime, 29));
-      resp = await this.getUtils().createAsyncRequest({
-        url: `https://www.mcmod.cn/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
+      resp = await this.getUtils().createRequest({
+        url: `${ this.getParent().hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
         method: "GET"
       });
       if (!resp.responseXML) return;
@@ -77,8 +77,8 @@ export class CenterTaskInit extends CenterBaseInit {
         verifyList.push(c);
       });
       if (maxPage) for (let i = 2; i <= maxPage; i++) {
-        resp = await this.getUtils().createAsyncRequest({
-          url: `https://www.mcmod.cn/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
+        resp = await this.getUtils().createRequest({
+          url: `${ this.getParent().hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
           method: "GET"
         });
         if (!resp.responseXML) return;

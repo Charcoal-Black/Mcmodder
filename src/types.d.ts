@@ -79,10 +79,10 @@ export interface McmodderItemData {
   /** 物品在百科中所属的版本分支 */
   branch?: string;
   /**
-   * 该物品是 `BlockItem` 则为 `Block`
-   * 否则为 `Item`
+   * 若属于物品，则：若是 `BlockItem` 则为 `Block`，否则为 `Item`；
+   * 若属于实体，则为 `Entity`
    */
-  type?: "Block" | "Item";
+  type?: "Block" | "Item" | "Entity";
   /**
    * 如果是合并子资料，则代表合并至的父资料百科内 ID
    * 否则此项留空
@@ -133,7 +133,6 @@ export interface McmodderItemData {
   content?: string;
 }
 export type McmodderItemList = McmodderItemData[];
-export type McmodderJsonStorage = Record<string, McmodderItemList>;
 
 export interface McmodderClassData {
   id: number;
@@ -503,6 +502,8 @@ export interface RecipeJsonFrameGuiBound {
   mcmodID: number;
 }
 
+export type McmodderJsonStorage<T extends McmodderTableAcceptable> = Record<string, T[]>; 
+
 export interface RequestData {
   config: GmXmlhttpRequestOption<"text", any>;
 }
@@ -536,8 +537,4 @@ export interface StructureEditorBlocktype {
   class: string;
   textures: string[];
   op: string | null;
-}
-
-declare global {
-  const JsDiff: Record<TextCompareMode, (textA: string, textB: string) => JsDiffResultList>;
 }

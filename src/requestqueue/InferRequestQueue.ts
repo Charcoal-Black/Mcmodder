@@ -122,8 +122,8 @@ export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQue
     return {
       config: {
         url: execution.config.getall ?
-          `https://www.mcmod.cn/item/edit/${ execution.currentID }/` :
-          `https://www.mcmod.cn/item/${ execution.currentID }.html`,
+          `${ this.parent.hostname }/item/edit/${ execution.currentID }/` :
+          `${ this.parent.hostname }/item/${ execution.currentID }.html`,
         method: "GET",
         redirect: "manual"
       }

@@ -37,11 +37,11 @@ export class McmodderConfigResourceInteractor<McmodderTableData extends Object> 
     this.dataParser = dataParser || ((_: any, item: any) => item);
 
     this.container = new McmodderCollapsible(() => this._onClick());
-    this.container.getHeader().append(`
+    this.container.setHeader(`
       <span class="name">${ name }</span>
       <span class="size">${ McmodderUtils.getFormattedSize(GM_getValue(id)?.length) }</span>
     `);
-    this.container.getBody().append(this.table.$instance);
+    this.container.setContent(this.table.$instance);
     this.instance = this.container.getInstance();
   }
 

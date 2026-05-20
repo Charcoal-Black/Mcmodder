@@ -5,16 +5,22 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
-  protected priority = 10;
-  async run(list: ScheduleRequestUtils) {
-    const resp = await this.parent.utils.createAsyncRequest({
+  protected override readonly priority = 10;
+  override async run(list: ScheduleRequestUtils) {
+    const resp = await this.parent.utils.createRequest({
       url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
       method: "GET"
     });
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
-    if (doc.find("title").text() === "页面重载开启") {
+    const title = doc.find("title").text();
+    if (title === "页面重载开启") {
       list.create(Date.now() + 100, "autoCheckUpdate", 0); // 你已急哭
+      return;
+    }
+    else if (title === "CC check") {
+      McmodderUtils.commonMsg("自动检查更新需要完成人机验证，请手动检查更新~ 此功能将在接下来的 24 小时内暂时禁用。");
+      list.create(Date.now() + 24 * 60 * 60 * 1000, "autoCheckUpdate", 0);
       return;
     }
     const latestVersion = doc.find("#postmessage_85878 font[size=5]").first().text().split("Mcmodder v")[1].split(" --")[0];

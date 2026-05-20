@@ -17,13 +17,13 @@ export class CenterSettingInit extends CenterBaseInit {
       McmodderUtils.commonMsg("还没有记录任何标语呢... 用“闪烁标语追踪器”记录一些标语后再试试？");
       return;
     }
-    const resp = await this.getUtils().createAsyncRequest({
+    const resp = await this.getUtils().createRequest({
       url: Mcmodder.URL_PUBLIC_SPLASH_LIST_RAW,
       method: "GET",
       timeout: 5e3
     });
     if (resp?.status === 200) return this.performSplashCompare(resp.responseText, data);
-    const resp2 = await this.getUtils().createAsyncRequest({
+    const resp2 = await this.getUtils().createRequest({
       url: Mcmodder.URL_ALTERNATIVE_PUBLIC_SPLASH_LIST_RAW,
       method: "GET",
       timeout: 5e3
@@ -127,7 +127,7 @@ export class CenterSettingInit extends CenterBaseInit {
       const data = this.getParent().cfgutils.data[key];
       if (data.permission && permission < data.permission) return;
       if (data.type === McmodderInputType.KEYBIND && 
-        McmodderUtils.isMobileClient()) return;
+        this.getParent().isMobileClient) return;
       const entry = new McmodderConfigInteractor(key, this.getParent().cfgutils);
       entry.$instance.appendTo(content);
       interfaces.push(entry);
@@ -135,7 +135,7 @@ export class CenterSettingInit extends CenterBaseInit {
     content.appendTo(mcmodderSettingMenu);
 
     // 手动检查更新
-    const t = $('<button id="mcmodder-update-check-manual" class="btn" style="margin: 0 10px 0 10px;">立即检查更新</button>')
+    const t = $('<button id="mcmodder-update-check-manual" class="btn">立即检查更新</button>')
     .insertAfter("[for=settings-autoCheckUpdate]")
     .click(() => this.getParent().scheduleRequestUtils.run("autoCheckUpdate"))
     .parent();

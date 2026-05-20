@@ -6,7 +6,7 @@ import { McmodderValues } from "../Values";
 
 export class StructureEditorInit extends McmodderInit {
   canRun() {
-    return this.parent.href === "https://www.mcmod.cn/mcmodder/structureeditor/" && 
+    return this.parent.href === `${ this.parent.hostname }/mcmodder/structureeditor/` && 
       this.parent.utils.getConfig("enableStructureEditor");
   }
 

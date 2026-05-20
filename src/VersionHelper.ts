@@ -108,20 +108,18 @@ export class VersionHelper {
     return versionList;
   }
 
-  autoFillFetchID() { // 自动获取 CFID / MRID
-    this.parent.utils.createRequest({
-      url: `https://www.mcmod.cn/class/edit/${document.location.href.split("/version/")[1].split(".html")[0]}/`,
-      method: "GET",
-      onload: resp => {
-        if (!resp.responseXML) {
-          McmodderUtils.commonMsg("CFID/MRID 获取失败...", false);
-          return;
-        }
-        let w = $(resp.responseXML);
-        this.fetchCF.val(w.find("#class-cfprojectid").val().trim());
-        this.fetchMR.val(w.find("#class-mrprojectid").val().trim());
-      }
+  async autoFillFetchID() { // 自动获取 CFID / MRID
+    const resp = await this.parent.utils.createRequest({
+      url: `${ this.parent.hostname }/class/edit/${document.location.href.split("/version/")[1].split(".html")[0]}/`,
+      method: "GET"
     });
+    if (!resp.responseXML) {
+      McmodderUtils.commonMsg("CFID/MRID 获取失败...", false);
+      return;
+    }
+    let w = $(resp.responseXML);
+    this.fetchCF.val(w.find("#class-cfprojectid").val().trim());
+    this.fetchMR.val(w.find("#class-mrprojectid").val().trim());
   }
 
   static parseCFFileName(e: string) {
@@ -142,79 +140,78 @@ export class VersionHelper {
       this.parent.utils.createRequest({
         url: `https://www.curseforge.com/api/v1/mods/${cfid}/files?pageIndex=${index}&pageSize=50&sort=dateCreated&sortDescending=true&removeAlphas=false`,
         method: "GET",
-        // anonymous: true,
-        onload: resp => {
-          if (resp.responseXML?.title === "Just a moment...") {
-            if (captchaAttempt < VersionHelper.captchaAttemptMaxLimit) {
-              captchaAttempt++;
-              McmodderUtils.commonMsg(`正在等待人机验证，将于 ${
-                McmodderUtils.getFormattedTime(VersionHelper.captchaAttemptInterval)
-              } 后自动重试... (${ captchaAttempt }/${ VersionHelper.captchaAttemptMaxLimit })`);
-              setTimeout(() => {
-                work(0);
-              }, VersionHelper.captchaAttemptInterval);
-            } else {
-              swal.fire({
-                title: "验证失败",
-                text: "请手动进入 CurseForge 验证页面，并于验证成功后重试。",
-                showCancelButton: true,
-                confirmButtonText: "前往验证",
-                cancelButtonText: "取消"
-              }).then(isConfirm => {
-                if (isConfirm.value) GM_openInTab("https://www.curseforge.com");
-              });
-            }
-            return;
-          }
-
-          let data = JSON.parse(resp.responseText);
-          if (index === 0) {
-            this.table.loadingProgress.setMax(Math.ceil(data.pagination.totalCount / 50)).show();
-          }
-          fileList = fileList.concat(data.data);
-          this.table.loadingProgress.setProgress(index + 1);
-          if (data.pagination.totalCount > (index - 1) * 50) setTimeout(() => work(++index), 1e3);
-          else {
-            this.table.empty();
-            fileList.forEach(i => {
-              const releaseMap = ["-", "Release", "Beta", "Alpha"];
-              let fileid = i.id;
-              let releaseType = releaseMap[i.releaseType];
-              let displayName = i.fileName;
-              let gameVersions = i.gameVersions.join(",");
-              let releaseTime = new Date(i.dateCreated);
-              let mcmodVer = "未找到";
-              let mcmodMcver = "-";
-              let mcmodDate: Date | undefined;
-              // let logid = -1;
-
-              // 匹配百科已收录日志
-              this.versionList.forEach(j => {
-                let mcVerName = j.name, prefix = mcVerName.charAt(0);
-                if (["v", "V"].includes(prefix)) mcVerName = mcVerName.slice(1);
-                if (VersionHelper.parseCFFileName(displayName) === VersionHelper.parseCFFileName(mcVerName)) {
-                  mcmodVer = j.name;
-                  mcmodMcver = j.mcver.join(",");
-                  mcmodDate = j.date;
-                  // logid = j.logid;
-                }
-              });
-              if (mcmodDate) this.table.appendData({
-                platform: 1,
-                cfid: cfid,
-                fileID: fileid,
-                releaseType: releaseType,
-                releaseTime: releaseTime,
-                displayName: displayName,
-                gameVersions: gameVersions,
-                mcmodVer: mcmodVer,
-                mcmodMcver: mcmodMcver,
-                mcmodDate: mcmodDate,
-                options: ""
-              });
+        // anonymous: true
+      }).then(resp => {
+        if (resp.responseXML?.title === "Just a moment...") {
+          if (captchaAttempt < VersionHelper.captchaAttemptMaxLimit) {
+            captchaAttempt++;
+            McmodderUtils.commonMsg(`正在等待人机验证，将于 ${
+              McmodderUtils.getFormattedTime(VersionHelper.captchaAttemptInterval)
+            } 后自动重试... (${ captchaAttempt }/${ VersionHelper.captchaAttemptMaxLimit })`);
+            setTimeout(() => {
+              work(0);
+            }, VersionHelper.captchaAttemptInterval);
+          } else {
+            swal.fire({
+              title: "验证失败",
+              text: "请手动进入 CurseForge 验证页面，并于验证成功后重试。",
+              showCancelButton: true,
+              confirmButtonText: "前往验证",
+              cancelButtonText: "取消"
+            }).then(isConfirm => {
+              if (isConfirm.value) GM_openInTab("https://www.curseforge.com");
             });
-            this.table.refreshAll();
           }
+          return;
+        }
+
+        let data = JSON.parse(resp.responseText);
+        if (index === 0) {
+          this.table.loadingProgress.setMax(Math.ceil(data.pagination.totalCount / 50)).show();
+        }
+        fileList = fileList.concat(data.data);
+        this.table.loadingProgress.setProgress(index + 1);
+        if (data.pagination.totalCount > (index - 1) * 50) setTimeout(() => work(++index), 1e3);
+        else {
+          this.table.empty();
+          fileList.forEach(i => {
+            const releaseMap = ["-", "Release", "Beta", "Alpha"];
+            let fileid = i.id;
+            let releaseType = releaseMap[i.releaseType];
+            let displayName = i.fileName;
+            let gameVersions = i.gameVersions.join(",");
+            let releaseTime = new Date(i.dateCreated);
+            let mcmodVer = "未找到";
+            let mcmodMcver = "-";
+            let mcmodDate: Date | undefined;
+            // let logid = -1;
+
+            // 匹配百科已收录日志
+            this.versionList.forEach(j => {
+              let mcVerName = j.name, prefix = mcVerName.charAt(0);
+              if (["v", "V"].includes(prefix)) mcVerName = mcVerName.slice(1);
+              if (VersionHelper.parseCFFileName(displayName) === VersionHelper.parseCFFileName(mcVerName)) {
+                mcmodVer = j.name;
+                mcmodMcver = j.mcver.join(",");
+                mcmodDate = j.date;
+                // logid = j.logid;
+              }
+            });
+            if (mcmodDate) this.table.appendData({
+              platform: 1,
+              cfid: cfid,
+              fileID: fileid,
+              releaseType: releaseType,
+              releaseTime: releaseTime,
+              displayName: displayName,
+              gameVersions: gameVersions,
+              mcmodVer: mcmodVer,
+              mcmodMcver: mcmodMcver,
+              mcmodDate: mcmodDate,
+              options: ""
+            });
+          });
+          this.table.refreshAll();
         }
       });
     }
@@ -230,50 +227,49 @@ export class VersionHelper {
       this.parent.utils.createRequest({
         url: `https://api.modrinth.com/v2/project/${mrid}/version`,
         method: "GET",
-        anonymous: true,
-        onload: resp => {
-          let data = JSON.parse(resp.responseText);
-          fileList = fileList.concat(data);
-          this.table.empty();
-          fileList.forEach(i => {
-            let fileid = i.id;
-            let releaseType = i.version_type;
-            let displayName = i.version_number;
-            let gameVersions = i.game_versions.join(",");
-            let releaseTime = new Date(i.date_published);
-            let mcmodVer = "未找到";
-            let mcmodMcver = "-";
-            let mcmodDate: Date | undefined;
-            // let logid = -1;
-            releaseType = releaseType.charAt(0).toUpperCase() + releaseType.slice(1);
+        anonymous: true
+      }).then(resp => {
+        let data = JSON.parse(resp.responseText);
+        fileList = fileList.concat(data);
+        this.table.empty();
+        fileList.forEach(i => {
+          let fileid = i.id;
+          let releaseType = i.version_type;
+          let displayName = i.version_number;
+          let gameVersions = i.game_versions.join(",");
+          let releaseTime = new Date(i.date_published);
+          let mcmodVer = "未找到";
+          let mcmodMcver = "-";
+          let mcmodDate: Date | undefined;
+          // let logid = -1;
+          releaseType = releaseType.charAt(0).toUpperCase() + releaseType.slice(1);
 
-            // 匹配百科已收录日志
-            this.versionList.forEach(j => {
-              let mcVerName = j.name, prefix = mcVerName.charAt(0);
-              if (["v", "V"].includes(prefix)) mcVerName = mcVerName.slice(1);
-              if (VersionHelper.parseMRFileName(displayName) === VersionHelper.parseMRFileName(mcVerName)) {
-                mcmodVer = j.name;
-                mcmodMcver = j.mcver.join(",");
-                mcmodDate = j.date;
-                // logid = j.logid;
-              }
-            });
-            this.table.appendData({
-              platform: 2,
-              mrid: mrid,
-              fileID: fileid,
-              releaseType: releaseType,
-              releaseTime: releaseTime,
-              displayName: displayName,
-              gameVersions: gameVersions,
-              mcmodVer: mcmodVer,
-              mcmodMcver: mcmodMcver,
-              mcmodDate: mcmodDate,
-              options: ""
-            });
+          // 匹配百科已收录日志
+          this.versionList.forEach(j => {
+            let mcVerName = j.name, prefix = mcVerName.charAt(0);
+            if (["v", "V"].includes(prefix)) mcVerName = mcVerName.slice(1);
+            if (VersionHelper.parseMRFileName(displayName) === VersionHelper.parseMRFileName(mcVerName)) {
+              mcmodVer = j.name;
+              mcmodMcver = j.mcver.join(",");
+              mcmodDate = j.date;
+              // logid = j.logid;
+            }
           });
-          this.table.refreshAll();
-        }
+          this.table.appendData({
+            platform: 2,
+            mrid: mrid,
+            fileID: fileid,
+            releaseType: releaseType,
+            releaseTime: releaseTime,
+            displayName: displayName,
+            gameVersions: gameVersions,
+            mcmodVer: mcmodVer,
+            mcmodMcver: mcmodMcver,
+            mcmodDate: mcmodDate,
+            options: ""
+          });
+        });
+        this.table.refreshAll();
       });
     }
     work();

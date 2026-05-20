@@ -75,7 +75,7 @@ export abstract class McmodderRequestQueue {
     const promise = new Promise<GmResponseEvent<"text", any>>(resolve => {
       this.pausing().then(() => {
         setTimeout(() => {
-          resolve(this.parent.utils.createAsyncRequest(request.config));
+          resolve(this.parent.utils.createRequest(request.config));
         }, interval);
       });
     })

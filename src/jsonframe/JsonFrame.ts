@@ -74,10 +74,11 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
       type: "file",
       accept: "application/json"
     })
+    .addTool("new", "新建文件", () => true, () => this.newUnnamedJson())
     .addTool("saveedit", "保存修改", () => !!this.activeFileName || this.hasRearranged, () => this.saveEdit())
     .addTool("rename", "重命名", () => !!this.activeFileName && !this.table!.unsavedUnitCount, () => this.rename())
     .addTool("deleteall", "删除当前文件", () => !!this.activeFileName, async () => {
-      if (await this.deleteJson(this.activeFileName)) this.reset();
+      if (await this.tryDeleteJson(this.activeFileName)) this.reset();
     })
     .addTool("more", "更多...", () => typeof this.more === "function", () => this.more());
 
@@ -161,14 +162,19 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     McmodderUtils.commonMsg(String(err), false, "解析错误");
   }
 
-  importFromText(text: string, saveAs: string) {
-    // 处理重名
-    if (Object.keys(this.selectionList).includes(saveAs)) {
-      let i = 2, dot = saveAs.lastIndexOf("."), main = saveAs.slice(0, dot), extension = saveAs.slice(dot + 1);
+  private getUniqueRegulatedFileName(name: string) {
+    let regulated = McmodderUtils.regulateFileName(name);
+    if (Object.keys(this.selectionList).includes(regulated)) {
+      let i = 2, dot = regulated.lastIndexOf("."), main = regulated.slice(0, dot), extension = regulated.slice(dot + 1);
       let newName;
       while ((newName = `${ main }(${ i }).${ extension }`) && Object.keys(this.selectionList).includes(newName)) i++;
-      saveAs = newName!;
+      regulated = newName!;
     }
+    return regulated;
+  }
+
+  importFromText(text: string, saveAs: string) {
+    saveAs = this.getUniqueRegulatedFileName(saveAs);
     const {success, fail, result} = this.parseText(text);
     if (success) {
       this.parent.utils.setConfig(saveAs, result, this.getConfigName());
@@ -251,6 +257,12 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     this.updateToolBar();
   }
 
+  newUnnamedJson() {
+    const regulated = this.getUniqueRegulatedFileName("Unnamed.json");
+    this.parent.utils.setConfig(regulated, [], this.getConfigName());
+    this.updateSelection();
+  }
+
   saveEdit() {
     if (!this.table!.unsavedUnitCount) {
       McmodderUtils.commonMsg("当前暂无需要保存的改动...", false);
@@ -270,7 +282,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
       html: `将当前已打开的文件重命名为... <input class="form-control" id="jsonframe-rename-input">`,
       showCancelButton: true,
       preConfirm: () => {
-        const newName = McmodderUtils.regulateFileName(input.val().trim());
+        const newName = this.getUniqueRegulatedFileName(input.val().trim());
         if (name === newName) return;
         
         const storage = this.parent.utils.getAllConfig(this.getConfigName(), {});
@@ -289,7 +301,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
         this.updateSelection();
       }
     });
-    var input = $("#jsonframe-rename-input").val(name).change(e => {
+    const input = $("#jsonframe-rename-input").val(name).change(e => {
       const target = e.currentTarget as HTMLInputElement;
       let newName = target.value.trim();
       target.value = McmodderUtils.regulateFileName(newName);
@@ -327,19 +339,23 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     }).then(isConfirm => resolve(isConfirm)));
   }
 
-  async deleteJson(fileName: string) {
+  async tryDeleteJson(fileName: string) {
     if (!this.isAvailableFileName(fileName)) return new Promise(resolve => resolve(false));
     return this.fileDeleteInquire(fileName).then(isConfirm => {
       if (isConfirm.value) {
-        this.parent.utils.setConfig(this.activeFileName, null, this.getConfigName());
-        let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
-        this.parent.utils.setConfig("jsonDatabase", linking.filter(name => name != fileName));
+        this.deleteJson(fileName);
         McmodderUtils.commonMsg(`成功删除 ${fileName} ~`);
         this.updateSelection();
         return true;
       }
       else return false;
     });
+  }
+
+  private deleteJson(fileName: string) {
+    this.parent.utils.setConfig(this.activeFileName, null, this.getConfigName());
+    let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
+    this.parent.utils.setConfig("jsonDatabase", linking.filter(name => name != fileName));
   }
 
   reset() {

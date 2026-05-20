@@ -6,6 +6,7 @@ import { McmodderDropdownInput } from "../widget/input/DropdownMenuInput";
 import { McmodderBaseInput } from "../widget/input/Input";
 import { McmodderKeybindInput } from "../widget/input/KeybindInput";
 import { McmodderNumberInput } from "../widget/input/NumberInput";
+import { McmodderSliderInput } from "../widget/input/SliderInput";
 import { McmodderTextInput } from "../widget/input/TextInput";
 import { McmodderInputType, McmodderConfigUtils } from "./ConfigUtils";
 
@@ -58,6 +59,7 @@ export class McmodderConfigInteractor {
       case McmodderInputType.TEXT: return new McmodderTextInput(title, value, this.onSuccessfulChange);
       case McmodderInputType.COLORPICKER: return new McmodderColorpickerInput(title, value, this.onSuccessfulChange);
       case McmodderInputType.NUMBER: return new McmodderNumberInput(title, value, this.data.range as InputValueNumericRange, this.onSuccessfulChange);
+      case McmodderInputType.SLIDER: return new McmodderSliderInput(title, value, this.data.range as InputValueNumericRange, this.onSuccessfulChange);
       case McmodderInputType.DROPDOWN_MENU: return new McmodderDropdownInput(title, value, this.data.range as InputValueSet, this.onSuccessfulChange);
       case McmodderInputType.KEYBIND: return new McmodderKeybindInput(title, value, this.onSuccessfulChange);
     }

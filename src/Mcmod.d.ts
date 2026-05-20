@@ -19,6 +19,9 @@ declare global {
   }
   var swal: SweetAlertStatic;
 
+  /* Turndown */
+  var turndownPluginGfm: any;
+
   /* MCMOD */
   function common_msg(title: string, message: string, state: string): void;
 
@@ -49,6 +52,7 @@ declare global {
   var strEditType: any;
   var strEventUrl: any;
   var comment_container: any;
+  var strTableSlotFocus: string;
   var getEditorData: (isTest: boolean) => any;
 }
 

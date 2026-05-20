@@ -4,11 +4,11 @@ import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 
 export class ItemDisplay {
-  private itemMap: McmodderMap<McmodderItemData>;
-  private tagMap: McmodderMap<McmodderItemData>;
+  private itemMap?: McmodderMap<McmodderItemData>;
+  private tagMap?: McmodderMap<McmodderItemData>;
   private count = 1;
   private chance = 100;
-  private id: string | string[];
+  private id?: string | string[];
   private matchList: Record<string, McmodderItemList | undefined> = {};
   private flattenedList: McmodderItemList = [];
   private HTMLSuffix = "";
@@ -18,7 +18,11 @@ export class ItemDisplay {
   readonly tagNode = $(`<span class="tag">`).appendTo(this.instance);
   readonly chanceNode = $(`<span class="chance">`).appendTo(this.instance);
 
-  private setTooltip(data: McmodderItemData | undefined) {
+  private isEmptyItem() {
+    return !this.itemMap || !this.tagMap || !this.id;
+  }
+
+  private setTooltip(data?: McmodderItemData) {
     let title;
     if (data) {
       title = `<span class="mcmodder-slim-dark">${ data.id }</span> <span>${ data.name }</span>`;
@@ -26,7 +30,14 @@ export class ItemDisplay {
       if (data.registerName) title += `<br><span class="mcmodder-item-regname mcmodder-monospace">${ data.registerName }</span>`;
       if (data.className) title += `<br><span class="mcmodder-item-classname">${ data.className }</span>`;
     } else {
-      title = `<span class="mcmodder-slim-danger">未知物品</span>`;
+      if (this.isEmptyItem()) {
+        title = `<span class="muted">无物品</span>`;
+      } else {
+        title = `
+          <span class="mcmodder-slim-danger">未知物品</span>
+          <br><span class="mcmodder-item-regname mcmodder-monospace">${ this.id }</span>
+        `;
+      }
     }
     if (this.count >= 1e4) title += `<br><span class="mcmodder-item-localecount">数量: ${ this.count.toLocaleString() }</span>`
     else if (this.count === -1) title += `<br><span class="mcmodder-item-localecount">该原料在合成时不会损耗</span>`
@@ -43,7 +54,13 @@ export class ItemDisplay {
 
   private refreshItem() {
     const item = this.flattenedList[this.displaying];
-    this.instance.css("background-image", `url(${ item ? item.smallIcon : McmodderValues.assets.mcmod.emptyItemIcon32x })`);
+    let url;
+    if (item != null) {
+      url = item.smallIcon || McmodderUtils.getImageURLByItemID(item.id);
+    } else {
+      url = McmodderValues.assets.mcmod.emptyItemIcon32x;
+    }
+    this.instance.css("background-image", `url(${ url })`);
     this.setTooltip(item);
   }
 
@@ -57,18 +74,29 @@ export class ItemDisplay {
   }
 
   private getSingleIDMatchList(id: string) {
-    const singleMatchList = id.charAt(0) === "#" ?
-      this.tagMap.get(id.slice(1)) :
-      this.itemMap.get(id);
-    this.matchList[id] = singleMatchList;
-    if (singleMatchList) {
-      this.flattenedList = this.flattenedList.concat(singleMatchList);
+    const nid = Number(id);
+    if (isNaN(nid)) {
+      const singleMatchList = id.charAt(0) === "#" ?
+        this.tagMap!.get(id.slice(1)) :
+        this.itemMap!.get(id);
+      this.matchList[id] = singleMatchList;
+      if (singleMatchList) {
+        this.flattenedList = this.flattenedList.concat(singleMatchList);
+      }
+    }
+    else {
+      this.matchList[id] = [{
+        id: nid,
+        classID: 0,
+        name: ""
+      }];
+      this.flattenedList = this.flattenedList.concat(this.matchList[id]);
     }
   }
 
   private generateHTMLSuffix() {
     const ids = Object.keys(this.matchList);
-    if (this.flattenedList.length === 1) {
+    if (this.flattenedList.length <= 1) {
       this.HTMLSuffix = "";
       return;
     }
@@ -89,11 +117,16 @@ export class ItemDisplay {
   }
 
   refreshID() {
+    if (this.isEmptyItem()) {
+      this.instance.addClass("empty");
+      this.setTooltip();
+      return;
+    }
     this.matchList = {};
     this.flattenedList = [];
     this.displaying = 0;
     if (!(this.id instanceof Array)) {
-      this.getSingleIDMatchList(this.id);
+      this.getSingleIDMatchList(this.id!);
     }
     else this.id.forEach(id => {
       this.getSingleIDMatchList(id);
@@ -148,7 +181,7 @@ export class ItemDisplay {
     this.refreshChance();
   }
 
-  constructor(itemMap: McmodderMap<McmodderItemData>, tagMap: McmodderMap<McmodderItemData>, id: string | string[], count = 1, chance = 100) {
+  constructor(itemMap?: McmodderMap<McmodderItemData>, tagMap?: McmodderMap<McmodderItemData>, id?: string | string[], count = 1, chance = 100) {
     this.itemMap = itemMap;
     this.tagMap = tagMap;
     this.id = id;

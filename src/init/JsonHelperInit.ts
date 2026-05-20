@@ -6,7 +6,7 @@ import { McmodderInit } from "./Init";
 
 export class JsonHelperInit extends McmodderInit {
   canRun() {
-    return this.parent.href === "https://www.mcmod.cn/mcmodder/jsonhelper/" && 
+    return this.parent.href === `${ this.parent.hostname }/mcmodder/jsonhelper/` && 
       this.parent.utils.getConfig("enableJsonHelper");
   }
   async run() {
@@ -21,22 +21,25 @@ export class JsonHelperInit extends McmodderInit {
     await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.tableSorter);
     // $(`<link type="text/css" href="${ McmodderValues.assets.mcmod.css.bootstrapSelect }" rel="stylesheet">`).appendTo("head");
 
-    $(`<div id="mcmodder-itemjson-container">
+    const itemJsonContainer = $(`<div id="mcmodder-itemjson-container">
         <div class="common-text">
           <span class="mcmodder-subtitle">物品JSON管理</span>
           <div id="mcmodder-json-compare-frame"></div>
         </div>
       </div>`).appendTo(".center");
     const itemJsonFrame = new ItemJsonFrame("itemjsonframe", this.parent);
-    itemJsonFrame.$instance.appendTo("#mcmodder-itemjson-container");
+    itemJsonFrame.$instance.appendTo(itemJsonContainer);
 
-    $(`<div id="mcmodder-recipejson-container">
+    const recipeJsonContainer = $(`<div id="mcmodder-recipejson-container">
         <div class="common-text">
           <span class="mcmodder-subtitle">合成表JSON管理</span>
           <div id="mcmodder-json-compare-frame"></div>
         </div>
       </div>`).appendTo(".center");
     const recipeJsonFrame = new RecipeJsonFrame("recipejsonframe", this.parent);
-    recipeJsonFrame.$instance.appendTo("#mcmodder-recipejson-container");
+    recipeJsonFrame.$instance.appendTo(recipeJsonContainer);
+
+    const guiBoundFrame = $("<div>").insertAfter(recipeJsonContainer);
+    recipeJsonFrame.guiBindFrame.getInstance().addClass("mcmodder-guibound-container").appendTo(guiBoundFrame);
   }
 }
