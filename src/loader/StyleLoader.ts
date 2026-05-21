@@ -64,16 +64,16 @@ export class StyleLoader {
       "text": "#ddd"
     };
     const basePaletteBackgroundCss = this.applyPaletteModifier({ "background": basePalette.background },
-      [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1.1 - 0.15 * tier!), maxTier: 4 }}]
+        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1.1 - 0.15 * tier!), maxTier: 4 }}]
     );
     const nightPaletteBackgroundCss = this.applyPaletteModifier({ "background": nightPalette.background },
-      [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 0.9 + 0.15 * tier!), maxTier: 4 }}]
+        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 0.9 + 0.15 * tier!), maxTier: 4 }}]
     );
     const basePaletteTextCss = this.applyPaletteModifier({ "text": basePalette.text },
-      [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 + 0.15 * tier!), maxTier: 3 }}]
+        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 + 0.15 * tier!), maxTier: 3 }}]
     );
     const nightPaletteTextCss = this.applyPaletteModifier({ "text": nightPalette.text },
-      [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 - 0.15 * tier!), maxTier: 3 }}]
+        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 - 0.15 * tier!), maxTier: 3 }}]
     );
 
     const themeBasePalette: McmodderPalette = {
@@ -132,16 +132,71 @@ export class StyleLoader {
       "cm-header": "#a0a",
       "cm-quote": "#090",
       "cm-hr": "#999",
-      "cm-link": "#00c"
+      "cm-link": "#00c",
+      "sh-comment": "#008200",
+      "sh-string": "#0000ff",
+      "sh-keyword": "#006699",
+      "sh-preprocessor": "#808080",
+      "sh-variable": "#aa7700",
+      "sh-value": "#009900",
+      "sh-functions": "#ff1493",
+      "sh-constants": "#0066cc",
+      "sh-color1": "#808080",
+      "sh-color2": "#ff1493",
+      "sh-color3": "#ff0000",
+      "sh-highlighted-bg": "#e0e0e0",
+      "sh-gutter-theme": "#6ce26c",
+      "java-highlighted-bg": "#c3defe",
+      "java-gutter-theme": "#d4d0c8",
+      "java-xml-keyword": "#3f7f7f",
+      "java-xml-color1": "#7f007f",
+      "java-xml-string": "#2a00ff",
+      "java-comments": "#3f5fbf",
+      "java-string": "#2a00ff",
+      "java-keyword": "#7f0055",
+      "java-preprocessor": "#646464",
+      "java-variable": "#aa7700",
+      "java-value": "#009900",
+      "java-functions": "#ff1493",
+      "java-constants": "#0066cc",
+      "java-plain": "#000000",
+      "cb-line-color": "#555555",
+      "cb-line-border": "#dddddd",
+      "cb-plain": "#2b7068",
+      "cb-functions": "#007bb3",
+      "cb-selector": "#800040",
+      "cb-nbt": "#666010",
+      "cb-tools-bg": "#eeeeee",
+      "cb-tools-color": "#333333"
     }
     const codemirrorPaletteCss = this.applyPaletteModifier(codemirrorPalette, [{
       "universal": { converter: color => color }
     }]);
     const codemirrorPaletteNightCss = this.applyPaletteModifier(codemirrorPalette, [{
       "universal": { converter: color => {
-        const brightness = McmodderUtils.colorToHSL(color).l;
-        return McmodderUtils.setColorBrightness(color, 100 - brightness);
-      } }
+          if (color === "#646464") return "#e5c07b";
+          if (color === "#7f0055") return "#569cd6";
+          if (color === "#2a00ff") return "#ce9178";
+          if (color === "#3f5fbf") return "#608b4e";
+          if (color === "#aa7700" || color === "#ff1493" || color === "#000000") return "#abb2bf";
+          if (color === "#009900") return "#b5cea8";
+          if (color === "#0066cc") return "#c678dd";
+          if (color === "#555555") return "#888888";
+          if (color === "#dddddd") return "#343434";
+          if (color === "#2b7068") return "#54b7aa";
+          if (color === "#007bb3") return "#40c4ff";
+          if (color === "#800040") return "#ff80c0";
+          if (color === "#666010") return "#efe89a";
+          if (color === "#eeeeee") return "#050505";
+          if (color === "#333333") return "#ffffff";
+          if (color === "#008200") return "#608b4e";
+          if (color === "#0000ff") return "#ce9178";
+          if (color === "#006699") return "#569cd6";
+          if (color === "#808080") return "#abb2bf";
+          if (color === "#ff0000") return "#f44747";
+          const brightness = McmodderUtils.colorToHSL(color).l;
+          return McmodderUtils.setColorBrightness(color, 100 - brightness);
+        } }
     }]);
 
     const backgroundAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("backgroundAlpha")), 128, 255) / 0xFF;
