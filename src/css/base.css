@@ -1734,6 +1734,11 @@ body .arrow {
 .mcmodder-editor-container {
   display: flex;
 }
+.mcmodder-editor-stats {
+  font-size: 12px;
+  margin-top: 10px;
+  position: relative;
+}
 div#editor-ueeditor {
   margin: 0;
 }

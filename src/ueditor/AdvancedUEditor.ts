@@ -52,6 +52,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     if (!this.$outerFrame || !this.$innerFrame || !this.document || !this.$document) return;
 
     this.editToolsBar = this.$outerFrame.parent().find(".edit-tools");
+    if (!this.editToolsBar.length) {
+      this.editToolsBar = $(`<div class="edit-tools">`).insertBefore(this.$outerFrame);
+    }
     this.optionBar = $(`<div class="mcmodder-option-bar"></div>`).insertAfter(this.editToolsBar);
     this.toolBar = $(`<div class="mcmodder-tool-bar"></div>`).insertAfter(this.optionBar);
 

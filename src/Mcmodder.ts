@@ -102,7 +102,7 @@ export class Mcmodder {
   }
 
   private callEditor() {
-    if ($(".edit-tools").length || $(".post-row").length) {
+    if ($(".edit-tools").length || /\/sandbox\/[0-9]+.html/.test(this.href)) {
       setTimeout(() => new McmodderAdvancedUEditor(editor, this), 3e2);
     } else {
       setTimeout(() => new McmodderUEditor(editor, this), 3e2);
