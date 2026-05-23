@@ -18,7 +18,6 @@ export default defineConfig({
         match: ['https://*.mcmod.cn/*'],
         exclude: [
           "https://api.mcmod.cn/*",
-          "https://bbs.mcmod.cn/*",
           "https://www.mcmod.cn/v2/*",
           "https://play.mcmod.cn/add/*",
           "https://www.mcmod.cn/tools/*/*",

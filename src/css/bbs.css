@@ -1,0 +1,1029 @@
+:root {
+  --mcmodder-color-background: #ffffff;
+  --mcmodder-color-background-dark1: #f8f9fa;
+  --mcmodder-color-background-dark2: #e9ecef;
+  --mcmodder-color-background-dark3: #dee2e6;
+  --mcmodder-color-text: #212529;
+  --mcmodder-color-text-dark1: #495057;
+  --mcmodder-color-text-dark2: #6c757d;
+  --mcmodder-color-text-dark3: #adb5bd;
+  --mcmodder-color-link: #0066cc;
+  --mcmodder-color-accent: #ffaa00;
+  --mcmodder-color-accent-dark2: #ff8800;
+  --mcmodder-color-primary-dark1: #1b9100;
+  --mcmodder-color-primary-dark2: #0f5500;
+  --mcmodder-color-bbs-white: #ffffff;
+  --mcmodder-color-bbs-shadow: rgba(0, 0, 0, 0.2);
+  --mcmodder-color-bbs-editor-filter: invert(0);
+  --mcmodder-color-font-green: #006600;
+}
+
+:root.dark {
+  --mcmodder-color-background: #121212;
+  --mcmodder-color-background-dark1: #1a1a1a;
+  --mcmodder-color-background-dark2: #242424;
+  --mcmodder-color-background-dark3: #2d2d2d;
+  --mcmodder-color-text: #e2e8f0;
+  --mcmodder-color-text-dark1: #cbd5e1;
+  --mcmodder-color-text-dark2: #94a3b8;
+  --mcmodder-color-text-dark3: #64748b;
+  --mcmodder-color-link: #60a5fa;
+  --mcmodder-color-accent: #f59e0b;
+  --mcmodder-color-accent-dark2: #fbbf24;
+  --mcmodder-color-primary-dark1: #1b9100;
+  --mcmodder-color-primary-dark2: #0f5500;
+  --mcmodder-color-bbs-white: #ffffff;
+  --mcmodder-color-bbs-shadow: rgba(0, 0, 0, 0.6);
+  --mcmodder-color-bbs-editor-filter: invert(0.8);
+  --mcmodder-color-font-green: #81c784;
+}
+
+html.dark body {
+  background-color: var(--mcmodder-color-background);
+  background-image: none;
+  color: var(--mcmodder-color-text);
+}
+
+html.dark a {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .top-main {
+  background-color: var(--mcmodder-color-background);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark2);
+}
+
+html.dark .top-main .def-nav {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .top-main .def-nav.on,
+html.dark .top-main .def-nav:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .top-main .search_box input#key {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .top-main .search_box input#btn {
+  background-color: var(--mcmodder-color-primary-dark1);
+  border: 1px solid var(--mcmodder-color-primary-dark2);
+  color: var(--mcmodder-color-bbs-white);
+}
+
+html.dark .top-main .info .name a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .top-main .info .pulldown {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .top-main .info .pulldown .top_content a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .top-main .info .pulldown .top_content a:hover {
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark #wp.wp.fwp a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark #wp.wp.fwp a:hover {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .ooops .text {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .ooops .shadow {
+  color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark .banner {
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+html.dark #chart {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark #chart em a {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .bm {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .bm_h {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .bm_h a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .bm_c {
+  background-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark #category_grid {
+  border-top: none;
+}
+
+html.dark #category_grid table td {
+  border-right: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark #category_grid table td:last-child {
+  border-right: none;
+}
+
+html.dark .newimgbox h4,
+html.dark .subjectbox h4,
+html.dark .replaybox h4,
+html.dark .hottiebox h4 {
+  color: var(--mcmodder-color-text);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .category_newlist li a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .category_newlist li a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .fl_tb td {
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .fl_g dt a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .fl_g dd {
+  color: var(--mcmodder-color-text-dark3);
+}
+
+html.dark .forumdescription {
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark .fl_by,
+html.dark .fl_i {
+  color: var(--mcmodder-color-text-dark3);
+}
+
+html.dark .forumtitle a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .tl th,
+html.dark .tl td {
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tl tr:hover th,
+html.dark .tl tr:hover td {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark .tl .by,
+html.dark .tl .num {
+  color: var(--mcmodder-color-text-dark3);
+}
+
+html.dark .pl,
+html.dark .pl table {
+  background-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark .pls {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-right: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .pls .avatar img {
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  background-color: var(--mcmodder-color-background);
+}
+
+html.dark .plc {
+  background-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark .pi {
+  border-bottom: 1px dashed var(--mcmodder-color-background-dark3);
+}
+
+html.dark .pi strong a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .pct,
+html.dark .t_f,
+html.dark .t_f p,
+html.dark .t_f li,
+html.dark .t_f td,
+html.dark .t_f div,
+html.dark .t_f blockquote,
+html.dark .t_f font:not([color]),
+html.dark .t_f span:not([style*="color"]) {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .pob em a {
+  color: var(--mcmodder-color-text-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark .pob em a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .pob i {
+  color: var(--mcmodder-color-text-dark3);
+}
+
+html.dark .f_c {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark #fastpostmessage {
+  background-color: var(--mcmodder-color-background);
+  color: var(--mcmodder-color-text);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .fpd {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .fpd a {
+  filter: var(--mcmodder-color-bbs-editor-filter);
+}
+
+html.dark .bar {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark input[type="text"],
+html.dark input[type="password"],
+html.dark select,
+html.dark textarea {
+  background-color: var(--mcmodder-color-background);
+  color: var(--mcmodder-color-text);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark input[type="text"]:focus,
+html.dark textarea:focus {
+  border-color: var(--mcmodder-color-accent);
+}
+
+html.dark .pn {
+  background-color: var(--mcmodder-color-primary-dark1);
+  border: 1px solid var(--mcmodder-color-primary-dark2);
+  color: var(--mcmodder-color-bbs-white);
+  box-shadow: none;
+}
+
+html.dark .pn strong {
+  color: var(--mcmodder-color-bbs-white);
+}
+
+html.dark .pn:hover {
+  background-color: var(--mcmodder-color-primary-dark2);
+}
+
+html.dark .pg a,
+html.dark .pg strong,
+html.dark .pgb a {
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark .pg a:hover,
+html.dark .pgb a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .pg strong {
+  background-color: var(--mcmodder-color-accent-dark2);
+  border-color: var(--mcmodder-color-accent-dark2);
+  color: var(--mcmodder-color-bbs-white);
+}
+
+html.dark #ft {
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark3);
+}
+
+html.dark .p_pop {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  box-shadow: 0 4px 6px -1px var(--mcmodder-color-bbs-shadow);
+}
+
+html.dark .p_pop a {
+  color: var(--mcmodder-color-text);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .p_pop a:hover {
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-accent);
+}
+
+html.dark .sign {
+  color: var(--mcmodder-color-text-dark3);
+  border-top: 1px dashed var(--mcmodder-color-background-dark3);
+}
+
+html.dark .info {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  box-sizing: border-box;
+}
+
+html.dark .info .blackboard {
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark .info .blackboard strong {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .info .right_btn {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .info .right_btn a {
+  filter: invert(0.85);
+  will-change: filter;
+  transform: translate3d(0, 0, 0);
+}
+
+html.dark .info .right_btn a:hover {
+  filter: invert(1);
+}
+
+html.dark .info #edit_roll {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .sd .yb_brgybox,
+html.dark .yb_brgybox {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .sd .yb_brgyboxt,
+html.dark .yb_brgyboxt {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .sd .yb_brgyboxt span,
+html.dark .yb_brgyboxt span {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .sd .yb_brgyboxt a,
+html.dark .yb_brgyboxt a {
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark .sd .yb_brgyboxb,
+html.dark .yb_brgyboxb {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .sd .yb_brgyboxb li,
+html.dark .yb_brgyboxb li {
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .sd .yb_brgyboxb li a,
+html.dark .yb_brgyboxb li a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .sd .yb_brgyboxb li a:hover,
+html.dark .yb_brgyboxb li a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .under {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark2);
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .under strong {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .under a {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark .under a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .under img.logo,
+html.dark .under a[href*="creativecommons.org"] img {
+  filter: invert(0.85);
+}
+
+html.dark #pt {
+  background-color: transparent;
+  border: none;
+}
+
+html.dark #pt a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark #pt a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .mbx {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .mbx a,
+html.dark .mbx span,
+html.dark .mbx div.item {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .ttp {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .ttp a {
+  background-image: none;
+  color: var(--mcmodder-color-text-dark1);
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .ttp a:hover {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .ttp .a a,
+html.dark .ttp li.a a {
+  background-image: none;
+  background-color: var(--mcmodder-color-accent-dark2);
+  color: var(--mcmodder-color-bbs-white);
+  border-color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .tf {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark .tf a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .tf a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .showmenu {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .showmenu:hover {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .th.showmenubox {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .showmenu_outer {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .yb_bright .bm {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .yb_bright .bm_h {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .yb_bright .bm_h a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .yb_bright .bm_c,
+html.dark .yb_bright .bm_c li {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .yb_bright .bm_c a {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark .yb_bright .bm_c a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .bml {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark .bml .bm_h {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .bml .bm_c {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .yudilistl .mn {
+  background-color: var(--mcmodder-color-background-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tl th,
+html.dark .tl td,
+html.dark .tl tr.ts th,
+html.dark .tl tr.ts td,
+html.dark #separatorline,
+html.dark #separatorline th,
+html.dark #separatorline td,
+html.dark tr.ts,
+html.dark tr.ts th,
+html.dark tr.ts td {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .tl tr.ts th a.forumrefresh {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark .tl tr.ts th a.forumrefresh:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark .tl tr:hover th,
+html.dark .tl tr:hover td {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark .tl .by,
+html.dark .tl .num,
+html.dark .tl .by a,
+html.dark .tl .num a,
+html.dark .tl .by em,
+html.dark .tl .num em,
+html.dark .tl .by span,
+html.dark .tl .num span {
+  color: var(--mcmodder-color-text-dark2);
+}
+
+html.dark font[color="#000000"],
+html.dark font[color="#111111"],
+html.dark font[color="#222222"],
+html.dark font[color="#333333"],
+html.dark font[color="#444444"],
+html.dark font[color="#555555"],
+html.dark font[color="#666666"],
+html.dark font[color="#777777"],
+html.dark font[color="#888888"],
+html.dark font[color="#000000"],
+html.dark font[color="#111111"],
+html.dark font[color="#222222"],
+html.dark font[color="#333333"],
+html.dark font[color="#444444"],
+html.dark font[color="#555555"],
+html.dark font[color="#666666"],
+html.dark font[color="#777777"],
+html.dark font[color="#888888"],
+html.dark font[color="#999999"],
+html.dark font[color="black"],
+html.dark font[color="gray"] {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark body #postlist .hm {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark .pls,
+html.dark .pls a,
+html.dark .pls span,
+html.dark .pls em,
+html.dark .pls strong,
+html.dark .plc,
+html.dark .plc a,
+html.dark .plc span,
+html.dark .plc em,
+html.dark .plc strong,
+html.dark .xg1,
+html.dark .xg2 {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .rate,
+html.dark .ratl,
+html.dark .ratl td,
+html.dark .ratl th,
+html.dark .psth,
+html.dark .psth span,
+html.dark .xi1 {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .ratl td a,
+html.dark .ratl th a {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark .mbx_left,
+html.dark .mbx_right,
+html.dark .mbx .line {
+  display: none;
+}
+
+html.dark .bar,
+html.dark .tedt .bar {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .floor,
+html.dark body#nv_forum .plc .pi strong a.floor,
+html.dark .shafa,
+html.dark .bandeng,
+html.dark .diban {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-accent-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body .xi1 {
+  background-color: transparent;
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark body#nv_forum .tl tr.ts th,
+html.dark body#nv_forum .tl tr.ts td,
+html.dark body#nv_forum #separatorline th,
+html.dark body#nv_forum #separatorline td {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .text_box_light {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .text_box_light strong,
+html.dark body#nv_forum .text_box_light span,
+html.dark body#nv_forum .text_box_light p,
+html.dark body#nv_forum .text_box_light li {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark body#nv_forum .yb_brgyboxb li,
+html.dark body#nv_forum .yb_brgyboxb li a,
+html.dark body#nv_forum .sd .yb_brgyboxb li,
+html.dark body#nv_forum .sd .yb_brgyboxb li a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark body#nv_forum .yb_brgyboxb li a:hover,
+html.dark body#nv_forum .sd .yb_brgyboxb li a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark body#nv_forum .ttp li a {
+  color: var(--mcmodder-color-text-dark1);
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .ttp li a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark body#nv_forum .ttp li.a a,
+html.dark body#nv_forum .ttp li.a a:hover {
+  background-color: var(--mcmodder-color-accent-dark2);
+  color: var(--mcmodder-color-bbs-white);
+  border-color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark body#nv_forum .tf a,
+html.dark body#nv_forum .tf span,
+html.dark body#nv_forum .tf label {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark body#nv_forum #threadlist,
+html.dark body#nv_forum #threadlist a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark font[color="red"],
+html.dark font[color="Red"],
+html.dark font[color="#ff0000"],
+html.dark font[color="#FF0000"] {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark font[color="blue"],
+html.dark font[color="Blue"],
+html.dark font[color="#0000ff"],
+html.dark font[color="#0000FF"] {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark font[color="darkgreen"],
+html.dark font[color="DarkGreen"],
+html.dark font[color="green"],
+html.dark font[color="Green"] {
+  color: var(--mcmodder-color-font-green);
+}
+
+html.dark body#nv_forum .yudi_shadow,
+html.dark body#nv_forum .yudi_shadowb,
+html.dark body#nv_forum .post_act {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark1);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  box-shadow: none;
+}
+
+html.dark body#nv_forum .yudi_shadowb li,
+html.dark body#nv_forum .yudi_shadowb li a,
+html.dark body#nv_forum .yudi_shadow li,
+html.dark body#nv_forum .yudi_shadow li a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark body#nv_forum .yudi_shadowb li a:hover,
+html.dark body#nv_forum .yudi_shadow li a:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+html.dark body#nv_forum .tedt,
+html.dark body#nv_forum .tedt .bar,
+html.dark body#nv_forum .tedt .area,
+html.dark body#nv_forum .pt.hm,
+html.dark body#nv_forum #f_pst.pl.bm {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #scrolltop {
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #scrolltop a {
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+  background-image: none;
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark body#nv_forum #scrolltop a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark body#nv_forum #f_pst .pt,
+html.dark body#nv_forum #f_pst .area,
+html.dark body#nv_forum #f_pst .hm {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #postlist td.pls.hps,
+html.dark body#nv_forum #postlist td.pls.hps + td,
+html.dark body#nv_forum #postlist td.pls.hps + td.plc {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .post_act,
+html.dark body#nv_forum .post_act .bm,
+html.dark body#nv_forum .post_act .bm_c,
+html.dark body#nv_forum .post_act ul,
+html.dark body#nv_forum .post_act li {
+  background-image: none;
+  background-color: transparent;
+}
+
+html.dark body#nv_forum .pg label,
+html.dark body#nv_forum .pg input {
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .quote,
+html.dark body#nv_forum .quote blockquote {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  color: var(--mcmodder-color-text-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #f_pst .tedt .bar,
+html.dark body#nv_forum .tedt .bar,
+html.dark body#nv_forum .bar {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #postlist > table {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #postlist table td {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark body#nv_forum .pls .xlc li a,
+html.dark body#nv_forum .pls .xlc a,
+html.dark body#nv_forum .pls .imicn a {
+  background-color: transparent;
+  border-color: transparent;
+  filter: invert(0.85);
+  will-change: filter;
+  transform: translate3d(0, 0, 0);
+}
+
+html.dark body#nv_forum #thread_subject,
+html.dark body#nv_forum #thread_subject a,
+html.dark body#nv_forum h1.ts span#thread_subject a,
+html.dark body#nv_forum .ts #thread_subject a {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark body#nv_forum #postlist,
+html.dark body#nv_forum #postlist td,
+html.dark body#nv_forum #postlist tr,
+html.dark body#nv_forum #postlist table,
+html.dark body#nv_forum .pl,
+html.dark body#nv_forum .pl table,
+html.dark body#nv_forum .pl td,
+html.dark body#nv_forum .pl tr,
+html.dark body#nv_forum .ad,
+html.dark body#nv_forum .ad td,
+html.dark body#nv_forum .ad .pls,
+html.dark body#nv_forum .ad .plc,
+html.dark body#nv_forum .a_p,
+html.dark body#nv_forum .a_p td,
+html.dark body#nv_forum .a_t,
+html.dark body#nv_forum .a_h,
+html.dark body#nv_forum .a_b,
+html.dark body#nv_forum .a_pt,
+html.dark body#nv_forum .a_pr,
+html.dark body#nv_forum .a_pb,
+html.dark body#nv_forum .a_cn,
+html.dark body#nv_forum #postlist .ad,
+html.dark body#nv_forum .pl .ad,
+html.dark body#nv_forum #postlist .ad td,
+html.dark body#nv_forum #postlist .ad .pls,
+html.dark body#nv_forum #postlist .ad .plc {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum #postlist td.pls,
+html.dark body#nv_forum .pl td.pls {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+html.dark body#nv_forum .pnpost,
+html.dark body#nv_forum p.pnpost {
+  background-image: none;
+  background-color: var(--mcmodder-color-background-dark2);
+  border-top: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .pnpost a {
+  color: var(--mcmodder-color-link);
+}
+
+html.dark body#nv_forum .slt,
+html.dark body#nv_forum .sltm,
+html.dark body#nv_forum .sltm li {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_forum .sltm li.hover,
+html.dark body#nv_forum .sltm li:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+
+
+
+
