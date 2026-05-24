@@ -56,6 +56,8 @@ export class Mcmodder {
   private msgAlertCount = 0;
   private readonly titleNode = $("title");
   private readonly linkContentDictionary: Record<string, string> = {};
+  private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
+  private readonly elementColorCache: Map<string, string> = new Map();
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
@@ -440,6 +442,10 @@ export class Mcmodder {
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").addClass("dark");
       });
+      this.elementColorDictionary.forEach((color, e) => {
+        const darkenColor = this.elementColorCache.get(color);
+        e.style.setProperty("color", darkenColor!);
+      });
     }
     else {
       icon.addClass("on");
@@ -470,6 +476,9 @@ export class Mcmodder {
       $("html").removeClass("dark");
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").removeClass("dark");
+      });
+      this.elementColorDictionary.forEach((_color, e) => {
+        e.style.setProperty("color", this.elementColorDictionary.get(e)!);
       });
     }
   }
@@ -647,9 +656,9 @@ export class Mcmodder {
       });
     }
 
+    const textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
     if (this.utils.getConfig("mcmodderUI")) {
       // 去除正文异常背景
-      let textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
       textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "unset");
       textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "unset");
 
@@ -659,6 +668,19 @@ export class Mcmodder {
         new McmodderSwiper(container);
       });
     }
+
+    // 夜间模式正文颜色自动适配
+    textArea.find("*").each((_, _e) => {
+      const e = _e as HTMLElement;
+      const css = (e as HTMLElement).style.getPropertyValue("color");
+      if (css) {
+        const color = McmodderUtils.parseRGB(css);
+        const colorStr = McmodderUtils.RGBToColor(color);
+        const nightColorStr = McmodderUtils.reverseColorBrightness(color);
+        this.elementColorDictionary.set(e, colorStr);
+        this.elementColorCache.set(colorStr, nightColorStr);
+      }
+    });
 
     if (this.utils.getConfig("adaptableNightMode")) {
       const scheme = window.matchMedia("(prefers-color-scheme: dark)");

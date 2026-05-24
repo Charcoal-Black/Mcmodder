@@ -183,7 +183,9 @@ table th,
 .fui-eye::before,
 .fui-chat::before,
 .fui-home::before,
-.fui-user::before {
+.fui-user::before,
+.top-main .navs .app-url .top_content a,
+.top-main .navs .app-url .top_content a:hover {
   color: var(--mcmodder-color-text);
   text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow);
 }
@@ -309,6 +311,7 @@ a,
 .center-sub-menu a:hover,
 .center-content.edit-chart-frame .title-main,
 thead,
+.news_block .left .text li.on,
 a:hover,
 .rank-list-block a:hover,
 .common-center .right .class-info .class-info-left .tag a:hover,
@@ -336,8 +339,8 @@ a:hover,
 .common-center .post-row .postname .tool li a:hover,
 .message-menu li a:hover,
 .message-main .message-submenu li a:hover,
-.copyright a:hover,
-.copyleft a:hover,
+body .copyright a:hover,
+body .copyleft a:hover,
 .un_info li a:hover,
 .pages_system .Pbtn:hover,
 .pages_system .Pbtn_on:hover,
@@ -345,7 +348,17 @@ a:hover,
 .item-list-table .item-list-type-right li .more:hover,
 .item-list-switch li a:hover,
 .item-list-switch-fold a:hover,
-.item-list-style-setting a:hover {
+.item-list-style-setting a:hover,
+.author-user-frame .author-tool li a:hover,
+.common-icon-text a:hover,
+.news_block .left .name a:hover,
+.pages_system .Pbtn:hover,
+.list_block .list li a:hover,
+.az_block .menu li:hover,
+.search-menu-mcmod a:hover,
+.search-history-btn a:hover,
+.topic_block .title .text li.on,
+.star_block .title .text li.on {
   color: var(--mcmodder-color-accent-dark2);
 }
 .verify-list-list td a.text-muted:hover {
@@ -397,8 +410,12 @@ th,
 .center-main.favorite .favorite-fold-info .fold-cover,
 .center-main.favorite .favorite-slot-ul.rectangle li .cover,
 .class_block .left .list .items .item_hover,
-.class_block .right li i {
+.class_block .right li i,
+.author-user-frame .author-user-avatar img {
   background-color: var(--mcmodder-color-background-dark1);
+}
+.search-result-list {
+  border-color: var(--mcmodder-color-background-dark1);
 }
 .item-category li,
 .common-text table th,
@@ -424,9 +441,21 @@ th,
 .common-nav,
 .common-text .common-text-menu,
 .common-comment-block textarea,
+.common-center .author-row .author-content,
+.common-center .left .class-cover-image img,
 .center-main.favorite .favorite-slot-ul.rectangle li .cover img,
-.modlist-filter-block ul:not(.common-class-category) li.main a {
+.common-center .right .class-post-frame .post-block .cover img,
+.modlist-filter-block ul:not(.common-class-category) li.main a,
+.download-verison-area,
+body .top-main .pulldown .top_content,
+.post_block .list li .postText li.mainMod,
+.news_block .left .text #random_refresh,
+.news_block .left .text #new_more,
+.news_block .left .text #edit_more {
   border-color: var(--mcmodder-color-background-dark2);
+}
+.common-text .common-text-menu:not(.style-vertical) ul {
+  column-rule-color: var(--mcmodder-color-background-dark2);
 }
 .form-control {
   width: 100%;
@@ -445,12 +474,22 @@ th,
 .history-list-frame li .time,
 .center-card-block.tracker .card-item .text p,
 .un_info p,
-.un_info span {
+.un_info span,
+.post_block .title .text,
+.card_block .title .text,
+.list_block .title .text,
+.tag_block .title .text,
+.chart_block .title .text,
+.pages_system .Pbtn {
   color: var(--mcmodder-color-text-dark3);
+}
+.common-comment-block .comment-row-userinfo img {
+  border-color: var(--mcmodder-color-background);
 }
 .form-control,
 .bootstrap-tagsinput,
-input {
+input,
+body .header-layer {
   border-color: var(--mcmodder-color-background-dark2);
   box-shadow: inset 0px 1px 0px var(--mcmodder-color-box-shadow);
 }
@@ -461,7 +500,11 @@ input,
 body .tabbody #upload.panel,
 body .tabbody .panel,
 body #remote input.text,
-.common-comment-block textarea {
+.common-comment-block textarea,
+.close,
+.close:focus,
+.close:hover,
+body .top-main .pulldown .top_content {
   background-color: var(--mcmodder-color-background-transparent);
   color: var(--mcmodder-color-text);
 }
@@ -1316,8 +1359,9 @@ body > .container > *,
 .bs-popover-auto[x-placement^="bottom"] .arrow::after,
 .bs-popover-auto[x-placement^="left"] .arrow::after,
 .tooltip.top .tooltip-arrow,
-.bs-popover-right .arrow::after {
-  border-right-color: var(--mcmodder-color-background-transparent);
+.bs-popover-right .arrow::after,
+body .top-main .pulldown .arrow {
+  border-color: var(--mcmodder-color-background-transparent);
 }
 .swal2-popup-wider {
   width: 80em;
@@ -1371,11 +1415,16 @@ body > .container > *,
   border-top-color: var(--mcmodder-color-background-transparent);
 }
 .swal2-popup .swal2-footer,
-.class_block .left .list .items {
+.class_block .left .list .items,
+.modal-footer {
   border-top-color: var(--mcmodder-color-background-dark2);
 }
 #header-search-input,
-.common-fuc-group .action {
+.common-fuc-group .action,
+.post_block .title .more a:hover,
+.news_block .left .text #random_refresh:hover,
+.news_block .left .text #new_more:hover,
+.news_block .left .text #edit_more:hover {
   background-color: transparent;
 }
 .center-main.favorite .favorite-slot-ul li,
@@ -1439,6 +1488,10 @@ body .arrow {
 }
 .mcmodder-link-warn {
   border: 2px solid var(--mcmodder-color-danger);
+}
+.center-block-head .more {
+  color: var(--mcmodder-color-text-dark2);
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .center-block-head .text {
   font-size: 12px;
@@ -1764,6 +1817,7 @@ div#editor-ueeditor {
   display: inline-block;
   width: 250px;
 }
+
 .mcmodder-slider-bar {
   margin: 0 1em;
   height: 6px;
@@ -1791,8 +1845,19 @@ div#editor-ueeditor {
 }
 .mcmodder-slider-tap:hover,
 .mcmodder-slider-tap.focus,
-.center-main.favorite .favorite-slot-menu ol a:hover {
+.center-main.favorite .favorite-slot-menu ol a:hover,
+.center-main.favorite .favorite-fold-list a:hover,
+.list_block .menu li a:hover,
+.list_block .menu li a.on,
+.az_block .switch li:hover,
+.az_block .switch li.on,
+body .top-main .info .user-info .top_content a:hover,
+body .top-main .info .more-info .top_content a:hover,
+.news_block .left .text #random_refresh:hover,
+.news_block .left .text #new_more:hover,
+.news_block .left .text #edit_more:hover {
   background-color: var(--mcmodder-color-accent);
+  color: var(--mcmodder-color-text);
   /* border-color: var(--mcmodder-color-accent-dark1); */
 }
 .mcmodder-tool-bar {
@@ -2325,6 +2390,52 @@ kbd {
 .oredict-item-list {
   margin: 0;
 }
+.table > tbody > tr > td,
+.table > tbody > tr > th,
+.table > tfoot > tr > td,
+.table > tfoot > tr > th,
+.table > thead > tr > td,
+.table > thead > tr > th {
+  border-top-color: var(--mcmodder-color-background-dark2);
+}
+.h1 .small,
+.h1 small,
+.h2 .small,
+.h2 small,
+.h3 .small,
+.h3 small,
+.h4 .small,
+.h4 small,
+.h5 .small,
+.h5 small,
+.h6 .small,
+.h6 small,
+h1 .small,
+h1 small,
+h2 .small,
+h2 small,
+h3 .small,
+h3 small,
+h4 .small,
+h4 small,
+h5 .small,
+h5 small,
+h6 .small,
+h6 small {
+  color: var(--mcmodder-color-text-dark3);
+}
+#result .table {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark2);
+  box-shadow: 1px 1px 15px var(--mcmodder-color-box-shadow);
+}
+#result table td {
+  color: var(--mcmodder-color-text);
+}
+#result code {
+  color: var(--mcmodder-color-code-text);
+  background-color: var(--mcmodder-color-code-background);
+}
 .common-center .left .class-rating-content span.progress-text,
 .common-center .right .class-info .class-info-left .author li .member .position,
 .common-rowlist li span.time,
@@ -2341,7 +2452,8 @@ kbd {
 .post-cc a,
 .un_info li strong,
 .common-text figcaption,
-.common-text .figcaption {
+.common-text .figcaption,
+body .top-main .navs .app-url .li .text {
   color: var(--mcmodder-color-text-dark2);
 }
 .class-menu-page,
@@ -2360,6 +2472,30 @@ kbd {
   background: transparent;
   border: unset;
 }
+.class-status.status-1 {
+  background-color: var(--mcmodder-color-classstatus-1);
+}
+.class-status.status-2 {
+  background-color: var(--mcmodder-color-classstatus-2);
+}
+.class-status.status-3 {
+  background-color: var(--mcmodder-color-classstatus-3);
+}
+.class-status.status-4 {
+  background-color: var(--mcmodder-color-classstatus-4);
+}
+.class-status.status-5 {
+  background-color: var(--mcmodder-color-classstatus-5);
+}
+.class-status.status-6 {
+  background-color: var(--mcmodder-color-classstatus-6);
+}
+.class-source.source-1 {
+  background-color: var(--mcmodder-color-classstatus-1);
+}
+.class-source.source-2 {
+  background-color: var(--mcmodder-color-classstatus-3);
+}
 .modlist-block {
   padding: 0;
 }
@@ -2377,7 +2513,10 @@ kbd {
   color: var(--mcmodder-color-channel-2);
 }
 .common-comment-block .comment-row,
-.common-comment-block .comment-editor {
+.common-comment-block .comment-editor,
+.common-comment-block .comment-title,
+.modal-header,
+.page-header {
   border-bottom-color: var(--mcmodder-color-background-dark2);
 }
 .comment-attitude.up.colourful,
@@ -2428,7 +2567,11 @@ kbd {
 .comment-attitude.handshake.colourful:hover {
   color: var(--mcmodder-color-attitude-handshake);
 }
-.m_center li a {
+.class-official-group .class-status {
+  border-right-color: var(--mcmodder-color-background-dark1);
+}
+.m_center li a,
+.common-class-category li.main {
   border-right-color: var(--mcmodder-color-background-dark3);
 }
 .common-user-card .card-userinfo .exp-bar .progress-bar {
@@ -2465,6 +2608,9 @@ html .edui-default .edui-editor-toolbarboxouter,
 footer h5 {
   color: var(--mcmodder-color-copyright-title);
 }
+footer .copyright {
+  border-top-color: var(--mcmodder-color-copyright-text);
+}
 footer .copyright a,
 footer .copyleft a {
   color: var(--mcmodder-color-copyright-text);
@@ -2478,6 +2624,11 @@ footer .copyleft a {
   position: absolute;
   right: 0;
   top: calc(50% - 13px);
+}
+body .top-main .info .user-info .separate-li,
+body .top-main .info .more-info .separate-li {
+  border-top-color: var(--mcmodder-color-background-dark2);
+  border-bottom-color: var(--mcmodder-color-background);
 }
 @font-face {
   font-family: 'iconfont';

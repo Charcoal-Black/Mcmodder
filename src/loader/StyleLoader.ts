@@ -208,6 +208,8 @@ export class StyleLoader {
       "box-shadow": "#8884",
       "pre-ins": "#406619",
       "pre-del": "#b30000",
+      "code-text": "#c7254e",
+      "code-background": "#f9f2f4",
       "text-success": "#28a745",
       "text-danger": "#dc3545",
       "text-info": "#31708f",
@@ -263,7 +265,13 @@ export class StyleLoader {
       "attitude-angry": "#f30",
       "attitude-tired": "#960",
       "attitude-snowflake": "#39c",
-      "attitude-handshake": "#363"
+      "attitude-handshake": "#363",
+      "classstatus-1": "#2cbe4e",
+      "classstatus-2": "#cb6431",
+      "classstatus-3": "#cb2431",
+      "classstatus-4": "#adadad",
+      "classstatus-5": "#3675e9",
+      "classstatus-6": "#303030"
     }, []);
     const otherPaletteNightCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(nightPalette.background, backgroundAlpha),
@@ -272,6 +280,8 @@ export class StyleLoader {
       "box-shadow": "#0008",
       "pre-ins": "#beff7b",
       "pre-del": "#ff7b7b",
+      "code-text": "#f68",
+      "code-background": "#423",
       "text-success": "#5f5",
       "text-danger": "#faa",
       "text-info": "#4be",
@@ -317,6 +327,12 @@ export class StyleLoader {
       "attitude-tired": "#b71",
       "attitude-snowflake": "#7ac",
       "attitude-handshake": "#383",
+      "classstatus-1": "#183",
+      "classstatus-2": "#852",
+      "classstatus-3": "#822",
+      "classstatus-4": "#666",
+      "classstatus-5": "#258",
+      "classstatus-6": "#333"
     }, []);
 
     const bg = parent.utils.getConfig("defaultBackground") || McmodderValues.assets.bg;

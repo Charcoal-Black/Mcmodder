@@ -423,6 +423,9 @@ export class ClassPageInit extends McmodderInit {
       });
     }
 
+    // 样式修复
+    $(".class-excount .span").first().css("border-right-color", "var(--mcmodder-color-background-dark2)");
+
     // 若参与了活动，则为活动添加外边框
     $(".class-text > span.figure").addClass("mcmodder-golden-alert").css("width", "100%");
   }
