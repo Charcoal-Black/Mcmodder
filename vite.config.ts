@@ -40,7 +40,8 @@ export default defineConfig({
           "www.curseforge.com",
           "api.modrinth.com",
           "raw.githubusercontent.com",
-          "hub.gitmirror.com"
+          "hub.gitmirror.com",
+          "supabase.co"
         ],
         require: [
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
