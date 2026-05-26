@@ -48,13 +48,15 @@ export default defineConfig({
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js",
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/xml/xml.min.js",
           "https://unpkg.com/turndown/dist/turndown.js",
-          "https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"
+          "https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js",
+          "https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2"
         ]
       },
       build: {
         externalGlobals: {
           "codemirror": "CodeMirror",
-          "turndown": "TurndownService"
+          "turndown": "TurndownService",
+          "@supabase/supabase-js": "supabase"
         }
       }
     })

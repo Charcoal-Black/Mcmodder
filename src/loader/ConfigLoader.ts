@@ -8,6 +8,7 @@ export class ConfigLoader {
     .addColorpickerConfig("themeColor2", "主题样式副配色", "主题样式副配色。", "#58b6d8")
     .addColorpickerConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", "#ff3030")
     .addCheckboxConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。", true)
+    .addCheckboxConfig("useSupabase", "使用Supabase相关功能", "是否启用 Supabase 相关的云端服务与功能。", false)
     .addCheckboxConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
     .addCheckboxConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")
     .addCheckboxConfig("disableGradient", "禁用文字渐变", "勾选此项可能有助于提升性能。")
