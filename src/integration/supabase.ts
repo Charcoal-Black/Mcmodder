@@ -18,10 +18,6 @@ export function getSupabaseClient(): SupabaseClient | null {
   let supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
   let supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
 
-  if (!supabaseUrl || !supabaseKey) {
-    return null;
-  }
-
   try {
     supabaseInstance = createClient(supabaseUrl, supabaseKey, {
       auth: {
