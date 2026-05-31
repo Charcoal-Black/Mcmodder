@@ -89,7 +89,7 @@ body > .content,
 .item-h5-ename {
   font-size: 16px;
   font-weight: lighter;
-  color: gray;
+  color: var(--mcmodder-color-text-dark2);
 }
 .class-title .short-name {
   font-size: 18px;

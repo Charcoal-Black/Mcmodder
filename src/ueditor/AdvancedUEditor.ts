@@ -26,6 +26,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   protected mdEditorOption?: McmodderCheckboxInput;
   protected htmlEditorOption?: McmodderCheckboxInput;
   protected verticalOption?: McmodderCheckboxInput;
+  protected toolkitOption?: McmodderCheckboxInput;
   protected originalTextLength: number;
   protected currentTextLength: number;
   protected changedTextLength: number;
@@ -46,6 +47,15 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.autoUpdateEditorStatsThreshold = this.parent.utils.getConfig("editorStats");
     this.isModrinthVer = new URLSearchParams(window.location.search).has("mrid");
     this.advinit();
+  }
+
+  private addTool(id: string, text: string, callback: () => any) {
+    $('<button class="btn btn-sm">')
+    .attr("id", id)
+    .text(text)
+    .hide()
+    .appendTo(this.toolBar!)
+    .click(callback);
   }
 
   private advinit() {
@@ -97,10 +107,11 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.manualTriggerHtmlUpdate();
     });;
 
-    $('<button id="mcmodder-tool-md" class="btn btn-sm">Markdown → HTML</button>')
-    .hide()
-    .appendTo(this.toolBar)
-    .click(() => this.performMarkdownIt());
+    this.addTool("mcmodder-tool-md", "Markdown → HTML", () => this.performMarkdownIt());
+
+    this.addTool("mcmodder-tool-brfix", "修复 br 换行", () => this.performBrFix());
+
+    this.addTool("mcmodder-tool-linkfix", "移除无效链接", () => this.performLinkFix());
 
     let itemSourceList: McmodderItemList = [];
     (this.parent.utils.getConfig("jsonDatabase") as string[])?.forEach(fileName => {
@@ -205,6 +216,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.verticalOption = new McmodderCheckboxInput("纵向排列", false, _value => this.readyVerticalEditor(), "mcmodder-option-vertical", true);
     this.verticalOption.getInstance().appendTo(".mcmodder-option-bar").hide();
 
+    this.toolkitOption = new McmodderCheckboxInput("实用工具", false, _value => this.readyToolkit(), "mcmodder-option-toolkit", true);
+    this.toolkitOption.getInstance().appendTo(".mcmodder-option-bar");
+
     if (this.parent.utils.getConfig("markdownIt") || this.isModrinthVer) {
       this.mdEditorOption.click(); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
@@ -214,12 +228,16 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     }
 
     let isVertical = this.parent.utils.getConfig("editorVertical");
-    if (isVertical == undefined) {
+    if (isVertical === undefined) {
       isVertical = screen.width < 741;
       this.parent.utils.setConfig("editorVertical", isVertical); 
     }
     if (isVertical) {
       this.verticalOption.click();
+    }
+
+    if (this.parent.utils.getConfig("editorToolkit")) {
+      this.toolkitOption.click();
     }
 
     // 匿名吐槽
@@ -342,6 +360,16 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.parent.utils.setConfig("editorVertical", c);
   }
 
+  private readyToolkit() {
+    const c = this.toolkitOption?.getCurrentValue();
+    if (c) {
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix").show();
+    } else {
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix").hide();
+    }
+    this.parent.utils.setConfig("editorToolkit", c);
+  }
+
   performMarkdownIt() {
     // 预处理
     // this.mdEditor.find("p > br").remove();
@@ -370,6 +398,61 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     );
 
     this.updateEditorStats();
+  }
+
+  performBrFix() {
+    if (!this.$body) return;
+    const p = this.$body.find("p");
+    const ps: JQuery[] = [];
+    p.each((_, _e) => {
+      const e = $(_e);
+      const contents = p.contents();
+      const contentsLength = contents.length - 1;
+      for (let i = 1; i < contentsLength; i++) {
+        if (contents.get(i).tagName === "BR") {
+          ps.push(e);
+          break;
+        }
+      }
+    });
+    const count = ps.length;
+    if (!count) {
+      McmodderUtils.commonMsg(`未发现 br 换行问题~`);
+      return;
+    }
+    ps.forEach(p => {
+      let np = p.clone().html("").insertAfter(p);
+      p.contents().each((_, e) => {
+        if (e.tagName === "BR") {
+          np = p.clone().html("").insertAfter(np);
+        } else {
+          np.append(e);
+        }
+      });
+      p.remove();
+    });
+    McmodderUtils.commonMsg(`${ count } 处 br 换行问题已被修复~`);
+  }
+
+  performLinkFix() {
+    if (!this.$body) return;
+    let count = 0;
+    this.$body.find("a").each((_, _e) => {
+      const e = $(_e);
+      const href = e.attr("href");
+      if (!href) {
+        const text = e.text();
+        const parent = _e.parentNode;
+        e.replaceWith(text);
+        parent?.normalize();
+        count++;
+      }
+    });
+    if (!count) {
+      McmodderUtils.commonMsg("未发现异常链接~");
+    } else {
+      McmodderUtils.commonMsg(`${ count } 处异常链接已被修复~`);
+    }
   }
 
   isEditorLocked() {

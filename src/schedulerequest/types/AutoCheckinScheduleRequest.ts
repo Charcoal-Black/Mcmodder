@@ -31,7 +31,7 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
     else if (data.state === 109) message = "但是似乎被别的百科页面抢先一步了~";
     else message = `自动签到已执行！但是遇到了预料之外的错误，请反馈给脚本作者... (${ McmodderValues.errorMessage[data.state] })`;
     if (this.parent.isV4) McmodderUtils.commonMsg(`自动签到已执行！${ message }`, !data.state);
-    else swal.fire({
+    else (swal as any)({
       type: (!data.state && data.amount) ? "success" : "error",
       title: "自动签到已执行",
       text: message,

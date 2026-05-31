@@ -8,7 +8,7 @@ import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
-import { ItemCustomTypeList as ItemTypeList, McmodderProfileData } from "./types";
+import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseErrorResponse, SupabaseTrackSplashResponse, SupabaseTrackSplashSuccessfulResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { McmodderTimer } from "./widget/Timer";
@@ -21,6 +21,7 @@ import { InitLoader } from "./loader/InitLoader";
 import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { McmodderSwiper } from "./widget/Swiper";
+import { SupabaseUtils } from "./integration/supabase";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -29,7 +30,6 @@ interface ScreenAttachedFrameData {
 }
 
 export class Mcmodder {
-
   utils: McmodderUtils;
   currentUID: number;
   currentUsername: string;
@@ -44,6 +44,7 @@ export class Mcmodder {
   ueditorFrame: McmodderUEditor[];
   screenAttachedFrame: ScreenAttachedFrameData[];
   cfgutils: McmodderConfigUtils;
+  supabaseUtils: SupabaseUtils;
   styleColors: ThemeColorData;
   preferredWiderScreen = false;
   isNightMode = false;
@@ -63,8 +64,9 @@ export class Mcmodder {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
     this.isMac = McmodderUtils.isMac();
     this.isMobileClient = McmodderUtils.isMobileClient();
-    this.currentUsername = ($(".header-user-name").get(0)?.childNodes[0] as HTMLElement)?.innerHTML || "";
-    this.currentUID = Number($(".header-user-name a, .name.top-username a, .profilebox").first().attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
+    const headerUserName = $(".header-user-name a, .name.top-username a, .profilebox").first();
+    this.currentUsername = headerUserName.text() || "";
+    this.currentUID = Number(headerUserName.attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
     this.href = window.location.href;
     MemuCommandLoader.run();
@@ -95,6 +97,8 @@ export class Mcmodder {
 
     this.scheduleRequestUtils = new ScheduleRequestUtils(this);
     ScheduleRequestLoader.run(this.scheduleRequestUtils);
+
+    this.supabaseUtils = new SupabaseUtils(this);
 
     InitLoader.run(this, this.initList);
     
@@ -379,7 +383,7 @@ export class Mcmodder {
     McmodderUtils.addStyle('* {font-family: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", "宋体", sans-serif}');
   }
 
-  trackSplash() {
+  async trackSplash() {
     let splashText = "";
     if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
     else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
@@ -398,6 +402,54 @@ export class Mcmodder {
     GM_setValue("mcmodderSplashList_v2", splashes.join("\n"));
     if (flag) McmodderUtils.commonMsg(`该标语累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
+
+    if (this.utils.getConfig("supabaseSplash")) {
+      const client = this.supabaseUtils.getClient();
+      if (!client) return;
+      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash', {
+        body: {
+          user_id: this.currentUID,
+          user_name: this.currentUsername,
+          splash_text: splashText
+        }
+      });
+      if (error || (data as SupabaseErrorResponse)?.error) {
+        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+        if (this.isV4) McmodderUtils.commonMsg(errorMsg, false);
+        else (swal as any)({
+          type: "error",
+          title: "遇到问题",
+          text: errorMsg,
+          buttons: false,
+          timer: 2e3
+        });
+        return;
+      }
+      const resp = data as SupabaseTrackSplashSuccessfulResponse;
+      let msg: string;
+      if (resp.count == 1) {
+        msg = "此标语是首次收录！";
+      } else {
+        msg = `此标语已是第 ${ resp.count.toLocaleString() } 次收录`;
+        if (resp.last_visited_user_id) {
+          const last = Date.parse(resp.last_visited_at);
+          const time = Date.now() - last;
+          const formattedTime = McmodderUtils.getFormattedTime(time);
+          const username = resp.last_visited_user_name;
+          const userID = resp.last_visited_user_id ? `用户 ${ username } (UID:${ resp.last_visited_user_id }) ` : "未登录用户";
+          msg += `，上一次由${ userID }于 ${ formattedTime } 前记录`
+        }
+        msg += "~";
+      }
+      if (this.isV4) McmodderUtils.commonMsg(msg);
+      else (swal as any)({
+        type: "success",
+        title: "标语已上传",
+        text: msg,
+        buttons: false,
+        timer: 2e3
+      });
+    }
   }
 
   tableFix() {
@@ -659,8 +711,10 @@ export class Mcmodder {
     const textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
     if (this.utils.getConfig("mcmodderUI")) {
       // 去除正文异常背景
-      textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "unset");
-      textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "unset");
+      if (!this.utils.getConfig("disableAutoStyleFix")) {
+        textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "");
+        textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "");
+      }
 
       // Swiper 调整
       $(".swiper-container").each((_, _container) => {
@@ -670,17 +724,19 @@ export class Mcmodder {
     }
 
     // 夜间模式正文颜色自动适配
-    textArea.find("*").each((_, _e) => {
-      const e = _e as HTMLElement;
-      const css = (e as HTMLElement).style.getPropertyValue("color");
-      if (css) {
-        const color = McmodderUtils.parseRGB(css);
-        const colorStr = McmodderUtils.RGBToColor(color);
-        const nightColorStr = McmodderUtils.reverseColorBrightness(color);
-        this.elementColorDictionary.set(e, colorStr);
-        this.elementColorCache.set(colorStr, nightColorStr);
-      }
-    });
+    if (!this.utils.getConfig("disableAutoStyleFix")) {
+      textArea.find("*").each((_, _e) => {
+        const e = _e as HTMLElement;
+        const css = (e as HTMLElement).style.getPropertyValue("color");
+        if (css) {
+          const color = McmodderUtils.parseRGB(css);
+          const colorStr = McmodderUtils.RGBToColor(color);
+          const nightColorStr = McmodderUtils.reverseColorBrightness(color);
+          this.elementColorDictionary.set(e, colorStr);
+          this.elementColorCache.set(colorStr, nightColorStr);
+        }
+      });
+    }
 
     if (this.utils.getConfig("adaptableNightMode")) {
       const scheme = window.matchMedia("(prefers-color-scheme: dark)");

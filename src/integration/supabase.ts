@@ -1,31 +1,37 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { GM_getValue } from '$';
+import { Mcmodder } from '../Mcmodder';
 
-let supabaseInstance: SupabaseClient | null = null;
+export class SupabaseUtils {
+  private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
+  private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
+  
 
-export function getSupabaseClient(): SupabaseClient | null {
-  try {
-    const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
-    if (settings.useSupabase === false) {
-      return null;
+  private readonly parent: Mcmodder;
+  private readonly instance: SupabaseClient | null;
+
+  constructor(parent: Mcmodder) {
+    this.parent = parent;
+
+    if (!this.parent.utils.getConfig("useSupabase")) {
+      this.instance = null;
     }
-  } catch (e) {}
 
-  if (supabaseInstance) {
-    return supabaseInstance;
+    else try {
+      this.instance = createClient(
+        SupabaseUtils.supabaseUrl,
+        SupabaseUtils.supabaseKey, {
+          auth: {
+            persistSession: false
+          }
+        }
+      );
+    }
+    catch (e) {
+      this.instance = null;
+    }
   }
 
-  let supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
-  let supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
-
-  try {
-    supabaseInstance = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: false
-      }
-    });
-    return supabaseInstance;
-  } catch (e) {
-    return null;
+  getClient() {
+    return this.instance;
   }
 }

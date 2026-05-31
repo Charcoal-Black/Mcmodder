@@ -277,7 +277,8 @@ body .uknowtoomuch:hover {
 .container-more a,
 .center-item-popover-amount,
 .center-item-popover-p,
-.center-item-popover-title {
+.center-item-popover-title,
+.sweet-alert h2 {
   color: var(--mcmodder-color-text-dark1);
 }
 .class_block .left .list .frame,
@@ -358,7 +359,12 @@ body .copyleft a:hover,
 .search-menu-mcmod a:hover,
 .search-history-btn a:hover,
 .topic_block .title .text li.on,
-.star_block .title .text li.on {
+.star_block .title .text li.on,
+.common-center .maintext .quote_text legend a:hover,
+.common-center .maintext .itemname .tool li a:hover,
+.common-index-block .head-more:hover,
+.defaulthover a:hover,
+.body-content a:hover {
   color: var(--mcmodder-color-accent-dark2);
 }
 .verify-list-list td a.text-muted:hover {
@@ -411,7 +417,8 @@ th,
 .center-main.favorite .favorite-slot-ul.rectangle li .cover,
 .class_block .left .list .items .item_hover,
 .class_block .right li i,
-.author-user-frame .author-user-avatar img {
+.author-user-frame .author-user-avatar img,
+.score-frame .score-one {
   background-color: var(--mcmodder-color-background-dark1);
 }
 .search-result-list {
@@ -451,7 +458,11 @@ body .top-main .pulldown .top_content,
 .post_block .list li .postText li.mainMod,
 .news_block .left .text #random_refresh,
 .news_block .left .text #new_more,
-.news_block .left .text #edit_more {
+.news_block .left .text #edit_more,
+.list-mod-category li img,
+#server-tool li,
+.message-menu ul,
+.edit-dataverify-frame {
   border-color: var(--mcmodder-color-background-dark2);
 }
 .common-text .common-text-menu:not(.style-vertical) ul {
@@ -618,6 +629,7 @@ body .top-main .pulldown .top_content {
 .common-template-frame li {
   width: 100%;
   position: relative;
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .relation-version-sort-button {
   margin-left: 5px;
@@ -1344,7 +1356,8 @@ body > .container > *,
 .class_block .left .more a,
 .un_links li img,
 .logreg-suggest .member li,
-#register-email-check-btn {
+#register-email-check-btn,
+.common-center .maintext .quote_text {
   border-color: var(--mcmodder-color-background-dark2);
 }
 .under {
@@ -1375,6 +1388,12 @@ body .top-main .pulldown .arrow {
 }
 .swal2-popup .swal2-styled.swal2-cancel {
   background-color: var(--mcmodder-color-background-dark4);
+}
+.sweet-alert,
+.sweet-alert .sa-icon.sa-success::before,
+.sweet-alert .sa-icon.sa-success::after,
+.sweet-alert .sa-icon.sa-success .sa-fix {
+  background-color: var(--mcmodder-color-background);
 }
 .pagination {
   text-wrap: nowrap;
@@ -1862,6 +1881,9 @@ body .top-main .info .more-info .top_content a:hover,
 }
 .mcmodder-tool-bar {
   margin-bottom: var(--mcmodder-width-padding-2);
+}
+.mcmodder-tool-bar .btn {
+  margin-right: var(--mcmodder-width-padding-3);
 }
 #mcmodder-mdeditor,
 #mcmodder-htmleditor {
@@ -2453,7 +2475,12 @@ h6 small {
 .un_info li strong,
 .common-text figcaption,
 .common-text .figcaption,
-body .top-main .navs .app-url .li .text {
+body .top-main .navs .app-url .li .text,
+.common-center .maintext .quote_text legend a,
+.server-list-filter .filter-checkbox-group .checkbox,
+.server-online-index .server-online-list li,
+.score-frame .score-block .text,
+.sweet-alert p {
   color: var(--mcmodder-color-text-dark2);
 }
 .class-menu-page,
@@ -2516,7 +2543,8 @@ body .top-main .navs .app-url .li .text {
 .common-comment-block .comment-editor,
 .common-comment-block .comment-title,
 .modal-header,
-.page-header {
+.page-header,
+.score-frame .score-one {
   border-bottom-color: var(--mcmodder-color-background-dark2);
 }
 .comment-attitude.up.colourful,
