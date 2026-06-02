@@ -486,12 +486,12 @@ export class Mcmodder3DSplash {
           font: font,
           size: 1.6,
           depth: 0.4,
-          curveSegments: 12,
+          curveSegments: 6,
           bevelEnabled: true,
           bevelThickness: 0.08,
           bevelSize: 0.04,
           bevelOffset: 0,
-          bevelSegments: 5
+          bevelSegments: 3
         });
 
         textGeo.computeBoundingBox();
