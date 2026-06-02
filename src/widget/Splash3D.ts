@@ -407,12 +407,12 @@ export class Mcmodder3DSplash {
         const font = new Font(json);
         const textGeo = new TextGeometry(displayText, {
           font: font,
-          size: 2.0,
-          depth: 0.5,
+          size: 1.6,
+          depth: 0.4,
           curveSegments: 12,
           bevelEnabled: true,
-          bevelThickness: 0.1,
-          bevelSize: 0.05,
+          bevelThickness: 0.08,
+          bevelSize: 0.04,
           bevelOffset: 0,
           bevelSegments: 5
         });
@@ -500,7 +500,7 @@ export class Mcmodder3DSplash {
     const zHeight = textHeight / (2 * Math.tan(fovRad / 2));
     const zWidth = textWidth / (2 * aspect * Math.tan(fovRad / 2));
 
-    const paddingFactor = 1.25;
+    const paddingFactor = 2.0;
     this.camera.position.z = Math.max(zHeight, zWidth) * paddingFactor;
   }
 
