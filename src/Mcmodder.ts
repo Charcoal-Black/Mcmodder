@@ -22,6 +22,7 @@ import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { McmodderSwiper } from "./widget/Swiper";
 import { SupabaseUtils } from "./integration/supabase";
+import { Mcmodder3DSplash } from "./widget/Splash3D";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -46,6 +47,7 @@ export class Mcmodder {
   cfgutils: McmodderConfigUtils;
   supabaseUtils: SupabaseUtils;
   styleColors: ThemeColorData;
+  splash3D?: Mcmodder3DSplash;
   preferredWiderScreen = false;
   isNightMode = false;
   title = "";
@@ -597,7 +599,12 @@ export class Mcmodder {
       this.href === "https://play.mcmod.cn/") {
       setTimeout(() => this.trackSplash(), 3e2);
     }
-
+    if (this.utils.getConfig("splashStyle") === 1 &&
+      (this.href === `${ this.hostname }/` ||
+        this.href === `${ this.hostname }/v4/`)) {
+      this.splash3D = new Mcmodder3DSplash(this);
+      this.splash3D.init();
+    }
     // 冻结进度
     if (this.utils.getConfig("freezeAdvancements")) {
       $(".common-task-tip").attr({
