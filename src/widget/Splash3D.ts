@@ -128,6 +128,27 @@ async function ensureThreeLoaded() {
     }
   };
 
+  const bufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk) as any);
+    }
+    return (window as any).btoa?.(binary) || (globalThis as any).btoa?.(binary);
+  };
+
+  const base64ToBuffer = (base64: string): ArrayBuffer => {
+    const binaryString = (window as any).atob?.(base64) || (globalThis as any).atob?.(base64);
+    if (!binaryString) return new ArrayBuffer(0);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+
   TTFLoader = class extends THREE.Loader {
     public reversed = false;
 
@@ -135,16 +156,44 @@ async function ensureThreeLoaded() {
       super(manager);
     }
 
-    public load(url: string, onLoad: (data: any) => void, onProgress?: any, onError?: any) {
+    public load(url: string, onLoad: (data: any) => void, onError?: any) {
       const scope = this;
-      const loader = new THREE.FileLoader(this.manager);
-      loader.setPath(this.path);
-      loader.setResponseType("arraybuffer");
-      loader.setRequestHeader(this.requestHeader);
-      loader.setWithCredentials(this.withCredentials);
-      loader.load(
-        url,
-        (buffer: any) => {
+      const fetchWithCache = async (targetUrl: string): Promise<ArrayBuffer> => {
+        const cacheKey = "cached_font_" + targetUrl;
+        let cachedBase64: any = null;
+        try {
+          const getter = (globalThis as any).GM_getValue || (window as any).GM_getValue || (globalThis as any).unsafeWindow?.GM_getValue;
+          if (getter) {
+            cachedBase64 = getter(cacheKey);
+          }
+        } catch (e) {
+        }
+
+        if (cachedBase64) {
+          try {
+            return base64ToBuffer(cachedBase64);
+          } catch (e) {
+          }
+        }
+
+        const response = await fetch(targetUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch font");
+        }
+        const buffer = await response.arrayBuffer();
+        try {
+          const base64 = bufferToBase64(buffer);
+          const setter = (globalThis as any).GM_setValue || (window as any).GM_setValue || (globalThis as any).unsafeWindow?.GM_setValue;
+          if (setter) {
+            setter(cacheKey, base64);
+          }
+        } catch (e) {
+        }
+        return buffer;
+      };
+
+      fetchWithCache(url)
+        .then((buffer) => {
           try {
             onLoad(scope.parse(buffer));
           } catch (e) {
@@ -153,12 +202,15 @@ async function ensureThreeLoaded() {
             } else {
               console.error(e);
             }
-            scope.manager.itemError(url);
           }
-        },
-        onProgress,
-        onError
-      );
+        })
+        .catch((err) => {
+          if (onError) {
+            onError(err);
+          } else {
+            console.error(err);
+          }
+        });
     }
 
     public parse(arraybuffer: any) {
