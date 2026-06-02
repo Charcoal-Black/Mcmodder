@@ -1,5 +1,54 @@
 import { Mcmodder } from "../Mcmodder";
 
+function getFontFromIndexedDB(url: string): Promise<ArrayBuffer | null> {
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open("McmodderFontDB", 1);
+      request.onupgradeneeded = (e: any) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("fonts")) {
+          db.createObjectStore("fonts");
+        }
+      };
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const tx = db.transaction("fonts", "readonly");
+        const store = tx.objectStore("fonts");
+        const getReq = store.get(url);
+        getReq.onsuccess = () => resolve(getReq.result || null);
+        getReq.onerror = () => resolve(null);
+      };
+      request.onerror = () => resolve(null);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+function saveFontToIndexedDB(url: string, buffer: ArrayBuffer): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open("McmodderFontDB", 1);
+      request.onupgradeneeded = (e: any) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("fonts")) {
+          db.createObjectStore("fonts");
+        }
+      };
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const tx = db.transaction("fonts", "readwrite");
+        const store = tx.objectStore("fonts");
+        store.put(buffer, url);
+        tx.oncomplete = () => resolve();
+      };
+      request.onerror = () => resolve();
+    } catch (e) {
+      resolve();
+    }
+  });
+}
+
 let THREE: any;
 let Font: any;
 let TextGeometry: any;
@@ -128,27 +177,6 @@ async function ensureThreeLoaded() {
     }
   };
 
-  const bufferToBase64 = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    const chunk = 8192;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk) as any);
-    }
-    return (window as any).btoa?.(binary) || (globalThis as any).btoa?.(binary);
-  };
-
-  const base64ToBuffer = (base64: string): ArrayBuffer => {
-    const binaryString = (window as any).atob?.(base64) || (globalThis as any).atob?.(base64);
-    if (!binaryString) return new ArrayBuffer(0);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  };
-
   TTFLoader = class extends THREE.Loader {
     public reversed = false;
 
@@ -159,21 +187,12 @@ async function ensureThreeLoaded() {
     public load(url: string, onLoad: (data: any) => void, onError?: any) {
       const scope = this;
       const fetchWithCache = async (targetUrl: string): Promise<ArrayBuffer> => {
-        const cacheKey = "cached_font_" + targetUrl;
-        let cachedBase64: any = null;
         try {
-          const getter = (globalThis as any).GM_getValue || (window as any).GM_getValue || (globalThis as any).unsafeWindow?.GM_getValue;
-          if (getter) {
-            cachedBase64 = getter(cacheKey);
+          const cachedBuffer = await getFontFromIndexedDB(targetUrl);
+          if (cachedBuffer) {
+            return cachedBuffer;
           }
         } catch (e) {
-        }
-
-        if (cachedBase64) {
-          try {
-            return base64ToBuffer(cachedBase64);
-          } catch (e) {
-          }
         }
 
         const response = await fetch(targetUrl);
@@ -182,11 +201,7 @@ async function ensureThreeLoaded() {
         }
         const buffer = await response.arrayBuffer();
         try {
-          const base64 = bufferToBase64(buffer);
-          const setter = (globalThis as any).GM_setValue || (window as any).GM_setValue || (globalThis as any).unsafeWindow?.GM_setValue;
-          if (setter) {
-            setter(cacheKey, base64);
-          }
+          await saveFontToIndexedDB(targetUrl, buffer);
         } catch (e) {
         }
         return buffer;
@@ -214,48 +229,61 @@ async function ensureThreeLoaded() {
     }
 
     public parse(arraybuffer: any) {
-      function convert(font: any, reversed: boolean) {
+      const scope = this;
+      const targetText = (scope as any).displayText || "";
+      const opentypeLib = (window as any).opentype || (globalThis as any).opentype || (globalThis as any).unsafeWindow?.opentype;
+      if (!opentypeLib) {
+        throw new Error("opentype is not defined");
+      }
+
+      function convert(font: any, reversed: boolean, text: string) {
         const round = Math.round;
         const glyphs: any = {};
         const scale = 100000 / ((font.unitsPerEm || 2048) * 72);
         const glyphIndexMap = font.encoding.cmap.glyphIndexMap;
-        const unicodes = Object.keys(glyphIndexMap);
 
-        for (let i = 0; i < unicodes.length; i++) {
-          const unicode = unicodes[i];
-          const glyph = font.glyphs.glyphs[glyphIndexMap[unicode]];
-          if (unicode !== undefined) {
-            const token: any = {
-              ha: round(glyph.advanceWidth * scale),
-              x_min: round(glyph.xMin * scale),
-              x_max: round(glyph.xMax * scale),
-              o: ""
-            };
-            if (reversed) {
-              glyph.path.commands = reverseCommands(glyph.path.commands);
+        const uniqueChars = Array.from(new Set(text + " ?"));
+        for (let i = 0; i < uniqueChars.length; i++) {
+          const char = uniqueChars[i];
+          const codePoint = char.codePointAt(0);
+          if (codePoint === undefined) continue;
+
+          const glyphIndex = glyphIndexMap[codePoint];
+          if (glyphIndex === undefined) continue;
+
+          const glyph = font.glyphs.glyphs[glyphIndex];
+          if (!glyph) continue;
+
+          const token: any = {
+            ha: round(glyph.advanceWidth * scale),
+            x_min: round(glyph.xMin * scale),
+            x_max: round(glyph.xMax * scale),
+            o: ""
+          };
+          if (reversed) {
+            glyph.path.commands = reverseCommands(glyph.path.commands);
+          }
+          glyph.path.commands.forEach((command: any) => {
+            if (command.type.toLowerCase() === "c") {
+              command.type = "b";
             }
-            glyph.path.commands.forEach((command: any) => {
-              if (command.type.toLowerCase() === "c") {
-                command.type = "b";
-              }
-              token.o += command.type.toLowerCase() + " ";
-              if (command.x !== undefined && command.y !== undefined) {
-                token.o += round(command.x * scale) + " " + round(command.y * scale) + " ";
-              }
-              if (command.x1 !== undefined && command.y1 !== undefined) {
-                token.o += round(command.x1 * scale) + " " + round(command.y1 * scale) + " ";
-              }
-              if (command.x2 !== undefined && command.y2 !== undefined) {
-                token.o += round(command.x2 * scale) + " " + round(command.y2 * scale) + " ";
-              }
+            token.o += command.type.toLowerCase() + " ";
+            if (command.x !== undefined && command.y !== undefined) {
+              token.o += round(command.x * scale) + " " + round(command.y * scale) + " ";
+            }
+            if (command.x1 !== undefined && command.y1 !== undefined) {
+              token.o += round(command.x1 * scale) + " " + round(command.y1 * scale) + " ";
+            }
+            if (command.x2 !== undefined && command.y2 !== undefined) {
+              token.o += round(command.x2 * scale) + " " + round(command.y2 * scale) + " ";
+            }
+          });
+          if (Array.isArray(glyph.unicodes) && glyph.unicodes.length > 0) {
+            glyph.unicodes.forEach((unicode: number) => {
+              glyphs[String.fromCodePoint(unicode)] = token;
             });
-            if (Array.isArray(glyph.unicodes) && glyph.unicodes.length > 0) {
-              glyph.unicodes.forEach((unicode: number) => {
-                glyphs[String.fromCodePoint(unicode)] = token;
-              });
-            } else {
-              glyphs[String.fromCodePoint(glyph.unicode)] = token;
-            }
+          } else {
+            glyphs[String.fromCodePoint(glyph.unicode)] = token;
           }
         }
 
@@ -317,11 +345,7 @@ async function ensureThreeLoaded() {
         return reversed;
       }
 
-      const opentypeLib = (window as any).opentype || (globalThis as any).opentype || (globalThis as any).unsafeWindow?.opentype;
-      if (!opentypeLib) {
-        throw new Error("opentype is not defined");
-      }
-      return convert(opentypeLib.parse(arraybuffer), this.reversed);
+      return convert(opentypeLib.parse(arraybuffer), this.reversed, targetText);
     }
   };
 }
@@ -450,9 +474,10 @@ export class Mcmodder3DSplash {
     dirLightTop.position.set(0, 10, 0);
     this.scene.add(dirLightTop);
 
-    const fontUrl = this.parent.utils.getConfig("splashFontUrl") || "https://fastly.jsdelivr.net/gh/google/fonts@main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf";
+    const fontUrl = this.parent.utils.getConfig("splashFontUrl") || "https://cdn.jsdelivr.net.cn/npm/noto-sans-sc-ttf@1.0.0/fonts/NotoSansSC-Regular.ttf";
 
     const ttfLoader = new TTFLoader();
+    (ttfLoader as any).displayText = displayText;
     ttfLoader.load(
       fontUrl,
       (json: any) => {
