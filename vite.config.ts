@@ -58,11 +58,11 @@ export default defineConfig({
       },
       build: {
         externalGlobals: {
-          "codemirror": "window.CodeMirror",
-          "turndown": "window.TurndownService",
-          "@supabase/supabase-js": "window.supabase",
-          "three": "window.THREE",
-          "opentype.js": "window.opentype"
+          "codemirror": "CodeMirror",
+          "turndown": "TurndownService",
+          "@supabase/supabase-js": "supabase",
+          "three": "THREE",
+          "opentype.js": "opentype"
         }
       }
     })
