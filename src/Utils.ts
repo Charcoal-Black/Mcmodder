@@ -37,8 +37,19 @@ export class McmodderUtils {
   }
 
   static commonMsg(message: string, isok: boolean = true, title: string = "") {
-    if (typeof common_msg != "function") return;
-    common_msg(title || (isok ? "提示" : "错误"), message, isok ? "ok" : "err");
+    const defaultTitle = isok ? "提示" : "错误";
+    if (typeof common_msg === "function") {
+      common_msg(title || defaultTitle, message, isok ? "ok" : "err");
+    }
+    else if (typeof swal === "function") {
+      (swal as any)({
+        type: isok ? "success" : "error",
+        title: defaultTitle,
+        text: message,
+        button: false,
+        timer: 3e3
+      });
+    }
   }
 
   static showTaskTip(imageUrl: string, title: string, text: string, achieveTime: string, progress: number, rewardExp: number | string) {

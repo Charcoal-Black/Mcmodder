@@ -36,7 +36,7 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
       title: "自动签到已执行",
       text: message,
       buttons: false,
-      timer: 2e3
+      timer: 3e3
     });
 
     let yr = parseInt(this.parent.utils.getProfile("annualCelebration")) || 0;

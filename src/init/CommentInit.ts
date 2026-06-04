@@ -24,6 +24,15 @@ export class CommentInit extends McmodderInit {
     .text(PublicLangData.comment.suffix.mod_manager);
   }
 
+  private replaceMobileClientIcon(target: JQuery) {
+    const legacy = target.find(".phone");
+    if (legacy.length) {
+      const icon = $('<i class="mcmodder-mobileclient fa fa-mobile" data-toggle="tooltip" data-original-title="移动端用户">');
+      legacy.replaceWith(icon);
+      icon.tooltip({});
+    }
+  }
+
   private renderPagination() {
     $("ul.pagination.common-pages > span").each((_, e) => {
       e.innerHTML += '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
@@ -93,6 +102,9 @@ export class CommentInit extends McmodderInit {
               target.find("a.fold.text-muted")
               .append(` - <span class="mcmodder-slim-danger">核弹警告！</span>本楼展开后将会长达 <span class="mcmodder-common-danger">${ h.toLocaleString() } px</span>！`); // 核弹警告
             }
+
+            // 移动端图标优化
+            this.replaceMobileClientIcon(target);
           });
         }
         else if (className === "comment-reply-floor" && this.parent.utils.getConfig("replyLink")) {

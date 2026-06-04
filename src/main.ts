@@ -11,7 +11,7 @@ import bbsCss from './css/bbs.css?raw';
   const splashStyle = document.createElement("style");
   // 遮罩，防止显示百科原网页闪烁
   splashStyle.id = "mcmodder-splash-screen";
-  splashStyle.textContent = `html { background: ${nightMode ? "#000" : "#fff"} !important; } body { visibility: hidden !important; }`;
+  splashStyle.textContent = `html { background: ${nightMode ? "#111" : "#fff"} !important; } body { visibility: hidden !important; }`;
   if (document.documentElement != null) {
     document.documentElement.appendChild(splashStyle);
   } else {

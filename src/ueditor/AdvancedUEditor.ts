@@ -113,6 +113,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
     this.addTool("mcmodder-tool-linkfix", "移除无效链接", () => this.performLinkFix());
 
+    this.addTool("mcmodder-tool-spacing", "中英间添加空格", () => this.performSpacingPage());
+
     let itemSourceList: McmodderItemList = [];
     (this.parent.utils.getConfig("jsonDatabase") as string[])?.forEach(fileName => {
       itemSourceList = itemSourceList.concat(this.parent.utils.getConfig(fileName, "mcmodderJsonStorage", []));
@@ -363,9 +365,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   private readyToolkit() {
     const c = this.toolkitOption?.getCurrentValue();
     if (c) {
-      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix").show();
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").show();
     } else {
-      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix").hide();
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").hide();
     }
     this.parent.utils.setConfig("editorToolkit", c);
   }
@@ -453,6 +455,17 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     } else {
       McmodderUtils.commonMsg(`${ count } 处异常链接已被修复~`);
     }
+  }
+
+  async performSpacingPage() {
+    if (!this.window || !this.head || !this.body || !this.$body) return;
+    await McmodderUtils.loadScript(this.head, null, McmodderValues.assets.js.pangu, null, "mcmodder-script-pangu");
+    const isEditable = this.body.contentEditable;
+    this.body.contentEditable = "false";
+    (this.window as any).pangu.spacingPage();
+    if (isEditable === "true") setTimeout(() => {
+      this.body!.contentEditable = "true";
+    }, 1e2);
   }
 
   isEditorLocked() {

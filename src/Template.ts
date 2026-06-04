@@ -180,6 +180,7 @@ export class McmodderTemplate {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     data.content = this.editor.editor.getContent();
+    this.parent.utils.setAllConfig("templateList", this.list);
     McmodderUtils.commonMsg(`${ data.title } 内容已更新~`);
   }
 

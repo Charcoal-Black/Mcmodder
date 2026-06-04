@@ -31,7 +31,7 @@ export class McmodderCheckboxInput extends McmodderInput<boolean> {
     return !!this.getInputNode().prop("checked");
   }
 
-  protected override setDisplayValue(value: boolean) {
+  override setDisplayValue(value: boolean) {
     this.getInputNode().prop("checked", value);
   }
 

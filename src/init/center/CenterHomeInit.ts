@@ -286,7 +286,7 @@ export class CenterHomeInit extends CenterBaseInit {
           if ((addedNode.firstChild as HTMLElement)?.tagName === "CANVAS") {
             const id = editChartContainer.getAttribute("_echarts_instance_");
             const editChart = echarts.getInstanceById(id);
-            this.getParent().centerEditChart = editChart;
+            this.getParent().echartsUtils.centerEditChart = editChart;
             this.editChartInit();
           }
         });
@@ -322,7 +322,7 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private editChartInit() {
-    const editChart = this.getParent().centerEditChart;
+    const editChart = this.getParent().echartsUtils.centerEditChart;
     // editChart.setOption({
     //   tooltip: [{
     //     backgroundColor: "var(--mcmodder-color-background)",
@@ -355,7 +355,7 @@ export class CenterHomeInit extends CenterBaseInit {
 
   private switchDisplayMode(e: JQueryKeyEventObject) {
     const target = e.currentTarget;
-    const editChart = this.getParent().centerEditChart;
+    const editChart = this.getParent().echartsUtils.centerEditChart;
     if (target.textContent === "转为字数统计") {
       $(target).parent().find(".title-sub").text("历史成功完成改动操作的字数");
       this.chartOriginalData = editChart.getOption();

@@ -626,7 +626,7 @@ body .top-main .pulldown .top_content {
 .common-template-frame li p {
   line-height: unset;
 }
-.common-template-frame li {
+body .common-template-frame li {
   width: 100%;
   position: relative;
   border-color: var(--mcmodder-color-background-dark2);
@@ -819,14 +819,14 @@ body:not(.view),
   position: absolute;
   right: 0;
   bottom: -.25em;
-  color: var(--mcmodder-color-primary);
+  color: #fff;
   text-shadow: 2px 2px 1px var(--mcmodder-color-primary-dark1);
 }
 .mcmodder-gui-out {
   position: absolute;
   right: 0;
   bottom: -.25em;
-  color: var(--mcmodder-color-accent);
+  color: #fff;
   text-shadow: 2px 2px 1px var(--mcmodder-color-accent-dark1);
 }
 .mcmodder-progress {
@@ -2594,6 +2594,11 @@ body .top-main .navs .app-url .li .text,
 .comment-attitude.handshake.colourful,
 .comment-attitude.handshake.colourful:hover {
   color: var(--mcmodder-color-attitude-handshake);
+}
+.mcmodder-mobileclient {
+  margin-left: var(--mcmodder-width-padding-2);
+  transform: scale(1.5);
+  cursor: var(--mcmodder-cursor-hand);
 }
 .class-official-group .class-status {
   border-right-color: var(--mcmodder-color-background-dark1);

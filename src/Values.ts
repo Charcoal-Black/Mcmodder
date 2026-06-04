@@ -61,6 +61,7 @@ export class McmodderValues {
     },
     js: {
       markdownit: "https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.1/markdown-it.min.js",
+      pangu: "https://cdn.jsdelivr.net/npm/pangu@7.2.0/dist/browser/pangu.umd.min.js",
       turndown: "https://cdnjs.cloudflare.com/ajax/libs/turndown/7.2.1/turndown.min.js",
       codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
       codemirrorMod: {

@@ -21,8 +21,9 @@ import { InitLoader } from "./loader/InitLoader";
 import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { McmodderSwiper } from "./widget/Swiper";
-import { SupabaseUtils } from "./integration/supabase";
+import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import { Mcmodder3DSplash } from "./widget/Splash3D";
+import { EchartsUtils } from "./echarts/EChartsUtils";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -46,13 +47,12 @@ export class Mcmodder {
   screenAttachedFrame: ScreenAttachedFrameData[];
   cfgutils: McmodderConfigUtils;
   supabaseUtils: SupabaseUtils;
+  echartsUtils: EchartsUtils;
   styleColors: ThemeColorData;
   splash3D?: Mcmodder3DSplash;
   preferredWiderScreen = false;
   isNightMode = false;
   title = "";
-  classRatingChart?: any;
-  centerEditChart?: any;
   css = "";
   itemTypeList?: ItemTypeList;
   readonly hostname: string;
@@ -75,13 +75,7 @@ export class Mcmodder {
     this.title = this.titleNode.html().replace(" - MC百科|最大的Minecraft中文MOD百科", "");
     this.hostname = McmodderValues.hostname;
 
-    // Echarts 图表相关兼容
-    if (typeof echarts != "undefined") {
-      let t = document.getElementById("class-rating");
-      if (t) this.classRatingChart = echarts.getInstanceById(t.getAttribute("_echarts_instance_"));
-      t = document.getElementById("center-editchart-obj");
-      if (t) this.centerEditChart = echarts.getInstanceById(t.getAttribute("_echarts_instance_"));
-    }
+    this.echartsUtils = new EchartsUtils(this);
 
     this.screenAttachedFrame = [];
     
@@ -215,6 +209,10 @@ export class Mcmodder {
         rightTable.find("img").each((_, img) => {
           showImg(img);
         });
+        const mcicons = $("#icon-toughness-empty");
+        if (!mcicons.length) {
+          doc.find("#icon-toughness-empty").parent().prependTo(document.body);
+        }
         if (this.utils.getConfig("hoverImage")) {
           previewFrame.find("img").each((_, img) => {
             showImg(img);
@@ -402,7 +400,7 @@ export class Mcmodder {
     if (!flag) splashes.push(`${Date.now()},${splashText},1`);
     else splashes[index] = splashes[index].slice(0, splashes[index].lastIndexOf(",") + 1) + flag;
     GM_setValue("mcmodderSplashList_v2", splashes.join("\n"));
-    if (flag) McmodderUtils.commonMsg(`该标语累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
+    if (flag) McmodderUtils.commonMsg(`该标语在本地累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
 
     if (this.utils.getConfig("supabaseSplash")) {
@@ -423,7 +421,7 @@ export class Mcmodder {
           title: "遇到问题",
           text: errorMsg,
           buttons: false,
-          timer: 2e3
+          timer: 3e3
         });
         return;
       }
@@ -449,7 +447,7 @@ export class Mcmodder {
         title: "标语已上传",
         text: msg,
         buttons: false,
-        timer: 2e3
+        timer: 3e3
       });
     }
   }
@@ -471,27 +469,7 @@ export class Mcmodder {
       if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) {
         $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
       }
-      let o = this.classRatingChart?.getOption();
-      if (o) {
-        o.backgroundColor = "#1118";
-        // o.axisPointer[0].lineStyle.color = "#444";
-        o.radar[0].splitLine.lineStyle.color = "#1f190e";
-        o.series[0].color = "#ee6";
-        o.series[0].data[0].areaStyle.color = "rgba(255, 255, 255, 0.5)";
-        this.classRatingChart.setOption(o);
-      }
-      o = this.centerEditChart?.getOption();
-      if (o) {
-        o.tooltip[0].backgroundColor = "#222";
-        o.calendar[0].dayLabel.color = "#fff";
-        o.calendar[0].yearLabel.color = "#ee6";
-        o.calendar[0].monthLabel.color = "#fff";
-        o.calendar[0].itemStyle = {
-          color: "#3330",
-          borderColor: "#444"
-        };
-        this.centerEditChart.setOption(o);
-      }
+      this.echartsUtils.enableNightStyle();
       $("html").addClass("dark");
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").addClass("dark");
@@ -506,27 +484,7 @@ export class Mcmodder {
       if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.nightMode.imagesNone) {
         $("#item-cover-preview-img").attr("src", McmodderValues.assets.mcmod.imagesNone);
       }
-      let o = this.classRatingChart?.getOption();
-      if (o) {
-        o.backgroundColor = "#fff8";
-        // o.axisPointer[0].lineStyle.color = "#B9BEC9";
-        o.radar[0].splitLine.lineStyle.color = "#E0E6F1";
-        o.series[0].color = "#555";
-        o.series[0].data[0].areaStyle.color = "rgba(0, 0, 0, 0.25)";
-        this.classRatingChart.setOption(o);
-      }
-      o = this.centerEditChart?.getOption();
-      if (o) {
-        o.tooltip[0].backgroundColor = "#fff";
-        o.calendar[0].dayLabel.color = "#000";
-        o.calendar[0].yearLabel.color = "#aaa";
-        o.calendar[0].monthLabel.color = "#000";
-        o.calendar[0].itemStyle = {
-          color: "#fff0",
-          borderColor: "#bbb"
-        };
-        this.centerEditChart.setOption(o);
-      }
+      this.echartsUtils.disableNightStyle();
       $("html").removeClass("dark");
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").removeClass("dark");

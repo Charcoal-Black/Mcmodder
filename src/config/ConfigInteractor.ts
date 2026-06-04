@@ -60,7 +60,11 @@ export class McmodderConfigInteractor {
       case McmodderInputType.COLORPICKER: return new McmodderColorpickerInput(title, value, this.onSuccessfulChange);
       case McmodderInputType.NUMBER: return new McmodderNumberInput(title, value, this.data.range as InputValueNumericRange, this.onSuccessfulChange);
       case McmodderInputType.SLIDER: return new McmodderSliderInput(title, value, this.data.range as InputValueNumericRange, this.onSuccessfulChange);
-      case McmodderInputType.DROPDOWN_MENU: return new McmodderDropdownInput(title, value, this.data.range as InputValueSet, this.onSuccessfulChange);
+      case McmodderInputType.DROPDOWN_MENU: {
+        const valueSet = this.data.range as InputValueSet;
+        valueSet[this.data.value] += " (默认)";
+        return new McmodderDropdownInput(title, value, valueSet, this.onSuccessfulChange);
+      }
       case McmodderInputType.KEYBIND: return new McmodderKeybindInput(title, value, this.onSuccessfulChange);
     }
     throw new Error("这 InputType 有力气");
