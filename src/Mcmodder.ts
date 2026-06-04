@@ -123,7 +123,7 @@ export class Mcmodder {
     if (this.utils.getConfig("hoverDescription")) {
       $(".common-imglist li, .item-list-type-right span, .relation a").off();
       $("a").filter((_, e) => {
-        const href = (e as HTMLLinkElement).href;
+        const href = (e as HTMLAnchorElement).href;
         return /\/\/www1?\.mcmod\.cn\/item\/[0-9]*\.html/.test(href) || /\/\/www1?\.mcmod\.cn\/class\/[0-9]*\.html/.test(href);
       }).filter((_, _c) => {
         const c = $(_c);
@@ -137,7 +137,7 @@ export class Mcmodder {
         e.outerHTML = e.outerHTML;
       })
       $(".mcmodder-item-link").each((_, e) => {
-        const href = (e as HTMLLinkElement).href;
+        const href = (e as HTMLAnchorElement).href;
         $(e).attr({
           "data-source-url": href.split("mcmod.cn/")[1],
           "data-toggle": "tooltip",
@@ -153,7 +153,7 @@ export class Mcmodder {
       });
       $(document).on("mouseenter", ".mcmodder-item-link", async e => {
         await McmodderUtils.sleep(250);
-        const target = e.currentTarget as HTMLLinkElement;
+        const target = e.currentTarget as HTMLAnchorElement;
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${ sourceUrl }"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
@@ -211,7 +211,9 @@ export class Mcmodder {
         });
         const mcicons = $("#icon-toughness-empty");
         if (!mcicons.length) {
-          doc.find("#icon-toughness-empty").parent().prependTo(document.body);
+          const module = import.meta.glob('./html/mcicons.html', { query: "?raw", eager: true });
+          const mciconsHtml = (module['./html/mcicons.html'] as any).default as string;
+          $(mciconsHtml).prependTo(document.body);
         }
         if (this.utils.getConfig("hoverImage")) {
           previewFrame.find("img").each((_, img) => {

@@ -66,7 +66,7 @@ export class ClassPageInit extends McmodderInit {
       $("li.col-lg-12.relation").each((_, e) => {
         let target = $(e);
         target.find("a[data-toggle=tooltip]").each((_, a) => {
-          const href = (a as HTMLLinkElement).href;
+          const href = (a as HTMLAnchorElement).href;
           let id = McmodderUtils.abstractLastFromURL(href, "class");
           let name = a.textContent;
           if (id && name) this.parent.utils.updateClassNameIDMap(name, id);

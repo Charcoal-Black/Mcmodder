@@ -353,7 +353,7 @@ export class McmodderAutoLink {
 
   private parseOnlineSearchItemResult(index: number, element: Element): AutoLinkItemEntry | undefined {
     const img = element.childNodes.item(0);
-    const link = element.childNodes.item(1) as HTMLLinkElement;
+    const link = element.childNodes.item(1) as HTMLAnchorElement;
     if (!(img && link)) return;
 
     const dataType = link.getAttribute("data-type");
@@ -408,7 +408,7 @@ export class McmodderAutoLink {
     return this.evaluateItemMatchRate(itemData, this.searchKeywords || [], (30 - index) / 3);
   }
 
-  private parseOnlineSearchClassResult(index: number, link: HTMLLinkElement, type: "class" | "modpack"): AutoLinkClassEntry {
+  private parseOnlineSearchClassResult(index: number, link: HTMLAnchorElement, type: "class" | "modpack"): AutoLinkClassEntry {
     const text = link.getAttribute("data-text-full");
     const classID = Number(link.getAttribute("data-id"));
     const {className, classEname, classAbbr} = McmodderUtils.parseClassFullName(text || "");
@@ -427,7 +427,7 @@ export class McmodderAutoLink {
     };
   }
 
-  private parseOnlineSearchAuthorResult(index: number, link: HTMLLinkElement, type: "author"): AutoLinkAuthorEntry | undefined {
+  private parseOnlineSearchAuthorResult(index: number, link: HTMLAnchorElement, type: "author"): AutoLinkAuthorEntry | undefined {
     const text = link.textContent;
     const textHalf = link.getAttribute("data-text-half");
     const textFull = link.getAttribute("data-text-full");
@@ -454,7 +454,7 @@ export class McmodderAutoLink {
   }
 
   private parseOnlineSearchNonItemResult(index: number, element: Element): AutoLinkClassEntry | AutoLinkAuthorEntry | undefined {
-    const link = element.childNodes.item(0) as HTMLLinkElement;
+    const link = element.childNodes.item(0) as HTMLAnchorElement;
     if (!link || link.nodeType != Node.ELEMENT_NODE) return;
     const type = link.getAttribute("data-type");
     if (type === "class" || type === "modpack") return this.parseOnlineSearchClassResult(index, link, type);

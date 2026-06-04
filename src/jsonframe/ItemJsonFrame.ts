@@ -594,7 +594,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     const doc = $(resp.responseXML).find(".item-list-branch-frame");
     if (doc.length) {
       doc.find("a").each((_, c) => {
-        branchList.push((c as HTMLLinkElement).href.split("/item/list/")[1].split(".html")[0]);
+        branchList.push((c as HTMLAnchorElement).href.split("/item/list/")[1].split(".html")[0]);
       });
       doc.find("a, span").each((_, c) => {
         branchNameList.push(c.textContent);

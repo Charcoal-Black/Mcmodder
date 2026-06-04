@@ -2063,7 +2063,7 @@ body .top-main .info .more-info .top_content a:hover,
 .mcmodder-table-unsaved-tr {
   background-color: var(--mcmodder-color-primary-transparent1);
 }
-.jsonframe-export-text {
+.mcmodder-swal-configtext {
   text-align: center;
   font-size: 14px;
   margin: .5em 0 .5em 0;

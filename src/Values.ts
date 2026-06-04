@@ -67,7 +67,8 @@ export class McmodderValues {
       codemirrorMod: {
         htmlEmbedded: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/htmlembedded/htmlembedded.min.js",
         markdown: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js"
-      }
+      },
+      jsBeautify: "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.4/beautify-html.min.js"
     },
     css: {
       codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css"

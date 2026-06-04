@@ -110,7 +110,7 @@ export class VerifyPageInit extends McmodderInit {
           case 3: t = "class"; break;
           case 9: t = "item";
         }
-        let l = e.find("td:nth-child(2) a").filter((_, c) => (c as HTMLLinkElement).href.includes("/" + t + "/"));
+        let l = e.find("td:nth-child(2) a").filter((_, c) => (c as HTMLAnchorElement).href.includes("/" + t + "/"));
         if (l.length && !e.find(".verify-withdraw-btn").length) {
           e.find("td").last().prev().append(`<a class="btn btn-outline-dark btn-sm mcmodder-content-block" href="/${t}/edit/${McmodderUtils.abstractLastFromURL(l.attr("href"), t)}/" target="_blank">查看改动</a>`);
         }

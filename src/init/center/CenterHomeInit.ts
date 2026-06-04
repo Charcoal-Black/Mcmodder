@@ -98,7 +98,7 @@ export class CenterHomeInit extends CenterBaseInit {
       else if (t.startsWith("开发者")) l = "devModList";
       else throw new Error("未能匹配模组区域标题...");
       c.find("li a").each((_, d) => {
-        s.push(Number((d as HTMLLinkElement).href.split("/class/")[1].split(".html")[0]));
+        s.push(Number((d as HTMLAnchorElement).href.split("/class/")[1].split(".html")[0]));
       });
       const str = s.join(",");
       profile[l] = str;

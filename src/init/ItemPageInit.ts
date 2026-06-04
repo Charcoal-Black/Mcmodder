@@ -133,7 +133,7 @@ export class ItemPageInit extends McmodderInit {
       $('.item-content > *:not(.item-data) a:not([href="javascript:void(0);"])')
       .filter((_, c) => !!(c.textContent && (c.parentNode as Element)?.tagName != "LEGEND"))
       .each((_, a) => {
-        const key = a.textContent, value = (a as HTMLLinkElement).href.replaceAll(/https:\/\/www1?\.mcmod\.cn/g, "");
+        const key = a.textContent, value = (a as HTMLAnchorElement).href.replaceAll(/https:\/\/www1?\.mcmod\.cn/g, "");
         if (this.parent.utils.getConfig("linkMark")) $(a).after(`<code class="mcmodder-link-check">${value}</code>`);
         if (!linkMap.has(key)) linkMap.set(key, value);
         else if (linkMap.get(key) != value) warnList.push(key);
@@ -142,7 +142,7 @@ export class ItemPageInit extends McmodderInit {
         if (warnList.includes(a.textContent)) {
           a.classList.add("mcmodder-link-warn");
           clashFlag = true;
-        } else if ((a as HTMLLinkElement).href.includes("minecraft.fandom.com")) {
+        } else if ((a as HTMLAnchorElement).href.includes("minecraft.fandom.com")) {
           a.classList.add("mcmodder-link-warn");
           fandomFlag = true;
         }
