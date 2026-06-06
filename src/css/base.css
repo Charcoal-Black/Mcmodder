@@ -749,6 +749,8 @@ body:not(.view),
 }
 .item-list-table th,
 .btn-light,
+.btn-light.disabled,
+.btn-light:disabled,
 .btn-outline-dark {
   background-color: var(--mcmodder-color-background-dark1);
   color: var(--mcmodder-color-text);
@@ -2599,6 +2601,7 @@ body .top-main .navs .app-url .li .text,
   margin-left: var(--mcmodder-width-padding-2);
   transform: scale(1.5);
   cursor: var(--mcmodder-cursor-hand);
+  color: var(--mcmodder-color-button);
 }
 .class-official-group .class-status {
   border-right-color: var(--mcmodder-color-background-dark1);

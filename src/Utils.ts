@@ -524,9 +524,9 @@ export class McmodderUtils {
     l = Math.round(l * 100);
     const a = (rgb as RGBA).a;
     if (a != undefined) {
-      return { h: h, s: s, l: l, a: a };
+      return { h, s, l, a };
     }
-    return { h: h, s: s, l: l };
+    return { h, s, l };
   }
 
   static HSLToRGB(hsl: HSL): RGB | RGBA {

@@ -550,4 +550,10 @@ export interface SupabaseTrackSplashSuccessfulResponse {
   last_visited_at: string;
 }
 
+export interface SupabaseByteChartSuccessfulResponse {
+  data: [string, number][];
+}
+
 export type SupabaseTrackSplashResponse = SupabaseTrackSplashSuccessfulResponse | SupabaseErrorResponse;
+
+export type SupabaseByteChartResponse = SupabaseByteChartSuccessfulResponse | SupabaseErrorResponse;

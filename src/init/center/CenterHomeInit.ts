@@ -1,7 +1,7 @@
 import { GM_cookie } from "$";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
 import { McmodderPermission } from "../../config/ConfigUtils";
-import { McmodderProfileData } from "../../types";
+import { McmodderProfileData, SupabaseByteChartResponse, SupabaseByteChartSuccessfulResponse, SupabaseErrorResponse } from "../../types";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CommentInit } from "../CommentInit";
@@ -9,6 +9,7 @@ import { CenterBaseInit } from "./CenterBaseInit";
 
 export class CenterHomeInit extends CenterBaseInit {
   static readonly maxRecentlyVisitedLength = 100;
+  private chartMode: 1 | 2 = 1;
   private optionData: any;
   private tempData: any;
   private chartOriginalData: any;
@@ -246,14 +247,14 @@ export class CenterHomeInit extends CenterBaseInit {
 
     // 字数统计表
     // 使用前需要在贡献榜页面保存数据
-    if (this.getUtils().getConfig("byteChart")) {
+    if (this.getUtils().getConfig("byteChart") && !this.getUtils().getConfig("supabaseByteChart")) {
       let rawData = this.getUtils().getAllConfig("rankData", []);
       this.optionData = [[0, "center"], [1, "mcmod"], [2, "cn"]];
       this.tempData = {};
       Object.keys(rawData).forEach(t => {
         let d = new Date(Number(t) * 1e3);
         let f = `${
-          1900 + d.getFullYear()
+          d.getFullYear()
         }-${
           (1 + d.getMonth()).toString().padStart(2, '0')
         }-${
@@ -268,6 +269,13 @@ export class CenterHomeInit extends CenterBaseInit {
         });
       });
     }
+
+    // 切换年份时切换回次数统计模式
+    $(document.body).on("change", "#center-editchart-select select", () => {
+      if (this.chartMode === 2) {
+        $(".mcmodder-byte-chart").click();
+      }
+    });
 
     // 夜间模式支持
     if (this.getUtils().getConfig("nightMode")) $(".post-block img").bind("load", e => {
@@ -353,14 +361,23 @@ export class CenterHomeInit extends CenterBaseInit {
     this.getParent().updateNightMode();
   }
 
-  private switchDisplayMode(e: JQueryKeyEventObject) {
+  private async switchDisplayMode(e: JQueryKeyEventObject) {
     const target = e.currentTarget;
     const editChart = this.getParent().echartsUtils.centerEditChart;
-    if (target.textContent === "转为字数统计") {
+    if (this.chartMode === 1) {
+      if (!this.optionData || !this.tempData) {
+        $(target).addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+        await this.fetchRemoteByteData();
+        $(target).removeClass("disabled").removeAttr("disabled").find("i").remove();
+        if (!this.optionData || !this.tempData) {
+          return;
+        }
+      }
       $(target).parent().find(".title-sub").text("历史成功完成改动操作的字数");
       this.chartOriginalData = editChart.getOption();
       editChart.setOption(this.getByteChartOption());
       target.innerHTML = "转为次数统计";
+      this.chartMode = 2;
     } else {
       editChart.setOption(Object.assign(this.chartOriginalData, {
         calendar: [{
@@ -369,6 +386,27 @@ export class CenterHomeInit extends CenterBaseInit {
       }));
       $(target).parent().find(".title-sub").html("历史成功完成改动操作的次数");
       target.innerHTML = "转为字数统计";
+      this.chartMode = 1;
     }
+  }
+
+  private async fetchRemoteByteData() {
+    const client = this.getParent().supabaseUtils.getClient();
+    if (!client) return;
+    const { data, error } = await client.functions.invoke<SupabaseByteChartResponse>("get_byte_data", {
+      body: {
+        user_id: this.center.getPageUID()
+      }
+    });
+    if (error || (data as SupabaseErrorResponse)?.error) {
+      const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+      McmodderUtils.commonMsg(errorMsg, false);
+    }
+    const resp = data as SupabaseByteChartSuccessfulResponse;
+    this.optionData = resp.data;
+    this.tempData = {};
+    resp.data.forEach(e => {
+      this.tempData[e[0]] = e[1];
+    });
   }
 }
