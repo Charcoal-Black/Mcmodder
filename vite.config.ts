@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import monkey, { cdn } from 'vite-plugin-monkey';
+import monkey from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
-        version: "2.0.5",
+        version: "2.1",
         description: "Mcmodder",
         license: "AGPL-3.0",
         icon: 'https://www.mcmod.cn/static/public/images/favicon.ico',
