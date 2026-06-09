@@ -26,6 +26,10 @@ import bbsCss from './css/bbs.css?raw';
     try {
       settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
     } catch (e) {}
+    if (!settings.bbsNightMode) {
+      clearScreenCover();
+      return;
+    }
     const updateClass = (cfg: any) => {
       const isNight = cfg.adaptableNightMode ? 
         window.matchMedia("(prefers-color-scheme: dark)").matches : 
@@ -112,9 +116,12 @@ import bbsCss from './css/bbs.css?raw';
     } else {
       cleanInlineStyles();
     }
+    clearScreenCover();
+  };
+  const clearScreenCover = () => {
     splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
     setTimeout(() => splashStyle.remove(), 300);
-  };
+  }
   const init = () => {
     if (window.location.hostname === "bbs.mcmod.cn") {
       initBbsDarkMode();

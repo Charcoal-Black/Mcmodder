@@ -15,6 +15,7 @@ export class ConfigLoader {
     .addCheckboxConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")
     .addCheckboxConfig("disableGradient", "禁用文字渐变", "勾选此项可能有助于提升性能。")
     .addCheckboxConfig("adaptableNightMode", "夜间模式自适应", "夜间模式将跟随当前浏览器偏好设置而自动开启或关闭。启用此配置也将隐藏页面右上角的夜间模式开关。") 
+    .addCheckboxConfig("bbsNightMode", "社群夜间模式兼容", "(Beta!) 对社群应用夜间模式配色。") 
     .addCheckboxConfig("forceV4", "强制v4", "打开百科任意非v4主页时，自动跳转到v4主页。") 
     // .addCheckboxConfig("mcmodderUI", "Mcmodder风格UI", "启用 Mcmodder 风格的 UI 界面。（目前此配置项尚未完全分离，强烈建议保持该配置项为启用状态！）")
     .addCheckboxConfig("disableAutoStyleFix", "禁用正文样式修复", "通常情况下，脚本会自动去除正文资料中的异常白色背景颜色和黑色文字颜色，并在夜间模式下微调文字亮度，以保证阅读体验。想要针对性编辑修复异常样式问题时，推荐启用此配置项。")
