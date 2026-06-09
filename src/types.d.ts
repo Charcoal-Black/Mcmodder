@@ -538,3 +538,22 @@ export interface StructureEditorBlocktype {
   textures: string[];
   op: string | null;
 }
+
+export interface SupabaseErrorResponse {
+  error?: string;
+}
+
+export interface SupabaseTrackSplashSuccessfulResponse {
+  count: number;
+  last_visited_user_id: number;
+  last_visited_user_name: string;
+  last_visited_at: string;
+}
+
+export interface SupabaseByteChartSuccessfulResponse {
+  data: [string, number][];
+}
+
+export type SupabaseTrackSplashResponse = SupabaseTrackSplashSuccessfulResponse | SupabaseErrorResponse;
+
+export type SupabaseByteChartResponse = SupabaseByteChartSuccessfulResponse | SupabaseErrorResponse;

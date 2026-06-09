@@ -13,7 +13,7 @@ export class McmodderDropdownInput extends McmodderInput<number> {
     return Number(this.instance.val());
   }
 
-  protected override setDisplayValue(value: number) {
+  override setDisplayValue(value: number) {
     this.instance.selectpicker("val", value.toString());
   }
 
@@ -39,7 +39,7 @@ export class McmodderDropdownInput extends McmodderInput<number> {
       const num = Number(key);
       const option = $(`<option>`).attr("value", key);
       let content = this.range[num];
-      if (this.value === num) content += " (默认)";
+      // if (this.value === num) content += " (默认)";
       option.html(content).appendTo(this.instance);
     });
     this.setDisplayValue(this.value);

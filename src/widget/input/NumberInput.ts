@@ -29,7 +29,7 @@ export class McmodderNumberInput extends McmodderInput<number> {
     return Number(this.getInputNode().val());
   }
 
-  protected override setDisplayValue(value: number) {
+  override setDisplayValue(value: number) {
     this.getInputNode().val(Number(Number(value).toFixed(10)));
   }
 

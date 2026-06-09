@@ -82,7 +82,7 @@ export class ItemTabInit extends McmodderInit {
       });
     });
     $("div.item-table-frame > table.item-table-block td.text.item-table-count a[data-toggle=tooltip]").each((_, e) => {
-      const href = (e as HTMLLinkElement).href;
+      const href = (e as HTMLAnchorElement).href;
       if (e.parentNode?.textContent?.includes("[使用:")) {
         $(e).attr("mcmodder-gui-id", McmodderUtils.abstractLastFromURL(href, "item"));
         return;
@@ -91,7 +91,7 @@ export class ItemTabInit extends McmodderInit {
       if (href.includes("/oredict/")) {
         const dictName = href.split("/oredict/")[1].split("-1.html")[0];
         for (const i of $(e).parent().parent().parent().find("div.common-oredict-loop a").toArray())
-          if ((i as HTMLLinkElement).href.split("/oredict/")[1].split("-1.html")[0] === dictName) {
+          if ((i as HTMLAnchorElement).href.split("/oredict/")[1].split("-1.html")[0] === dictName) {
             const img = i.childNodes[0] as HTMLImageElement;
             itemID = parseInt(img.src.split("/")[img.src.split("/").length - 1].split(".png")[0]);
             break;

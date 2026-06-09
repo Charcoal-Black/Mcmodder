@@ -89,7 +89,7 @@ body > .content,
 .item-h5-ename {
   font-size: 16px;
   font-weight: lighter;
-  color: gray;
+  color: var(--mcmodder-color-text-dark2);
 }
 .class-title .short-name {
   font-size: 18px;
@@ -224,6 +224,9 @@ body .header-layer {
 .class-excount .star .fire i {
   color: goldenrod;
 }
+.class-excount .star .fire i.off {
+  color: var(--mcmodder-color-background-dark3);
+}
 .class-menu-page li,
 .class-menu-page li.active,
 .class-menu-page li:hover, 
@@ -246,6 +249,7 @@ body .header-layer {
 .common-center .right .class-info .class-info-left .author li .avatar {
   width: 55px;
   height: 55px;
+  background-color: var(--mcmodder-color-background-dark2);
 }
 .common-center .right .class-info .class-info-left .author li .member {
   padding: 5px 10px;
@@ -299,22 +303,43 @@ body .edui-default .edui-bubble .edui-popup-content {
   bottom: 0;
   width: 100%;
 }
-.mcmodder-swiper-cursor {
+.mcmodder-swiper-cursor,
+.news_block .left .hover,
+.topic_block .title .hover,
+.star_block .title .hover {
   height: 100%;
   width: 50px;
   background-image: linear-gradient(90deg, var(--mcmodder-color-primary-dark1), var(--mcmodder-color-accent-dark1));
   border-radius: 1.5px;
   transition: margin-left .3s;
 }
+body .news_block .left .hover {
+  width: 62px;
+  height: 3px;
+}
+body .topic_block .title .hover,
+body .star_block .title .hover {
+  width: 28px;
+  height: 3px;
+}
 .col-lg-12.server-listtype-switch {
   padding-left: 1em;
 }
-.bs-tooltip-auto[x-placement^="top"] .arrow::before,
-.bs-tooltip-auto[x-placement^="right"] .arrow::before,
-.bs-tooltip-auto[x-placement^="bottom"] .arrow::before,
-.bs-tooltip-auto[x-placement^="left"] .arrow::before,
+.bs-tooltip-auto[x-placement^=top] .arrow::before,
 .bs-tooltip-top .arrow::before {
-  backdrop-filter: blur(10px);
+  border-top-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=right] .arrow::before,
+.bs-tooltip-right .arrow::before {
+  border-right-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=bottom] .arrow::before,
+.bs-tooltip-bottom .arrow::before {
+  border-bottom-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=left] .arrow::before,
+.bs-tooltip-left .arrow::before {
+  border-left-color: var(--mcmodder-color-background);
 }
 .class-excount .star .block-left,
 .bootstrap-tagsinput .tag {

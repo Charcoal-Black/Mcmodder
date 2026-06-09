@@ -28,7 +28,7 @@ export class McmodderKeybindInput extends McmodderInput<McmodderKeyData> {
     return this.keyLastData || {};
   }
 
-  protected override setDisplayValue(value: McmodderKeyData) {
+  override setDisplayValue(value: McmodderKeyData) {
     this.instance.val(McmodderUtils.keyToString(value));
   }
 
@@ -51,6 +51,9 @@ export class McmodderKeybindInput extends McmodderInput<McmodderKeyData> {
     this.keyLastData = e;
     this.keyQueue++;
     this.instance.val(McmodderUtils.keyToString(e));
+    if (e.metaKey && !["Control", "Alt", "Meta", "Shift"].includes(e.key)) {
+      this.keybindOnKeyup(e);
+    }
   }
 
   protected keybindOnKeyup(e: JQueryKeyEventObject) {

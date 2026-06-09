@@ -254,9 +254,9 @@ export class CenterSettingInit extends CenterBaseInit {
       .appendTo(splashesManager.instance)
       .click(async e => {
         const button = $(e.currentTarget);
-        button.addClass("disabled").append(`<i class="fa fa-pulse fa-spinner">`);
+        button.addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
         await this.accessPublicSplashList(splashesManager);
-        button.removeClass("disabled").find("i").remove();
+        button.removeClass("disabled").removeAttr("disabled").find("i").remove();
       });
     });
 

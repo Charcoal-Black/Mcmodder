@@ -8,7 +8,7 @@ import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
-import { ItemCustomTypeList as ItemTypeList, McmodderProfileData } from "./types";
+import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseErrorResponse, SupabaseTrackSplashResponse, SupabaseTrackSplashSuccessfulResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { McmodderTimer } from "./widget/Timer";
@@ -21,6 +21,9 @@ import { InitLoader } from "./loader/InitLoader";
 import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { McmodderSwiper } from "./widget/Swiper";
+import { SupabaseUtils } from "./supabase/SupabaseUtils";
+import { Mcmodder3DSplash } from "./widget/Splash3D";
+import { EchartsUtils } from "./echarts/EChartsUtils";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -29,7 +32,6 @@ interface ScreenAttachedFrameData {
 }
 
 export class Mcmodder {
-
   utils: McmodderUtils;
   currentUID: number;
   currentUsername: string;
@@ -44,38 +46,36 @@ export class Mcmodder {
   ueditorFrame: McmodderUEditor[];
   screenAttachedFrame: ScreenAttachedFrameData[];
   cfgutils: McmodderConfigUtils;
+  supabaseUtils: SupabaseUtils;
+  echartsUtils: EchartsUtils;
   styleColors: ThemeColorData;
+  splash3D?: Mcmodder3DSplash;
   preferredWiderScreen = false;
   isNightMode = false;
   title = "";
-  classRatingChart?: any;
-  centerEditChart?: any;
   css = "";
   itemTypeList?: ItemTypeList;
   readonly hostname: string;
   private msgAlertCount = 0;
   private readonly titleNode = $("title");
   private readonly linkContentDictionary: Record<string, string> = {};
+  private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
+  private readonly elementColorCache: Map<string, string> = new Map();
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
     this.isMac = McmodderUtils.isMac();
     this.isMobileClient = McmodderUtils.isMobileClient();
-    this.currentUsername = ($(".header-user-name").get(0)?.childNodes[0] as HTMLElement)?.innerHTML || "";
-    this.currentUID = Number($(".header-user-name a, .name.top-username a, .profilebox").first().attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
+    const headerUserName = $(".header-user-name a, .name.top-username a, .profilebox").first();
+    this.currentUsername = headerUserName.text() || "";
+    this.currentUID = Number(headerUserName.attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
     this.href = window.location.href;
     MemuCommandLoader.run();
     this.title = this.titleNode.html().replace(" - MC百科|最大的Minecraft中文MOD百科", "");
     this.hostname = McmodderValues.hostname;
 
-    // Echarts 图表相关兼容
-    if (typeof echarts != "undefined") {
-      let t = document.getElementById("class-rating");
-      if (t) this.classRatingChart = echarts.getInstanceById(t.getAttribute("_echarts_instance_"));
-      t = document.getElementById("center-editchart-obj");
-      if (t) this.centerEditChart = echarts.getInstanceById(t.getAttribute("_echarts_instance_"));
-    }
+    this.echartsUtils = new EchartsUtils(this);
 
     this.screenAttachedFrame = [];
     
@@ -94,6 +94,8 @@ export class Mcmodder {
     this.scheduleRequestUtils = new ScheduleRequestUtils(this);
     ScheduleRequestLoader.run(this.scheduleRequestUtils);
 
+    this.supabaseUtils = new SupabaseUtils(this);
+
     InitLoader.run(this, this.initList);
     
     StyleLoader.run(this);
@@ -102,7 +104,7 @@ export class Mcmodder {
   }
 
   private callEditor() {
-    if ($(".edit-tools").length || $(".post-row").length) {
+    if ($(".edit-tools").length || /\/sandbox\/[0-9]+.html/.test(this.href)) {
       setTimeout(() => new McmodderAdvancedUEditor(editor, this), 3e2);
     } else {
       setTimeout(() => new McmodderUEditor(editor, this), 3e2);
@@ -121,7 +123,7 @@ export class Mcmodder {
     if (this.utils.getConfig("hoverDescription")) {
       $(".common-imglist li, .item-list-type-right span, .relation a").off();
       $("a").filter((_, e) => {
-        const href = (e as HTMLLinkElement).href;
+        const href = (e as HTMLAnchorElement).href;
         return /\/\/www1?\.mcmod\.cn\/item\/[0-9]*\.html/.test(href) || /\/\/www1?\.mcmod\.cn\/class\/[0-9]*\.html/.test(href);
       }).filter((_, _c) => {
         const c = $(_c);
@@ -135,7 +137,7 @@ export class Mcmodder {
         e.outerHTML = e.outerHTML;
       })
       $(".mcmodder-item-link").each((_, e) => {
-        const href = (e as HTMLLinkElement).href;
+        const href = (e as HTMLAnchorElement).href;
         $(e).attr({
           "data-source-url": href.split("mcmod.cn/")[1],
           "data-toggle": "tooltip",
@@ -151,7 +153,7 @@ export class Mcmodder {
       });
       $(document).on("mouseenter", ".mcmodder-item-link", async e => {
         await McmodderUtils.sleep(250);
-        const target = e.currentTarget as HTMLLinkElement;
+        const target = e.currentTarget as HTMLAnchorElement;
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${ sourceUrl }"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
@@ -207,6 +209,12 @@ export class Mcmodder {
         rightTable.find("img").each((_, img) => {
           showImg(img);
         });
+        const mcicons = $("#icon-toughness-empty");
+        if (!mcicons.length) {
+          const module = import.meta.glob('./html/mcicons.html', { query: "?raw", eager: true });
+          const mciconsHtml = (module['./html/mcicons.html'] as any).default as string;
+          $(mciconsHtml).prependTo(document.body);
+        }
         if (this.utils.getConfig("hoverImage")) {
           previewFrame.find("img").each((_, img) => {
             showImg(img);
@@ -377,7 +385,7 @@ export class Mcmodder {
     McmodderUtils.addStyle('* {font-family: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", "宋体", sans-serif}');
   }
 
-  trackSplash() {
+  async trackSplash() {
     let splashText = "";
     if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
     else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
@@ -394,8 +402,56 @@ export class Mcmodder {
     if (!flag) splashes.push(`${Date.now()},${splashText},1`);
     else splashes[index] = splashes[index].slice(0, splashes[index].lastIndexOf(",") + 1) + flag;
     GM_setValue("mcmodderSplashList_v2", splashes.join("\n"));
-    if (flag) McmodderUtils.commonMsg(`该标语累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
+    if (flag) McmodderUtils.commonMsg(`该标语在本地累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
+
+    if (this.utils.getConfig("supabaseSplash")) {
+      const client = this.supabaseUtils.getClient();
+      if (!client) return;
+      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash', {
+        body: {
+          user_id: this.currentUID,
+          user_name: this.currentUsername,
+          splash_text: splashText
+        }
+      });
+      if (error || (data as SupabaseErrorResponse)?.error) {
+        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+        if (this.isV4) McmodderUtils.commonMsg(errorMsg, false);
+        else (swal as any)({
+          type: "error",
+          title: "遇到问题",
+          text: errorMsg,
+          buttons: false,
+          timer: 3e3
+        });
+        return;
+      }
+      const resp = data as SupabaseTrackSplashSuccessfulResponse;
+      let msg: string;
+      if (resp.count == 1) {
+        msg = "此标语是首次收录！";
+      } else {
+        msg = `此标语已是第 ${ resp.count.toLocaleString() } 次收录`;
+        if (resp.last_visited_user_id) {
+          const last = Date.parse(resp.last_visited_at);
+          const time = Date.now() - last;
+          const formattedTime = McmodderUtils.getFormattedTime(time);
+          const username = resp.last_visited_user_name;
+          const userID = resp.last_visited_user_id ? `用户 ${ username } (UID:${ resp.last_visited_user_id }) ` : "未登录用户";
+          msg += `，上一次由${ userID }于 ${ formattedTime } 前记录`
+        }
+        msg += "~";
+      }
+      if (this.isV4) McmodderUtils.commonMsg(msg);
+      else (swal as any)({
+        type: "success",
+        title: "标语已上传",
+        text: msg,
+        buttons: false,
+        timer: 3e3
+      });
+    }
   }
 
   tableFix() {
@@ -415,30 +471,14 @@ export class Mcmodder {
       if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) {
         $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
       }
-      let o = this.classRatingChart?.getOption();
-      if (o) {
-        o.backgroundColor = "#1118";
-        // o.axisPointer[0].lineStyle.color = "#444";
-        o.radar[0].splitLine.lineStyle.color = "#1f190e";
-        o.series[0].color = "#ee6";
-        o.series[0].data[0].areaStyle.color = "rgba(255, 255, 255, 0.5)";
-        this.classRatingChart.setOption(o);
-      }
-      o = this.centerEditChart?.getOption();
-      if (o) {
-        o.tooltip[0].backgroundColor = "#222";
-        o.calendar[0].dayLabel.color = "#fff";
-        o.calendar[0].yearLabel.color = "#ee6";
-        o.calendar[0].monthLabel.color = "#fff";
-        o.calendar[0].itemStyle = {
-          color: "#3330",
-          borderColor: "#444"
-        };
-        this.centerEditChart.setOption(o);
-      }
+      this.echartsUtils.enableNightStyle();
       $("html").addClass("dark");
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").addClass("dark");
+      });
+      this.elementColorDictionary.forEach((color, e) => {
+        const darkenColor = this.elementColorCache.get(color);
+        e.style.setProperty("color", darkenColor!);
       });
     }
     else {
@@ -446,30 +486,13 @@ export class Mcmodder {
       if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.nightMode.imagesNone) {
         $("#item-cover-preview-img").attr("src", McmodderValues.assets.mcmod.imagesNone);
       }
-      let o = this.classRatingChart?.getOption();
-      if (o) {
-        o.backgroundColor = "#fff8";
-        // o.axisPointer[0].lineStyle.color = "#B9BEC9";
-        o.radar[0].splitLine.lineStyle.color = "#E0E6F1";
-        o.series[0].color = "#555";
-        o.series[0].data[0].areaStyle.color = "rgba(0, 0, 0, 0.25)";
-        this.classRatingChart.setOption(o);
-      }
-      o = this.centerEditChart?.getOption();
-      if (o) {
-        o.tooltip[0].backgroundColor = "#fff";
-        o.calendar[0].dayLabel.color = "#000";
-        o.calendar[0].yearLabel.color = "#aaa";
-        o.calendar[0].monthLabel.color = "#000";
-        o.calendar[0].itemStyle = {
-          color: "#fff0",
-          borderColor: "#bbb"
-        };
-        this.centerEditChart.setOption(o);
-      }
+      this.echartsUtils.disableNightStyle();
       $("html").removeClass("dark");
       this.ueditorFrame.forEach(e => {
         e.$document?.find("html").removeClass("dark");
+      });
+      this.elementColorDictionary.forEach((_color, e) => {
+        e.style.setProperty("color", this.elementColorDictionary.get(e)!);
       });
     }
   }
@@ -536,7 +559,12 @@ export class Mcmodder {
       this.href === "https://play.mcmod.cn/") {
       setTimeout(() => this.trackSplash(), 3e2);
     }
-
+    if (this.utils.getConfig("splashStyle") === 1 &&
+      (this.href === `${ this.hostname }/` ||
+        this.href === `${ this.hostname }/v4/`)) {
+      this.splash3D = new Mcmodder3DSplash(this);
+      this.splash3D.init();
+    }
     // 冻结进度
     if (this.utils.getConfig("freezeAdvancements")) {
       $(".common-task-tip").attr({
@@ -647,16 +675,33 @@ export class Mcmodder {
       });
     }
 
+    const textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
     if (this.utils.getConfig("mcmodderUI")) {
       // 去除正文异常背景
-      let textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
-      textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "unset");
-      textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "unset");
+      if (!this.utils.getConfig("disableAutoStyleFix")) {
+        textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "");
+        textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "");
+      }
 
       // Swiper 调整
       $(".swiper-container").each((_, _container) => {
         const container = $(_container);
         new McmodderSwiper(container);
+      });
+    }
+
+    // 夜间模式正文颜色自动适配
+    if (!this.utils.getConfig("disableAutoStyleFix")) {
+      textArea.find("*").each((_, _e) => {
+        const e = _e as HTMLElement;
+        const css = (e as HTMLElement).style.getPropertyValue("color");
+        if (css) {
+          const color = McmodderUtils.parseRGB(css);
+          const colorStr = McmodderUtils.RGBToColor(color);
+          const nightColorStr = McmodderUtils.reverseColorBrightness(color);
+          this.elementColorDictionary.set(e, colorStr);
+          this.elementColorCache.set(colorStr, nightColorStr);
+        }
       });
     }
 

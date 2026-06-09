@@ -66,7 +66,7 @@ export class ClassPageInit extends McmodderInit {
       $("li.col-lg-12.relation").each((_, e) => {
         let target = $(e);
         target.find("a[data-toggle=tooltip]").each((_, a) => {
-          const href = (a as HTMLLinkElement).href;
+          const href = (a as HTMLAnchorElement).href;
           let id = McmodderUtils.abstractLastFromURL(href, "class");
           let name = a.textContent;
           if (id && name) this.parent.utils.updateClassNameIDMap(name, id);
@@ -422,6 +422,9 @@ export class ClassPageInit extends McmodderInit {
         }
       });
     }
+
+    // 样式修复
+    $(".class-excount .span").first().css("border-right-color", "var(--mcmodder-color-background-dark2)");
 
     // 若参与了活动，则为活动添加外边框
     $(".class-text > span.figure").addClass("mcmodder-golden-alert").css("width", "100%");

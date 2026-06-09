@@ -9,7 +9,7 @@ import { McmodderUEditor } from "./UEditor"
 import { McmodderCheckboxInput } from "../widget/input/CheckboxInput";
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
-import { style_html } from "../js/style_html";
+import html_beautify from "js-beautify";
 
 export class McmodderAdvancedUEditor extends McmodderUEditor {
 
@@ -26,6 +26,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   protected mdEditorOption?: McmodderCheckboxInput;
   protected htmlEditorOption?: McmodderCheckboxInput;
   protected verticalOption?: McmodderCheckboxInput;
+  protected toolkitOption?: McmodderCheckboxInput;
   protected originalTextLength: number;
   protected currentTextLength: number;
   protected changedTextLength: number;
@@ -48,10 +49,22 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.advinit();
   }
 
+  private addTool(id: string, text: string, callback: () => any) {
+    $('<button class="btn btn-sm">')
+    .attr("id", id)
+    .text(text)
+    .hide()
+    .appendTo(this.toolBar!)
+    .click(callback);
+  }
+
   private advinit() {
     if (!this.$outerFrame || !this.$innerFrame || !this.document || !this.$document) return;
 
     this.editToolsBar = this.$outerFrame.parent().find(".edit-tools");
+    if (!this.editToolsBar.length) {
+      this.editToolsBar = $(`<div class="edit-tools">`).insertBefore(this.$outerFrame);
+    }
     this.optionBar = $(`<div class="mcmodder-option-bar"></div>`).insertAfter(this.editToolsBar);
     this.toolBar = $(`<div class="mcmodder-tool-bar"></div>`).insertAfter(this.optionBar);
 
@@ -94,10 +107,13 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.manualTriggerHtmlUpdate();
     });;
 
-    $('<button id="mcmodder-tool-md" class="btn btn-sm">Markdown → HTML</button>')
-    .hide()
-    .appendTo(this.toolBar)
-    .click(() => this.performMarkdownIt());
+    this.addTool("mcmodder-tool-md", "Markdown → HTML", () => this.performMarkdownIt());
+
+    this.addTool("mcmodder-tool-brfix", "修复 br 换行", () => this.performBrFix());
+
+    this.addTool("mcmodder-tool-linkfix", "移除无效链接", () => this.performLinkFix());
+
+    this.addTool("mcmodder-tool-spacing", "中英间添加空格", () => this.performSpacingPage());
 
     let itemSourceList: McmodderItemList = [];
     (this.parent.utils.getConfig("jsonDatabase") as string[])?.forEach(fileName => {
@@ -184,15 +200,6 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       $(".post-row").get(0).insertBefore($(".post-row > .mcmodder-editor-stats").get(0), $(".post-row > #editor-ueeditor").get(0));
     }
 
-    /* $('<button id="mcmodder-tool-pangu" data-toggle="tooltip" data-original-title="有研究表明，打字的时候不喜欢在中文和英文之间加空格的人，感情路都走得很辛苦，有七成的比例会在 34 岁的时候跟自己不爱的人结婚，而剩下三成的人最后只能把遗产留给自己的猫。" class="btn btn-outline-dark btn-sm">中英间插入空格</button>').appendTo(".mcmodder-tool-bar").click(async () => {
-      if (!$(editorDoc).find("#mcmodder-script-pangu").length) await McmodderUtils.loadScript(editorDoc.head, null, "https://cdn.jsdelivr.net/npm/pangu@7.2.0/dist/browser/pangu.umd.min.js", null, "mcmodder-script-pangu");
-
-      let e = editorDoc.body.contentEditable;
-      editorDoc.body.contentEditable = false;
-      editorWin.pangu.spacingPage();
-      if (e === "true") editorDoc.body.contentEditable = true;
-    }); */
-
     this.mdEditorOption = new McmodderCheckboxInput("Markdown 编辑器", false, _value => this.readyMarkdownEditor(), "mcmodder-option-md", true);
     this.mdEditorOption.getInstance().appendTo(".mcmodder-option-bar");
 
@@ -201,6 +208,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
     this.verticalOption = new McmodderCheckboxInput("纵向排列", false, _value => this.readyVerticalEditor(), "mcmodder-option-vertical", true);
     this.verticalOption.getInstance().appendTo(".mcmodder-option-bar").hide();
+
+    this.toolkitOption = new McmodderCheckboxInput("实用工具", false, _value => this.readyToolkit(), "mcmodder-option-toolkit", true);
+    this.toolkitOption.getInstance().appendTo(".mcmodder-option-bar");
 
     if (this.parent.utils.getConfig("markdownIt") || this.isModrinthVer) {
       this.mdEditorOption.click(); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
@@ -211,12 +221,16 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     }
 
     let isVertical = this.parent.utils.getConfig("editorVertical");
-    if (isVertical == undefined) {
+    if (isVertical === undefined) {
       isVertical = screen.width < 741;
       this.parent.utils.setConfig("editorVertical", isVertical); 
     }
     if (isVertical) {
       this.verticalOption.click();
+    }
+
+    if (this.parent.utils.getConfig("editorToolkit")) {
+      this.toolkitOption.click();
     }
 
     // 匿名吐槽
@@ -339,6 +353,16 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.parent.utils.setConfig("editorVertical", c);
   }
 
+  private readyToolkit() {
+    const c = this.toolkitOption?.getCurrentValue();
+    if (c) {
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").show();
+    } else {
+      $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").hide();
+    }
+    this.parent.utils.setConfig("editorToolkit", c);
+  }
+
   performMarkdownIt() {
     // 预处理
     // this.mdEditor.find("p > br").remove();
@@ -367,6 +391,156 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     );
 
     this.updateEditorStats();
+  }
+
+  performBrFix() {
+    if (!this.$body) return;
+    const p = this.$body.find("p");
+    const ps: JQuery[] = [];
+    p.each((_, _e) => {
+      const e = $(_e);
+      const contents = p.contents();
+      const contentsLength = contents.length - 1;
+      for (let i = 1; i < contentsLength; i++) {
+        if (contents.get(i).tagName === "BR") {
+          ps.push(e);
+          break;
+        }
+      }
+    });
+    const count = ps.length;
+    if (!count) {
+      McmodderUtils.commonMsg(`未发现 br 换行问题~`);
+      return;
+    }
+    ps.forEach(p => {
+      let np = p.clone().html("").insertAfter(p);
+      p.contents().each((_, e) => {
+        if (e.tagName === "BR") {
+          np = p.clone().html("").insertAfter(np);
+        } else {
+          np.append(e);
+        }
+      });
+      p.remove();
+    });
+    McmodderUtils.commonMsg(`${ count } 处 br 换行问题已被修复~`);
+  }
+
+  performLinkFix() {
+    if (!this.$body) return;
+    let count = 0;
+    this.$body.find("a").each((_, _e) => {
+      const e = $(_e);
+      const href = e.attr("href");
+      if (!href) {
+        const text = e.text();
+        const parent = _e.parentNode;
+        e.replaceWith(text);
+        parent?.normalize();
+        count++;
+      }
+    });
+    if (!count) {
+      McmodderUtils.commonMsg("未发现异常链接~");
+    } else {
+      McmodderUtils.commonMsg(`${ count } 处异常链接已被修复~`);
+    }
+  }
+
+  async performSpacingPage() {
+    if (!this.window || !this.head || !this.body || !this.$body) return;
+    await McmodderUtils.loadScript(this.head, null, McmodderValues.assets.js.pangu, null, "mcmodder-script-pangu");
+    const isEditable = this.body.contentEditable;
+    this.body.contentEditable = "false";
+
+    this.$body.find("*").contents().filter((_, e) => e.nodeType === Node.TEXT_NODE).each((_, _text) => {
+      let first = _text as any as Text;
+      const matchList = first.data.match(/\[(h[1-6]=|ban:|mark:|icon:).*?\]/g);
+      matchList?.forEach(substr => {
+        const mid = first.splitText(first.data.indexOf(substr));
+        const last = mid.splitText(substr.length);
+        const temp = this.document!.createElement("a");
+        temp.classList.add("mcmodder-tempnode");
+        temp.title = substr;
+
+        if (substr.startsWith("[icon:")) {
+          const colon = substr.indexOf(":");
+          const equal = substr.indexOf("=");
+          const comma = substr.indexOf(",");
+          if (colon > 0 && equal > 0 && comma > 0) {
+            const name = substr.slice(colon + 1, equal);
+            const number = substr.slice(equal + 1, comma);
+            const text = substr.slice(comma + 1, -1);
+            temp.setAttribute("data-name", name);
+            temp.setAttribute("data-number", number);
+            temp.setAttribute("data-text", text);
+            if (first && /\s/.test(first.data.slice(-1))) temp.setAttribute("data-space-prev", "1");
+            if (last && /\s/.test(last?.data.slice(0))) temp.setAttribute("data-space-next", "1");
+            temp.text = number + text;
+          }
+        }
+
+        mid.replaceWith(temp);
+        first = last;
+      });
+    });
+
+    (this.window as any).pangu.spacingPage();
+    if (isEditable === "true") setTimeout(() => {
+
+      this.$body?.find(".mcmodder-tempnode").each((_, e) => {
+        const temp = e as HTMLAnchorElement;
+        const parent = temp.parentNode;
+        if (parent && temp.hasAttribute("data-name")) {
+          const name = temp.getAttribute("data-name")!;
+          const number = temp.getAttribute("data-number")!;
+          const text = temp.getAttribute("data-text")!;
+          let prependSpace = false;
+          let appendSpace = false;
+          let insertSpace = false;
+          const children = parent.childNodes;
+          const length = children.length;
+          for (let i = 0; i < length; i++) {
+            const node = children[i];
+            if (node === temp) {
+              const prev = children.item(i - 1) as Text;
+              const next = children.item(i + 1) as Text;
+              if (prev && prev.nodeType === Node.TEXT_NODE &&
+                !temp.hasAttribute("data-space-prev") &&
+                /\s/.test(prev.data.slice(-1)) &&
+                !/\s/.test(temp.text.slice(0))
+              ) {
+                prependSpace = true;
+              }
+              if (next && next.nodeType === Node.TEXT_NODE &&
+                !temp.hasAttribute("data-space-prev") &&
+                /\s/.test(next.data.slice(0)) &&
+                !/\s/.test(temp.text.slice(-1))
+              ) {
+                appendSpace = true;
+              }
+              if (`${ number } ${ text }` === temp.text) {
+                insertSpace = true;
+              }
+              const result = `${
+                prependSpace ? " " : ""
+              }[icon:${ name }=${ number },${
+                insertSpace ? " " : ""
+              }${ text }]${
+                appendSpace ? " " : ""
+              }`;
+              temp.replaceWith(result);
+              break;
+            }
+          }
+        }
+        temp.replaceWith(temp.title);
+        parent?.normalize();
+      });
+
+      this.body!.contentEditable = "true";
+    }, 1e2);
   }
 
   isEditorLocked() {
@@ -508,7 +682,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     if (this.htmlEditor && !this.contentLock) {
       this.contentLock = true;
       const text = this.$body?.html() || "";
-      const formatted = style_html(text);
+      const formatted = html_beautify(text, { indent_size: 2 });
       this.htmlEditor?.setValue(formatted);
       this.contentLock = false;
     }

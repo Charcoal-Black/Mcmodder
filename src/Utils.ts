@@ -37,8 +37,19 @@ export class McmodderUtils {
   }
 
   static commonMsg(message: string, isok: boolean = true, title: string = "") {
-    if (typeof common_msg != "function") return;
-    common_msg(title || (isok ? "提示" : "错误"), message, isok ? "ok" : "err");
+    const defaultTitle = isok ? "提示" : "错误";
+    if (typeof common_msg === "function") {
+      common_msg(title || defaultTitle, message, isok ? "ok" : "err");
+    }
+    else if (typeof swal === "function") {
+      (swal as any)({
+        type: isok ? "success" : "error",
+        title: defaultTitle,
+        text: message,
+        button: false,
+        timer: 3e3
+      });
+    }
   }
 
   static showTaskTip(imageUrl: string, title: string, text: string, achieveTime: string, progress: number, rewardExp: number | string) {
@@ -456,6 +467,29 @@ export class McmodderUtils {
     }
   }
 
+  static parseRGB(str: string): RGB | RGBA {
+    if (/rgb\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
+      const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
+      return {
+        r: numList[0],
+        g: numList[1],
+        b: numList[2]
+      };
+    }
+    else if (/rgba\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
+      const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
+      return {
+        r: numList[0],
+        g: numList[1],
+        b: numList[2],
+        a: numList[3]
+      };
+    }
+    else {
+      throw new Error("颜色代码的格式不正确。");
+    }
+  }
+
   static RGBToColor(rgb: RGB) {
     const a = (rgb as RGBA).a;
     let dec = (rgb.r << 16) + (rgb.g << 8) + rgb.b;
@@ -490,9 +524,9 @@ export class McmodderUtils {
     l = Math.round(l * 100);
     const a = (rgb as RGBA).a;
     if (a != undefined) {
-      return { h: h, s: s, l: l, a: a };
+      return { h, s, l, a };
     }
-    return { h: h, s: s, l: l };
+    return { h, s, l };
   }
 
   static HSLToRGB(hsl: HSL): RGB | RGBA {
@@ -532,16 +566,17 @@ export class McmodderUtils {
     return { r: r, g: g, b: b };
   }
 
-  static colorToHSL(color: string) {
-    return this.RGBToHSL(this.colorToRGB(color));
+  static colorToHSL(color: string | RGB) {
+    const rgb = typeof color === "string" ? this.colorToRGB(color) : color;
+    return this.RGBToHSL(rgb);
   }
 
   static HSLToColor(hsl: HSL) {
     return this.RGBToColor(this.HSLToRGB(hsl));
   }
 
-  static adjustColorBrightness = (color: string, ratio: number) => {
-    const hsl = this.colorToHSL(color);
+  static adjustColorBrightness = (color: string | RGB, ratio: number) => {
+    const hsl = McmodderUtils.colorToHSL(color);
     let lightness = hsl.l;
     if (ratio < 1) lightness *= ratio;
     else lightness += (100 - lightness) * (ratio - 1);
@@ -552,8 +587,17 @@ export class McmodderUtils {
     });
   }
 
-  static setColorBrightness = (color: string, lightness: number) => {
-    const hsl = this.colorToHSL(color);
+  static reverseColorBrightness = (color: string | RGB) => {
+    const hsl = McmodderUtils.colorToHSL(color);
+    return this.HSLToColor({
+      h: hsl.h,
+      s: hsl.s,
+      l: 100 - hsl.l
+    });
+  }
+
+  static setColorBrightness = (color: string | RGB, lightness: number) => {
+    const hsl = McmodderUtils.colorToHSL(color);
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
