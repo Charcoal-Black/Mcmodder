@@ -467,7 +467,7 @@ export class McmodderUtils {
     }
   }
 
-  static parseRGB(str: string): RGB | RGBA {
+  static parseRGB(str: string): RGB | RGBA | null {
     if (/rgb\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
       const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
       return {
@@ -486,7 +486,7 @@ export class McmodderUtils {
       };
     }
     else {
-      throw new Error("颜色代码的格式不正确。");
+      return null;
     }
   }
 

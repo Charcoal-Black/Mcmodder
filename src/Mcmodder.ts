@@ -697,6 +697,7 @@ export class Mcmodder {
         const css = (e as HTMLElement).style.getPropertyValue("color");
         if (css) {
           const color = McmodderUtils.parseRGB(css);
+          if (!color) return;
           const colorStr = McmodderUtils.RGBToColor(color);
           const nightColorStr = McmodderUtils.reverseColorBrightness(color);
           this.elementColorDictionary.set(e, colorStr);
