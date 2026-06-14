@@ -136,9 +136,9 @@ export class McmodderAutoLink {
     }
     swal.close();
 
-    let link;
-    if (type === "item" || type === "class") link = `${ this.parent.hostname }/${ type }/${ id }.html`;
-    else if (type === "oredict") link = `${ this.parent.hostname }/${ type }/${ id }-1.html`;
+    let link: string;
+    if (type === "oredict") link = `${ this.parent.hostname }/${ type }/${ id }-1.html`;
+    else link = `${ this.parent.hostname }/${ type }/${ id }.html`;
 
     let res = `<a href="${ link }" target="_blank" title="${ content }">${ content }</a>`;
     if (appendSpace) res = `&nbsp;${ res }&nbsp;`;
@@ -218,7 +218,7 @@ export class McmodderAutoLink {
     const typeData = McmodderValues.nonItemTypeList[entry.type];
     const fullName = McmodderUtils.getClassFullName(data.name, data.englishName, data.abbr);
     const itemLi = $(`<li
-      data-type="item" 
+      data-type="${ entry.type }" 
       data-id="${ data.id }" 
       data-text-full="${ fullName }" 
       data-text-half="${ data.name }" 
@@ -240,7 +240,7 @@ export class McmodderAutoLink {
     let fullName = data.name;
     if (data.alias) fullName += " - " + data.alias;
     const itemLi = $(`<li
-      data-type="item" 
+      data-type="author" 
       data-id="${ data.id }" 
       data-text-full="${ fullName }" 
       data-text-half="${ data.name }" 
