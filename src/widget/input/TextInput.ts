@@ -21,7 +21,7 @@ export class McmodderTextInput extends McmodderInput<string> {
     return this.instance.val();
   }
 
-  override setDisplayValue(value: string) {
+  protected override setDisplayValue(value: string) {
     this.instance.val(value);
   }
 }

@@ -13,7 +13,7 @@ export class McmodderDropdownInput extends McmodderInput<number> {
     return Number(this.instance.val());
   }
 
-  override setDisplayValue(value: number) {
+  protected override setDisplayValue(value: number) {
     this.instance.selectpicker("val", value.toString());
   }
 
