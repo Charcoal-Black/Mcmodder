@@ -41,6 +41,17 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   template = new McmodderTemplate(this);
   private contentLock = false;
 
+  private readonly templateObserver = new MutationObserver(mutationList => {
+    for (let mutation of mutationList) {
+      const className = (mutation?.addedNodes[0] as HTMLElement)?.className;
+      if (mutation.type === "childList" && 
+      className === "swal2-container swal2-center swal2-fade swal2-shown" && 
+      $("h2#swal2-title").text() === PublicLangData.editor.template.title) {
+        this.template.init();
+      }
+    }
+  });
+
   constructor(editor: McmodderUEditor, parent: Mcmodder) {
     super(editor, parent);
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
@@ -60,6 +71,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
   private advinit() {
     if (!this.$outerFrame || !this.$innerFrame || !this.document || !this.$document) return;
+
+    this.templateObserver.observe(document.body, { childList: true });
 
     this.editToolsBar = this.$outerFrame.parent().find(".edit-tools");
     if (!this.editToolsBar.length) {

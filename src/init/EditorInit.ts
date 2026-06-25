@@ -1,5 +1,4 @@
 import { EditorAlertForm, EditorAlertHTMLModifier, PreSubmitData } from "../types";
-import { McmodderAdvancedUEditor } from "../ueditor/AdvancedUEditor";
 import { McmodderUEditor } from "../ueditor/UEditor";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
@@ -215,19 +214,6 @@ export class EditorInit extends McmodderInit {
     // }, 2e3);
   }
 
-  private readonly autoLinkObserver = new MutationObserver(mutationList => {
-    for (let mutation of mutationList) {
-      if (mutation.type === "childList" && 
-      (mutation?.addedNodes[0] as HTMLElement)?.className === "swal2-container swal2-center swal2-fade swal2-shown" && 
-      $("h2#swal2-title").text() === PublicLangData.editor.template.title) {
-        // McmodderTemplate.init();
-        this.parent.ueditorFrame.forEach(e => {
-          if (e instanceof McmodderAdvancedUEditor) e.template.init();
-        });
-      }
-    }
-  });
-
   private readonly swalObserver = new MutationObserver(mutationList => {
     for (let mutation of mutationList) {
       if (!(mutation.addedNodes[0] as HTMLElement)?.className?.includes("swal2")) continue;
@@ -283,10 +269,6 @@ export class EditorInit extends McmodderInit {
       if (commonNav.children().eq(8).length) this.itemName = commonNav.children().eq(8).text();
     }
     McmodderUtils.addStyle(".swal2-show {animation: unset; -webkit-animation: unset;}");
-
-    // McmodderTemplate ...
-
-    this.autoLinkObserver.observe(document.body, { childList: true });
 
     if ($(".edit-tools").length) {
 
