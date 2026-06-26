@@ -366,9 +366,9 @@ export class CenterHomeInit extends CenterBaseInit {
     const editChart = this.getParent().echartsUtils.centerEditChart;
     if (this.chartMode === 1) {
       if (!this.optionData || !this.tempData) {
-        $(target).addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+        McmodderUtils.setButtonLoadingState(target);
         await this.fetchRemoteByteData();
-        $(target).removeClass("disabled").removeAttr("disabled").find("i").remove();
+        McmodderUtils.cancelButtonLoadingState(target);
         if (!this.optionData || !this.tempData) {
           return;
         }

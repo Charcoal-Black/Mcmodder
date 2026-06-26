@@ -967,6 +967,14 @@ export class McmodderUtils {
     return false;
   }
 
+  static setButtonLoadingState(node: Element | JQuery) {
+    $(node).addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+  }
+
+  static cancelButtonLoadingState(node: Element | JQuery) {
+    $(node).removeClass("disabled").removeAttr("disabled").find("i").remove();
+  }
+
   static regulateFileName(name: string) {
     return name.replace(/[\\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
   }

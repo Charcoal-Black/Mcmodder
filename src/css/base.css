@@ -642,8 +642,12 @@ body .common-template-frame li {
   width: 4em;
   height: 2em;
 }
-#mcmodder-update-check-manual {
+#mcmodder-update-check-manual,
+#mcmodder-auth-manual {
   margin: 0 var(--mcmodder-width-padding-3);
+}
+.mcmodder-auth-state {
+  margin-left: var(--mcmodder-width-padding-3);
 }
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-light {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));

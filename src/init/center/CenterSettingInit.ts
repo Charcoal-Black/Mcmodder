@@ -1,7 +1,7 @@
 import { McmodderConfigResourceInteractor } from "../../config/ConfigResourceInteractor";
 import { McmodderInputType } from "../../config/ConfigUtils";
 import { Mcmodder } from "../../Mcmodder";
-import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData } from "../../types";
+import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData, SupabaseAuthenticatorResponse, SupabaseAuthenticatorSuccessfulResponse, SupabaseErrorResponse } from "../../types";
 import { McmodderTable } from "../../table/Table";
 import { McmodderTimer } from "../../widget/Timer";
 import { McmodderUtils } from "../../Utils";
@@ -135,15 +135,76 @@ export class CenterSettingInit extends CenterBaseInit {
     content.appendTo(mcmodderSettingMenu);
 
     // 手动检查更新
-    const t = $('<button id="mcmodder-update-check-manual" class="btn">立即检查更新</button>')
+    const manualUpdateCheck = $('<button id="mcmodder-update-check-manual" class="btn">立即检查更新</button>')
     .insertAfter("[for=settings-autoCheckUpdate]")
     .click(() => this.getParent().scheduleRequestUtils.run("autoCheckUpdate"))
     .parent();
     if (this.getUtils().getConfig("autoCheckUpdate")) {
       (new McmodderTimer(this.getParent(), McmodderTimer.DATAGETTER_SCHEDULE("autoCheckUpdate", null, this.getParent().scheduleRequestUtils)))
       .$instance
-      .appendTo(t);
+      .appendTo(manualUpdateCheck);
     }
+
+    // Supabase 用户认证
+    const manualAuth = $('<button id="mcmodder-auth-manual" class="btn">立即认证</button>')
+    .insertAfter("[for=settings-useSupabase]");
+    const authMessage = $('<span>当前已绑定: </span>')
+    .insertAfter(manualAuth);
+    const authUser = $('<span class="mcmodder-auth-user">').appendTo(authMessage);
+    const authState = $('<span class="mcmodder-auth-state">').appendTo(authMessage);
+    const updateAuthStateDisplay = () => {
+      const uid = this.getUtils().getProfile("auth_uid");
+      const name = this.getUtils().getProfile("auth_username");
+      const key = this.getUtils().getProfile("auth_key");
+      authUser.removeClass("text-success text-danger text-muted").empty();
+      authState.removeClass("text-success text-danger text-muted").empty();
+      if (!uid || !name) {
+        authUser.addClass("text-muted").text("?");
+        authState.addClass("text-danger").html(`<i class="fa fa-close" />`);
+      }
+      else {
+        authUser.addClass("text-success").text(`${ name } (UID:${ uid })`);
+        if (key) {
+          authState.addClass("text-success").html(`<i class="fa fa-check" />`);
+        } else {
+          authState.addClass("text-danger").html(`<i class="fa fa-close" />`);
+        }
+      }
+    }
+    updateAuthStateDisplay();
+    manualAuth.click(async () => {
+      McmodderUtils.setButtonLoadingState(manualAuth);
+      const client = this.getParent().supabaseUtils.getClient();
+      if (!client) {
+        return;
+      }
+      const { data, error } = await client.functions.invoke<SupabaseAuthenticatorResponse>("authenticator", {
+        body: { cookie: document.cookie }
+      });
+      if (error || (data as SupabaseErrorResponse)?.error) {
+        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+        McmodderUtils.commonMsg(errorMsg, false);
+      }
+      const resp = data as SupabaseAuthenticatorSuccessfulResponse;
+      this.getUtils().setProfile("auth_uid", resp.user_id);
+      this.getUtils().setProfile("auth_username", resp.user_name);
+      this.getUtils().setProfile("auth_key", resp.auth_key);
+      updateAuthStateDisplay();
+      McmodderUtils.cancelButtonLoadingState(manualAuth);
+    });
+    if (!this.getUtils().getConfig("useSupabase")) {
+      manualAuth.hide();
+      authMessage.hide();
+    }
+    $("#settings-useSupabase").click(() => {
+      if (!this.getUtils().getConfig("useSupabase")) {
+        manualAuth.hide();
+        authMessage.hide();
+      } else {
+        manualAuth.show();
+        authMessage.show();
+      }
+    });
 
     // 闪烁标语记录界面
     // $('<textarea class="form-control mcmodder-monospace" id="mcmodder-splash-text">').appendTo($("#mcmodder-settings-9").parents(".center-setting-block")).val(GM_getValue("mcmodderSplashList"));
@@ -254,9 +315,9 @@ export class CenterSettingInit extends CenterBaseInit {
       .appendTo(splashesManager.instance)
       .click(async e => {
         const button = $(e.currentTarget);
-        button.addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+        McmodderUtils.setButtonLoadingState(button);
         await this.accessPublicSplashList(splashesManager);
-        button.removeClass("disabled").removeAttr("disabled").find("i").remove();
+        McmodderUtils.cancelButtonLoadingState(button);
       });
     });
 

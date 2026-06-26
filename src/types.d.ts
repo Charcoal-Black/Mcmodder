@@ -554,6 +554,14 @@ export interface SupabaseByteChartSuccessfulResponse {
   data: [string, number][];
 }
 
+export interface SupabaseAuthenticatorSuccessfulResponse {
+  user_id: number,
+  user_name: string,
+  auth_key: string
+}
+
 export type SupabaseTrackSplashResponse = SupabaseTrackSplashSuccessfulResponse | SupabaseErrorResponse;
 
 export type SupabaseByteChartResponse = SupabaseByteChartSuccessfulResponse | SupabaseErrorResponse;
+
+export type SupabaseAuthenticatorResponse = SupabaseAuthenticatorSuccessfulResponse | SupabaseErrorResponse;

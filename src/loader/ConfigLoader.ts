@@ -9,7 +9,7 @@ export class ConfigLoader {
     .addColorpickerConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", "#ff3030")
     .addCheckboxConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。", true)
     .addCheckboxConfig("useSupabase", "启用云端服务", "是否启用 Mcmodder 云端服务与功能。相关服务由 Supabase 驱动。若禁用此项，所有依赖云端服务的功能都不会运作。")
-    .addCheckboxConfig("supabaseSplash", "云端闪烁标语同步", "启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。<span class=\"text-danger\">脚本目前尚无法保证上传标语的正确性，以及提交的用户信息不会被恶意篡改。此功能所提供的信息仅供参考！</span>")
+    .addCheckboxConfig("supabaseSplash", "云端闪烁标语同步", "[需要用户认证] 启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。")
     .addCheckboxConfig("supabaseByteChart", "云端字数统计数据", "启用后，脚本会从云端读取贡献榜数据，用于显示个人主页的字数统计图表。")
     .addCheckboxConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
     .addCheckboxConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")

@@ -407,11 +407,10 @@ export class Mcmodder {
 
     if (this.utils.getConfig("supabaseSplash")) {
       const client = this.supabaseUtils.getClient();
-      if (!client) return;
-      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash', {
+      if (!client || !this.currentUID) return;
+      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash_v2', {
         body: {
-          user_id: this.currentUID,
-          user_name: this.currentUsername,
+          auth_key: this.utils.getProfile("auth_key"),
           splash_text: splashText
         }
       });
