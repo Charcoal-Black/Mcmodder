@@ -139,6 +139,10 @@ export class McmodderUtils {
     GM_setValue(item, JSON.stringify(obj));
   }
 
+  setConfigAsNumberList(key: number | string | null | undefined, value: number[], item = "mcmodderSettings") {
+    return this.setConfig(key, value.join(","), item);
+  }
+
   deleteConfig(key: number | string | null | undefined, item = "mcmodderSettings") {
     this.setConfig(key, null, item);
   }

@@ -616,9 +616,9 @@ export class Mcmodder {
       const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
       .insertBefore(".header-user .header-layer-block:first-child()");
 
-      const userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
+      let userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
       const myProfileList = this.utils.getConfigAsNumberList("myProfiles");
-      const recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
+      let recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
 
       let userList;
       if (recentlyVisited.length) {
@@ -640,23 +640,81 @@ export class Mcmodder {
 
       if (userList.length) {
         $(".header-layer-block").addClass("with-favuser");
-        const favUserOuterContainer = $(`<div class="mcmodder-favuser"><div class="title">最近串门</div><div class="mcmodder-favuser-container"><div class="content"></div></div></div>`).insertAfter(myAvatar);
+        const favUserOuterContainer = $(`
+          <div class="mcmodder-favuser">
+            <div class="title">
+              最近串门
+              <span class="edit">
+                <i class="fa fa-pencil"></i>
+              </span>
+            </div>
+            <div class="mcmodder-favuser-container">
+              <div class="content"></div>
+            </div>
+          </div>
+        `).insertAfter(myAvatar);
         const favUserContainer = favUserOuterContainer.find(".mcmodder-favuser-container");
         const favUserContent = favUserContainer.find(".content");
         userList.forEach(uid => {
           const profile: McmodderProfileData = this.utils.getAllProfile(uid);
-          const node = $(`<a class="user" title="${ profile.nickname } · ${ this.utils.getProfileAbstract(profile, true, true) }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
-            <div class="avatar">
-              <img alt="${ profile.nickname }" src="${ profile.avatar }">
-            </div>
-            <div class="nickname">${ profile.nickname }</div>
-          </a>`).appendTo(favUserContent);
+          const node = $(`
+            <a class="user" data-uid="${
+              uid
+            }" data-nickname="${
+              profile.nickname
+            }" title="${
+              profile.nickname
+            } · ${
+              this.utils.getProfileAbstract(profile, true, true)
+            }" target="_blank" href="https://center.mcmod.cn/${
+              uid
+            }/">
+              <div class="avatar">
+                <img alt="${ profile.nickname }" src="${ profile.avatar }">
+              </div>
+              <div class="nickname">${ profile.nickname }</div>
+              <div class="nickname delete-text">移除</div>
+            </a>
+          `).appendTo(favUserContent);
           if (userFavList.includes(uid)) node.addClass("user-fav");
           else node.addClass("user-recent");
         });
 
         const className = ["star", "pin", "heart"][this.utils.getConfig("favUserDisplayStyle") || 0];
         favUserOuterContainer.addClass(className);
+
+        let deleteMode = false;
+        const favUserEdit = favUserOuterContainer.find(".edit");
+        const favUserEditIcon = favUserEdit.children().first();
+        favUserEdit.click(() => {
+          deleteMode = !deleteMode;
+          if (deleteMode) {
+            favUserOuterContainer.addClass("delete-mode");
+            favUserEditIcon.attr("class", "fa fa-close");
+          } else {
+            favUserOuterContainer.removeClass("delete-mode");
+            favUserEditIcon.attr("class", "fa fa-pencil");
+          }
+        });
+        favUserContainer.on("click", ".user", e => {
+          if (deleteMode) {
+            e.preventDefault();
+            const target = $(e.currentTarget);
+            const uid = Number(target.attr("data-uid"));
+            userFavList = userFavList.filter(id => id != uid);
+            recentlyVisited = recentlyVisited.filter(id => id != uid);
+            this.utils.setConfigAsNumberList("userFavList", userFavList);
+            this.utils.setConfigAsNumberList("recentlyVisited", recentlyVisited);
+            target.addClass("deleted");
+            setTimeout(() => {
+              target.remove();
+              const count = favUserContainer.find(".user").length;
+              if (count < 1) {
+                favUserOuterContainer.remove();
+              }
+            }, 300);
+          }
+        });
       }
       
       $(".header-user .header-layer-block li a").each((_, _c) => {
