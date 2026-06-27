@@ -16,7 +16,7 @@ if (isNewVersion === "true" && fs.existsSync("CHANGELOG.md")) {
   }
 }
 
-const args = ["release", "create", tagName, "--title", "v" + version, "--notes", notes];
+const args = ["release", "create", tagName, "dist/mcmodder.user.js", "--title", "v" + version, "--notes", notes];
 const result = spawnSync("gh", args, { stdio: "inherit" });
 if (result.status !== 0) {
   process.exit(result.status || 1);
