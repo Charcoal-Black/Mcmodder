@@ -1,7 +1,7 @@
 import { GM_cookie } from "$";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
 import { McmodderPermission } from "../../config/ConfigUtils";
-import { McmodderProfileData, SupabaseByteChartResponse, SupabaseByteChartSuccessfulResponse, SupabaseErrorResponse } from "../../types";
+import { McmodderProfileData, SupabaseByteChartResponse } from "../../types";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CommentInit } from "../CommentInit";
@@ -391,18 +391,13 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private async fetchRemoteByteData() {
-    const client = this.getParent().supabaseUtils.getClient();
-    if (!client) return;
-    const { data, error } = await client.functions.invoke<SupabaseByteChartResponse>("get_byte_data", {
+    if (!this.getParent().supabaseUtils.hasClient()) return;
+    const resp = await this.getParent().supabaseUtils.invoke<SupabaseByteChartResponse>("get_byte_data", {
       body: {
         user_id: this.center.getPageUID()
       }
     });
-    if (error || (data as SupabaseErrorResponse)?.error) {
-      const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
-      McmodderUtils.commonMsg(errorMsg, false);
-    }
-    const resp = data as SupabaseByteChartSuccessfulResponse;
+    if (!resp) return;
     this.optionData = resp.data;
     this.tempData = {};
     resp.data.forEach(e => {

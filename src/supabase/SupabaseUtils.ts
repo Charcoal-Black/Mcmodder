@@ -1,5 +1,7 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, FunctionInvokeOptions, SupabaseClient } from '@supabase/supabase-js';
 import { Mcmodder } from '../Mcmodder';
+import { SupabaseErrorResponse } from '../types';
+import { McmodderUtils } from '../Utils';
 
 export class SupabaseUtils {
   private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
@@ -34,5 +36,33 @@ export class SupabaseUtils {
 
   getClient() {
     return this.instance;
+  }
+
+  hasClient() {
+    return !!this.instance;
+  }
+
+  async invoke<SupabaseSuccessfulResponse extends object>(
+    functionName: string,
+    options?: FunctionInvokeOptions,
+    onErrorCallback?: (error: string) => void
+  ) {
+    const client = this.getClient();
+    if (!client) {
+      return;
+    }
+    const { data, error } = await client.functions.invoke<SupabaseSuccessfulResponse | SupabaseErrorResponse>(
+      functionName, options
+    );
+    if (error || (data as SupabaseErrorResponse)?.error) {
+      const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+      if (onErrorCallback) {
+        onErrorCallback(errorMsg);
+      } else {
+        McmodderUtils.commonMsg(errorMsg, false);
+      }
+      return;
+    }
+    return data as SupabaseSuccessfulResponse;
   }
 }

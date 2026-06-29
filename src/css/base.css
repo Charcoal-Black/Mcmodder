@@ -642,8 +642,7 @@ body .common-template-frame li {
   width: 4em;
   height: 2em;
 }
-#mcmodder-update-check-manual,
-#mcmodder-auth-manual {
+.center-setting-block .btn {
   margin: 0 var(--mcmodder-width-padding-3);
 }
 .mcmodder-auth-state {

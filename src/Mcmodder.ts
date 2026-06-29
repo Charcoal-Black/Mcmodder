@@ -8,7 +8,7 @@ import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
-import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseErrorResponse, SupabaseTrackSplashResponse, SupabaseTrackSplashSuccessfulResponse } from "./types";
+import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseTrackSplashResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { McmodderTimer } from "./widget/Timer";
@@ -339,7 +339,7 @@ export class Mcmodder {
           </div>
         </div>
       </li>`).appendTo(ul);
-      (new McmodderTimer(this, McmodderTimer.DATAGETTER_CONSTANT(profile.expirationDate))).$instance.appendTo(h.find(".mcmodder-timer-pre"));
+      (new McmodderTimer(this, profile.expirationDate)).$instance.appendTo(h.find(".mcmodder-timer-pre"));
       if (profile.uuid === uuid) h.addClass("profile-selected");
     });
     swal.fire({
@@ -406,16 +406,13 @@ export class Mcmodder {
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
 
     if (this.utils.getConfig("supabaseSplash")) {
-      const client = this.supabaseUtils.getClient();
-      if (!client || !this.currentUID) return;
-      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash_v2', {
+      if (!this.supabaseUtils.hasClient() || !this.currentUID) return;
+      const resp = await this.supabaseUtils.invoke<SupabaseTrackSplashResponse>('track_splash_v2', {
         body: {
           auth_key: this.utils.getProfile("auth_key"),
           splash_text: splashText
         }
-      });
-      if (error || (data as SupabaseErrorResponse)?.error) {
-        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+      }, errorMsg => {
         if (this.isV4) McmodderUtils.commonMsg(errorMsg, false);
         else (swal as any)({
           type: "error",
@@ -424,9 +421,8 @@ export class Mcmodder {
           buttons: false,
           timer: 3e3
         });
-        return;
-      }
-      const resp = data as SupabaseTrackSplashSuccessfulResponse;
+      });
+      if (!resp) return;
       let msg: string;
       if (resp.count == 1) {
         msg = "此标语是首次收录！";

@@ -1,4 +1,5 @@
 import { McmodderUtils } from "../Utils";
+import { McmodderTimer } from "../widget/Timer";
 import { McmodderInit } from "./Init";
 
 export class CommentInit extends McmodderInit {
@@ -7,8 +8,10 @@ export class CommentInit extends McmodderInit {
   }
 
   private displayPublishTime(target: JQuery) {
-    target.find(".comment-reply-row-time").each((_, time) => {
-      time.append(` (${ (time as HTMLElement).title })`);
+    target.find(".comment-reply-row-time").each((_, node) => {
+      const published = Date.parse(node.textContent);
+      const timer = new McmodderTimer(this.parent, published, 1e3, McmodderTimer.DATAFORMATTER_ZH);
+      timer.$instance.appendTo(node).before(" (").after(")");
     })
   }
 

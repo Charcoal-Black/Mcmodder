@@ -1,7 +1,7 @@
 import { McmodderConfigResourceInteractor } from "../../config/ConfigResourceInteractor";
 import { McmodderInputType } from "../../config/ConfigUtils";
 import { Mcmodder } from "../../Mcmodder";
-import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData, SupabaseAuthenticatorResponse, SupabaseAuthenticatorSuccessfulResponse, SupabaseErrorResponse } from "../../types";
+import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData, SupabaseAuthenticatorResponse, SupabaseSyncSettingsResponse } from "../../types";
 import { McmodderTable } from "../../table/Table";
 import { McmodderTimer } from "../../widget/Timer";
 import { McmodderUtils } from "../../Utils";
@@ -9,6 +9,7 @@ import { McmodderValues } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
 import { McmodderConfigResourceFileListInteractor } from "../../config/ConfigResouceFileListInteractor";
 import { McmodderConfigInteractor } from "../../config/ConfigInteractor";
+import { GM_getValue, GM_setValue } from "$";
 
 export class CenterSettingInit extends CenterBaseInit {
   private async accessPublicSplashList(manager: McmodderConfigResourceInteractor<McmodderSplashData>) {
@@ -98,10 +99,14 @@ export class CenterSettingInit extends CenterBaseInit {
     );
 
     // 相关链接预览图尺寸调整
-    $("#setting-link-style-preview").attr("data-content", '<img alt="link style" src="' + McmodderValues.assets.mcmod.iconStyleSample + '" width="220" ></a>');
+    $("#setting-link-style-preview").attr("data-content", `<img alt="link style" src="${
+      McmodderValues.assets.mcmod.iconStyleSample
+    }" width="220" ></a>`);
     // 脚本设置
     let menuArea = $("div.center-main.setting.menuarea").get(0);
-    $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>').appendTo("#center-setting-frame > div.center-sub-menu > ul").bind("change", e => {
+    $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>')
+    .appendTo("#center-setting-frame > div.center-sub-menu > ul")
+    .bind("change", e => {
       const target = $(e.currentTarget);
       const a = target.attr("data-menu-select");
       if (a) {
@@ -113,7 +118,8 @@ export class CenterSettingInit extends CenterBaseInit {
       }
     });
 
-    const mcmodderSettingMenu = $('<div class="center-block hidden" data-menu-frame="9" style="display: none;">').appendTo(menuArea);
+    const mcmodderSettingMenu = $('<div class="center-block hidden" data-menu-frame="9" style="display: none;">')
+    .appendTo(menuArea);
     mcmodderSettingMenu.html(
       `<div class="center-block-head">
         <span class="title">Mcmodder设置</span>
@@ -140,14 +146,20 @@ export class CenterSettingInit extends CenterBaseInit {
     .click(() => this.getParent().scheduleRequestUtils.run("autoCheckUpdate"))
     .parent();
     if (this.getUtils().getConfig("autoCheckUpdate")) {
-      (new McmodderTimer(this.getParent(), McmodderTimer.DATAGETTER_SCHEDULE("autoCheckUpdate", null, this.getParent().scheduleRequestUtils)))
-      .$instance
-      .appendTo(manualUpdateCheck);
+      new McmodderTimer(this.getParent(), McmodderTimer.DATAGETTER_SCHEDULE(
+        "autoCheckUpdate",
+        null,
+        this.getParent().scheduleRequestUtils
+      ))
+      .$instance.appendTo(manualUpdateCheck);
     }
 
     // Supabase 用户认证
+    const useSupabaseLabel = $("[for=settings-useSupabase]");
+    const useSupabaseButton = useSupabaseLabel.prev();
+    const useSupabaseBlock = useSupabaseButton.parents(".center-setting-block");
     const manualAuth = $('<button id="mcmodder-auth-manual" class="btn">立即认证</button>')
-    .insertAfter("[for=settings-useSupabase]");
+    .insertAfter(useSupabaseLabel);
     const authMessage = $('<span>当前已绑定: </span>')
     .insertAfter(manualAuth);
     const authUser = $('<span class="mcmodder-auth-user">').appendTo(authMessage);
@@ -174,18 +186,15 @@ export class CenterSettingInit extends CenterBaseInit {
     updateAuthStateDisplay();
     manualAuth.click(async () => {
       McmodderUtils.setButtonLoadingState(manualAuth);
-      const client = this.getParent().supabaseUtils.getClient();
-      if (!client) {
+      if (!this.getParent().supabaseUtils.hasClient()) {
         return;
       }
-      const { data, error } = await client.functions.invoke<SupabaseAuthenticatorResponse>("authenticator", {
+      const resp = await this.getParent().supabaseUtils.invoke<SupabaseAuthenticatorResponse>("authenticator", {
         body: { cookie: document.cookie }
       });
-      if (error || (data as SupabaseErrorResponse)?.error) {
-        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
-        McmodderUtils.commonMsg(errorMsg, false);
+      if (!resp) {
+        return;
       }
-      const resp = data as SupabaseAuthenticatorSuccessfulResponse;
       this.getUtils().setProfile("auth_uid", resp.user_id);
       this.getUtils().setProfile("auth_username", resp.user_name);
       this.getUtils().setProfile("auth_key", resp.auth_key);
@@ -196,18 +205,113 @@ export class CenterSettingInit extends CenterBaseInit {
       manualAuth.hide();
       authMessage.hide();
     }
-    $("#settings-useSupabase").click(() => {
+    useSupabaseButton.click(() => {
       if (!this.getUtils().getConfig("useSupabase")) {
         manualAuth.hide();
         authMessage.hide();
+        settingsSyncBlock.hide();
       } else {
         manualAuth.show();
         authMessage.show();
+        settingsSyncBlock.show();
       }
     });
 
-    // 闪烁标语记录界面
-    // $('<textarea class="form-control mcmodder-monospace" id="mcmodder-splash-text">').appendTo($("#mcmodder-settings-9").parents(".center-setting-block")).val(GM_getValue("mcmodderSplashList"));
+    const settingsSyncBlock = $('<div class="center-setting-block">').insertAfter(useSupabaseBlock);
+    $(`<button class="btn">
+      <i class="fa fa-cloud-upload" />
+      保存所有配置数据至云端
+    </button>`).click(async e => {
+      const button = e.currentTarget;
+      const { value } = await swal.fire({
+        type: "warning",
+        title: "配置上传确认",
+        text: `即将把本地的所有脚本配置数据保存在云端（包括脚本设置、已保存的用户信息和模板列表），便于同步到其他终端设备上。
+          云端若已保存配置则会被覆盖，无法撤销。是否继续？`,
+        showCancelButton: true,
+        confirmButtonText: "确认",
+        cancelButtonText: "取消"
+      });
+      if (!value) return;
+      McmodderUtils.setButtonLoadingState(button);
+      const resp = await this.getParent().supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
+        body: {
+          auth_key: this.getUtils().getProfile("auth_key"),
+          content: {
+            mcmodder_settings: GM_getValue("mcmodderSettings"),
+            user_profile: GM_getValue("userProfile"),
+            template_list: GM_getValue("templateList"),
+          }
+        }
+      });
+      if (resp) {
+        McmodderUtils.commonMsg("已将本地配置保存至云端~");
+      }
+      McmodderUtils.cancelButtonLoadingState(button);
+    }).appendTo(settingsSyncBlock);
+    $(`<button class="btn">
+      <i class="fa fa-cloud-download" />
+      从云端同步所有配置数据
+    </button>`).click(async e => {
+      const button = e.currentTarget;
+      const { value } = await swal.fire({
+        type: "warning",
+        title: "配置下载确认",
+        text: `即将把云端所有已保存的脚本配置数据同步到本地（包括脚本设置、已保存的用户信息和模板列表）。
+          本地配置将会与云端配置合并（模板则是全部覆盖），无法撤销。是否继续？`,
+        showCancelButton: true,
+        confirmButtonText: "确认",
+        cancelButtonText: "取消"
+      });
+      if (!value) return;
+      McmodderUtils.setButtonLoadingState(button);
+      const resp = await this.getParent().supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
+        body: {
+          auth_key: this.getUtils().getProfile("auth_key")
+        }
+      });
+      if (resp) {
+        let success = 0;
+        if (resp.mcmodder_settings) {
+          try {
+            const obj1 = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
+            const obj2 = JSON.parse(resp.mcmodder_settings);
+            GM_setValue("mcmodderSettings", JSON.stringify(Object.assign({}, obj1, obj2)));
+            success++;
+          }
+          catch (e) {
+            McmodderUtils.commonMsg(String(e), false);
+          }
+        }
+        if (resp.user_profile) {
+          try {
+            const obj1 = JSON.parse(GM_getValue("userProfile") || "{}");
+            const obj2 = JSON.parse(resp.user_profile);
+            GM_setValue("userProfile", JSON.stringify(Object.assign({}, obj1, obj2)));
+            success++;
+          }
+          catch (e) {
+            McmodderUtils.commonMsg(String(e), false);
+          }
+        }
+        if (resp.template_list) {
+          GM_setValue("templateList", resp.template_list);
+          success++;
+        }
+        if (success > 0) {
+          const interval = Date.now() - Date.parse(resp.last_modified);
+          const formatted = McmodderUtils.getFormattedTime(interval);
+          McmodderUtils.commonMsg(`已将 ${
+            formatted
+          } 前保存在云端的 ${
+            success
+          } 项配置同步到本地，刷新标签页以查看同步后的配置~`);
+        } else {
+          McmodderUtils.commonMsg(`本地配置未发生变化...`);
+        }
+        McmodderUtils.cancelButtonLoadingState(button);
+      }
+    }).appendTo(settingsSyncBlock);
 
     if (!window.matchMedia) $("[data-todo=adaptableNightMode]").parents(".center-setting-block").hide();
 

@@ -268,6 +268,19 @@ export class McmodderUtils {
     return `${Math.floor(t / 8.64e7)}d`;
   }
 
+  static getFormattedChineseTime(t: number) {
+    let a, b = t < 0 ? "前" : "后";
+    t = t < 0 ? -t : t;
+    if (t < 1e3) a = `刚刚`;
+    else if (t < 6e4) a = `${Math.floor(t / 1e3)}秒`;
+    else if (t < 3.6e6) a = `${Math.floor(t / 6e4)}分`;
+    else if (t < 8.64e7) a = `${Math.floor(t / 3.6e6)}时`;
+    else if (t < 2.592e9) a = `${Math.floor(t / 8.64e7)}天`;
+    else if (t < 3.1536e10) a = `${Math.floor(t / 2.592e9)}月`;
+    else a = `${Math.floor(t / 3.1536e10)}年`;
+    return a + b;
+  }
+
   static getFormattedNumber(n: number) {
     if (n >= 1e12) return (n / 1e12).toFixed(Number(n % 1e12 != 0)) + "T";
     if (n >= 1e9) return (n / 1e9).toFixed(Number(n % 1e9 != 0)) + "G";
@@ -976,7 +989,7 @@ export class McmodderUtils {
   }
 
   static cancelButtonLoadingState(node: Element | JQuery) {
-    $(node).removeClass("disabled").removeAttr("disabled").find("i").remove();
+    $(node).removeClass("disabled").removeAttr("disabled").find("i:last-child").remove();
   }
 
   static regulateFileName(name: string) {
