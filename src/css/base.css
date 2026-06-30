@@ -546,6 +546,11 @@ body .top-main .pulldown .top_content {
   opacity: .5;
   margin-right: .5em;
 }
+.item-shortcut-left {
+  float: right;
+  opacity: .5;
+  margin-left: .5em;
+}
 .mcmodder-task-tip {
   width: 320px;
   height: 85px;
@@ -1933,7 +1938,7 @@ body .top-main .info .more-info .top_content a:hover,
   background-color: var(--mcmodder-color-background);
   border-radius: calc(var(--mcmodder-width-radius) * .5);
   font-size: 14px;
-  box-shadow: 0px 5px 15px var(--mcmodder-color-background-dark4);
+  box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
   opacity: 1;
   transition: opacity 0.2s ease-out 0s, transform 0.2s cubic-bezier(.18,.89,.32,1.28) 0s;
 }
@@ -1973,14 +1978,14 @@ body .top-main .info .more-info .top_content a:hover,
   list-style: none;
 }
 .mcmodder-contextmenu li {
-  padding: .1em .5em;
-  border-radius: .3em;
+  padding: .2em var(--mcmodder-width-padding-2);
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
   text-wrap: nowrap;
 }
 .mcmodder-contextmenu li.empty {
   color: var(--mcmodder-color-text-dark3);
 }
-.mcmodder-contextmenu li:not(.empty):hover {
+.mcmodder-contextmenu li.selected:not(.empty) {
   background-color: var(--mcmodder-color-primary-transparent2);
 }
 .jsonframe-menu {

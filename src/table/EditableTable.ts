@@ -21,8 +21,16 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
   static readonly CLASSNAME_MOUSEOVER_TR = "mcmodder-table-mouseover-tr";
   static readonly CLASSNAME_MOUSEOVER_TD = "mcmodder-table-mouseover-td";
 
+  readonly undoKey = McmodderUtils.getXplatCtrlCombinationKey('Z');
+  readonly redoKey = McmodderUtils.getXplatCtrlCombinationKey('Y');
+  readonly redoKey2 = McmodderUtils.getXplatCtrlCombinationKey({ shiftKey: true, keyCode: 90 });
+  readonly saveKey = McmodderUtils.getXplatCtrlCombinationKey('S');
+  readonly selectAllKey = McmodderUtils.getXplatCtrlCombinationKey('A');
+  readonly copyKey = McmodderUtils.getXplatCtrlCombinationKey('C');
+  readonly pasteKey = McmodderUtils.getXplatCtrlCombinationKey('V');
+
   readonly editConfigs: EditConfigs<McmodderTableData>;
-  unsavedUnitCount: number;
+  unsaved: boolean;
   selectedRowCount: number;
   isShiftKeyPressed: boolean;
   hoveringIndex: number | null;
@@ -71,7 +79,7 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
     this.editConfigs = editConfigs as unknown as EditConfigs<McmodderTableData>; // doge
 
     // other init
-    this.unsavedUnitCount = 0;
+    this.unsaved = false;
     this.selectedRowCount = 0;
     this.isShiftKeyPressed = false;
     this.hoveringIndex = null;
@@ -180,9 +188,11 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
   }
 
   deleteRow(index: number): McmodderTableDataMap<McmodderTableData> {
+    if (this.currentData[index].selected) this.selectedRowCount--;
     let deletedData = McmodderUtils.simpleDeepCopy(this.currentData[index].content);
     this.currentData.splice(index, 1);
     this.refreshAll();
+    this.unsaved = true;
     return { [index]: deletedData };
   }
 
@@ -191,11 +201,13 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
     const deletedData: McmodderTableDataMap<McmodderTableData> = {};
     const tempData: any = this.currentData;
     selection.forEach(i => {
+      if (this.currentData[i].selected) this.selectedRowCount--;
       deletedData[i] = Object.assign({}, this.currentData[i].content);
       tempData[i] = null;
     });
     this.currentData = tempData.filter((e: any) => e);
     this.refreshAll();
+    this.unsaved = true;
     return deletedData;
   }
 
@@ -211,10 +223,9 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
     if (original != newValue) {
       if (!data.edited) data.edited = {};
       data.edited[key] = newValue;
-      this.unsavedUnitCount++;
+      this.unsaved = true;
     } else {
       if (data.edited && data.edited[key]) delete data.edited[key];
-      this.unsavedUnitCount--;
     }
     this.getRowElement(index).replaceWith(this.renderRow(index));
     this.onEdit?.();
@@ -230,7 +241,7 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
   }
 
   dataMapToSelection(dataMap: McmodderTableDataMap<McmodderTableData>) {
-    return Object.keys(dataMap).map(Number);
+    return Object.keys(dataMap).map(Number).sort();
   }
 
   insertRowWithDataMap(dataMap: McmodderTableDataMap<McmodderTableData>) {
@@ -252,27 +263,34 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
     if (index < 0 || index > this.currentData.length) return;
     this.currentData.splice(index, 0, {content: McmodderUtils.simpleDeepCopy(newData)});
     this.refreshAll();
+    this.unsaved = true;
   }
 
   insertMultipleRowWithArray(index: number, dataList: McmodderTableDataList<McmodderTableData>) {
     let l = this.currentData.slice(0, index);
     let r = this.currentData.slice(index);
-    this.currentData = l.concat(McmodderUtils.simpleDeepCopy(dataList.map(e => ({content: e})))).concat(r);
+    this.currentData = l.concat(McmodderUtils.simpleDeepCopy(dataList.map(e => ({
+      content: McmodderUtils.simpleDeepCopy(e)
+    })))).concat(r);
     this.refreshAll();
+    this.unsaved = true;
   }
 
   insertMultipleRowWithDataMap(dataMap: McmodderTableDataMap<McmodderTableData>) {
-    let i = 0;
+    let i = 0, j = 0;
     let total = this.currentData.length + Object.keys(dataMap).length;
-    let currentData = new Array(total);
+    let currentData: any[] = new Array(total).fill(null).map(() => ({}));
     let deletedRowIndex = this.dataMapToSelection(dataMap);
     for (let k = 0; k < total; k++) {
-      if (deletedRowIndex.includes(k)) currentData[k] = dataMap[k];
+      if (deletedRowIndex[j] == k) {
+        currentData[k].content = McmodderUtils.simpleDeepCopy(dataMap[k]);
+        j++;
+      }
       else currentData[k] = this.currentData[i++];
-      delete currentData[k]._selected;
     }
     this.currentData = currentData;
     this.refreshAll();
+    this.unsaved = true;
   }
 
   saveAll() {
@@ -284,10 +302,10 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
         }
       });
       delete data.edited;
-      this.unsavedUnitCount--;
     });
     // this.rearrangeRows();
     this.refreshAll();
+    this.unsaved = false;
   }
 
   selectRow(index: number, state: boolean) {
@@ -419,31 +437,34 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
 
     $(document.body).keydown(e => {
       // 撤销 Ctrl+Z
-      if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 90 }, e)) {
+      if (McmodderUtils.isKeyMatch(this.undoKey, e) && !e.shiftKey) {
         e.preventDefault();
         this.undo();
       } 
 
-      // 重做 Ctrl+Y
-      else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 89 }, e)) {
+      // 重做 Ctrl+Y (Ctrl+Shift+Z)
+      else if (
+        McmodderUtils.isKeyMatch(this.redoKey, e) ||
+        McmodderUtils.isKeyMatch(this.redoKey2, e)
+      ) {
         e.preventDefault();
         this.redo();
-      } 
+      }
 
       // 保存 Ctrl+S
-      else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
+      else if (McmodderUtils.isKeyMatch(this.saveKey, e)) {
         e.preventDefault();
         this.saveAll();
       }
 
       // 全选 Ctrl+A
-      else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 65 }, e)) {
+      else if (McmodderUtils.isKeyMatch(this.selectAllKey, e)) {
         e.preventDefault();
         this.selectAll(!e.shiftKey);
       } 
 
       // 复制 Ctrl+C
-      else if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 67 }, e)) {
+      else if (McmodderUtils.isKeyMatch(this.copyKey, e)) {
         e.preventDefault();
         this.copyRow(this.getSelection());
       } 
@@ -465,23 +486,76 @@ export class McmodderEditableTable<McmodderTableData extends McmodderTableAccept
     .on("mouseleave", "td", e => this.unitOnMouseleave(e))
     .on("dblclick", "td:not([data-readonly=1])", e => this.onDblclick(e));
   }
+  
+  private isMouseOnAnyRow(e: JQueryMouseEventObject) {
+    return !isNaN(this.getElementIndex(e.target));
+  }
 
-  initContextMenu() {
+  private hasSelection() {
+    return !!this.selectedRowCount;
+  }
+
+  private isCopyboardEmpty() {
+    return !this.clipboard.length;
+  }
+
+  private initContextMenu() {
     this.contextMenu
-    .addOption("newRow", "新建行", _e => !this.currentData.length, 
-      _e => this.execute(new InsertRowCommand(this, 0)))
-    .addOption("insertRowUpper", "在此行上方插入行", e => !isNaN(this.getElementIndex(e.target)), 
-      e => this.execute(new InsertRowCommand(this, this.getElementIndex(e?.target))))
-    .addOption("insertRowLower", "在此行下方插入行", e => !isNaN(this.getElementIndex(e.target)), 
-      e => this.execute(new InsertRowCommand(this, this.getElementIndex(e?.target) + 1)))
-    .addOption("pasteRowUpper", "粘贴在其上方", e => !isNaN(this.getElementIndex(e?.target)) && !!this.clipboard.length, 
-      e => this.execute(new PasteCommand(this, this.getElementIndex(e?.target))))
-    .addOption("pasteRowLower", "粘贴在其下方", e => !isNaN(this.getElementIndex(e.target)) && !!this.clipboard.length, 
-      e => this.execute(new PasteCommand(this, this.getElementIndex(e?.target) + 1)))
-    .addOption("deleteRow", "删除该行", e => !isNaN(this.getElementIndex(e.target)), 
-      e => this.execute(new DeleteRowCommand(this, this.getElementIndex(e?.target))))
-    .addOption("deleteMultipleRow", "删除所有选中行", _e => !!this.selectedRowCount, 
-      _e => this.execute(new DeleteMultipleRowCommand(this, this.getSelection())))
+    .addItem({
+      key: "newRow",
+      text: "新建行",
+      displayRule: _e => !this.currentData.length, 
+      callback: _e => this.execute(new InsertRowCommand(this, 0))
+    })
+    .addItem({
+      key: "insertRowUpper",
+      text: "在此行上方插入行",
+      displayRule: e => this.isMouseOnAnyRow(e), 
+      callback: e => this.execute(new InsertRowCommand(this, this.getElementIndex(e?.target)))
+    })
+    .addItem({
+      key: "insertRowLower",
+      text: "在此行下方插入行",
+      displayRule: e => this.isMouseOnAnyRow(e),
+      callback: e => this.execute(new InsertRowCommand(this, this.getElementIndex(e?.target) + 1))
+    })
+    .addItem({
+      key: "copyRow",
+      text: "复制行",
+      displayRule: e => this.isMouseOnAnyRow(e), 
+      callback: e => this.copyRow([this.getElementIndex(e.target)])
+    })
+    .addItem({
+      key: "copyMultipleRow",
+      text: "复制所有选中行",
+      shortcut: this.copyKey,
+      displayRule: _e => this.hasSelection(), 
+      callback: _e => this.copyRow(this.getSelection())
+    })
+    .addItem({
+      key: "pasteRowUpper",
+      text: "粘贴在其上方",
+      displayRule: e => this.isMouseOnAnyRow(e) && !this.isCopyboardEmpty(), 
+      callback: e => this.execute(new PasteCommand(this, this.getElementIndex(e?.target)))
+    })
+    .addItem({
+      key: "pasteRowLower",
+      text: "粘贴在其下方",
+      displayRule: e => this.isMouseOnAnyRow(e) && !this.isCopyboardEmpty(), 
+      callback: e => this.execute(new PasteCommand(this, this.getElementIndex(e?.target) + 1))
+    })
+    .addItem({
+      key: "deleteRow",
+      text: "删除该行",
+      displayRule: e => this.isMouseOnAnyRow(e), 
+      callback: e => this.execute(new DeleteRowCommand(this, this.getElementIndex(e?.target)))
+    })
+    .addItem({
+      key: "deleteMultipleRow",
+      text: "删除所有选中行",
+      displayRule: _e => this.hasSelection(), 
+      callback: _e => this.execute(new DeleteMultipleRowCommand(this, this.getSelection()))
+    });
   }
 
   protected onStopRearrange() {

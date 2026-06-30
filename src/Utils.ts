@@ -18,12 +18,15 @@ export class McmodderUtils {
     this.parent = parent;
   }
 
+  private static m_isMac: boolean | undefined;
   static isMac() {
-    return navigator.userAgent.includes("Macintosh");
+    return this.m_isMac ??= navigator.userAgent.includes("Macintosh");
   }
 
+  private static m_isMobileClient: boolean | undefined;
   static isMobileClient() {
-    return !!(navigator.userAgent.match(/Mobi/i) ||
+    return this.m_isMobileClient ??=
+      !!(navigator.userAgent.match(/Mobi/i) ||
       navigator.userAgent.match(/Android/i) ||
       navigator.userAgent.match(/iPhone/i));
   }
@@ -632,15 +635,30 @@ export class McmodderUtils {
     } as RGBA);
   }
 
+  static getXplatCtrlCombinationKey(keyCode: number | string | McmodderKeyData): McmodderKeyData {
+    if (typeof keyCode === "string") {
+      keyCode = keyCode.toUpperCase().charCodeAt(0);
+    }
+    if (typeof keyCode === "number") {
+      keyCode = { keyCode };
+    }
+    if (this.isMac()) {
+      keyCode.metaKey = true;
+    } else {
+      keyCode.ctrlKey = true;
+    }
+    return keyCode;
+  }
+
   static keyToRawList(e: McmodderKeyData) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
-    if (!e.key) return [];
+    if (!e.key && !e.keyCode) return [];
     let k = [], c;
-    if (e.ctrlKey) k.push("Ctrl");
+    if (e.ctrlKey) k.push(McmodderUtils.isMac() ? "Control" : "Ctrl");
     if (e.shiftKey) k.push("Shift");
     if (e.altKey) k.push("Alt");
-    if (e.metaKey) k.push("Meta");
-    if (!["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
+    if (e.metaKey) k.push(McmodderUtils.isMac() ? "Command" : "Meta");
+    if (!e.key || !["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
       if (e.keyCode) {
         if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 98 && e.keyCode <= 123)) c = String.fromCharCode(e.keyCode).toUpperCase();
         else if (e.keyCode >= 48 && e.keyCode <= 57) c = String.fromCharCode(e.keyCode);
@@ -664,10 +682,10 @@ export class McmodderUtils {
     const HTMLList = list.map(data => {
       if (isMac) {
         switch (data) {
-          case "Ctrl": data = "⌃‌"; break;
+          case "Ctrl": case "Control": data = "⌃‌"; break;
           case "Shift": data = "⇧"; break;
           case "Alt": data = "⌥"; break;
-          case "Meta": data = "⌘";
+          case "Meta": case "Command": data = "⌘";
         }
       }
       return `<kbd>${ data }</kbd>`;
@@ -1023,7 +1041,7 @@ export class McmodderUtils {
     return classNameIDMap[className];
   }
 
-  getItemTypeData(classID: number, itemType: number | undefined) {
+  getItemTypeData(classID: number | undefined, itemType: number | undefined) {
     const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
       (entry.classID === classID || entry.classID === 0) &&
       (entry.typeID || 1) === (itemType || 1)
@@ -1031,14 +1049,14 @@ export class McmodderUtils {
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }
 
-  getItemTypeHTML(...args: [classID: number, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
+  getItemTypeHTML(...args: [classID: number | undefined, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
     let itemType;
     if (args.length === 1) {
       itemType = args[0];
     } else {
       itemType = this.getItemTypeData(args[0], args[1]);
     }
-    if (!itemType) return $();
+    if (!itemType) return $(`<i class="fa fa-question-circle-o text-danger"></i>`);
     const iconFont = $(`<span class="iconfont icon">`).css("color", itemType.color);
     if (itemType.classID === 0) iconFont.html(itemType.icon);
     else iconFont.html(`<i class="fa ${itemType.icon}"></i>`);
