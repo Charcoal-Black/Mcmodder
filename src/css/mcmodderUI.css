@@ -12,6 +12,11 @@
   color: var(--mcmodder-color-text);
   border-color: 1px solid var(--mcmodder-color-background-transparent);
 }
+.btn:hover,
+.btn-dark:hover {
+  background-color: var(--mcmodder-color-accent-background);
+  background-image: none;
+}
 .dropdown-menu > .active > a,
 .dropdown-menu > .active > a:hover,
 .dropdown-menu > .active > a:focus {
