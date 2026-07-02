@@ -1186,14 +1186,42 @@ pre del,
   font-family: var(--mcmodder-font-monospace);
   text-decoration: none;
   color: var(--mcmodder-color-pre-del);
-  background: #f333
+  background-color: #f333
 }
 pre ins,
 #ins_num {
   font-family: var(--mcmodder-font-monospace);
   color: var(--mcmodder-color-pre-ins);
   text-decoration: none;
-  background: #3f33
+  background-color: #3f33
+}
+.mcmodder-compare-del {
+  background-color: #f333;
+  position: relative;
+}
+.mcmodder-compare-ins {
+  background-color: #3f33;
+  position: relative;
+}
+.mcmodder-compare-del::after {
+  font-family: "FontAwesome";
+  content: "\f068";
+  color: var(--mcmodder-color-text-danger);
+  font-size: .75em;
+  position: absolute;
+  right: var(--mcmodder-width-padding-3);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.mcmodder-compare-ins::after {
+  font-family: "FontAwesome";
+  content: "\f067";
+  color: var(--mcmodder-color-text-success);
+  font-size: .75em;
+  position: absolute;
+  right: var(--mcmodder-width-padding-3);
+  top: 50%;
+  transform: translateY(-50%);
 }
 .mcmodder-monospace {
   font-family: var(--mcmodder-font-monospace);
@@ -2219,8 +2247,6 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   padding: var(--mcmodder-width-padding-2);
   border-radius: var(--mcmodder-width-radius);
   background-image: linear-gradient(45deg, var(--mcmodder-color-primary-background), var(--mcmodder-color-accent-background));
-  color: var(--mcmodder-color-primary-dark1);
-  font-weight: bold;
   cursor: var(--mcmodder-cursor-hand);
   user-select: none;
 }

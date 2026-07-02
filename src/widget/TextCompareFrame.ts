@@ -1,6 +1,6 @@
 import { diffChars, diffWords, diffLines } from "diff";
-import { TextCompareMode } from "./types";
-import { McmodderValues } from "./Values";
+import { TextCompareMode } from "../types";
+import { McmodderValues } from "../Values";
 
 const JsDiff: Record<TextCompareMode, any> = { diffChars, diffWords, diffLines };
 

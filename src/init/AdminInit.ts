@@ -1,8 +1,9 @@
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { TextCompareFrame } from "../TextCompareFrame";
+import { TextCompareFrame } from "../widget/TextCompareFrame";
 import { McmodderTimer } from "../widget/Timer";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
+import { RelationCompareFrame } from "../widget/RelationCompareFrame";
 
 export class AdminInit extends McmodderInit {
   private triggered: Set<string> = new Set;
@@ -146,10 +147,23 @@ export class AdminInit extends McmodderInit {
               // 正文对比
               $("#mcmodder-text-area").remove();
               $(".verify-copy-btn").parent().filter((_, c) => $(c).css("position") === "absolute").remove(); // 移除原版复制按钮
-              const textTr = $(".verify-info-table > tbody").contents().filter((_, c) => $(c).children().text().includes("介绍"));
-              const textA = textTr.find("td:nth-child(3) .common-text");
-              const textB = textTr.find("td:nth-child(2) .common-text");
-              (new TextCompareFrame($(".verify-action-btns").parent().children().first(), textA, textB)).performCompare();
+              
+              $(".verify-info-table > tbody").contents().each((_, e) => {
+                const row = $(e);
+                const rowText = e.firstChild?.textContent;
+                if (!rowText) return;
+                else if (rowText.includes("介绍")) {
+                  const insertPos = $(".verify-action-btns").parent().children().first();
+                  const textA = row.find("td:nth-child(3) .common-text");
+                  const textB = row.find("td:nth-child(2) .common-text");
+                  (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                }
+                else if (rowText === "模组关系") {
+                  const prev = row.find("td:nth-child(3) .verify-copy-text");
+                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  RelationCompareFrame.performCompare(prev, next);
+                }
+              });
 
               // 附言缓存
               const verifyId = Number(JSON.parse($("#verify-pass-btn").attr("data-data")).verifyID);
