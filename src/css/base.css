@@ -1197,13 +1197,14 @@ pre ins,
 }
 .mcmodder-compare-del {
   background-color: #f333;
-  position: relative;
 }
 .mcmodder-compare-ins {
   background-color: #3f33;
+}
+.mcmodder-compare-diffline {
   position: relative;
 }
-.mcmodder-compare-del::after {
+.mcmodder-compare-diffline.mcmodder-compare-del::after {
   font-family: "FontAwesome";
   content: "\f068";
   color: var(--mcmodder-color-text-danger);
@@ -1213,7 +1214,7 @@ pre ins,
   top: 50%;
   transform: translateY(-50%);
 }
-.mcmodder-compare-ins::after {
+.mcmodder-compare-diffline.mcmodder-compare-ins::after {
   font-family: "FontAwesome";
   content: "\f067";
   color: var(--mcmodder-color-text-success);
@@ -1222,6 +1223,9 @@ pre ins,
   right: var(--mcmodder-width-padding-3);
   top: 50%;
   transform: translateY(-50%);
+}
+.mcmodder-compare-invalidversion {
+  border: 2px solid var(--mcmodder-color-danger-dark1);
 }
 .mcmodder-monospace {
   font-family: var(--mcmodder-font-monospace);
@@ -1573,8 +1577,9 @@ body .arrow {
   color: var(--mcmodder-color-text-dark2);
   margin-left: 0px;
 }
-.verify-action-btns button {
-  margin-right: .75em;
+.verify-action-btns button,
+.assistant-action-btns {
+  margin-right: var(--mcmodder-width-padding-3);
 }
 #mcmodder-tabedit-tip {
   display: inline-block;
@@ -2450,8 +2455,11 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .badge-row .text-success, .badge.badge-success {
   background-color: #5f55;
 }
-.badge-row .text-danger, .badge.badge-danger{
+.badge-row .text-danger, .badge.badge-danger {
   background-color: #f555;
+}
+.badge-row .text-info, .badge.badge-info {
+  background-color: #55f5;
 }
 .badge-row .text-muted-muted {
   background-color: #ddd5;
@@ -2461,6 +2469,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .text-danger, .badge-danger {
   color: var(--mcmodder-color-text-danger) !important;
+}
+.text-info, .badge-info {
+  color: var(--mcmodder-color-text-info) !important;
 }
 kbd {
   color: var(--mcmodder-color-text);

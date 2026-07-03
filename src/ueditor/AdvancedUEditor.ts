@@ -1,7 +1,7 @@
 import { Mcmodder } from "../Mcmodder";
 import { McmodderItemList, McmodderKeyData } from "../types";
 import { McmodderTemplate } from "../Template";
-import { TextCompareFrame } from "../widget/TextCompareFrame";
+import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderAutoLink } from "../widget/AutoLink";

@@ -41,7 +41,7 @@ export class RelationCompareFrame {
     return [relations, nodes];
   }
 
-  private static compare(from: RelationMap, to: RelationMap, nodes: NodeMap, className: string) {
+  private static compare(from: RelationMap, to: RelationMap, nodes: NodeMap, className: string | string[]) {
     Object.entries(from).forEach(([fromCategoryName, fromCategory]) => {
       const toCategory = to[fromCategoryName] ?? {};
       Object.entries(fromCategory).forEach(([fromTypeName, fromType]) => {
@@ -51,7 +51,12 @@ export class RelationCompareFrame {
             const nodeRecord = nodes.get(fromType);
             if (nodeRecord !== undefined) {
               const node = nodeRecord[fromID];
-              node.classList.add(className);
+              if (!(className instanceof Array)) {
+                className = [className];
+              }
+              className.forEach(e => {
+                node.classList.add(e);
+              })
             }
           }
         }
@@ -62,7 +67,7 @@ export class RelationCompareFrame {
   static performCompare(prev: JQuery, next: JQuery) {
     const [prevData, prevNodes] = this.parse(prev);
     const [nextData, nextNodes] = this.parse(next);
-    this.compare(prevData, nextData, prevNodes, "mcmodder-compare-del");
-    this.compare(nextData, prevData, nextNodes, "mcmodder-compare-ins");
+    this.compare(prevData, nextData, prevNodes, ["mcmodder-compare-del", "mcmodder-compare-diffline"]);
+    this.compare(nextData, prevData, nextNodes, ["mcmodder-compare-ins", "mcmodder-compare-diffline"]);
   }
 }

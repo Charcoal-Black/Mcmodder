@@ -1,5 +1,4 @@
 import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 
 export class ClassEditorInit extends McmodderInit {
@@ -46,8 +45,8 @@ export class ClassEditorInit extends McmodderInit {
       }
       e.find(".checkbox").each((_, _f) => {
         const f = $(_f);
-        let l = (McmodderValues.loaderSupportVersions as any)[loaderID], t = f.find("label").text();
-        if (l && !(l.includes(t) || (l[0].includes(">=") && McmodderUtils.versionCompare(t, l[0].split(">=")[1]) > -1))) {
+        const version = f.find("label").text();
+        if (!McmodderUtils.validateVersionForLoaderID(version, loaderID)) {
           if (loaderID != "2") {
             f.show();
             if (f.find("input").prop("checked")) {
@@ -56,7 +55,7 @@ export class ClassEditorInit extends McmodderInit {
               f.addClass("mcmodder-slim-danger").attr({
                 "data-toggle": "tooltip",
                 "data-html": "true",
-                "data-original-title": `${loaderName} 自身并不支持 ${t}！这可能由先前的编辑者疏忽所致，强烈建议取消勾选此版本。<br>如果你认为这个提示是错误的，请向 Mcmodder 作者反馈！`
+                "data-original-title": `${loaderName} 自身并不支持 ${version}！这可能由先前的编辑者疏忽所致，强烈建议取消勾选此版本。<br>如果你认为这个提示是错误的，请向 Mcmodder 作者反馈！`
               });
             }
             else f.hide();

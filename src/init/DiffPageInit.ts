@@ -1,5 +1,6 @@
-import { RelationCompareFrame } from "../widget/RelationCompareFrame";
-import { TextCompareFrame } from "../widget/TextCompareFrame";
+import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
+import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
+import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderInit } from "./Init";
 
 export class DiffPageInit extends McmodderInit {
@@ -20,6 +21,11 @@ export class DiffPageInit extends McmodderInit {
         const prev = row.find("td:nth-child(3) span");
         const next = row.find("td:nth-child(2) span");
         RelationCompareFrame.performCompare(prev, next);
+      }
+      else if (rowText === "支持MC版本") {
+        const prev = row.find("td:nth-child(3) span");
+        const next = row.find("td:nth-child(2) span");
+        PlatformCompareFrame.performCompare(prev, next);
       }
     });
   }

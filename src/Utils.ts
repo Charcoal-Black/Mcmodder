@@ -85,6 +85,20 @@ export class McmodderUtils {
     return 0;
   }
 
+  static validateVersionForLoaderID(version: string, loaderID: string) {
+    const list = (McmodderValues.loaderSupportVersions as any)[loaderID];
+    return list && (
+      list.includes(version) || (
+        list[0].includes(">=") && 
+        this.versionCompare(version, list[0].split(">=")[1]) > -1
+      )
+    );
+  }
+
+  static validateVersionForLoaderName(version: string, loaderName: string) {
+    return this.validateVersionForLoaderID(version, (McmodderValues.loaderID as any)[loaderName]);
+  }
+
   static simpleDeepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
   }

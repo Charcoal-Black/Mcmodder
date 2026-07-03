@@ -1,9 +1,10 @@
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { TextCompareFrame } from "../widget/TextCompareFrame";
+import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderTimer } from "../widget/Timer";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
-import { RelationCompareFrame } from "../widget/RelationCompareFrame";
+import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
+import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 
 export class AdminInit extends McmodderInit {
   private triggered: Set<string> = new Set;
@@ -25,10 +26,13 @@ export class AdminInit extends McmodderInit {
             this.parent.scheduleRequestUtils.create(Date.now() + verifyDelay * 60 * 60 * 1000, "autoCheckVerify", this.parent.currentUID);
           }
           $("#mcmodder-check-verification").text("一键查询待审项 (加载中...)").addClass("disabled");
-          const menuList = $("#class-version-list > option");
-          const modList = menuList.toArray().map(e => e.getAttribute("value"));
-          let index = 1, t = 0;
-          const getUnverifiedNumber = (id: number | string | null) => {
+          const menuOptions = $("#class-version-list > option");
+          const menuElements = $("ul.dropdown-menu:nth-child(1)").children();
+          const modList = menuOptions.toArray()
+          .map((e, i) => [Number(e.getAttribute("value")), i])
+          .filter(([e, _i]) => e > 0) as [number, number][];
+          let t = 0;
+          const getUnverifiedNumber = ([id, index]: [number | string | null, number]) => {
             if (id) this.parent.utils.createRequest({
               url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
               method: "POST",
@@ -45,7 +49,7 @@ export class AdminInit extends McmodderInit {
               if (n > 0 && t === 0) $("button.btn:nth-child(2)").first().click();
               t += n;
               if (n > 0) {
-                const li = $("ul.dropdown-menu:nth-child(1)").children().eq(index).addClass("mcmodder-mark-gold");
+                const li = menuElements.eq(index).addClass("mcmodder-mark-gold");
                 const firstChild = li.children().first();
                 firstChild.find(".mcmodder-admin-verify-notify").remove();
                 firstChild.append(`<span class="mcmodder-admin-verify-notify text-danger">${ n }个待审！</span>`).removeClass("disabled");
@@ -57,7 +61,7 @@ export class AdminInit extends McmodderInit {
               else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`).removeClass("disabled");
             });
           };
-          if (modList) getUnverifiedNumber(modList[1]);
+          if (modList) getUnverifiedNumber(modList[0]);
         }
         $('<button class="btn" id="mcmodder-check-verification" data-toggle="tooltip" data-original-title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>')
         .insertAfter(".selectJump.bs3")
@@ -109,25 +113,29 @@ export class AdminInit extends McmodderInit {
             });
             verifyFrame.find("> hr").remove();
             verifyFrame.find(".verify-action-btns br").remove();
+            verifyFrame.find(".assistant-action-btns br").remove();
 
             if (!this.parent.isMobileClient) {
-              verifyFrame.find("#verify-pass-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
-              verifyFrame.find("#verify-refund-btn:not(.edit)").append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
-              verifyFrame.find("#verify-reason").attr("placeholder", `填写附言或退回理由.... (按下 ${
+              const passButton = verifyFrame.find("#verify-pass-btn:not(.edit), #assistant-pass-btn");
+              const refundButton = verifyFrame.find("#verify-refund-btn:not(.edit), #assistant-refund-btn");
+              const reasonInput = verifyFrame.find("#verify-reason, #assistant-reason");
+              passButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
+              refundButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
+              reasonInput.attr("placeholder", `填写附言或退回理由.... (按下 ${
                 McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
               } 以快速聚焦)`);
               $(document).keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
                 if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
                   e.stopPropagation();
-                  verifyFrame.find("#verify-pass-btn:not(.edit)").click();
+                  passButton.click();
                 }
                 else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
                   e.stopPropagation();
-                  verifyFrame.find("#verify-refund-btn:not(.edit)").click();
+                  refundButton.click();
                 }
                 else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
                   e.preventDefault();
-                  verifyFrame.find("#verify-reason").focus();
+                  reasonInput.focus();
                 }
               });
             }
@@ -153,7 +161,7 @@ export class AdminInit extends McmodderInit {
                 const rowText = e.firstChild?.textContent;
                 if (!rowText) return;
                 else if (rowText.includes("介绍")) {
-                  const insertPos = $(".verify-action-btns").parent().children().first();
+                  const insertPos = $(".verify-action-btns, .assistant-action-btns").parent().children().first();
                   const textA = row.find("td:nth-child(3) .common-text");
                   const textB = row.find("td:nth-child(2) .common-text");
                   (new TextCompareFrame(insertPos, textA, textB)).performCompare();
@@ -163,11 +171,32 @@ export class AdminInit extends McmodderInit {
                   const next = row.find("td:nth-child(2) .verify-copy-text");
                   RelationCompareFrame.performCompare(prev, next);
                 }
+                else if (rowText === "相关链接") {
+                  const prev = row.find("td:nth-child(3) .verify-copy-text");
+                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const addLink = (node: JQuery) => {
+                    node.find("p").each((_, p) => {
+                      const text = p.textContent;
+                      const split = text.indexOf("]");
+                      const bracket = text.lastIndexOf(" (");
+                      const name = text.slice(1, split);
+                      const link = bracket === -1 ? text.slice(split + 1).trim() : text.slice(split + 1, bracket).trim();
+                      p.innerHTML = `[${ name }] <a target="_blank" href="${ link }">${ link }</a>`;
+                    });
+                  };
+                  addLink(prev);
+                  addLink(next);
+                }
+                else if (rowText === "支持MC版本") {
+                  const prev = row.find("td:nth-child(3) .verify-copy-text");
+                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  PlatformCompareFrame.performCompare(prev, next);
+                }
               });
 
               // 附言缓存
-              const verifyId = Number(JSON.parse($("#verify-pass-btn").attr("data-data")).verifyID);
-              $("#verify-reason")
+              const verifyId = Number(JSON.parse($("#verify-pass-btn, #assistant-pass-btn").attr("data-data")).verifyID);
+              $("#verify-reason, #assistant-reason")
               .val(lastRefundText[verifyId] || "")
               .focusout(e => {
                 lastRefundText[verifyId] = (e.currentTarget as HTMLInputElement).value;
