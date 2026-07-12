@@ -1227,6 +1227,40 @@ pre ins,
 .mcmodder-compare-invalidversion {
   border: 2px solid var(--mcmodder-color-danger-dark1);
 }
+.mcmodder-compare-icon.item-32px {
+  width: 32px;
+  height: 32px;
+}
+.mcmodder-compare-icon.item-128px {
+  width: 128px;
+  height: 128px;
+}
+.mcmodder-compare-icon.buff-36px {
+  width: 36px;
+  height: 36px;
+}
+.mcmodder-compare-icon.buff-144px {
+  width: 144px;
+  height: 144px;
+}
+.mcmodder-compare-icon.item-32px.large,
+.mcmodder-compare-icon.item-128px.large {
+  width: 256px;
+  height: 256px;
+}
+.mcmodder-compare-icon.buff-36px.large,
+.mcmodder-compare-icon.buff-144px.large {
+  width: 288px;
+  height: 288px;
+}
+#mcmodder-verify-window .common-text img.mcmodder-compare-icon {
+  image-rendering: pixelated;
+  transition: width .15s ease-in-out, height .15s ease-in-out;
+  cursor: zoom-in;
+}
+#mcmodder-verify-window .common-text img.mcmodder-compare-icon.large {
+  cursor: zoom-out;
+}
 .mcmodder-monospace {
   font-family: var(--mcmodder-font-monospace);
 }

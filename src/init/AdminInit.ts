@@ -89,6 +89,9 @@ export class AdminInit extends McmodderInit {
                 verifyWindow.css("margin-top", top + "px");
               }
             }, 16));
+            $(document).on("click", ".mcmodder-compare-icon", e => {
+              $(e.currentTarget).toggleClass("large");
+            });
           }
 
           // 打开待审项时打开分屏
@@ -191,6 +194,23 @@ export class AdminInit extends McmodderInit {
                   const prev = row.find("td:nth-child(3) .verify-copy-text");
                   const next = row.find("td:nth-child(2) .verify-copy-text");
                   PlatformCompareFrame.performCompare(prev, next);
+                }
+                else if (rowText === "小图标" || rowText === "大图标") {
+                  row.find("img").each((_, _img) => {
+                    const img = _img as HTMLImageElement;
+                    img.classList.add("mcmodder-compare-icon");
+                    const work = () => {
+                      const size = img.width;
+                      switch (size) {
+                        case 32: img.classList.add("item-32px"); break;
+                        case 36: img.classList.add("buff-36px"); break;
+                        case 128: img.classList.add("item-128px"); break;
+                        case 144: img.classList.add("buff-144px"); break;
+                      }
+                    }
+                    if (img.complete) work();
+                    else img.onload = () => work();
+                  });
                 }
               });
 
