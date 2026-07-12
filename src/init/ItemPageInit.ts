@@ -13,6 +13,7 @@ export class ItemPageInit extends McmodderInit {
     $("span.name > h5").each((i, _c) => { // 快速复制主/次要名称
       const c = $(_c);
       let s = c.text();
+      const skipLinkList = $(".item-skip-list ul a");
       if (!i) {
         const l = $("meta[name=keywords]").attr("content").split(",");
         const t = `</a><span class="item-h5-ename">${
@@ -23,7 +24,7 @@ export class ItemPageInit extends McmodderInit {
         if (l[1]) s = ("<a>" + s).replace(` (${ l[1] })`, t);
         else s = `<a>${ s }</a>`;
       } else {
-        const l = $(".item-skip-list a").eq(i).text();
+        const l = skipLinkList.eq(i - 1).text();
         if (l === s) s = `<a>${ s }</a>`;
         else {
           s = s + "//end";
