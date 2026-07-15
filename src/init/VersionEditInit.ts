@@ -1,3 +1,4 @@
+import { McmodderAdvancedUEditor } from "../ueditor/AdvancedUEditor";
 import { GeneralEditInit } from "./GeneralEditInit";
 import { McmodderInit } from "./Init";
 
@@ -54,10 +55,15 @@ export class VersionEditInit extends McmodderInit {
           url: `https://api.modrinth.com/v2/version/${fileid}`,
           method: "GET"
         });
-        data = "<p>" + JSON.parse(resp.responseText).changelog.replaceAll("\n", "</p><p>") + "</p>";
+        data = JSON.parse(resp.responseText).changelog;
       }
       if (data) setTimeout(() => {
-        editor.setContent(data);
+        if (source === 1) {
+          editor.setContent(data);
+        } else if (source === 2) {
+          const ueditor = this.parent.ueditorFrame[0] as McmodderAdvancedUEditor;
+          ueditor.mdEditor?.setValue(data);
+        }
         let w = ($("#ueditor_0").get(0) as HTMLIFrameElement).contentDocument?.body, f = false;
         if (!w) return;
         for (let i = 1; i < 6; i++) $(w).find("h" + i).each((_, e) => {
