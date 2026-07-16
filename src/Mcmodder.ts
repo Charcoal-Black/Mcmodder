@@ -515,12 +515,69 @@ export class Mcmodder {
     this.isNightMode = !this.isNightMode;
   }
 
+  private initAjaxBypass() {
+    const originalAjax = $.ajax;
+    if (typeof originalAjax !== "function") return;
+
+    const self = this;
+    $.ajax = function (urlOrSettings: any, settings?: any) {
+      const ajaxSettings = typeof urlOrSettings === "object" ? urlOrSettings : settings;
+      if (ajaxSettings && self.utils.getConfig("bypassReplyLimit") && (window as any).bypassNextReply) {
+        const url = typeof urlOrSettings === "string" ? urlOrSettings : ajaxSettings.url;
+        if (url && (url.includes("/action/doComment/") || url.includes("/action/doComment"))) {
+          const data = ajaxSettings.data;
+          let targetContainerId = self.utils.getConfig("bypassReplyContainerId")?.trim();
+          if (!targetContainerId) {
+            targetContainerId = self.currentUID ? String(self.currentUID) : "";
+          }
+
+          if (targetContainerId && targetContainerId !== "0") {
+            try {
+              if (typeof data === "string") {
+                const params = new URLSearchParams(data);
+                const dataJson = params.get("data");
+                if (dataJson) {
+                  const payloadObj = JSON.parse(dataJson);
+                  if (payloadObj && payloadObj.todo === "submit" && payloadObj.type === "center" && payloadObj.reply) {
+                    payloadObj.container = targetContainerId;
+                    params.set("data", JSON.stringify(payloadObj));
+                    ajaxSettings.data = params.toString();
+                  }
+                } else {
+                  const payloadObj = JSON.parse(data);
+                  if (payloadObj && payloadObj.todo === "submit" && payloadObj.type === "center" && payloadObj.reply) {
+                    payloadObj.container = targetContainerId;
+                    ajaxSettings.data = JSON.stringify(payloadObj);
+                  }
+                }
+              } else if (typeof data === "object" && data !== null) {
+                if (typeof data.data === "string") {
+                  const payloadObj = JSON.parse(data.data);
+                  if (payloadObj && payloadObj.todo === "submit" && payloadObj.type === "center" && payloadObj.reply) {
+                    payloadObj.container = targetContainerId;
+                    data.data = JSON.stringify(payloadObj);
+                  }
+                } else if (data.todo === "submit" && data.type === "center" && data.reply) {
+                  data.container = targetContainerId;
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+      }
+      return originalAjax.apply(this, arguments as any);
+    };
+  }
+
   copyright() {
     $(".copyleft").last().append(`<br>☆ MCMODDER v${McmodderValues.mcmodderVersion} ☆ ——MC百科编审辅助工具`);
     $(".sidebar-plan .space").last().append(`<br>mcmodder-v${McmodderValues.mcmodderVersion}`);
   }
 
   main() {
+    this.initAjaxBypass();
     if (this.utils.getConfig("forceV4") && (this.href === `${ this.hostname }/`)) {
       window.location.href = `${ this.hostname }/v4/`;
     }

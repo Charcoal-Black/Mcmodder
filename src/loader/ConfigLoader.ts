@@ -88,6 +88,8 @@ export class ConfigLoader {
     .addCheckboxConfig("expCalculator", "经验计算器", "决定是否在个人等级页显示当前等级相关数据。")
     .addCheckboxConfig("freezeAdvancements", "冻结进度", "使窗口右上角弹出的进度框不再自动消失。快截图留念吧！")
     .addCheckboxConfig("unlockComment", "无限制留言板", "强行显示目标用户留言板，或是模组/作者的短评区，即使其已受天体运动影响而关闭。请勿滥用，除非你想见到重生亲手把这个特性毙掉。")
+    .addCheckboxConfig("bypassReplyLimit", "回复限制绕过", "绕过原本不可回复短评的界面，使短评能显示在已关闭回复功能的界面上。")
+    .addTextConfig("bypassReplyContainerId", "回复绕过目标ID", "指定绕过后的目标 container ID，留空则默认使用当前登录用户的UID。")
     .addCheckboxConfig("ignoreEmptyLine", "忽略短评空白行", "隐藏短评正文中的空白行。")
     .addCheckboxConfig("replyLink", "楼中楼跳转链接", "轻触短评楼中楼里出现的链接来快捷访问。该功能可能无法正确识别后文紧随其他文字的链接。")
     .addCheckboxConfig("missileAlert", "核弹警告", "当短评长度超过特定值时，弹出核弹警告。")

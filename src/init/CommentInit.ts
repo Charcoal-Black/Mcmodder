@@ -52,6 +52,7 @@ export class CommentInit extends McmodderInit {
   }
 
   private readonly commentObserver = new MutationObserver(mutationList => {
+    this.addBypassButtons();
     for (let mutation of mutationList) {
       const commentFloor = $(mutation.target);
       const className = commentFloor.prop("class");
@@ -194,6 +195,23 @@ export class CommentInit extends McmodderInit {
     }
   }
 
+  private addBypassButtons() {
+    if (!this.parent.utils.getConfig("bypassReplyLimit")) return;
+    $(".comment-reply-submit:not(.mcmodder-processed)").each((_, btn) => {
+      const $btn = $(btn);
+      $btn.addClass("mcmodder-processed");
+      const $bypassBtn = $(`<input class="btn btn-sm btn-warning comment-reply-submit-bypass" value="绕过回复" type="button" style="margin-left: 5px; vertical-align: bottom;">`);
+      $btn.after($bypassBtn);
+      $bypassBtn.click(() => {
+        (window as any).bypassNextReply = true;
+        $btn.click();
+        setTimeout(() => {
+          (window as any).bypassNextReply = false;
+        }, 0);
+      });
+    });
+  }
+
   run() {
     if (this.parent.utils.getConfig("commentExpandHeight")) {
       let commentHeight = this.parent.utils.getConfig("commentExpandHeight") || "300";
@@ -213,5 +231,6 @@ export class CommentInit extends McmodderInit {
       childList: true,
       subtree: true
     });
+    this.addBypassButtons();
   }
 }
