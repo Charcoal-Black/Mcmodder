@@ -96,6 +96,12 @@ export class CenterSettingInit extends CenterBaseInit {
       function () {
         setSetting($(this).attr('data-todo'), $(this).val().trim());
       }
+    ).on(
+      'change',
+      '.center-block[data-menu-frame!=9] .center-setting-block .selectpicker',
+      function () {
+        setSetting($(this).attr('data-todo'), $(this).val());
+      }
     );
 
     // 相关链接预览图尺寸调整
