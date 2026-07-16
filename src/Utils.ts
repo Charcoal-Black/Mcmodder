@@ -450,16 +450,31 @@ export class McmodderUtils {
     return `https://i.mcmod.cn/item/icon/${ width }x${ width }/${ Math.floor(id / 1e4) }/${ id }.png?v=${ ver }`;
   }
 
-  static getItemURLByID(id: number) {
+  static getItemURL(id: number) {
     return `${ McmodderValues.hostname }/item/${ id }.html`;
   }
 
-  static getClassURLByID(id: number) {
+  static getItemTypeURL(classID: number, typeID: number) {
+    return `${ McmodderValues.hostname }/item/list/${ classID }-${ typeID }.html`;
+  }
+
+  static getClassURL(id: number) {
     return `${ McmodderValues.hostname }/class/${ id }.html`;
   }
 
-  static getCenterURLByID(id: number) {
+  static getOredictURL(oredict: string) {
+    return `${ McmodderValues.hostname }/oredict/${ oredict }-1.html`;
+  }
+
+  static getCenterURL(id: number) {
     return `https://center.mcmod.cn/${ id }`;
+  }
+
+  static URLToAnchor(url: string, text?: string) {
+    return $("<a>").attr({
+      target: "_blank",
+      href: url
+    }).text(text ?? url);
   }
 
   static versionArrayToString(arr: number[]) {
@@ -1028,10 +1043,10 @@ export class McmodderUtils {
     return name.replace(/[\\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
   }
 
-  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | (() => string)) {
+  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | number | (() => (string | number))) {
     node.addClass("mcmodder-copyable").click(e => {
       const text = typeof copyData === "function" ? copyData() : (copyData || e.currentTarget.textContent);
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(text.toString());
       McmodderUtils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
     });
   }
@@ -1055,10 +1070,10 @@ export class McmodderUtils {
     return classNameIDMap[className];
   }
 
-  getItemTypeData(classID: number | undefined, itemType: number | undefined) {
+  getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
     const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
       (entry.classID === classID || entry.classID === 0) &&
-      (entry.typeID || 1) === (itemType || 1)
+      ((entry.typeID || 1) === (itemType || 1) || (entry.text === itemType))
     );
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }

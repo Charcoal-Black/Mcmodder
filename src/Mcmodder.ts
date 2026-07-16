@@ -115,6 +115,7 @@ export class Mcmodder {
     for (let mutation of mutationList) {
       if ((mutation.target as HTMLElement).id === "edui1_iframeholder" && mutation.addedNodes.length) {
         this.callEditor();
+        this.generalEditorObserver.disconnect();
       }
     }
   });

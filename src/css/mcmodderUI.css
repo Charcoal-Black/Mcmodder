@@ -815,7 +815,7 @@ body .edui-default span.edui-clickable {
   text-decoration: unset;
 }
 body .edui-default span.edui-clickable:hover {
-  color: var(--mcmodder-color-link-hover);
+  color: var(--mcmodder-color-accent-dark2);
 }
 body .edui-default .edui-toolbar .edui-button .edui-state-checked .edui-button-wrap,
 body .edui-default .edui-toolbar .edui-splitbutton .edui-state-checked .edui-splitbutton-body,
@@ -851,6 +851,12 @@ body .edui-default .edui-editor-toolbarboxinner {
   color: var(--mcmodder-color-primary-dark2);
   border-color: var(--mcmodder-color-badges);
   text-shadow: 1px 1px 1px var(--mcmodder-color-badges);
+}
+.message-list li .avatar img {
+  border-radius: 50%;
+}
+.content-new .badge {
+  margin-right: var(--mcmodder-width-padding-3);
 }
 .center-main.favorite .favorite-fold-list a.active span {
   color: inherit;

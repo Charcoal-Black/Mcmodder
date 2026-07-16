@@ -1,3 +1,5 @@
+import { McmodderUtils } from "../../Utils";
+
 interface HorizontalDraggableFrameConfig {
   initPos?: number,
   leftCollapseThreshold?: number,
@@ -33,15 +35,15 @@ export class HorizontalDraggableFrame {
     $(this.parent).css("position", "relative");
     this.dragging = false;
     this.dragStartPos = this.dragPos = 0;
-    this.initPos = config.initPos ? config.initPos : 0.5;
+    this.initPos = config.initPos ?? 0.5;
     this.horizontalPos = 0;
-    this.setHorizontalPos(this.initPos);
+    this.setHorizontalPosOnDrag(this.initPos);
     this.originalPos = parseInt(this.$instance.css("left"));
     this.leftBindNode = this.rightBindNode = null;
-    this.leftCollapseThreshold = config.leftCollapseThreshold === undefined ? 0.3 : config.leftCollapseThreshold;
-    this.rightCollapseThreshold = config.rightCollapseThreshold === undefined ? 0.7 : config.rightCollapseThreshold;
-    this.leftDraggableLimit = config.leftDraggableLimit === undefined ? 0 : config.leftDraggableLimit;
-    this.rightDraggableLimit = config.rightDraggableLimit === undefined ? 1 : config.rightDraggableLimit;
+    this.leftCollapseThreshold = config.leftCollapseThreshold ?? 0.25;
+    this.rightCollapseThreshold = config.rightCollapseThreshold ?? 0.75;
+    this.leftDraggableLimit = config.leftDraggableLimit ?? 0;
+    this.rightDraggableLimit = config.rightDraggableLimit ?? 1;
     this.$instance.mousedown(e => {
       this.dragging = true;
       this.dragStartPos = e.screenX - this.parent.getBoundingClientRect().left;
@@ -51,11 +53,11 @@ export class HorizontalDraggableFrame {
         if (!this.dragging) return;
         e.preventDefault();
         this.dragPos = e.screenX - this.parent.getBoundingClientRect().left;
-        this.setHorizontalPosByWidth(this.dragPos);
+        this.setHorizontalPosByWidthOnDrag(this.dragPos);
         let r = (this.originalPos - this.dragStartPos + this.dragPos) / this.getParentWidth();
         if (r <= this.leftCollapseThreshold) r = 0;
         else if (r >= this.rightCollapseThreshold) r = 1;
-        this.setHorizontalPos(r);
+        this.setHorizontalPosOnDrag(r);
       },
       "mouseup": (_e: JQueryMouseEventObject) => {
         if (!this.dragging) return;
@@ -65,12 +67,12 @@ export class HorizontalDraggableFrame {
     });
   }
 
-  setHorizontalPosByWidth(pos: number) {
-    return this.setHorizontalPos(pos / this.getParentWidth());
+  private setHorizontalPosByWidthOnDrag(pos: number) {
+    return this.setHorizontalPosOnDrag(pos / this.getParentWidth());
   }
 
-  setHorizontalPos(pos: number) {
-    pos = Math.min(this.rightDraggableLimit, Math.max(this.leftDraggableLimit, pos));
+  private setHorizontalPosOnDrag(pos: number) {
+    pos = McmodderUtils.clamp(pos, this.leftDraggableLimit, this.rightDraggableLimit);
     this.horizontalPos = pos;
     this.$instance.css("left", pos * 100 + "%");
     if (this.leftBindNode) {
@@ -86,8 +88,14 @@ export class HorizontalDraggableFrame {
     return this;
   }
 
+  setHorizontalPos(pos: number) {
+    this.setHorizontalPosOnDrag(pos);
+    this.originalPos = parseInt(this.$instance.css("left"));
+    return this;
+  }
+
   updateHorizontalPos() {
-   return this.setHorizontalPos(this.horizontalPos);
+   return this.setHorizontalPosOnDrag(this.horizontalPos);
   }
 
   getParentWidth() {

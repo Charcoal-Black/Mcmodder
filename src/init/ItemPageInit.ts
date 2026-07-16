@@ -47,7 +47,11 @@ export class ItemPageInit extends McmodderInit {
       if ($(c).contents().length) {
         const od = $(c).text().slice(6).split(",\u00a0");
         $(c).html("[矿物词典/物品标签] ");
-        od.forEach(e => $(`<a href="/oredict/${e.split(" (")[0]}-1.html" target="_blank">${e}</a>`).appendTo(c));
+        od.forEach(e => $(`<a href="${
+          McmodderUtils.getOredictURL(e.split(" (")[0])
+        }" target="_blank">${
+          e
+        }</a>`).appendTo(c));
       }
     })
 

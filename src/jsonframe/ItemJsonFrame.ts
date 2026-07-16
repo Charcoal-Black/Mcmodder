@@ -82,7 +82,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         const entries = data.slice(1, -1).split(",") as string[];
         entries.forEach(entry => {
           entry = entry.trim();
-          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ this.parent.hostname }/oredict/${ entry }-1.html">${ entry }</a>`;
+          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ McmodderUtils.getOredictURL(entry) }">${ entry }</a>`;
         });
         return res;
       }],
@@ -536,7 +536,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       if (s) {
         generalList.push(itemData.id);
         resp = await this.parent.utils.createRequest({
-          url: McmodderUtils.getItemURLByID(itemData.id),
+          url: McmodderUtils.getItemURL(itemData.id),
           method: "GET",
           anonymous: true
         });
@@ -640,7 +640,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     // STEP 0: 前置数据收集
     this.logger.log(`打开模组页 ${ classID }`);
     const resp = await this.parent.utils.createRequest({
-      url: McmodderUtils.getClassURLByID(classID),
+      url: McmodderUtils.getClassURL(classID),
       method: "GET",
       anonymous: true
     });

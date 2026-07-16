@@ -1,3 +1,4 @@
+import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
 import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
 import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
@@ -26,6 +27,11 @@ export class DiffPageInit extends McmodderInit {
         const prev = row.find("td:nth-child(3) span");
         const next = row.find("td:nth-child(2) span");
         PlatformCompareFrame.performCompare(prev, next);
+      }
+      else if (rowText === "矿物词典") {
+        const prev = row.find("td:nth-child(3) span");
+        const next = row.find("td:nth-child(2) span");
+        OredictCompareFrame.performCompare(prev, next);
       }
     });
   }

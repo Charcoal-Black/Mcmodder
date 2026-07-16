@@ -368,7 +368,8 @@ body .copyleft a:hover,
 .body-content a:hover {
   color: var(--mcmodder-color-accent-dark2);
 }
-.verify-list-list td a.text-muted:hover {
+.verify-list-list td a.text-muted:hover,
+.message-list li .content-tools li a:hover {
   color: var(--mcmodder-color-accent-dark2) !important;
 }
 .result-item .head em,
@@ -972,6 +973,9 @@ body:not(.view),
 #mcmodder-verify-window-frame .TableBlock {
   position: relative;
 }
+.mcmodder-verify-locate {
+  margin-left: var(--mcmodder-width-padding-3);
+}
 .mcmodder-template-delete {
   position: absolute;
   right: .5em;
@@ -1152,19 +1156,19 @@ th,
   background-image: unset;
 }
 .mcmodder-mark-gold {
-  background-color: #fd04;
+  background-color: #fd04 !important;
   border: 1px solid #fd08;
 }
 .mcmodder-mark-aqua {
-  background-color: #8fd4;
+  background-color: #8fd4 !important;
   border: 1px solid #8fd8;
 }
 .mcmodder-mark-pink {
-  background-color: #fcc4;
+  background-color: #fcc4 !important;
   border: 1px solid #fcc8;
 }
 .mcmodder-mark-greenyellow {
-  background-color: #bf34;
+  background-color: #bf34 !important;
   border: 1px solid #bf38;
 }
 pre {
@@ -1612,7 +1616,7 @@ body .arrow {
   margin-left: 0px;
 }
 .verify-action-btns button,
-.assistant-action-btns {
+.assistant-action-btns button {
   margin-right: var(--mcmodder-width-padding-3);
 }
 #mcmodder-tabedit-tip {
@@ -2363,6 +2367,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   top: 0;
   background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(5px);
+  overflow: clip;
 }
 .mcmodder-horizontal-flex-left {
   left: 0;

@@ -18,17 +18,17 @@ export class McmodderTable<McmodderTableData extends McmodderTableAcceptable> {
   static readonly DISPLAYRULE_TIME_MILLISEC = (data: string | number) => (new Date(data)).toLocaleString();
   static readonly DISPLAYRULE_DATE_SEC_EN = (data: string | number) => McmodderTable.DISPLAYRULE_DATE_MILLISEC_EN(Number(data) * 1e3);
   static readonly DISPLAYRULE_DATE_SEC_ZH = (data: string | number) => McmodderTable.DISPLAYRULE_DATE_MILLISEC_ZH(Number(data) * 1e3);
-  static readonly DISPLAYRULE_LINK_ITEM = (data: number) => `<a target="_blank" href="${ McmodderUtils.getItemURLByID(data) }">${ data }</a>`;
+  static readonly DISPLAYRULE_LINK_ITEM = (data: number) => `<a target="_blank" href="${ McmodderUtils.getItemURL(data) }">${ data }</a>`;
   static readonly DISPLAYRULE_LINK_ITEM_ARRAY = (data: number[]) => data.map(McmodderTable.DISPLAYRULE_LINK_ITEM).join(", ");
-  static readonly DISPLAYRULE_LINK_CLASS = (data: number) => `<a target="_blank" href="${ McmodderUtils.getClassURLByID(data) }">${ data }</a>`;
+  static readonly DISPLAYRULE_LINK_CLASS = (data: number) => `<a target="_blank" href="${ McmodderUtils.getClassURL(data) }">${ data }</a>`;
   static readonly DISPLAYRULE_LINK_CLASS_ARRAY = (data: number[]) => data.map(McmodderTable.DISPLAYRULE_LINK_CLASS).join(", ");
-  static readonly DISPLAYRULE_LINK_CENTER = (data: number) => `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(data) }">${ data }</a>`;
+  static readonly DISPLAYRULE_LINK_CENTER = (data: number) => `<a target="_blank" href="${ McmodderUtils.getCenterURL(data) }">${ data }</a>`;
   static readonly DISPLAYRULE_LINK_CENTER_ARRAY = (data: number[]) => data.map(McmodderTable.DISPLAYRULE_LINK_CENTER).join(", ");
   static readonly DISPLAYRULE_IMAGE_BASE64 = (data: string) => data ? `<img src="${McmodderUtils.appendBase64ImgPrefix(data)}" onerror="this.src='${ McmodderValues.assets.mcmod.emptyItemIcon32x }'; this.onerror=null;">` : "-";
   static readonly DISPLAYRULE_SIZE = (data: string | number) => McmodderUtils.getFormattedSize(Number(data));
   static readonly DISPLAYRULE_LINK_CENTER_WITH_NAME = (data: string) => {
     const row = data.split(",");
-    return `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(Number(row[0])) }">${ row[1] }`;
+    return `<a target="_blank" href="${ McmodderUtils.getCenterURL(Number(row[0])) }">${ row[1] }`;
   }
   static readonly DISPLAYRULE_HOVER = (data: string) => {
     const omittedText = data.length > 10 ? `${data.slice(0, 10)}..` : data;

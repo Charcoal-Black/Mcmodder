@@ -376,7 +376,7 @@ export class CenterSettingInit extends CenterBaseInit {
         date: ["日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH],
         byteTop1: ["字数榜首", (rawData: string) => {
           const data = rawData.split(",") as unknown as [number, number, number]; // [userID, bytes, ratio]
-          return `<a target="_blank" href="${ McmodderUtils.getCenterURLByID(data[0]) }">${ data[0] }</a> 
+          return `<a target="_blank" href="${ McmodderUtils.getCenterURL(data[0]) }">${ data[0] }</a> 
             (${ data[1].toLocaleString() } 字节, ${ (data[2] * 100).toFixed(1) }%)`;
         }],
         totalEdited: ["前 60 名总编辑字数", (data: number) => `${data.toLocaleString()} 字节`],
