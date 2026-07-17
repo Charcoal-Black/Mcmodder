@@ -514,9 +514,9 @@ body .tabbody #upload.panel,
 body .tabbody .panel,
 body #remote input.text,
 .common-comment-block textarea,
-.close,
-.close:focus,
-.close:hover,
+.close:not(.webui-popover-inner .close),
+.close:not(.webui-popover-inner .close):focus,
+.close:not(.webui-popover-inner .close):hover,
 body .top-main .pulldown .top_content {
   background-color: var(--mcmodder-color-background-transparent);
   color: var(--mcmodder-color-text);
@@ -1469,6 +1469,41 @@ body > .container > *,
 .bs-popover-right .arrow::after,
 body .top-main .pulldown .arrow {
   border-color: var(--mcmodder-color-background-transparent);
+}
+.bs-tooltip-auto[x-placement^=top] .arrow::before,
+.bs-tooltip-top .arrow::before {
+  border-top-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=right] .arrow::before,
+.bs-tooltip-right .arrow::before {
+  border-right-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=bottom] .arrow::before,
+.bs-tooltip-bottom .arrow::before {
+  border-bottom-color: var(--mcmodder-color-background);
+}
+.bs-tooltip-auto[x-placement^=left] .arrow::before,
+.bs-tooltip-left .arrow::before {
+  border-left-color: var(--mcmodder-color-background);
+}
+.webui-popover {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+.webui-popover.top > .arrow::after,
+.webui-popover.top-right > .arrow::after,
+.webui-popover.top-left > .arrow::after {
+  border-top-color: var(--mcmodder-color-background-dark2);
+}
+.webui-popover.bottom > .arrow::after,
+.webui-popover.bottom-right > .arrow::after,
+.webui-popover.bottom-left > .arrow::after {
+  border-bottom-color: var(--mcmodder-color-background-dark2);
+}
+.webui-popover-title {
+  border-bottom-color: var(--mcmodder-color-background-dark2);
+}
+.webui-popover-inner .close {
+  color: var(--mcmodder-color-text);
 }
 .swal2-popup-wider {
   width: 80em;
