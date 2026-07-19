@@ -685,7 +685,7 @@ export class McmodderUtils {
     let k = [], c;
     if (e.ctrlKey) k.push(McmodderUtils.isMac() ? "Control" : "Ctrl");
     if (e.shiftKey) k.push("Shift");
-    if (e.altKey) k.push("Alt");
+    if (e.altKey) k.push(McmodderUtils.isMac() ? "Option" : "Alt");
     if (e.metaKey) k.push(McmodderUtils.isMac() ? "Command" : "Meta");
     if (!e.key || !["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
       if (e.keyCode) {
@@ -713,7 +713,7 @@ export class McmodderUtils {
         switch (data) {
           case "Ctrl": case "Control": data = "⌃‌"; break;
           case "Shift": data = "⇧"; break;
-          case "Alt": data = "⌥"; break;
+          case "Alt": case "Option": data = "⌥"; break;
           case "Meta": case "Command": data = "⌘";
         }
       }

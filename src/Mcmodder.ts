@@ -381,9 +381,31 @@ export class Mcmodder {
     GM_setValue("mcmodderSplashList", "");
   }
 
-  applyCustomFont() {
-    $('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&amp;display=swap" rel="stylesheet">').appendTo("head");
-    McmodderUtils.addStyle('* {font-family: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", "宋体", sans-serif}');
+  applyCustomFont(font: number) {
+    switch (font) {
+      case 1: {
+        McmodderUtils.addStyle('* {font-family: "-apple-system", "Segoe UI", "Roboto", "Ubuntu", "Arial", "Helvetica", sans-serif;}');
+        break;
+      }
+      case 2: {
+        $(`
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+        `).appendTo("head");
+        McmodderUtils.addStyle('* {font-family: "Noto Sans SC", sans-serif;}');
+        break;
+      }
+      case 3: {
+        $(`
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+        `).appendTo("head");
+        McmodderUtils.addStyle('* {font-family: "Inter", sans-serif;}');
+        break;
+      }
+    }
   }
 
   async trackSplash() {
@@ -524,8 +546,17 @@ export class Mcmodder {
     if (this.utils.getConfig("forceV4") && (this.href === `${ this.hostname }/`)) {
       window.location.href = `${ this.hostname }/v4/`;
     }
-    if (this.utils.getConfig("useNotoSans")) {
-      this.applyCustomFont();
+
+    // v2.2- 自定义字体配置兼容
+    const useNotoSans = this.utils.getConfig("useNotoSans");
+    if (useNotoSans) {
+      this.utils.deleteConfig("useNotoSans");
+      this.utils.setConfig("customFont", 2);
+    }
+
+    const customFont = this.utils.getConfig("customFont");
+    if (customFont) {
+      this.applyCustomFont(customFont);
     }
 
     // 关闭主页&整合包区广告

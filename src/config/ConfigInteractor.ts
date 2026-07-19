@@ -74,7 +74,8 @@ export class McmodderConfigInteractor {
     if (this.data.type === McmodderInputType.DROPDOWN_MENU) return this.data.description;
     let list = [];
     let val = this.data.value;
-    if (val != null) list.push(`默认：${ 
+    if (val != null) list.push(`默认：${
+      typeof val === "boolean" ? (val ? "开启" : "关闭") :
       typeof val === "number" ? val.toLocaleString() :
       typeof val === "object" ? McmodderUtils.keyToString(val) : val
     }`);
