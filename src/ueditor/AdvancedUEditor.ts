@@ -258,11 +258,31 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.htmlEditorOuterContainer?.css("height", this.$innerFrame.css("height"));
   }
 
+  override autoCalculateHeight() {
+    let height = super.autoCalculateHeight();
+    if (this.mdEditorOption?.getCurrentValue()) {
+      height = Math.max(height, this.mdEditorContainer?.height() ?? 0);
+    }
+    if (this.htmlEditorOption?.getCurrentValue()) {
+      height = Math.max(height, this.htmlEditorContainer?.height() ?? 0);
+    }
+    return height;
+  }
+
   override resizeHeight(height: number) {
     if (!this.$innerFrame) return;
     super.resizeHeight(height);
-    (this.mdEditorOuterContainer?.get(0) as HTMLElement)?.style?.setProperty("height", this.$innerFrame?.css("height"), "important");
-    (this.htmlEditorOuterContainer?.get(0) as HTMLElement)?.style?.setProperty("height", this.$innerFrame?.css("height"), "important");
+    const finalHeight = this.$innerFrame?.css("height");
+    const mdContainer = this.mdEditorOuterContainer?.get(0) as HTMLElement;
+    const htmlContainer = this.htmlEditorOuterContainer?.get(0) as HTMLElement;
+    const isVertical = this.verticalOption?.getCurrentValue();
+    if (isVertical) {
+      mdContainer?.style?.removeProperty("height");
+      htmlContainer?.style?.removeProperty("height");
+    } else {
+      mdContainer?.style?.setProperty("height", finalHeight, "important");
+      htmlContainer?.style?.setProperty("height", finalHeight, "important");
+    }
   }
 
   private async readyMarkdownEditor() {
@@ -281,6 +301,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
           mode: "markdown",
           theme: "mcmodder"
         });
+        this.mdEditor.on("change", McmodderUtils.throttle(() => {
+          this.heightAutoResize();
+        }, 300));
         this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
         if (this.$body) {
           const content = this.$body.clone();
@@ -326,6 +349,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
           mode: "xml",
           theme: "mcmodder"
         });
+        this.htmlEditor.on("change", McmodderUtils.throttle(() => {
+          this.heightAutoResize();
+        }, 300));
         this.htmlEditor.on("change", McmodderUtils.throttle((instance: CodeMirror.Editor) => {
           if (!this.contentLock) {
             this.contentLock = true;
@@ -364,6 +390,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.$outerFrame?.removeClass("vertical");
     }
     this.parent.utils.setConfig("editorVertical", c);
+    this.heightAutoResize();
   }
 
   private readyToolkit() {
