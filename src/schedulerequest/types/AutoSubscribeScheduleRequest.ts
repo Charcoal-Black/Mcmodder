@@ -34,7 +34,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                 "Origin": this.parent.hostname,
-                "Referer": McmodderUtils.getItemURLByID(id)
+                "Referer": McmodderUtils.getItemURL(id)
               },
               data: $.param({
                 data: {
@@ -51,7 +51,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
                 const lt = this.parent.utils.getConfig(id, "latestComment");
                 if (!lt) this.parent.utils.setConfig(id, t, "latestComment");
                 else if (lt < t) {
-                  GM_openInTab(`${ McmodderUtils.getClassURLByID(id) }#comment-${ t }`, { active: true });
+                  GM_openInTab(`${ McmodderUtils.getClassURL(id) }#comment-${ t }`, { active: true });
                   this.parent.utils.setConfig(id, t, "latestComment");
                 }
               }

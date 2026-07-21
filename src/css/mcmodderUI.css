@@ -12,6 +12,11 @@
   color: var(--mcmodder-color-text);
   border-color: 1px solid var(--mcmodder-color-background-transparent);
 }
+.btn:hover,
+.btn-dark:hover {
+  background-color: var(--mcmodder-color-accent-background);
+  background-image: none;
+}
 .dropdown-menu > .active > a,
 .dropdown-menu > .active > a:hover,
 .dropdown-menu > .active > a:focus {
@@ -325,22 +330,6 @@ body .star_block .title .hover {
 .col-lg-12.server-listtype-switch {
   padding-left: 1em;
 }
-.bs-tooltip-auto[x-placement^=top] .arrow::before,
-.bs-tooltip-top .arrow::before {
-  border-top-color: var(--mcmodder-color-background);
-}
-.bs-tooltip-auto[x-placement^=right] .arrow::before,
-.bs-tooltip-right .arrow::before {
-  border-right-color: var(--mcmodder-color-background);
-}
-.bs-tooltip-auto[x-placement^=bottom] .arrow::before,
-.bs-tooltip-bottom .arrow::before {
-  border-bottom-color: var(--mcmodder-color-background);
-}
-.bs-tooltip-auto[x-placement^=left] .arrow::before,
-.bs-tooltip-left .arrow::before {
-  border-left-color: var(--mcmodder-color-background);
-}
 .class-excount .star .block-left,
 .bootstrap-tagsinput .tag {
   background: linear-gradient(45deg,var(--mcmodder-color-primary), var(--mcmodder-color-accent));
@@ -416,11 +405,17 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   width: 60px;
   padding: 5px;
 }
-.mcmodder-favuser .avatar img {
+.mcmodder-favuser .avatar {
   width: 50px;
   height: 50px;
+}
+.mcmodder-favuser .avatar img {
+  width: 100%;
+  height: 100%;
+  text-align: center;
   vertical-align: middle;
   border-radius: 50%;
+  transform: scale(1);
 }
 .mcmodder-favuser .nickname {
   font-size: 14px;
@@ -428,6 +423,40 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   text-overflow: ellipsis;
   color: var(--mcmodder-color-text-dark2);
   text-wrap: nowrap;
+}
+.mcmodder-favuser .nickname.delete-text {
+  display: none;
+}
+.mcmodder-favuser.delete-mode .nickname {
+  display: none;
+}
+.mcmodder-favuser.delete-mode .nickname.delete-text {
+  display: inherit;
+}
+.mcmodder-favuser.delete-mode .user:hover {
+  background-color: var(--mcmodder-color-danger-transparent1);
+}
+.mcmodder-favuser.delete-mode .nickname {
+  color: var(--mcmodder-color-danger-dark2);
+}
+.mcmodder-favuser .edit {
+  position: absolute;
+  margin-left: 0.25em;
+  color: var(--mcmodder-color-button);
+  display: none;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.mcmodder-favuser:hover .edit {
+  display: inherit;
+}
+.mcmodder-favuser:hover .edit:hover {
+  color: var(--mcmodder-color-accent-dark2);
+}
+.mcmodder-favuser.delete-mode .user.deleted .avatar img {
+  transition: transform .2s linear;
+  transform: scale(0);
 }
 @keyframes mcmodder-favuser-hover {
   0% {
@@ -443,7 +472,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 .mcmodder-favuser a:hover .avatar {
   animation: mcmodder-favuser-hover .5s both 1;
 }
-.mcmodder-favuser a:hover .nickname {
+.mcmodder-favuser:not(.delete-mode) a:hover .nickname {
   color: var(--mcmodder-color-accent-dark1);
 }
 .user-fav .avatar {
@@ -456,6 +485,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   position: absolute;
   right: 0;
   font-family: FontAwesome;
+  z-index: 1;
 }
 .mcmodder-favuser.pin .user-fav .avatar:before {
   top: -.4em;
@@ -769,7 +799,7 @@ body .edui-default span.edui-clickable {
   text-decoration: unset;
 }
 body .edui-default span.edui-clickable:hover {
-  color: var(--mcmodder-color-link-hover);
+  color: var(--mcmodder-color-accent-dark2);
 }
 body .edui-default .edui-toolbar .edui-button .edui-state-checked .edui-button-wrap,
 body .edui-default .edui-toolbar .edui-splitbutton .edui-state-checked .edui-splitbutton-body,
@@ -805,6 +835,12 @@ body .edui-default .edui-editor-toolbarboxinner {
   color: var(--mcmodder-color-primary-dark2);
   border-color: var(--mcmodder-color-badges);
   text-shadow: 1px 1px 1px var(--mcmodder-color-badges);
+}
+.message-list li .avatar img {
+  border-radius: 50%;
+}
+.content-new .badge {
+  margin-right: var(--mcmodder-width-padding-3);
 }
 .center-main.favorite .favorite-fold-list a.active span {
   color: inherit;

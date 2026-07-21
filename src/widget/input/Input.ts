@@ -21,6 +21,8 @@ export abstract class McmodderBaseInput {
 
   abstract getCurrentValue(): any;
 
+  abstract setCurrentValue(value: any): void;
+
   protected abstract setDisplayValue(value: any): void;
 
   protected abstract onChange(value: any): void;
@@ -59,6 +61,11 @@ export abstract class McmodderInput<T> extends McmodderBaseInput {
   }
 
   abstract override getCurrentValue(): T;
+
+  override setCurrentValue(value: T) {
+    this.value = value;
+    this.setDisplayValue(value);
+  }
 
   protected abstract override setDisplayValue(value: T): void;
 

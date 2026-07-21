@@ -28,7 +28,7 @@ export class McmodderKeybindInput extends McmodderInput<McmodderKeyData> {
     return this.keyLastData || {};
   }
 
-  override setDisplayValue(value: McmodderKeyData) {
+  protected override setDisplayValue(value: McmodderKeyData) {
     this.instance.val(McmodderUtils.keyToString(value));
   }
 

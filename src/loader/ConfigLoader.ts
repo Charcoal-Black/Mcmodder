@@ -1,4 +1,5 @@
 import { McmodderConfigUtils, McmodderPermission } from "../config/ConfigUtils";
+import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 
 export class ConfigLoader {
@@ -9,10 +10,11 @@ export class ConfigLoader {
     .addColorpickerConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", "#ff3030")
     .addCheckboxConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。", true)
     .addCheckboxConfig("useSupabase", "启用云端服务", "是否启用 Mcmodder 云端服务与功能。相关服务由 Supabase 驱动。若禁用此项，所有依赖云端服务的功能都不会运作。")
-    .addCheckboxConfig("supabaseSplash", "云端闪烁标语同步", "启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。<span class=\"text-danger\">脚本目前尚无法保证上传标语的正确性，以及提交的用户信息不会被恶意篡改。此功能所提供的信息仅供参考！</span>")
+    .addCheckboxConfig("supabaseSplash", "云端闪烁标语同步", "[需要用户认证] 启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。")
     .addCheckboxConfig("supabaseByteChart", "云端字数统计数据", "启用后，脚本会从云端读取贡献榜数据，用于显示个人主页的字数统计图表。")
     .addCheckboxConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
-    .addCheckboxConfig("useNotoSans", "自定义字体", "使用 Noto Sans 替换百科默认字体。")
+    .addDropdownConfig("customFont", "自定义字体", "对百科默认字体应用选中的方案。",
+      0, { 0: "不指定", 1: "使用系统字体组", 2: "Noto Sans SC", 3: "Inter" })
     .addCheckboxConfig("disableGradient", "禁用文字渐变", "勾选此项可能有助于提升性能。")
     .addCheckboxConfig("adaptableNightMode", "夜间模式自适应", "夜间模式将跟随当前浏览器偏好设置而自动开启或关闭。启用此配置也将隐藏页面右上角的夜间模式开关。") 
     .addCheckboxConfig("bbsNightMode", "社群夜间模式兼容", "(Beta!) 对社群应用夜间模式配色。") 
@@ -81,6 +83,7 @@ export class ConfigLoader {
     .addCheckboxConfig("rememberVisited", "最近串门追踪", "自动记录我最近串门的用户。经常串门的用户会显示在“最近串门”当中。")
     .addDropdownConfig("favUserDisplayStyle", "收藏用户样式", "决定“最近串门”列表中已收藏用户的头像显示样式。",
       0, { 0: "星星", 1: "大头钉", 2: "爱心" })
+    .addCheckboxConfig("rememberVisitedMods", "最近浏览模组追踪", "自动记录我最近浏览的模组。这些模组会显示在 v3 主页。")
     .addCheckboxConfig("centerMainExpand", "个人主页数据拓展", "显示平均字数和科龄，令模组区域并排显示，过长的模组区域默认压缩。")
     .addCheckboxConfig("byteChart", "字数活跃图表", "决定是否在个人主页显示字数活跃图表，以及是否在贡献榜查看历史贡献数据时自动获取编辑字数数据。")
     .addNumberConfig("maxByteColorValue", "字数活跃图表最大有效值", "决定字数活跃图表的总体颜色深度，当日编辑字节数大于该值时，对应字数图表中的色块始终为黑色。", 
@@ -114,9 +117,9 @@ export class ConfigLoader {
     .addNumberConfig("minimumRequestInterval", "最短发包间隔", "设置脚本全局发送请求的最短间隔，单位为 ms。",
       750, [500, null])
     .addCheckboxConfig("lieqi", "猎奇仙人", "猎奇猎奇猎奇！！！")
-    .addKeybindConfig("keybindFastLink", "自动链接", "在此可修改打开本脚本所提供“自动链接”功能的快捷键。百科原生自带的“自动链接”（通过 Alt + X 打开）已终止支持，其入口会在将来的版本中移除。",
+    .addKeybindConfig("keybindFastLink", "自动链接", `在此可修改打开本脚本所提供“自动链接”功能的快捷键。百科原生自带的“自动链接”（通过 ${ McmodderUtils.keyToString({ altKey: true, keyCode: 88 }) } 打开）已终止支持，其入口会在将来的版本中移除。`,
       { altKey: true, key: "C", keyCode: 67 })
-    .addKeybindConfig("keybindFastSubmit", "快速提交", "在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 Ctrl + Enter，则其不会生效。）",
+    .addKeybindConfig("keybindFastSubmit", "快速提交", `在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 ${ McmodderUtils.keyToString({ ctrlKey: true, keyCode: 13 }) }，则其不会生效。）`,
       { ctrlKey: true, key: "Enter", keyCode: 13 })
     .addKeybindConfig("keybindVerifyPass", "通过编辑", "在此可修改审核通过的快捷键。",
       { ctrlKey: true, key: "Enter", keyCode: 13 }, McmodderPermission.MANAGER)

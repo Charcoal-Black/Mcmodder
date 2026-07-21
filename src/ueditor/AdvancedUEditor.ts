@@ -1,7 +1,7 @@
 import { Mcmodder } from "../Mcmodder";
 import { McmodderItemList, McmodderKeyData } from "../types";
 import { McmodderTemplate } from "../Template";
-import { TextCompareFrame } from "../TextCompareFrame";
+import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderAutoLink } from "../widget/AutoLink";
@@ -41,6 +41,17 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   template = new McmodderTemplate(this);
   private contentLock = false;
 
+  private readonly templateObserver = new MutationObserver(mutationList => {
+    for (let mutation of mutationList) {
+      const className = (mutation?.addedNodes[0] as HTMLElement)?.className;
+      if (mutation.type === "childList" && 
+      className === "swal2-container swal2-center swal2-fade swal2-shown" && 
+      $("h2#swal2-title").text() === PublicLangData.editor.template.title) {
+        this.template.init();
+      }
+    }
+  });
+
   constructor(editor: McmodderUEditor, parent: Mcmodder) {
     super(editor, parent);
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
@@ -60,6 +71,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
   private advinit() {
     if (!this.$outerFrame || !this.$innerFrame || !this.document || !this.$document) return;
+
+    this.templateObserver.observe(document.body, { childList: true });
 
     this.editToolsBar = this.$outerFrame.parent().find(".edit-tools");
     if (!this.editToolsBar.length) {
@@ -245,11 +258,31 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.htmlEditorOuterContainer?.css("height", this.$innerFrame.css("height"));
   }
 
+  override autoCalculateHeight() {
+    let height = super.autoCalculateHeight();
+    if (this.mdEditorOption?.getCurrentValue()) {
+      height = Math.max(height, this.mdEditorContainer?.height() ?? 0);
+    }
+    if (this.htmlEditorOption?.getCurrentValue()) {
+      height = Math.max(height, this.htmlEditorContainer?.height() ?? 0);
+    }
+    return height;
+  }
+
   override resizeHeight(height: number) {
     if (!this.$innerFrame) return;
     super.resizeHeight(height);
-    (this.mdEditorOuterContainer?.get(0) as HTMLElement)?.style?.setProperty("height", this.$innerFrame?.css("height"), "important");
-    (this.htmlEditorOuterContainer?.get(0) as HTMLElement)?.style?.setProperty("height", this.$innerFrame?.css("height"), "important");
+    const finalHeight = this.$innerFrame?.css("height");
+    const mdContainer = this.mdEditorOuterContainer?.get(0) as HTMLElement;
+    const htmlContainer = this.htmlEditorOuterContainer?.get(0) as HTMLElement;
+    const isVertical = this.verticalOption?.getCurrentValue();
+    if (isVertical) {
+      mdContainer?.style?.removeProperty("height");
+      htmlContainer?.style?.removeProperty("height");
+    } else {
+      mdContainer?.style?.setProperty("height", finalHeight, "important");
+      htmlContainer?.style?.setProperty("height", finalHeight, "important");
+    }
   }
 
   private async readyMarkdownEditor() {
@@ -268,6 +301,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
           mode: "markdown",
           theme: "mcmodder"
         });
+        this.mdEditor.on("change", McmodderUtils.throttle(() => {
+          this.heightAutoResize();
+        }, 300));
         this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
         if (this.$body) {
           const content = this.$body.clone();
@@ -313,6 +349,9 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
           mode: "xml",
           theme: "mcmodder"
         });
+        this.htmlEditor.on("change", McmodderUtils.throttle(() => {
+          this.heightAutoResize();
+        }, 300));
         this.htmlEditor.on("change", McmodderUtils.throttle((instance: CodeMirror.Editor) => {
           if (!this.contentLock) {
             this.contentLock = true;
@@ -351,6 +390,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.$outerFrame?.removeClass("vertical");
     }
     this.parent.utils.setConfig("editorVertical", c);
+    this.heightAutoResize();
   }
 
   private readyToolkit() {
@@ -389,6 +429,27 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.$document.find("blockquote").css("border", "3px solid red").each(() =>
       McmodderUtils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false)
     );
+
+    // 列表统一标准
+    this.$document.find("ul")
+    .addClass("list-paddingleft-2")
+    .each((_, ul) => {
+      ul.childNodes.forEach(li => {
+        if (li.nodeType === Node.ELEMENT_NODE && (li as HTMLElement).tagName === "LI") {
+          li.childNodes.forEach(e => {
+            if ((e as Text).nodeType === Node.TEXT_NODE) {
+              const p = document.createElement("p");
+              p.textContent = (e as Text).data;
+              const next = e.nextSibling;
+              if (next?.nodeType === Node.ELEMENT_NODE && (next as HTMLElement).tagName === "BR") {
+                next.remove();
+              }
+              e.replaceWith(p);
+            }
+          });
+        }
+      })
+    })
 
     this.updateEditorStats();
   }

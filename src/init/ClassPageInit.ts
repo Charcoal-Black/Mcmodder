@@ -1,4 +1,4 @@
-import { ItemTypeData, ItemCustomTypeList } from "../types";
+import { ItemTypeData, ItemCustomTypeList, RecentlyVisitedData } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
@@ -12,6 +12,7 @@ import svgPlatformDefault from "../assets/platform/default.svg";
 
 export class ClassPageInit extends McmodderInit {
 
+  static readonly maxRecentlyVisitedLength = 50;
   static classPageRegExp = /class\/[0-9]*\.html/;
   static modpackPageRegExp = /modpack\/[0-9]*\.html/;
   private isClassPage?: boolean;
@@ -48,7 +49,10 @@ export class ClassPageInit extends McmodderInit {
     // 自动记忆前置Mod
     const classID = McmodderUtils.abstractLastFromURL(window.location.href, ["class", "modpack"]);
     const nClassID = Number(classID);
-    const {nameNode, enameNode, abbrNode, className, classEname, classAbbr} = McmodderUtils.parseClassDocument($(document));
+    const {nameNode, enameNode, abbrNode, classData}  = McmodderUtils.parseClassDocument($(document));
+    const className = classData.name;
+    const classEname = classData.englishName;
+    const classAbbr = classData.abbr;
     const modFullName = McmodderUtils.getClassFullName(className, classEname, classAbbr) || "";
     this.parent.utils.updateClassNameIDMap(modFullName, classID);
 
@@ -421,6 +425,23 @@ export class ClassPageInit extends McmodderInit {
           isUncompactedmcverShown = false;
         }
       });
+    }
+
+    // 将本模组加入最近浏览中
+    if (this.isClassPage && this.parent.utils.getConfig("rememberVisitedMods")) {
+      let recentlyVisitedMods: RecentlyVisitedData[] = this.parent.utils.getConfig("recentlyVisitedMods") ?? [];
+      recentlyVisitedMods = recentlyVisitedMods.filter(e => e.id !== nClassID);
+      recentlyVisitedMods.push({
+        id: nClassID,
+        time: Date.now()
+      });
+      if (recentlyVisitedMods.length > ClassPageInit.maxRecentlyVisitedLength) {
+        recentlyVisitedMods = recentlyVisitedMods.slice(-ClassPageInit.maxRecentlyVisitedLength);
+      }
+      this.parent.utils.setConfig("recentlyVisitedMods", recentlyVisitedMods);
+      
+      // 记录模组数据
+      this.parent.utils.setAllClass(McmodderUtils.parseClassDocument().classData, nClassID);
     }
 
     // 样式修复

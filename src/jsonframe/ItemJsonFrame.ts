@@ -58,8 +58,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
     this.table = new McmodderEditableTable<McmodderItemData>(parent, {class: "table jsonframe-table"}, {
       itemType: ["类型", (type, item) => {
-        const element = parent.utils.getItemTypeHTML(type, item.classID);
-        return element.length > 0 ? element : null;
+        return parent.utils.getItemTypeHTML(item.classID, type);
       }],
       smallIcon: ["小", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
       largeIcon: ["大", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
@@ -83,7 +82,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         const entries = data.slice(1, -1).split(",") as string[];
         entries.forEach(entry => {
           entry = entry.trim();
-          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ this.parent.hostname }/oredict/${ entry }-1.html">${ entry }</a>`;
+          res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ McmodderUtils.getOredictURL(entry) }">${ entry }</a>`;
         });
         return res;
       }],
@@ -148,23 +147,45 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
     this.addTool("export", "导出当前文件至本地", () => !!this.activeFileName, () => this.exportJson(this.activeFileName));
 
-    this.table.contextMenu.addOption("syncRow", "从百科同步此行数据", e => {
-      const index = this.table!.getElementIndex(e.target);
-      return !!(index >= 0 && this.table!.getEditorData(index, "id") && this.parent.currentUID && this.manualRequestQueue.isIdle);
-    }, e => this.preSyncRow(this.table!.getElementIndex(e.target)))
-
-    .addOption("syncMultipleRow", "从百科同步所有选中行数据", _e => {
-      return !!(this.table!.selectedRowCount && this.parent.currentUID && this.manualRequestQueue.isIdle);
-    }, _e => this.preSyncRow(this.table!.getSelection()))
-
-    .addOption("manualSubmitRow", "提交此行数据至百科", e => {
-      const index = this.table!.getElementIndex(e.target);
-      return !!(index >= 0 && this.parent.currentUID);
-    }, e => this.preManualSubmitRow(this.table!.getElementIndex(e.target)));
+    this.table.contextMenu
+    .addItem({
+      key: "syncRow",
+      text: "从百科同步此行数据",
+      displayRule: e => {
+        const index = this.table!.getElementIndex(e.target);
+        return !!(
+          index >= 0 && this.table!.getEditorData(index, "id") &&
+          this.parent.currentUID &&
+          this.manualRequestQueue.isIdle
+        );
+      },
+      callback: e => this.preSyncRow(this.table!.getElementIndex(e.target))
+    })
+    .addItem({
+      key: "syncMultipleRow",
+      text: "从百科同步所有选中行数据",
+      displayRule: _e => {
+        return !!(
+          this.table!.selectedRowCount &&
+          this.parent.currentUID &&
+          this.manualRequestQueue.isIdle
+        );
+      },
+      callback: _e => this.preSyncRow(this.table!.getSelection())
+    })
+    .addItem({
+      key: "manualSubmitRow",
+      text: "提交此行数据至百科",
+      displayRule: e => {
+        const index = this.table!.getElementIndex(e.target);
+        return !!(index >= 0 && this.parent.currentUID);
+      },
+      callback: e => this.preManualSubmitRow(this.table!.getElementIndex(e.target))
+    });
 
     this.addTool("importClass", "从模组导入JSON", () => true, () => this.openClassSearchFrame())
     .addTool("importOnline", "从收纳贴导入JSON", () => true, () => this.searchOnlineFiles())
-    .addTool("submitedit", "提交所有改动至百科", () => !!(this.activeFileName && this.table!.unsavedUnitCount), () => this.submitEdit(), true);
+    .addTool("submitedit", "提交所有改动至百科", () => !!(this.activeFileName && this.table!.unsaved), () => this.submitEdit(), true);
 
     this.table.$instance.appendTo(this.content);
   }
@@ -515,7 +536,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       if (s) {
         generalList.push(itemData.id);
         resp = await this.parent.utils.createRequest({
-          url: McmodderUtils.getItemURLByID(itemData.id),
+          url: McmodderUtils.getItemURL(itemData.id),
           method: "GET",
           anonymous: true
         });
@@ -619,7 +640,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     // STEP 0: 前置数据收集
     this.logger.log(`打开模组页 ${ classID }`);
     const resp = await this.parent.utils.createRequest({
-      url: McmodderUtils.getClassURLByID(classID),
+      url: McmodderUtils.getClassURL(classID),
       method: "GET",
       anonymous: true
     });
@@ -629,7 +650,9 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     }
     this.logger.log(`打开模组页 ${ classID } 完成`);
     const doc = $(resp.responseXML);
-    const {className, classEname} = McmodderUtils.parseClassDocument(doc);
+    const { classData } = McmodderUtils.parseClassDocument(doc);
+    const className = classData.name;
+    const classEname = classData.englishName;
     const maxNumber = parseInt(doc.find(".mold.mold-1 .count").text()?.split("(")[1]?.split("条)")[0]) || 0;
     if (!maxNumber) {
       const num1 = Math.abs(classID);

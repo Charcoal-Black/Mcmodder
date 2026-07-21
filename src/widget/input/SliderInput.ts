@@ -89,7 +89,7 @@ export class McmodderSliderInput extends McmodderNumberInput {
     this.sliderTap.removeClass("focus");
   }
 
-  override setDisplayValue(value: number) {
+  protected override setDisplayValue(value: number) {
     super.setDisplayValue(value);
     if (this.range == null) {
       setTimeout(() => this.setDisplayValue(value), 0);

@@ -1,7 +1,7 @@
 import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
 import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
+import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderClassData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
@@ -18,12 +18,15 @@ export class McmodderUtils {
     this.parent = parent;
   }
 
+  private static m_isMac: boolean | undefined;
   static isMac() {
-    return navigator.userAgent.includes("Macintosh");
+    return this.m_isMac ??= navigator.userAgent.includes("Macintosh");
   }
 
+  private static m_isMobileClient: boolean | undefined;
   static isMobileClient() {
-    return !!(navigator.userAgent.match(/Mobi/i) ||
+    return this.m_isMobileClient ??=
+      !!(navigator.userAgent.match(/Mobi/i) ||
       navigator.userAgent.match(/Android/i) ||
       navigator.userAgent.match(/iPhone/i));
   }
@@ -80,6 +83,20 @@ export class McmodderUtils {
       if (n1 < n2) return -1;
     }
     return 0;
+  }
+
+  static validateVersionForLoaderID(version: string, loaderID: string) {
+    const list = (McmodderValues.loaderSupportVersions as any)[loaderID];
+    return list && (
+      list.includes(version) || (
+        list[0].includes(">=") && 
+        this.versionCompare(version, list[0].split(">=")[1]) > -1
+      )
+    );
+  }
+
+  static validateVersionForLoaderName(version: string, loaderName: string) {
+    return this.validateVersionForLoaderID(version, (McmodderValues.loaderID as any)[loaderName]);
   }
 
   static simpleDeepCopy<T>(obj: T): T {
@@ -139,6 +156,10 @@ export class McmodderUtils {
     GM_setValue(item, JSON.stringify(obj));
   }
 
+  setConfigAsNumberList(key: number | string | null | undefined, value: number[], item = "mcmodderSettings") {
+    return this.setConfig(key, value.join(","), item);
+  }
+
   deleteConfig(key: number | string | null | undefined, item = "mcmodderSettings") {
     this.setConfig(key, null, item);
   }
@@ -155,42 +176,74 @@ export class McmodderUtils {
     return profiles.hasOwnProperty(uid);
   }
 
-  getProfile(key = "*", uid = this.parent.currentUID) {
-    let rawProfiles = GM_getValue("userProfile");
-    if (!rawProfiles) {
-      this.setConfig("userProfile", "{}");
-      rawProfiles = "{}";
+  private getRecord(storageKey: string, key: string, id: number) {
+    let raw = GM_getValue(storageKey);
+    if (!raw) {
+      GM_setValue(storageKey, "{}");
+      raw = "{}";
     }
-    let profile = JSON.parse(JSON.parse(rawProfiles)[uid] || "{}");
-    if (key === "*") return profile;
-    return profile[key];
+    let result = JSON.parse(JSON.parse(raw)[id] || "{}");
+    if (key === "*") return result;
+    return result[key];
   }
 
-  getAllProfile(uid = this.parent.currentUID): McmodderProfileData {
-    return this.getProfile("*", uid);
+  private getAllRecord<T extends object>(storageKey: string, id: number) {
+    return this.getRecord(storageKey, "*", id) as T;
   }
 
-  setProfile(key: string, value: any, uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    let profile = JSON.parse(profiles[uid] || "{}");
+  private setRecord(storageKey: string, key: string, value: any, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    let profile = JSON.parse(profiles[id] || "{}");
     profile[key] = value;
-    profiles[uid] = JSON.stringify(profile);
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    profiles[id] = JSON.stringify(profile);
+    GM_setValue(storageKey, JSON.stringify(profiles));
   }
 
-  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    let profile = JSON.parse(profiles[uid] || "{}");
+  private setAllRecord<T extends object>(storageKey: string, content: T, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    let profile = JSON.parse(profiles[id] || "{}");
     profile = Object.assign(profile, content);
     profile.lastUpdated = Date.now();
-    profiles[uid] = JSON.stringify(profile);
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    profiles[id] = JSON.stringify(profile);
+    GM_setValue(storageKey, JSON.stringify(profiles));
   }
 
+  private deleteAllRecord(storageKey: string, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    delete profiles[id];
+    GM_setValue(storageKey, JSON.stringify(profiles));
+  }
+
+  getProfile(key = "*", uid = this.parent.currentUID) {
+    return this.getRecord("userProfile", key, uid);
+  }
+  getAllProfile(uid = this.parent.currentUID) {
+    return this.getAllRecord<McmodderProfileData>("userProfile", uid);
+  }
+  setProfile(key: string, value: any, uid = this.parent.currentUID) {
+    this.setRecord("userProfile", key, value, uid);
+  }
+  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
+    this.setAllRecord("userProfile", content, uid);
+  }
   deleteAllProfile(uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    delete profiles[uid];
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    this.deleteAllRecord("userProfile", uid);
+  }
+
+  getClass(key = "*", classID: number) {
+    return this.getRecord("classData", key, classID);
+  }
+  getAllClass(classID: number) {
+    return this.getAllRecord<McmodderClassData>("classData", classID);
+  }
+  setClass(key: string, value: any, classID: number) {
+    this.setRecord("classData", key, value, classID);
+  }
+  setAllClass(content: McmodderClassData, classID: number) {
+    this.setAllRecord("classData", content, classID);
+  }
+  deleteAllClass(classID: number) {
+    this.deleteAllRecord("classData", classID);
   }
 
   getProfileAbstract(target: number | McmodderProfileData, showLv = false, plainText = false) {
@@ -264,6 +317,19 @@ export class McmodderUtils {
     return `${Math.floor(t / 8.64e7)}d`;
   }
 
+  static getFormattedChineseTime(t: number) {
+    let a, b = t < 0 ? "前" : "后";
+    t = t < 0 ? -t : t;
+    if (t < 1e3) return `刚刚`;
+    else if (t < 6e4) a = `${Math.floor(t / 1e3)}秒`;
+    else if (t < 3.6e6) a = `${Math.floor(t / 6e4)}分`;
+    else if (t < 8.64e7) a = `${Math.floor(t / 3.6e6)}时`;
+    else if (t < 2.592e9) a = `${Math.floor(t / 8.64e7)}天`;
+    else if (t < 3.1536e10) a = `${Math.floor(t / 2.592e9)}月`;
+    else a = `${Math.floor(t / 3.1536e10)}年`;
+    return a + b;
+  }
+
   static getFormattedNumber(n: number) {
     if (n >= 1e12) return (n / 1e12).toFixed(Number(n % 1e12 != 0)) + "T";
     if (n >= 1e9) return (n / 1e9).toFixed(Number(n % 1e9 != 0)) + "G";
@@ -272,7 +338,10 @@ export class McmodderUtils {
     return n.toString();
   }
 
-  static getClassFullName(name: string, ename: string, abbr: string) {
+  static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: McmodderClassData]) {
+    const name = args.length === 1 ? args[0].name : args[0];
+    const ename = args.length === 1 ? args[0].englishName : args[1];
+    const abbr = args.length === 1 ? args[0].abbr : args[2];
     if (!name) return undefined;
     let res = "";
     if (abbr) res += `[${abbr}] `;
@@ -416,16 +485,31 @@ export class McmodderUtils {
     return `https://i.mcmod.cn/item/icon/${ width }x${ width }/${ Math.floor(id / 1e4) }/${ id }.png?v=${ ver }`;
   }
 
-  static getItemURLByID(id: number) {
+  static getItemURL(id: number) {
     return `${ McmodderValues.hostname }/item/${ id }.html`;
   }
 
-  static getClassURLByID(id: number) {
+  static getItemTypeURL(classID: number, typeID: number) {
+    return `${ McmodderValues.hostname }/item/list/${ classID }-${ typeID }.html`;
+  }
+
+  static getClassURL(id: number) {
     return `${ McmodderValues.hostname }/class/${ id }.html`;
   }
 
-  static getCenterURLByID(id: number) {
+  static getOredictURL(oredict: string) {
+    return `${ McmodderValues.hostname }/oredict/${ oredict }-1.html`;
+  }
+
+  static getCenterURL(id: number) {
     return `https://center.mcmod.cn/${ id }`;
+  }
+
+  static URLToAnchor(url: string, text?: string) {
+    return $("<a>").attr({
+      target: "_blank",
+      href: url
+    }).text(text ?? url);
   }
 
   static versionArrayToString(arr: number[]) {
@@ -467,7 +551,7 @@ export class McmodderUtils {
     }
   }
 
-  static parseRGB(str: string): RGB | RGBA {
+  static parseRGB(str: string): RGB | RGBA | null {
     if (/rgb\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
       const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
       return {
@@ -486,7 +570,7 @@ export class McmodderUtils {
       };
     }
     else {
-      throw new Error("颜色代码的格式不正确。");
+      return null;
     }
   }
 
@@ -615,15 +699,30 @@ export class McmodderUtils {
     } as RGBA);
   }
 
+  static getXplatCtrlCombinationKey(keyCode: number | string | McmodderKeyData): McmodderKeyData {
+    if (typeof keyCode === "string") {
+      keyCode = keyCode.toUpperCase().charCodeAt(0);
+    }
+    if (typeof keyCode === "number") {
+      keyCode = { keyCode };
+    }
+    if (this.isMac()) {
+      keyCode.metaKey = true;
+    } else {
+      keyCode.ctrlKey = true;
+    }
+    return keyCode;
+  }
+
   static keyToRawList(e: McmodderKeyData) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
-    if (!e.key) return [];
+    if (!e.key && !e.keyCode) return [];
     let k = [], c;
-    if (e.ctrlKey) k.push("Ctrl");
+    if (e.ctrlKey) k.push(McmodderUtils.isMac() ? "Control" : "Ctrl");
     if (e.shiftKey) k.push("Shift");
-    if (e.altKey) k.push("Alt");
-    if (e.metaKey) k.push("Meta");
-    if (!["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
+    if (e.altKey) k.push(McmodderUtils.isMac() ? "Option" : "Alt");
+    if (e.metaKey) k.push(McmodderUtils.isMac() ? "Command" : "Meta");
+    if (!e.key || !["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
       if (e.keyCode) {
         if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 98 && e.keyCode <= 123)) c = String.fromCharCode(e.keyCode).toUpperCase();
         else if (e.keyCode >= 48 && e.keyCode <= 57) c = String.fromCharCode(e.keyCode);
@@ -647,10 +746,10 @@ export class McmodderUtils {
     const HTMLList = list.map(data => {
       if (isMac) {
         switch (data) {
-          case "Ctrl": data = "⌃‌"; break;
+          case "Ctrl": case "Control": data = "⌃‌"; break;
           case "Shift": data = "⇧"; break;
-          case "Alt": data = "⌥"; break;
-          case "Meta": data = "⌘";
+          case "Alt": case "Option": data = "⌥"; break;
+          case "Meta": case "Command": data = "⌘";
         }
       }
       return `<kbd>${ data }</kbd>`;
@@ -774,12 +873,20 @@ export class McmodderUtils {
     return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
   }
 
+  static getFormattedDate(date = new Date) {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  }
+
   static getFormattedChineseDate(date = new Date) {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   }
 
   static getFormatted24hTime(date = new Date) {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
+  }
+
+  static getFormattedDateTime(date = new Date) {
+    return `${ this.getFormattedDate(date) } ${ this.getFormatted24hTime(date) }`;
   }
 
   static getFormattedSize = (size: number | string) => {
@@ -967,14 +1074,22 @@ export class McmodderUtils {
     return false;
   }
 
+  static setButtonLoadingState(node: Element | JQuery) {
+    $(node).addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+  }
+
+  static cancelButtonLoadingState(node: Element | JQuery) {
+    $(node).removeClass("disabled").removeAttr("disabled").find("i:last-child").remove();
+  }
+
   static regulateFileName(name: string) {
     return name.replace(/[\\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
   }
 
-  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | (() => string)) {
+  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | number | (() => (string | number))) {
     node.addClass("mcmodder-copyable").click(e => {
       const text = typeof copyData === "function" ? copyData() : (copyData || e.currentTarget.textContent);
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(text.toString());
       McmodderUtils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
     });
   }
@@ -998,22 +1113,22 @@ export class McmodderUtils {
     return classNameIDMap[className];
   }
 
-  getItemTypeData(classID: number, itemType: number | undefined) {
+  getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
     const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
       (entry.classID === classID || entry.classID === 0) &&
-      (entry.typeID || 1) === (itemType || 1)
+      ((entry.typeID || 1) === (itemType || 1) || (entry.text === itemType))
     );
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }
 
-  getItemTypeHTML(...args: [classID: number, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
+  getItemTypeHTML(...args: [classID: number | undefined, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
     let itemType;
     if (args.length === 1) {
       itemType = args[0];
     } else {
       itemType = this.getItemTypeData(args[0], args[1]);
     }
-    if (!itemType) return $();
+    if (!itemType) return $(`<i class="fa fa-question-circle-o text-danger"></i>`);
     const iconFont = $(`<span class="iconfont icon">`).css("color", itemType.color);
     if (itemType.classID === 0) iconFont.html(itemType.icon);
     else iconFont.html(`<i class="fa ${itemType.icon}"></i>`);
@@ -1059,7 +1174,7 @@ export class McmodderUtils {
     return McmodderUtils.parseItemEditorDocument(doc);
   }
 
-  static parseItemDocument($doc: JQuery) {
+  static parseItemDocument($doc: JQuery = $(document)) {
     const keywords = $doc.find("meta[name=keywords]").attr("content").split(",");
     const itemRow = $doc.find(".item-row").first();
     const command = itemRow.find(".item-give")?.attr("data-command")?.slice(9)?.split(" ");
@@ -1087,7 +1202,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseClassDocument($doc: JQuery) {
+  static parseClassDocument($doc: JQuery = $(document)) {
     const name = $doc.find(".class-title h3");
     const ename = $doc.find(".class-title h4");
     const abbr = $doc.find(".class-title .short-name");
@@ -1095,9 +1210,12 @@ export class McmodderUtils {
       nameNode: name,
       enameNode: ename,
       abbrNode: abbr,
-      className: name.text(),
-      classEname: ename.text(),
-      classAbbr: abbr.text().slice(1, -1)
+      classData: {
+        name: name.text(),
+        englishName: ename.text(),
+        abbr: abbr.text().slice(1, -1),
+        cover: $doc.find(".class-cover-image img").attr("src")
+      } as McmodderClassData
     }
   }
 
@@ -1128,7 +1246,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseItemEditorDocument($doc: JQuery) {
+  static parseItemEditorDocument($doc: JQuery = $(document)) {
     const headScript = $doc.find("head > script").last().html().split(";");
     const bodyScript = $doc.find("body > script").last().html();
     const inputs = $doc.find(".input-group");
@@ -1154,7 +1272,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseClassEditorDocument(_$doc: JQuery) {
+  static parseClassEditorDocument(_$doc: JQuery = $(document)) {
     // TODO ...
   }
 }

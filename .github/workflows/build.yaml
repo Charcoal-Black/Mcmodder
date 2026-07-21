@@ -28,11 +28,18 @@ jobs:
           path: dist/
   release:
     runs-on: ubuntu-latest
+    needs: build
     if: contains(github.event.head_commit.message, '[release]')
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       - run: |
           VERSION=$(jq -r .version package.json)

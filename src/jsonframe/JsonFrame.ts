@@ -76,7 +76,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
     })
     .addTool("new", "新建文件", () => true, () => this.newUnnamedJson())
     .addTool("saveedit", "保存修改", () => !!this.activeFileName || this.hasRearranged, () => this.saveEdit())
-    .addTool("rename", "重命名", () => !!this.activeFileName && !this.table!.unsavedUnitCount, () => this.rename())
+    .addTool("rename", "重命名", () => !!this.activeFileName && !this.table!.unsaved, () => this.rename())
     .addTool("deleteall", "删除当前文件", () => !!this.activeFileName, async () => {
       if (await this.tryDeleteJson(this.activeFileName)) this.reset();
     })
@@ -251,7 +251,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
 
   loadJson(fileName: string) {
     this.table!.selectedRowCount = 0;
-    this.table!.unsavedUnitCount = 0;
+    this.table!.unsaved = false;
     this.table!.setAllData(this.parent.utils.getConfig(fileName, this.getConfigName(), []));
     this.hasRearranged = false;
     this.updateToolBar();
@@ -264,7 +264,7 @@ export abstract class JsonFrame<McmodderTableData extends Object> {
   }
 
   saveEdit() {
-    if (!this.table!.unsavedUnitCount) {
+    if (!this.table!.unsaved) {
       McmodderUtils.commonMsg("当前暂无需要保存的改动...", false);
       return;
     }

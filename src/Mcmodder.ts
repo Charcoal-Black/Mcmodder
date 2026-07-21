@@ -8,7 +8,7 @@ import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
-import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseErrorResponse, SupabaseTrackSplashResponse, SupabaseTrackSplashSuccessfulResponse } from "./types";
+import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseTrackSplashResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { McmodderTimer } from "./widget/Timer";
@@ -115,6 +115,7 @@ export class Mcmodder {
     for (let mutation of mutationList) {
       if ((mutation.target as HTMLElement).id === "edui1_iframeholder" && mutation.addedNodes.length) {
         this.callEditor();
+        this.generalEditorObserver.disconnect();
       }
     }
   });
@@ -339,7 +340,7 @@ export class Mcmodder {
           </div>
         </div>
       </li>`).appendTo(ul);
-      (new McmodderTimer(this, McmodderTimer.DATAGETTER_CONSTANT(profile.expirationDate))).$instance.appendTo(h.find(".mcmodder-timer-pre"));
+      (new McmodderTimer(this, profile.expirationDate)).$instance.appendTo(h.find(".mcmodder-timer-pre"));
       if (profile.uuid === uuid) h.addClass("profile-selected");
     });
     swal.fire({
@@ -380,9 +381,31 @@ export class Mcmodder {
     GM_setValue("mcmodderSplashList", "");
   }
 
-  applyCustomFont() {
-    $('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&amp;display=swap" rel="stylesheet">').appendTo("head");
-    McmodderUtils.addStyle('* {font-family: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", "宋体", sans-serif}');
+  applyCustomFont(font: number) {
+    switch (font) {
+      case 1: {
+        McmodderUtils.addStyle('* {font-family: "-apple-system", "Segoe UI", "Roboto", "Ubuntu", "Arial", "Helvetica", sans-serif;}');
+        break;
+      }
+      case 2: {
+        $(`
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+        `).appendTo("head");
+        McmodderUtils.addStyle('* {font-family: "Noto Sans SC", sans-serif;}');
+        break;
+      }
+      case 3: {
+        $(`
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+        `).appendTo("head");
+        McmodderUtils.addStyle('* {font-family: "Inter", sans-serif;}');
+        break;
+      }
+    }
   }
 
   async trackSplash() {
@@ -406,17 +429,13 @@ export class Mcmodder {
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
 
     if (this.utils.getConfig("supabaseSplash")) {
-      const client = this.supabaseUtils.getClient();
-      if (!client) return;
-      const { data, error } = await client.functions.invoke<SupabaseTrackSplashResponse>('track_splash', {
+      if (!this.supabaseUtils.hasClient() || !this.currentUID) return;
+      const resp = await this.supabaseUtils.invoke<SupabaseTrackSplashResponse>('track_splash_v2', {
         body: {
-          user_id: this.currentUID,
-          user_name: this.currentUsername,
+          auth_key: this.utils.getProfile("auth_key"),
           splash_text: splashText
         }
-      });
-      if (error || (data as SupabaseErrorResponse)?.error) {
-        const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
+      }, errorMsg => {
         if (this.isV4) McmodderUtils.commonMsg(errorMsg, false);
         else (swal as any)({
           type: "error",
@@ -425,9 +444,8 @@ export class Mcmodder {
           buttons: false,
           timer: 3e3
         });
-        return;
-      }
-      const resp = data as SupabaseTrackSplashSuccessfulResponse;
+      });
+      if (!resp) return;
       let msg: string;
       if (resp.count == 1) {
         msg = "此标语是首次收录！";
@@ -528,8 +546,17 @@ export class Mcmodder {
     if (this.utils.getConfig("forceV4") && (this.href === `${ this.hostname }/`)) {
       window.location.href = `${ this.hostname }/v4/`;
     }
-    if (this.utils.getConfig("useNotoSans")) {
-      this.applyCustomFont();
+
+    // v2.2- 自定义字体配置兼容
+    const useNotoSans = this.utils.getConfig("useNotoSans");
+    if (useNotoSans) {
+      this.utils.deleteConfig("useNotoSans");
+      this.utils.setConfig("customFont", 2);
+    }
+
+    const customFont = this.utils.getConfig("customFont");
+    if (customFont) {
+      this.applyCustomFont(customFont);
     }
 
     // 关闭主页&整合包区广告
@@ -617,9 +644,9 @@ export class Mcmodder {
       const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
       .insertBefore(".header-user .header-layer-block:first-child()");
 
-      const userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
+      let userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
       const myProfileList = this.utils.getConfigAsNumberList("myProfiles");
-      const recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
+      let recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
 
       let userList;
       if (recentlyVisited.length) {
@@ -641,23 +668,81 @@ export class Mcmodder {
 
       if (userList.length) {
         $(".header-layer-block").addClass("with-favuser");
-        const favUserOuterContainer = $(`<div class="mcmodder-favuser"><div class="title">最近串门</div><div class="mcmodder-favuser-container"><div class="content"></div></div></div>`).insertAfter(myAvatar);
+        const favUserOuterContainer = $(`
+          <div class="mcmodder-favuser">
+            <div class="title">
+              最近串门
+              <span class="edit">
+                <i class="fa fa-pencil"></i>
+              </span>
+            </div>
+            <div class="mcmodder-favuser-container">
+              <div class="content"></div>
+            </div>
+          </div>
+        `).insertAfter(myAvatar);
         const favUserContainer = favUserOuterContainer.find(".mcmodder-favuser-container");
         const favUserContent = favUserContainer.find(".content");
         userList.forEach(uid => {
           const profile: McmodderProfileData = this.utils.getAllProfile(uid);
-          const node = $(`<a class="user" title="${ profile.nickname } · ${ this.utils.getProfileAbstract(profile, true, true) }" target="_blank" href="https://center.mcmod.cn/${ uid }/">
-            <div class="avatar">
-              <img alt="${ profile.nickname }" src="${ profile.avatar }">
-            </div>
-            <div class="nickname">${ profile.nickname }</div>
-          </a>`).appendTo(favUserContent);
+          const node = $(`
+            <a class="user" data-uid="${
+              uid
+            }" data-nickname="${
+              profile.nickname
+            }" title="${
+              profile.nickname
+            } · ${
+              this.utils.getProfileAbstract(profile, true, true)
+            }" target="_blank" href="https://center.mcmod.cn/${
+              uid
+            }/">
+              <div class="avatar">
+                <img alt="${ profile.nickname }" src="${ profile.avatar }">
+              </div>
+              <div class="nickname">${ profile.nickname }</div>
+              <div class="nickname delete-text">移除</div>
+            </a>
+          `).appendTo(favUserContent);
           if (userFavList.includes(uid)) node.addClass("user-fav");
           else node.addClass("user-recent");
         });
 
         const className = ["star", "pin", "heart"][this.utils.getConfig("favUserDisplayStyle") || 0];
         favUserOuterContainer.addClass(className);
+
+        let deleteMode = false;
+        const favUserEdit = favUserOuterContainer.find(".edit");
+        const favUserEditIcon = favUserEdit.children().first();
+        favUserEdit.click(() => {
+          deleteMode = !deleteMode;
+          if (deleteMode) {
+            favUserOuterContainer.addClass("delete-mode");
+            favUserEditIcon.attr("class", "fa fa-close");
+          } else {
+            favUserOuterContainer.removeClass("delete-mode");
+            favUserEditIcon.attr("class", "fa fa-pencil");
+          }
+        });
+        favUserContainer.on("click", ".user", e => {
+          if (deleteMode) {
+            e.preventDefault();
+            const target = $(e.currentTarget);
+            const uid = Number(target.attr("data-uid"));
+            userFavList = userFavList.filter(id => id != uid);
+            recentlyVisited = recentlyVisited.filter(id => id != uid);
+            this.utils.setConfigAsNumberList("userFavList", userFavList);
+            this.utils.setConfigAsNumberList("recentlyVisited", recentlyVisited);
+            target.addClass("deleted");
+            setTimeout(() => {
+              target.remove();
+              const count = favUserContainer.find(".user").length;
+              if (count < 1) {
+                favUserOuterContainer.remove();
+              }
+            }, 300);
+          }
+        });
       }
       
       $(".header-user .header-layer-block li a").each((_, _c) => {
@@ -697,6 +782,7 @@ export class Mcmodder {
         const css = (e as HTMLElement).style.getPropertyValue("color");
         if (css) {
           const color = McmodderUtils.parseRGB(css);
+          if (!color) return;
           const colorStr = McmodderUtils.RGBToColor(color);
           const nightColorStr = McmodderUtils.reverseColorBrightness(color);
           this.elementColorDictionary.set(e, colorStr);

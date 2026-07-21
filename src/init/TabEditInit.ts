@@ -615,7 +615,7 @@ export class TabEditInit extends McmodderInit {
       childList: true,
       subtree: true
     });
-    this.guiLockerToggle?.setDisplayValue(guiID === this.guiLocker);
+    this.guiLockerToggle?.setCurrentValue(guiID === this.guiLocker);
     if (this.shapeless && this.isTabAdd) {
       this.mcmodShapelessToggle?.click();
     }

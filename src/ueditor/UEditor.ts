@@ -98,7 +98,7 @@ export class McmodderUEditor {
     // this.editor.setHeight(height);
   }
 
-  heightAutoResize() {
+  protected autoCalculateHeight() {
     let height = 50;
     if (this.$body && this.$body.children().length && this.window) {
       let rect = this.$body.children().last().get(0).getBoundingClientRect();
@@ -109,6 +109,11 @@ export class McmodderUEditor {
       height += (e.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth) + 0.2);
     }); */
     height = Math.max(height, 120);
+    return height;
+  }
+
+  protected heightAutoResize() {
+    const height = this.autoCalculateHeight();
     this.resizeHeight(height);
   }
 

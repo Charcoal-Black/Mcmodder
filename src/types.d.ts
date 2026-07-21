@@ -139,6 +139,7 @@ export interface McmodderClassData {
   name: string;
   englishName: string;
   abbr: string;
+  cover?: string;
 }
 
 export interface McmodderAuthorData {
@@ -435,6 +436,11 @@ export interface VersionCompareData {
   options: string;
 }
 
+export interface RecentlyVisitedData {
+  id: number;
+  time: number;
+}
+
 export type EditorAlertHTMLModifier = (e: HTMLElement) => void;
 export type EditorAlertForm = () => JQuery;
 
@@ -543,17 +549,26 @@ export interface SupabaseErrorResponse {
   error?: string;
 }
 
-export interface SupabaseTrackSplashSuccessfulResponse {
+export interface SupabaseTrackSplashResponse {
   count: number;
   last_visited_user_id: number;
   last_visited_user_name: string;
   last_visited_at: string;
 }
 
-export interface SupabaseByteChartSuccessfulResponse {
+export interface SupabaseByteChartResponse {
   data: [string, number][];
 }
 
-export type SupabaseTrackSplashResponse = SupabaseTrackSplashSuccessfulResponse | SupabaseErrorResponse;
+export interface SupabaseAuthenticatorResponse {
+  user_id: number,
+  user_name: string,
+  auth_key: string
+}
 
-export type SupabaseByteChartResponse = SupabaseByteChartSuccessfulResponse | SupabaseErrorResponse;
+export interface SupabaseSyncSettingsResponse {
+  last_modified: string,
+  mcmodder_settings?: string,
+  user_profile?: string,
+  template_list?: string
+}

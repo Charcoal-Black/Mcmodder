@@ -282,7 +282,7 @@ export class StyleLoader {
       "pre-del": "#ff7b7b",
       "code-text": "#f68",
       "code-background": "#423",
-      "text-success": "#5f5",
+      "text-success": "#4c4",
       "text-danger": "#faa",
       "text-info": "#4be",
       "badges": "#1118",

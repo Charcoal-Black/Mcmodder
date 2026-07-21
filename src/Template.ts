@@ -93,10 +93,30 @@ export class McmodderTemplate {
     });
 
     this.currentContextMenu = new McmodderContextMenu(/* this.parent, */$(".group"))
-    .addOption("modifyTitle", "修改标题", e => this.isValidSelection(e), e => this.onModifyTitle(e))
-    .addOption("modifyDescription", "修改简介", e => this.isValidSelection(e), e => this.onModifyDescription(e))
-    .addOption("updateContent", "更新为当前编辑器内容", e => this.isValidSelection(e), e => this.onUpdateContent(e))
-    .addOption("delete", `<span class="mcmodder-slim-danger">删除</span>`, e => this.isValidSelection(e), e => this.delete(this.getCurrentSelection(e).attr("data-tag")));
+    .addItem({
+      key: "modifyTitle",
+      text: "修改标题",
+      displayRule: e => this.isValidSelection(e),
+      callback: e => this.onModifyTitle(e)
+    })
+    .addItem({
+      key: "modifyDescription",
+      text: "修改简介",
+      displayRule: e => this.isValidSelection(e),
+      callback: e => this.onModifyDescription(e)
+    })
+    .addItem({
+      key: "updateContent",
+      text: "更新为当前编辑器内容",
+      displayRule: e => this.isValidSelection(e),
+      callback: e => this.onUpdateContent(e)
+    })
+    .addItem({
+      key: "delete",
+      text: `<span class="mcmodder-slim-danger">删除</span>`,
+      displayRule: e => this.isValidSelection(e),
+      callback: e => this.delete(this.getCurrentSelection(e).attr("data-tag"))
+    });
   }
 
   private getCurrentSelection(e: JQueryMouseEventObject) {
