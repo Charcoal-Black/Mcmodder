@@ -38,8 +38,8 @@ export class McmodderNumberInput extends McmodderInput<number> {
     const max = this.range[1] === null ? NaN : this.range[1];
     if (isNaN(newValue)) return { isok: false, msg: `请输入一个正确的数值~` }; 
     if (newValue === this.value) return { isok: false };
-    if (!isNaN(min) && newValue < min) return { isok: false, msg: `您输入的数值 (${ newValue }) 低于允许的最小值 (${ min })，请重新设置~` };
-    if (!isNaN(max) && newValue > max) return { isok: false, msg: `您输入的数值 (${ newValue }) 高于允许的最大值 (${ max })，请重新设置~` };
+    if (!isNaN(min) && newValue < min) return { isok: false, msg: `您输入的数值 (${ newValue.toLocaleString() }) 低于允许的最小值 (${ min.toLocaleString() })，请重新设置~` };
+    if (!isNaN(max) && newValue > max) return { isok: false, msg: `您输入的数值 (${ newValue.toLocaleString() }) 高于允许的最大值 (${ max.toLocaleString() })，请重新设置~` };
     return { isok: true, final: newValue };
   }
 }

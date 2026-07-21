@@ -139,6 +139,7 @@ export interface McmodderClassData {
   name: string;
   englishName: string;
   abbr: string;
+  cover?: string;
 }
 
 export interface McmodderAuthorData {
@@ -433,6 +434,11 @@ export interface VersionCompareData {
   mcmodMcver?: string;
   mcmodDate?: Date;
   options: string;
+}
+
+export interface RecentlyVisitedData {
+  id: number;
+  time: number;
 }
 
 export type EditorAlertHTMLModifier = (e: HTMLElement) => void;

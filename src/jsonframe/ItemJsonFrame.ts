@@ -650,7 +650,9 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     }
     this.logger.log(`打开模组页 ${ classID } 完成`);
     const doc = $(resp.responseXML);
-    const {className, classEname} = McmodderUtils.parseClassDocument(doc);
+    const { classData } = McmodderUtils.parseClassDocument(doc);
+    const className = classData.name;
+    const classEname = classData.englishName;
     const maxNumber = parseInt(doc.find(".mold.mold-1 .count").text()?.split("(")[1]?.split("条)")[0]) || 0;
     if (!maxNumber) {
       const num1 = Math.abs(classID);

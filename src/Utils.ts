@@ -1,7 +1,7 @@
 import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
 import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
+import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderClassData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
@@ -176,42 +176,74 @@ export class McmodderUtils {
     return profiles.hasOwnProperty(uid);
   }
 
-  getProfile(key = "*", uid = this.parent.currentUID) {
-    let rawProfiles = GM_getValue("userProfile");
-    if (!rawProfiles) {
-      this.setConfig("userProfile", "{}");
-      rawProfiles = "{}";
+  private getRecord(storageKey: string, key: string, id: number) {
+    let raw = GM_getValue(storageKey);
+    if (!raw) {
+      GM_setValue(storageKey, "{}");
+      raw = "{}";
     }
-    let profile = JSON.parse(JSON.parse(rawProfiles)[uid] || "{}");
-    if (key === "*") return profile;
-    return profile[key];
+    let result = JSON.parse(JSON.parse(raw)[id] || "{}");
+    if (key === "*") return result;
+    return result[key];
   }
 
-  getAllProfile(uid = this.parent.currentUID): McmodderProfileData {
-    return this.getProfile("*", uid);
+  private getAllRecord<T extends object>(storageKey: string, id: number) {
+    return this.getRecord(storageKey, "*", id) as T;
   }
 
-  setProfile(key: string, value: any, uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    let profile = JSON.parse(profiles[uid] || "{}");
+  private setRecord(storageKey: string, key: string, value: any, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    let profile = JSON.parse(profiles[id] || "{}");
     profile[key] = value;
-    profiles[uid] = JSON.stringify(profile);
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    profiles[id] = JSON.stringify(profile);
+    GM_setValue(storageKey, JSON.stringify(profiles));
   }
 
-  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    let profile = JSON.parse(profiles[uid] || "{}");
+  private setAllRecord<T extends object>(storageKey: string, content: T, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    let profile = JSON.parse(profiles[id] || "{}");
     profile = Object.assign(profile, content);
     profile.lastUpdated = Date.now();
-    profiles[uid] = JSON.stringify(profile);
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    profiles[id] = JSON.stringify(profile);
+    GM_setValue(storageKey, JSON.stringify(profiles));
   }
 
+  private deleteAllRecord(storageKey: string, id: number) {
+    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
+    delete profiles[id];
+    GM_setValue(storageKey, JSON.stringify(profiles));
+  }
+
+  getProfile(key = "*", uid = this.parent.currentUID) {
+    return this.getRecord("userProfile", key, uid);
+  }
+  getAllProfile(uid = this.parent.currentUID) {
+    return this.getAllRecord<McmodderProfileData>("userProfile", uid);
+  }
+  setProfile(key: string, value: any, uid = this.parent.currentUID) {
+    this.setRecord("userProfile", key, value, uid);
+  }
+  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
+    this.setAllRecord("userProfile", content, uid);
+  }
   deleteAllProfile(uid = this.parent.currentUID) {
-    const profiles = JSON.parse(GM_getValue("userProfile") || "{}");
-    delete profiles[uid];
-    GM_setValue("userProfile", JSON.stringify(profiles));
+    this.deleteAllRecord("userProfile", uid);
+  }
+
+  getClass(key = "*", classID: number) {
+    return this.getRecord("classData", key, classID);
+  }
+  getAllClass(classID: number) {
+    return this.getAllRecord<McmodderClassData>("classData", classID);
+  }
+  setClass(key: string, value: any, classID: number) {
+    this.setRecord("classData", key, value, classID);
+  }
+  setAllClass(content: McmodderClassData, classID: number) {
+    this.setAllRecord("classData", content, classID);
+  }
+  deleteAllClass(classID: number) {
+    this.deleteAllRecord("classData", classID);
   }
 
   getProfileAbstract(target: number | McmodderProfileData, showLv = false, plainText = false) {
@@ -288,7 +320,7 @@ export class McmodderUtils {
   static getFormattedChineseTime(t: number) {
     let a, b = t < 0 ? "前" : "后";
     t = t < 0 ? -t : t;
-    if (t < 1e3) a = `刚刚`;
+    if (t < 1e3) return `刚刚`;
     else if (t < 6e4) a = `${Math.floor(t / 1e3)}秒`;
     else if (t < 3.6e6) a = `${Math.floor(t / 6e4)}分`;
     else if (t < 8.64e7) a = `${Math.floor(t / 3.6e6)}时`;
@@ -306,7 +338,10 @@ export class McmodderUtils {
     return n.toString();
   }
 
-  static getClassFullName(name: string, ename: string, abbr: string) {
+  static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: McmodderClassData]) {
+    const name = args.length === 1 ? args[0].name : args[0];
+    const ename = args.length === 1 ? args[0].englishName : args[1];
+    const abbr = args.length === 1 ? args[0].abbr : args[2];
     if (!name) return undefined;
     let res = "";
     if (abbr) res += `[${abbr}] `;
@@ -838,12 +873,20 @@ export class McmodderUtils {
     return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
   }
 
+  static getFormattedDate(date = new Date) {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  }
+
   static getFormattedChineseDate(date = new Date) {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   }
 
   static getFormatted24hTime(date = new Date) {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
+  }
+
+  static getFormattedDateTime(date = new Date) {
+    return `${ this.getFormattedDate(date) } ${ this.getFormatted24hTime(date) }`;
   }
 
   static getFormattedSize = (size: number | string) => {
@@ -1131,7 +1174,7 @@ export class McmodderUtils {
     return McmodderUtils.parseItemEditorDocument(doc);
   }
 
-  static parseItemDocument($doc: JQuery) {
+  static parseItemDocument($doc: JQuery = $(document)) {
     const keywords = $doc.find("meta[name=keywords]").attr("content").split(",");
     const itemRow = $doc.find(".item-row").first();
     const command = itemRow.find(".item-give")?.attr("data-command")?.slice(9)?.split(" ");
@@ -1159,7 +1202,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseClassDocument($doc: JQuery) {
+  static parseClassDocument($doc: JQuery = $(document)) {
     const name = $doc.find(".class-title h3");
     const ename = $doc.find(".class-title h4");
     const abbr = $doc.find(".class-title .short-name");
@@ -1167,9 +1210,12 @@ export class McmodderUtils {
       nameNode: name,
       enameNode: ename,
       abbrNode: abbr,
-      className: name.text(),
-      classEname: ename.text(),
-      classAbbr: abbr.text().slice(1, -1)
+      classData: {
+        name: name.text(),
+        englishName: ename.text(),
+        abbr: abbr.text().slice(1, -1),
+        cover: $doc.find(".class-cover-image img").attr("src")
+      } as McmodderClassData
     }
   }
 
@@ -1200,7 +1246,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseItemEditorDocument($doc: JQuery) {
+  static parseItemEditorDocument($doc: JQuery = $(document)) {
     const headScript = $doc.find("head > script").last().html().split(";");
     const bodyScript = $doc.find("body > script").last().html();
     const inputs = $doc.find(".input-group");
@@ -1226,7 +1272,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseClassEditorDocument(_$doc: JQuery) {
+  static parseClassEditorDocument(_$doc: JQuery = $(document)) {
     // TODO ...
   }
 }

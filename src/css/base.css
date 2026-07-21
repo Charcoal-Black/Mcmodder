@@ -427,7 +427,6 @@ th,
   border-color: var(--mcmodder-color-background-dark1);
 }
 .item-category li,
-.common-text table th,
 .center-content.post-list .post-block .cover img,
 .center-card-view,
 .notice_center,
@@ -1451,7 +1450,10 @@ body > .container > *,
 .logreg-suggest .member li,
 #register-email-check-btn,
 .common-center .maintext .quote_text,
-.select-row fieldset {
+.select-row fieldset,
+#mcversion-frame fieldset,
+.relation-list fieldset,
+.modlist-list fieldset {
   border-color: var(--mcmodder-color-background-dark2);
 }
 .under {
@@ -1564,15 +1566,20 @@ body .top-main .pulldown .arrow {
 }
 .swal2-popup .swal2-footer,
 .class_block .left .list .items,
-.modal-footer {
+.modal-footer,
+.dropdown-divider {
   border-top-color: var(--mcmodder-color-background-dark2);
+}
+.dropdown-header {
+  color: var(--mcmodder-color-button);
 }
 #header-search-input,
 .common-fuc-group .action,
 .post_block .title .more a:hover,
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
-.news_block .left .text #edit_more:hover {
+.news_block .left .text #edit_more:hover,
+.member-list li.member-row {
   background-color: transparent;
 }
 .center-main.favorite .favorite-slot-ul li,
@@ -1653,6 +1660,14 @@ body .arrow {
 .verify-action-btns button,
 .assistant-action-btns button {
   margin-right: var(--mcmodder-width-padding-3);
+}
+#connect-frame .table > thead > tr > th,
+#connect-frame .table > tbody > tr > th,
+#connect-frame .table > tfoot > tr > th,
+#connect-frame .table > thead > tr > td,
+#connect-frame .table > tbody > tr > td,
+#connect-frame .table > tfoot > tr > td {
+  padding: .2em var(--mcmodder-width-padding-3);
 }
 #mcmodder-tabedit-tip {
   display: inline-block;
