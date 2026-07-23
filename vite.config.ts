@@ -26,6 +26,7 @@ export default defineConfig({
           "https://www.mcmod.cn/item/aspects/*"
         ],
         grant: [
+          'unsafeWindow',
           'GM_cookie',
           'GM_registerMenuCommand',
           'GM_openInTab',

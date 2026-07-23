@@ -3,6 +3,74 @@ import { Mcmodder } from './Mcmodder';
 import bbsCss from './css/bbs.css?raw';
 
 (() => {
+  try {
+    const isHomePage = location.hostname.includes("mcmod.cn") && 
+      (location.pathname === "/" || location.pathname === "/v4/" || location.pathname === "/index.html");
+
+    if (isHomePage) {
+      const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
+      const useSupabase = settings.useSupabase !== false;
+      const fetchCustom = settings.fetchCustomSplashes !== false;
+      const rate = typeof settings.customSplashRate === "number" ? settings.customSplashRate : 50;
+
+      if (useSupabase && fetchCustom && Math.random() * 100 < rate) {
+        const cached = GM_getValue("mcmodderCustomSplashes");
+        let splashList: any[] = [];
+        if (cached) {
+          try { splashList = JSON.parse(cached); } catch (_e) {}
+        }
+        if (Array.isArray(splashList) && splashList.length > 0) {
+          const item = splashList[Math.floor(Math.random() * splashList.length)];
+          if (item && item.content) {
+            const targetWin = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+            (targetWin as any).__mcmodder_custom_splash__ = item.content;
+
+            const applyConsoleOverride = () => {
+              if ((targetWin as any).__mcmodder_console_patched__) return;
+              const origConsoleLog = targetWin.console.log;
+              if (typeof origConsoleLog !== 'function') return;
+
+              (targetWin as any).__mcmodder_console_patched__ = true;
+              targetWin.console.log = function (...args: any[]) {
+                if (args.length >= 1 && typeof args[0] === 'string' && args[0].includes('%c')) {
+                  return origConsoleLog.apply(targetWin.console, [`%c ${item.content}`, args[1] || 'color:#6699FF;']);
+                }
+                return origConsoleLog.apply(targetWin.console, args);
+              };
+            };
+
+            applyConsoleOverride();
+            document.addEventListener('DOMContentLoaded', applyConsoleOverride);
+            window.addEventListener('load', applyConsoleOverride);
+
+            const observer = new MutationObserver(() => {
+              const ooops = document.querySelector(".ooops");
+              const splash = document.querySelector(".splash span");
+
+              if (ooops) {
+                const textEl = ooops.querySelector(".text");
+                const shadowEl = ooops.querySelector(".shadow");
+                if (textEl && textEl.textContent) {
+                  textEl.textContent = item.content;
+                  if (shadowEl) shadowEl.textContent = item.content;
+                  observer.disconnect();
+                }
+              } else if (splash && splash.textContent) {
+                splash.textContent = item.content;
+                observer.disconnect();
+              }
+            });
+
+            observer.observe(document.documentElement, {
+              childList: true,
+              subtree: true
+            });
+          }
+        }
+      }
+    }
+  } catch (_e) {}
+
   let nightMode = false;
   try {
     const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");

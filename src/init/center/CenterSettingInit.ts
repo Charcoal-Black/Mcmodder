@@ -432,8 +432,48 @@ export class CenterSettingInit extends CenterBaseInit {
     });
 
     $(`<div class="center-setting-block" style="margin-top: 2em;">
+      <h4 style="margin-bottom: 0.5em; font-weight: bold;">投稿自定义闪烁标语</h4>
+      <p class="text-muted" style="margin-bottom: 0.8em; font-size: 13px;">已登录用户可投稿标语至云端。投稿需经脚本管理员审核过审后方可被其它脚本用户抓取显示。</p>
+      <div class="setting-item" style="display: flex; gap: 8px; align-items: center;">
+        <input type="text" id="mcmodder-custom-splash-input" class="form-control" placeholder="输入自定义闪烁标语内容..." style="max-width: 400px; display: inline-block;">
+        <button class="btn btn-primary" id="mcmodder-custom-splash-submit">提交投稿</button>
+      </div>
+    </div>`).appendTo(mcmodderSettingMenu)
+    .find("#mcmodder-custom-splash-submit")
+    .click(async e => {
+      const button = $(e.currentTarget);
+      const input = $("#mcmodder-custom-splash-input");
+      const content = String(input.val() || "").trim();
+
+      if (!content) {
+        McmodderUtils.commonMsg("标语内容不能为空！", false);
+        return;
+      }
+
+      if (!this.getParent().currentUID) {
+        McmodderUtils.commonMsg("请先登录 MC百科 账号后再发起投稿！", false);
+        return;
+      }
+
+      const authKey = this.getParent().utils.getProfile("auth_key");
+      if (!authKey) {
+        McmodderUtils.commonMsg("未获取到登录校验 Key，请重新登录！", false);
+        return;
+      }
+
+      McmodderUtils.setButtonLoadingState(button);
+      const res = await this.getParent().supabaseUtils.uploadCustomSplash(content, authKey);
+      McmodderUtils.cancelButtonLoadingState(button);
+
+      if (res && res.message) {
+        McmodderUtils.commonMsg(res.message);
+        input.val("");
+      }
+    });
+
+    $(`<div class="center-setting-block" style="margin-top: 2em;">
       <div class="setting-item">
-        <button class="btn">清除当前所有计划任务</btn>
+        <button class="btn">清除当前所有计划任务</button>
       </div>
       <p class="text-muted">这在某些时候很有用——也许吧？</p>
     </div>`).appendTo(mcmodderSettingMenu)
