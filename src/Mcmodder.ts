@@ -68,6 +68,8 @@ export class Mcmodder {
     this.isMobileClient = McmodderUtils.isMobileClient();
     const headerUserName = $(".header-user-name a, .name.top-username a, .profilebox").first();
     this.currentUsername = headerUserName.text() || "";
+    const win = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+    (win as any).__mcmodder_username__ = this.currentUsername;
     this.currentUID = Number(headerUserName.attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
     this.href = window.location.href;
@@ -409,9 +411,21 @@ export class Mcmodder {
   }
 
   async trackSplash() {
-    let splashText = "";
-    if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
-    else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
+    const win = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+    if ((win as any).__mcmodder_splash_tracked__) return;
+    if ((win as any).__mcmodder_custom_splash__) {
+      (win as any).__mcmodder_splash_tracked__ = true;
+      return;
+    }
+
+    let splashText = (win as any).__mcmodder_orig_splash__ || "";
+    if (!splashText) {
+      if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
+      else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
+    }
+    if (!splashText) return;
+
+    (win as any).__mcmodder_splash_tracked__ = true;
     splashText = splashText.replace(this.currentUsername || "百科酱", "%s");
     let splashes: string[] = GM_getValue("mcmodderSplashList_v2")?.split("\n") || [], flag = 0, index = -1;
     splashes.forEach((e, i) => {
@@ -580,11 +594,20 @@ export class Mcmodder {
     }
 
     // 闪烁标语追踪器
-    if (this.utils.getConfig("enableSplashTracker") &&
-      (this.href === `${ this.hostname }/` ||
+    if ((this.href === `${ this.hostname }/` ||
         this.href === `${ this.hostname }/v4/`) ||
       this.href === "https://play.mcmod.cn/") {
+      this.trackSplash();
       setTimeout(() => this.trackSplash(), 3e2);
+    }
+
+    // 后台抓取并更新云端自定义标语列表缓存
+    if (this.utils.getConfig("useSupabase") && this.utils.getConfig("fetchCustomSplashes")) {
+      this.supabaseUtils.fetchCustomSplashes().then(list => {
+        if (list && Array.isArray(list)) {
+          GM_setValue("mcmodderCustomSplashes", JSON.stringify(list));
+        }
+      }).catch(() => {});
     }
     if (this.utils.getConfig("splashStyle") === 1 &&
       (this.href === `${ this.hostname }/` ||

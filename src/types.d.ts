@@ -1,6 +1,8 @@
 import { GmXmlhttpRequestOption, GmXmlhttpRequestType } from "$";
 import { McmodderPermission } from "./config/ConfigUtils";
 
+declare const unsafeWindow: any;
+
 export interface RGB {
   readonly r: number;
   readonly g: number;
@@ -571,4 +573,22 @@ export interface SupabaseSyncSettingsResponse {
   mcmodder_settings?: string,
   user_profile?: string,
   template_list?: string
+}
+
+export interface SupabaseCustomSplash {
+  id?: number;
+  content: string;
+  author_id?: number;
+  author_name?: string;
+}
+
+export interface SupabaseUploadSplashResponse {
+  message?: string;
+  error?: string;
+  data?: any;
+}
+
+export interface SupabaseGetCustomSplashesResponse {
+  splashes?: SupabaseCustomSplash[];
+  error?: string;
 }
