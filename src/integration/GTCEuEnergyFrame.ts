@@ -29,8 +29,8 @@ export class GTCEuEnergyFrame {
       let key = t[0];
       let value = parseFloat(t[1].replaceAll(",", ""));
       if (GTCEuEnergyFrame.powerText.includes(key)) {
-         this.powerName = key;
-         this.powerNode = c;
+        this.powerName = key;
+        this.powerNode = c;
       }
       else if (GTCEuEnergyFrame.EUtText.includes(key)) {
         this.EUtName = key;
@@ -73,7 +73,7 @@ export class GTCEuEnergyFrame {
 
   update(tier = GTCEu.getTierByVoltage(this.recipe.EUt), isPerfect = false) {
     this.usage = GTCEu.overclock(this.recipe, GTCEu.getTierByVoltage(this.recipe.EUt), tier, isPerfect);
-    this.powerNode!.innerHTML = `${this.powerName}: ${(this.usage.EUt * this.usage.duration * 0.05).toLocaleString()} EU`;
+    this.powerNode!.innerHTML = `${this.powerName}: ${(this.usage.EUt * this.usage.duration).toLocaleString()} EU`;
     this.EUtNode!.innerHTML = `${this.EUtName}: ${this.usage.EUt.toLocaleString()} EU/t (${GTCEu.getHTMLWithPercentageByVoltage(this.usage.EUt)})`;
     this.durationNode!.innerHTML = `${this.durationName}: ${(this.usage.duration * 0.05).toLocaleString()} 秒`;
   }
