@@ -31,7 +31,7 @@ export class OredictCompareFrame {
 
   private static compare(from: OredictSet, to: OredictSet, nodes: NodeMap, className: string | string[]) {
     for (const oredict of from) {
-      if (!to.has(oredict)) {
+      if (to.size && !to.has(oredict)) {
         const node = nodes[oredict];
         if (!(className instanceof Array)) {
           className = [className];

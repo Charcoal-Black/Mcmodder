@@ -295,8 +295,10 @@ export class AdminInit extends McmodderInit {
                   });
                 }
                 else if (rowText === "矿物词典") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  let prev = row.children("td:nth-child(3)");
+                  let next = row.children("td:nth-child(2)");
+                  if (prev.children(".verify-copy-text").length) prev = prev.children(".verify-copy-text");
+                  if (next.children(".verify-copy-text").length) next = next.children(".verify-copy-text");
                   OredictCompareFrame.performCompare(prev, next);
                 }
               });
