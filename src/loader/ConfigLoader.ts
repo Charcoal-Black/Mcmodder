@@ -86,7 +86,7 @@ export class ConfigLoader {
     .addCheckboxConfig("rememberVisited", "最近串门追踪", "自动记录我最近串门的用户。经常串门的用户会显示在“最近串门”当中。")
     .addDropdownConfig("favUserDisplayStyle", "收藏用户样式", "决定“最近串门”列表中已收藏用户的头像显示样式。",
       0, { 0: "星星", 1: "大头钉", 2: "爱心" })
-    .addCheckboxConfig("rememberVisitedMods", "最近浏览模组追踪", "自动记录我最近浏览的模组。这些模组会显示在 v3 主页。")
+    .addCheckboxConfig("rememberVisitedMods", "最近浏览模组追踪", "自动记录我最近浏览的模组。这些模组会显示在主页。")
     .addCheckboxConfig("centerMainExpand", "个人主页数据拓展", "显示平均字数和科龄，令模组区域并排显示，过长的模组区域默认压缩。")
     .addCheckboxConfig("byteChart", "字数活跃图表", "决定是否在个人主页显示字数活跃图表，以及是否在贡献榜查看历史贡献数据时自动获取编辑字数数据。")
     .addNumberConfig("maxByteColorValue", "字数活跃图表最大有效值", "决定字数活跃图表的总体颜色深度，当日编辑字节数大于该值时，对应字数图表中的色块始终为黑色。", 

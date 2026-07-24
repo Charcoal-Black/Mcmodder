@@ -231,9 +231,6 @@ body .uknowtoomuch:hover {
 .item-modabbr,
 .common-center .right .tab-content ul.tab-ul p,
 .message-menu li a,
-.news_block .left .text #random_refresh,
-.news_block .left .text #new_more,
-.news_block .left .text #edit_more,
 .class_block .left .more a,
 .score-frame .score-block .time,
 .defaulthover a,
@@ -337,6 +334,7 @@ a:hover,
 .recent-buttons li.active a,
 .nav-frame .buttons a:hover,
 .recent-buttons .refresh:hover,
+.recent-buttons .recent-refresh:hover,
 .container-more a:hover,
 .common-center .post-row .postname .tool li a:hover,
 .message-menu li a:hover,
@@ -365,8 +363,25 @@ body .copyleft a:hover,
 .common-center .maintext .itemname .tool li a:hover,
 .common-index-block .head-more:hover,
 .defaulthover a:hover,
-.body-content a:hover {
+.body-content a:hover,
+.recent-buttons li a:hover,
+.recent-card .content .primary a:hover,
+.nav-frame .links a:hover .title,
+.common-center .links a:hover .icon svg,
+.common-center .links a:hover .icon i {
   color: var(--mcmodder-color-accent-dark2);
+}
+.recent-buttons .refresh,
+.recent-buttons .recent-refresh {
+  position: absolute;
+  right: 5px;
+  top: 0;
+  line-height: 30px;
+  color: var(--mcmodder-color-button);
+}
+.recent-buttons .refresh i,
+.recent-buttons .recent-refresh i {
+  margin-right: 5px;
 }
 .verify-list-list td a.text-muted:hover,
 .message-list li .content-tools li a:hover {
@@ -457,14 +472,26 @@ th,
 .download-verison-area,
 body .top-main .pulldown .top_content,
 .post_block .list li .postText li.mainMod,
-.news_block .left .text #random_refresh,
-.news_block .left .text #new_more,
-.news_block .left .text #edit_more,
 .list-mod-category li img,
 #server-tool li,
 .message-menu ul,
 .edit-dataverify-frame {
   border-color: var(--mcmodder-color-background-dark2);
+}
+.news_block .left .text #random_refresh,
+.news_block .left .text #new_more,
+.news_block .left .text #edit_more,
+.news_block .left .text #recent_more {
+  float: right;
+  margin: 5px 10px 0 0;
+  padding: 0 5px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid var(--mcmodder-color-background-dark2);
+  line-height: 20px;
+  color: var(--mcmodder-color-text-dark1);
+  -webkit-transition: .2s ease-in;
+  transition: .2s ease-in;
 }
 .common-text .common-text-menu:not(.style-vertical) ul {
   column-rule-color: var(--mcmodder-color-background-dark2);
@@ -1579,8 +1606,15 @@ body .top-main .pulldown .arrow {
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
 .news_block .left .text #edit_more:hover,
+.news_block .left .text #recent_more:hover,
 .member-list li.member-row {
   background-color: transparent;
+}
+.recent-buttons li a {
+  border-bottom-color: transparent;
+}
+.recent-buttons li.active a {
+  border-bottom-color: var(--mcmodder-color-accent-dark1);
 }
 .center-main.favorite .favorite-slot-ul li,
 .common-user-card .card-userinfo .exp-rate {
@@ -2040,9 +2074,11 @@ body .top-main .info .user-info .top_content a:hover,
 body .top-main .info .more-info .top_content a:hover,
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
-.news_block .left .text #edit_more:hover {
+.news_block .left .text #edit_more:hover,
+.news_block .left .text #recent_more:hover {
   background-color: var(--mcmodder-color-accent);
   color: var(--mcmodder-color-text);
+  text-decoration: none;
   /* border-color: var(--mcmodder-color-accent-dark1); */
 }
 .mcmodder-tool-bar {
