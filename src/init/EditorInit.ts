@@ -1,6 +1,7 @@
 import { EditorAlertForm, EditorAlertHTMLModifier, PreSubmitData } from "../types";
 import { McmodderUEditor } from "../ueditor/UEditor";
 import { McmodderUtils } from "../Utils";
+import { InputList } from "../widget/InputList";
 import { McmodderInit } from "./Init";
 
 abstract class EditorAlertLink {
@@ -300,6 +301,10 @@ export class EditorInit extends McmodderInit {
           <input type="button" id="edit-submit-button" class="btn btn-primary mcmodder-content-block mcmodder-presubmit" edit-id="" redo-id="" data-type="${strEditType}_edit" value="预${strEditTypeName}">
         `);
           $(".common-rowlist-block").last().append(submitButton);
+          $("#mcmodder-presubmit-remark, #mcmodder-presubmit-reason").each((_, e) => {
+            const textarea = $(e);
+            new InputList(textarea, this.parent.utils, "editReasons", "；", true);
+          });
           $(document).on("click", ".mcmodder-presubmit", _e => {
             let popup = $(".swal2-popup");
             popup.find("#swal2-title").html(popup.find("#swal2-title").html().replace("编辑", "预编辑"));

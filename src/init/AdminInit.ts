@@ -6,6 +6,7 @@ import { McmodderInit } from "./Init";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
 import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
+import { InputList } from "../widget/InputList";
 
 export class AdminInit extends McmodderInit {
   private triggered: Set<string> = new Set;
@@ -21,9 +22,11 @@ export class AdminInit extends McmodderInit {
 
         const passButtonSelector = "#verify-pass-btn:not(.edit), #assistant-pass-btn";
         const refundButtonSelector = "#verify-refund-btn:not(.edit), #assistant-refund-btn";
+        const checkButtonSelector = "#assistant-check-btn";
         const reasonInputSelector = "#verify-reason, #assistant-reason";
         let passButton: JQuery;
         let refundButton: JQuery;
+        let checkButton: JQuery;
         let reasonInput: JQuery;
         let verifyContainer: JQuery;
         let verifyWindow: JQuery;
@@ -119,11 +122,15 @@ export class AdminInit extends McmodderInit {
                 McmodderUtils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
               }
             })
-            .keyup(e => { // 由于swal自身的特性，使用keydown会导致连续触发二次确认按钮，这里使用keyup
+            .keydown(e => setTimeout(() => { // 由于swal自身的特性，直接检测会导致连续触发二次确认按钮，这里使用setTimeout
               if (this.parent.isMobileClient) {
                 return;
               }
-              if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+              if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
+                e.stopPropagation();
+                checkButton?.click();
+              }
+              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
                 e.stopPropagation();
                 passButton?.click();
               }
@@ -135,7 +142,7 @@ export class AdminInit extends McmodderInit {
                 e.preventDefault();
                 reasonInput?.focus();
               }
-            })
+            }, 10));
           }
 
           // 打开待审项时打开分屏
@@ -206,16 +213,29 @@ export class AdminInit extends McmodderInit {
               //   itemID = McmodderUtils.abstractIDFromURL(itemLink, "item");
               // }
 
+              passButton = verifyFrame.find(passButtonSelector);
+              refundButton = verifyFrame.find(refundButtonSelector);
+              checkButton = verifyFrame.find(checkButtonSelector);
+              reasonInput = verifyFrame.find(reasonInputSelector);
+
               if (!this.parent.isMobileClient) {
-                passButton = verifyFrame.find(passButtonSelector);
-                refundButton = verifyFrame.find(refundButtonSelector);
-                reasonInput = verifyFrame.find(reasonInputSelector);
                 passButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
                 refundButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
+                checkButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyCheck")));
                 reasonInput.attr("placeholder", `填写附言或退回理由.... (按下 ${
                   McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
                 } 以快速聚焦)`);
               }
+
+              new InputList(reasonInput, this.parent.utils, "verifyReasons", "；", true)
+              .getInstance()
+              .css({
+                display: "inline-block",
+                width: "100%"
+              })
+              .parent()
+              .next()
+              .css("margin-top", 0);
 
               // 正文对比
               verifyFrame.find("#mcmodder-text-area").remove();
@@ -247,7 +267,8 @@ export class AdminInit extends McmodderInit {
                       const bracket = text.lastIndexOf(" (");
                       const name = text.slice(1, split);
                       const link = bracket === -1 ? text.slice(split + 1).trim() : text.slice(split + 1, bracket).trim();
-                      p.innerHTML = `[${ name }] <a target="_blank" href="${ link }">${ link }</a>`;
+                      const desc = bracket === -1 ? "" : ` (${ text.slice(bracket + 2, -1) })`;
+                      p.innerHTML = `[${ name }] <a target="_blank" href="${ link }">${ link }</a>${ desc }`;
                     });
                   };
                   addLink(prev);
@@ -295,9 +316,28 @@ export class AdminInit extends McmodderInit {
                   });
                 }
                 else if (rowText === "矿物词典") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  let prev = row.children("td:nth-child(3)");
+                  let next = row.children("td:nth-child(2)");
+                  if (prev.children(".verify-copy-text").length) prev = prev.children(".verify-copy-text");
+                  if (next.children(".verify-copy-text").length) next = next.children(".verify-copy-text");
                   OredictCompareFrame.performCompare(prev, next);
+                }
+                else if (rowText === "开源许可") {
+                  row.find("p").contents().each((_, e) => {
+                    if (e.nodeType === Node.TEXT_NODE) {
+                      const text = e as any as Text;
+                      if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
+                        const link = text.data.slice(2, -1);
+                        const mid = text.splitText(2);
+                        mid.splitText(link.length);
+                        const anchor = document.createElement("a");
+                        anchor.target = "_blank";
+                        anchor.href = link;
+                        anchor.innerText = link;
+                        mid.replaceWith(anchor);
+                      }
+                    }
+                  })
                 }
               });
 

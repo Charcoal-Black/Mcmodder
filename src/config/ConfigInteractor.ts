@@ -3,6 +3,7 @@ import { McmodderUtils } from "../Utils";
 import { McmodderCheckboxInput } from "../widget/input/CheckboxInput";
 import { McmodderColorpickerInput } from "../widget/input/ColorpickerInput";
 import { McmodderDropdownInput } from "../widget/input/DropdownMenuInput";
+import { McmodderDropdownTextInput } from "../widget/input/DropdownTextInput";
 import { McmodderBaseInput } from "../widget/input/Input";
 import { McmodderKeybindInput } from "../widget/input/KeybindInput";
 import { McmodderNumberInput } from "../widget/input/NumberInput";
@@ -64,6 +65,22 @@ export class McmodderConfigInteractor {
         const valueSet = this.data.range as InputValueSet;
         valueSet[this.data.value] += " (默认)";
         return new McmodderDropdownInput(title, value, valueSet, this.onSuccessfulChange);
+      }
+      case McmodderInputType.DROPDOWN_TEXT_MENU: {
+        const recommendation = this.data.recommendation!;
+        recommendation.map(e => {
+          if (typeof e === "string" && e === this.data.value) {
+            e = {
+              html: e,
+              value: e
+            };
+          }
+          if (typeof e === "object" && e.value === this.data.value) {
+            e.html += " (默认)";
+          }
+          return e;
+        })
+        return new McmodderDropdownTextInput(title, value, recommendation, this.onSuccessfulChange);
       }
       case McmodderInputType.KEYBIND: return new McmodderKeybindInput(title, value, this.onSuccessfulChange);
     }

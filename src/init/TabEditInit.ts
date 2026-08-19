@@ -736,6 +736,9 @@ export class TabEditInit extends McmodderInit {
     const ingredientSelector = $("#edit-page-1 > .tab-ul > .tab-li").first().children();
     ingredientSelector.appendTo(ingredientSelectWindow);
     this.parent.updateScreenAttachedFrame(ingredientSelectWindow.get(0) as HTMLElement);
+    setTimeout(() => {
+      this.parent.updateScreenAttachedFrame(ingredientSelectWindow.get(0) as HTMLElement);
+    }, 1e3);
 
     this.modID = Number($(".common-nav li:not(.line):nth-child(5) a").first().prop("href").split("/class/")[1].split(".html")[0]);
     // this.modName = $(".common-nav li:not(.line):nth-child(5) a").text();

@@ -1,5 +1,7 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
-import { ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
+import { InputSimplifiedRecommendation, ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
+import defaultEditReasons from "./assets/json/input/EditReason.json";
+import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
 
 export class McmodderValues {
 
@@ -76,6 +78,30 @@ export class McmodderValues {
     nightMode: {
       bg: "https://s41.ax1x.com/2026/05/13/peXw6Sg.png",
       imagesNone: 'https://i.mcmod.cn/editor/upload/20241213/1734019784_179043_sDxX.jpg'
+    },
+    font: {
+      link: {
+        2: "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap",
+        3: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+      },
+      fontFamily: {
+        1: '"-apple-system", "Segoe UI", "Roboto", "Ubuntu", "Arial", "Helvetica", sans-serif',
+        2: '"Noto Sans SC", sans-serif',
+        3: '"Inter", sans-serif'
+      }
+    },
+    storage: {
+      indexes: {
+        mcmodderItemData: ["id", "itemType", "registerName", "metadata", "name", "englishName", "creativeTabName",
+          "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "OredictList"],
+        mcmodderRecipeData: ["gui_id"]
+      },
+      keys: {
+        mcmodderItemData: ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName", 
+          "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum", 
+          "OredictList", "harvestTools", "maxStackSize", "maxDurability"],
+        mcmodderRecipeData: ["in_id", "out_id", "in_num", "out_num", "in_chance", "out_chance", "power_num", "gui_id"]
+      }
     }
   } as const;
 
@@ -146,7 +172,7 @@ export class McmodderValues {
   ];
   //26.1以后的版本列表 YY.D.H
   static readonly newVersionList = [
-    [[], [0, 1]] // 26: 26.0(none), 26.1([0, 1])
+    [[], [0, 1, 2, 3]] // 26: 26.0(none), 26.1([0, 1])
   ];
 
   static readonly loaderID = {
@@ -296,4 +322,9 @@ export class McmodderValues {
       </tbody>
     </table>`
   }];
+
+  static readonly defaultInputRecommendation: Record<string, InputSimplifiedRecommendation[]> = {
+    editReasons: defaultEditReasons,
+    verifyReasons: defaultVerifyReasons 
+  };
 }

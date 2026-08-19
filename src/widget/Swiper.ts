@@ -6,6 +6,8 @@ export class McmodderSwiper {
   private readonly ul: JQuery;
   private readonly tab: JQuery;
   private readonly cursor: JQuery;
+  private hover = false;
+  private timeout?: number;
 
   constructor(/* parent: Mcmodder, */instance: JQuery) {
     // this.parent = parent;
@@ -16,6 +18,19 @@ export class McmodderSwiper {
     this.update();
     this.ul.on("click", "li", _e => {
       this.update();
+    })
+    .on("mouseenter", "li", _e => {
+      this.hover = true;
+      this.timeout = setTimeout(() => {
+        this.update();
+      }, 550);
+    })
+    .on("mouseleave", "li", _e => {
+      if (this.hover) {
+        this.hover = false;
+        clearTimeout(this.timeout);
+        this.timeout = undefined;
+      }
     })
   }
 

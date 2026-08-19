@@ -1,6 +1,6 @@
 import { createClient, FunctionInvokeOptions, SupabaseClient } from '@supabase/supabase-js';
 import { Mcmodder } from '../Mcmodder';
-import { SupabaseErrorResponse } from '../types';
+import { SupabaseCustomSplash, SupabaseErrorResponse, SupabaseGetCustomSplashesResponse, SupabaseUploadSplashResponse } from '../types';
 import { McmodderUtils } from '../Utils';
 
 export class SupabaseUtils {
@@ -64,5 +64,22 @@ export class SupabaseUtils {
       return;
     }
     return data as SupabaseSuccessfulResponse;
+  }
+
+  async uploadCustomSplash(content: string, authKey: string) {
+    return await this.invoke<SupabaseUploadSplashResponse>(
+      "upload-splash",
+      {
+        body: {
+          auth_key: authKey,
+          content: content
+        }
+      }
+    );
+  }
+
+  async fetchCustomSplashes(): Promise<SupabaseCustomSplash[] | undefined> {
+    const res = await this.invoke<SupabaseGetCustomSplashesResponse>("get-custom-splashes");
+    return res?.splashes;
   }
 }

@@ -1,7 +1,7 @@
 import { GM_openInTab } from "$";
 import { McmodderLoggerFrame } from "../widget/logger/LoggerFrame";
 import { Mcmodder } from "../Mcmodder";
-import { ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData, McmodderItemList, McmodderTableRowSelection } from "../types";
+import { InputRecommendation, ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData, McmodderItemList, McmodderTableRowSelection, McmodderUnpurifiedItemData } from "../types";
 import { Pagination } from "../widget/Pagination";
 import { McmodderDetailedItemListRequestQueue } from "../requestqueue/DetailedItemRequestQueue";
 import { McmodderInferItemListRequestQueue } from "../requestqueue/InferRequestQueue";
@@ -12,7 +12,7 @@ import { McmodderTable } from "../table/Table";
 import { McmodderUtils } from "../Utils";
 import { JsonFrame } from "./JsonFrame";
 import { McmodderValues } from "../Values";
-import { InputList, InputRecommendation } from "../widget/InputList";
+import { InputList } from "../widget/InputList";
 import { McmodderInputType } from "../config/ConfigUtils";
 
 export interface McmodItemEditorInnerData {
@@ -37,8 +37,13 @@ export interface McmodItemEditorData {
 }
 
 export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
-  protected getConfigName() {
+  protected override getConfigName() {
     return "mcmodderJsonStorage";
+  }
+  protected override getAllowedKeys() {
+    return ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName", 
+      "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum", 
+      "OredictList", "harvestTools", "maxStackSize", "maxDurability"];
   }
   logger = new McmodderLoggerFrame(this.parent);
   maxPage?: number;
@@ -354,10 +359,14 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       item = item.trim();
       if (!item) return;
       try {
-        const data = JSON.parse(item) as McmodderItemData & {maxStacksSize?: number};
+        const data = JSON.parse(item) as McmodderUnpurifiedItemData;
         if (data.hasOwnProperty("maxStacksSize")) {
           data.maxStackSize = data.maxStacksSize;
           delete data.maxStacksSize;
+        }
+        if (data.hasOwnProperty("CreativeTabName")) {
+          data.creativeTabName = data.CreativeTabName;
+          delete data.CreativeTabName;
         }
         data.smallIcon = McmodderUtils.appendBase64ImgPrefix(data.smallIcon);
         data.largeIcon = McmodderUtils.appendBase64ImgPrefix(data.largeIcon);

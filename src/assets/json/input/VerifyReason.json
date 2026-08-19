@@ -1,0 +1,655 @@
+[
+  {
+    "value": "成就→进度",
+    "alias": [
+      "advancement"
+    ]
+  },
+  {
+    "value": "收到→受到",
+    "alias": [
+      "recv"
+    ]
+  },
+  {
+    "value": "死亡不掉落→保留物品栏",
+    "alias": [
+      "keepinv"
+    ]
+  },
+  {
+    "value": "“土豆”→“马铃薯”",
+    "alias": [
+      "potato"
+    ]
+  },
+  {
+    "value": "饱食度→饥饿值",
+    "alias": [
+      "food"
+    ]
+  },
+  {
+    "value": "背景介绍建议使用灰色斜体字，且不要穿插在正文（建议放在最前面），必要时请写进代码块",
+    "alias": [
+      "bg"
+    ]
+  },
+  {
+    "value": "表格超过编辑器最大支持行数限制时，不需要重复创建表格，右击单元格选择“表格→后插入行”即可",
+    "alias": [
+      "rowlimit"
+    ]
+  },
+  {
+    "value": "不能提交只新增吐槽的编辑",
+    "alias": [
+      "onlyuknow"
+    ]
+  },
+  {
+    "value": "不支持 Markdown",
+    "alias": [
+      "md"
+    ]
+  },
+  {
+    "value": "出现半角标点",
+    "alias": [
+      "half"
+    ]
+  },
+  {
+    "value": "出现全角数字",
+    "alias": [
+      "fulldigit"
+    ]
+  },
+  {
+    "value": "锄头→锄"
+  },
+  {
+    "value": "斧头→斧"
+  },
+  {
+    "value": "次要名称出现单引号转义问题",
+    "alias": [
+      "escape"
+    ]
+  },
+  {
+    "value": "次要名称检查大小写",
+    "alias": [
+      "engcase"
+    ]
+  },
+  {
+    "value": "次要名称有误，缺少注册名",
+    "alias": [
+      "wrongengreg"
+    ]
+  },
+  {
+    "value": "大/小图标模糊",
+    "alias": [
+      "blurls"
+    ]
+  },
+  {
+    "value": "大段背景故事介绍建议放进代码块",
+    "alias": [
+      "bgpre"
+    ]
+  },
+  {
+    "value": "大图标糊",
+    "alias": [
+      "blurl"
+    ]
+  },
+  {
+    "value": "得→的",
+    "alias": [
+      "de"
+    ]
+  },
+  {
+    "value": "凋灵→凋零",
+    "alias": [
+      "withereff"
+    ]
+  },
+  {
+    "value": "凋零→凋灵",
+    "alias": [
+      "withermob"
+    ]
+  },
+  {
+    "value": "掉 1 滴血→受到 1 点伤害",
+    "alias": [
+      "dmg"
+    ]
+  },
+  {
+    "value": "蹲下→潜行",
+    "alias": [
+      "crouch",
+      "sneak"
+    ]
+  },
+  {
+    "value": "多图需要使用表格制作横向画廊",
+    "alias": [
+      "gallery"
+    ]
+  },
+  {
+    "value": "非动图等特殊情况不需要锁定图标",
+    "alias": [
+      "nolock"
+    ]
+  },
+  {
+    "value": "护甲韧性→盔甲韧性",
+    "alias": [
+      "toughness"
+    ]
+  },
+  {
+    "value": "建议使用编辑器标题工具制作标题",
+    "alias": [
+      "advtitle"
+    ]
+  },
+  {
+    "value": "建议使用列表工具",
+    "alias": [
+      "advlist",
+      "advls"
+    ]
+  },
+  {
+    "value": "旧版图标可以在正文保留",
+    "alias": [
+      "keepicon"
+    ]
+  },
+  {
+    "value": "句末缺少句号（。）",
+    "alias": [
+      "period",
+      "fullstop",
+      "fs"
+    ]
+  },
+  {
+    "value": "句末缺少句号（。），不要使用半角句点（.）",
+    "alias": [
+      "periodeng",
+      "fullstopeng",
+      "fseng"
+    ]
+  },
+  {
+    "value": "可以直接在审核附言说明~"
+  },
+  {
+    "value": "括号全半角不统一"
+  },
+  {
+    "value": "历史版本存在的内容需保留",
+    "alias": [
+      "keeprm"
+    ]
+  },
+  {
+    "value": "链接文字不需要带上等级",
+    "alias": [
+      "nolinklvl",
+      "nolinklevel"
+    ]
+  },
+  {
+    "value": "漏了个句号",
+    "alias": [
+      "1period",
+      "1fullstop"
+    ]
+  },
+  {
+    "value": "没法→无法"
+  },
+  {
+    "value": "没有正确设置表格标题行",
+    "alias": [
+      "firstrow"
+    ]
+  },
+  {
+    "value": "默认按键不需要在主要名称标明",
+    "alias": [
+      "nodefkey"
+    ]
+  },
+  {
+    "value": "那些→哪些",
+    "alias": [
+      "these",
+      "those"
+    ]
+  },
+  {
+    "value": "请不要给正常介绍加吐槽",
+    "alias": [
+      "nouknow"
+    ]
+  },
+  {
+    "value": "请不要滥用粗体、彩色字体和过于情绪化的描述",
+    "alias": [
+      "toocolorful"
+    ]
+  },
+  {
+    "value": "请不要在一个完整的句子中间插入换行",
+    "alias": [
+      "nobreakline"
+    ]
+  },
+  {
+    "value": "请使用编辑器的列表工具，不要手写序号",
+    "alias": [
+      "list",
+      "ls"
+    ]
+  },
+  {
+    "value": "请使用标题工具创建标题，不需要手动添加分割线",
+    "alias": [
+      "titlehr"
+    ]
+  },
+  {
+    "value": "请使用全角标点",
+    "alias": [
+      "full"
+    ]
+  },
+  {
+    "value": "请使用图片备注功能来在图片下方位置添加小字介绍",
+    "alias": [
+      "imgdesc",
+      "figcaption"
+    ]
+  },
+  {
+    "value": "请使用中文描述，不需要引用站外资料",
+    "alias": [
+      "chinese"
+    ]
+  },
+  {
+    "value": "请使用资料下方的“添加合成表”功能介绍合成表，不要直接将合成表贴在正文",
+    "alias": [
+      "norecipe"
+    ]
+  },
+  {
+    "value": "请适度合理断句",
+    "alias": [
+      "seg"
+    ]
+  },
+  {
+    "value": "请勿复制粘贴站外资料",
+    "alias": [
+      "nocopy"
+    ]
+  },
+  {
+    "value": "请勿提交半成品内容",
+    "alias": [
+      "incomp"
+    ]
+  },
+  {
+    "value": "请勿在资料中署名",
+    "alias": [
+      "by"
+    ]
+  },
+  {
+    "value": "请在这里参照其他帖子的格式上传GUI：https://bbs.mcmod.cn/forum.php?mod=forumdisplay&fid=12",
+    "alias": [
+      "gui"
+    ]
+  },
+  {
+    "value": "缺少 CurseForge Project ID",
+    "alias": [
+      "cfid"
+    ]
+  },
+  {
+    "value": "缺少 Modrinth Project ID",
+    "alias": [
+      "mrid"
+    ]
+  },
+  {
+    "value": "缺少标题目录禁用标记",
+    "alias": [
+      "bantitle"
+    ]
+  },
+  {
+    "value": "缺少次要名称",
+    "alias": [
+      "eng"
+    ]
+  },
+  {
+    "value": "缺少次要名称（如果有，通常是 en_us 里的，如果是空的可忽略~）",
+    "alias": [
+      "enghint",
+      "engconfirm"
+    ]
+  },
+  {
+    "value": "缺少次要名称/大图标/注册名/最大堆叠",
+    "alias": [
+      "engliconregstack"
+    ]
+  },
+  {
+    "value": "缺少次要名称/小图标/大图标/注册名",
+    "alias": [
+      "engsliconreg"
+    ]
+  },
+  {
+    "value": "缺少次要名称/小图标/大图标/注册名/最大堆叠",
+    "alias": [
+      "engsliconregstack"
+    ]
+  },
+  {
+    "value": "缺少千位分隔",
+    "alias": [
+      "separator",
+      "kilo"
+    ]
+  },
+  {
+    "value": "缺少正文",
+    "alias": [
+      "text",
+      "txt"
+    ]
+  },
+  {
+    "value": "缺少注册名",
+    "alias": [
+      "reg"
+    ]
+  },
+  {
+    "value": "缺少注册名/最大堆叠",
+    "alias": [
+      "regstack"
+    ]
+  },
+  {
+    "value": "缺少资料分类",
+    "alias": [
+      "classification"
+    ]
+  },
+  {
+    "value": "熔岩块改成岩浆块",
+    "alias": [
+      "magmablock"
+    ]
+  },
+  {
+    "value": "删去了历史版本存在的内容",
+    "alias": [
+      "rm"
+    ]
+  },
+  {
+    "value": "使用了大量空格作为缩进",
+    "alias": [
+      "indent"
+    ]
+  },
+  {
+    "value": "双引号方向错误",
+    "alias": [
+      "quotedir"
+    ]
+  },
+  {
+    "value": "他→它",
+    "alias": [
+      "it"
+    ]
+  },
+  {
+    "value": "提及百科已收录的其他模组/资料时建议加上链接",
+    "alias": [
+      "addlink"
+    ]
+  },
+  {
+    "value": "提交前记得使用“正文预览”查看效果",
+    "alias": [
+      "preview"
+    ]
+  },
+  {
+    "value": "吐槽损坏，请使用橡皮擦工具清除样式，并重新使用吐槽工具加吐槽",
+    "alias": [
+      "baduknow"
+    ]
+  },
+  {
+    "value": "推荐使用批量导出",
+    "alias": [
+      "advexport"
+    ]
+  },
+  {
+    "value": "完整生物渲染图需要放在大图标，小图标依然保留生物脸部照片即可~",
+    "alias": [
+      "entityicon"
+    ]
+  },
+  {
+    "value": "物品/方块资料不需要封面",
+    "alias": [
+      "itemcover"
+    ]
+  },
+  {
+    "value": "相同物品已被其他编辑者添加"
+  },
+  {
+    "value": "小图标糊",
+    "alias": [
+      "blurs"
+    ]
+  },
+  {
+    "value": "新增吐槽内容比例有点大",
+    "alias": [
+      "uknow"
+    ]
+  },
+  {
+    "value": "新增吐槽内容高于正常介绍",
+    "alias": [
+      "uknowtoo"
+    ]
+  },
+  {
+    "value": "需要确认译名来源",
+    "alias": [
+      "nameconfirm"
+    ]
+  },
+  {
+    "value": "需要提供移除版本",
+    "alias": [
+      "delver",
+      "rmver"
+    ]
+  },
+  {
+    "value": "需要提供译名来源",
+    "alias": [
+      "namereq"
+    ]
+  },
+  {
+    "value": "血量→生命值",
+    "alias": [
+      "hp",
+      "health"
+    ]
+  },
+  {
+    "value": "迅捷→速度",
+    "alias": [
+      "speed"
+    ]
+  },
+  {
+    "value": "岩浆→熔岩",
+    "alias": [
+      "lava",
+      "magma"
+    ]
+  },
+  {
+    "value": "引用站内其他资料时，请在正文中使用其主要名称，而不是原始链接",
+    "alias": [
+      "nourl"
+    ]
+  },
+  {
+    "value": "出现超长的链接文字后缀：“- MC百科|最大的Minecraft中文MOD百科”",
+    "alias": [
+      "suffix"
+    ]
+  },
+  {
+    "value": "萤石→荧石",
+    "alias": [
+      "glowstone"
+    ]
+  },
+  {
+    "value": "只有背景介绍，缺少实际用途",
+    "alias": [
+      "noinfo"
+    ]
+  },
+  {
+    "value": "只在底部中间一格放入物品即可",
+    "alias": [
+      "brew"
+    ]
+  },
+  {
+    "value": "至死→致死"
+  },
+  {
+    "value": "中英间需要添加空格，以和原资料风格保持一致",
+    "alias": [
+      "spacing"
+    ]
+  },
+  {
+    "value": "主/次要名称颠倒",
+    "alias": [
+      "reverse"
+    ]
+  },
+  {
+    "value": "状态效果等级使用罗马数字",
+    "alias": [
+      "roman"
+    ]
+  },
+  {
+    "value": "状态效果建议在“BUFF/DEBUFF”类型新开资料来单独介绍"
+  },
+  {
+    "value": "自适应图标设置有误",
+    "alias": [
+      "autoicon"
+    ]
+  },
+  {
+    "value": "ae→AE",
+    "alias": [
+      "ae"
+    ]
+  },
+  {
+    "value": "alt→Alt",
+    "alias": [
+      "alt"
+    ]
+  },
+  {
+    "value": "br 换行",
+    "alias": [
+      "br"
+    ]
+  },
+  {
+    "value": "ctrl→Ctrl",
+    "alias": [
+      "ctrl"
+    ]
+  },
+  {
+    "value": "LUA→Lua",
+    "alias": [
+      "lua"
+    ]
+  },
+  {
+    "value": "mb→mB",
+    "alias": [
+      "mb"
+    ]
+  },
+  {
+    "value": "ml→mL",
+    "alias": [
+      "ml"
+    ]
+  },
+  {
+    "value": "mod→Mod",
+    "alias": [
+      "mod"
+    ]
+  },
+  {
+    "value": "Neoforge→NeoForge",
+    "alias": [
+      "neo"
+    ]
+  },
+  {
+    "value": "shift→Shift",
+    "alias": [
+      "shift"
+    ]
+  }
+]

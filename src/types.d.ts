@@ -1,6 +1,8 @@
 import { GmXmlhttpRequestOption, GmXmlhttpRequestType } from "$";
 import { McmodderPermission } from "./config/ConfigUtils";
 
+declare const unsafeWindow: any;
+
 export interface RGB {
   readonly r: number;
   readonly g: number;
@@ -133,6 +135,13 @@ export interface McmodderItemData {
   content?: string;
 }
 export type McmodderItemList = McmodderItemData[];
+
+export interface McmodderUnpurifiedItemData extends McmodderItemData {
+  /** 对应原 maxStackSize */
+  maxStacksSize?: number;
+  /** 对应原 creativeTabName */
+  CreativeTabName?: string;
+}
 
 export interface McmodderClassData {
   id: number;
@@ -361,6 +370,17 @@ export type InputValueNumericRange = [number | null, number | null];
 export type InputValueSet = Record<number, string>;
 export type InputValueRange = InputValueNumericRange | InputValueSet;
 
+export interface InputRecommendation {
+  html?: string;
+  value: string;
+  showValue?: boolean;
+  alias?: string[];
+}
+export type InputSimplifiedRecommendation = InputRecommendation | string;
+export interface InputRatedRecommendation extends InputRecommendation {
+  matchScore: number;
+}
+
 type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
 
 export interface McmodderInputLimit {
@@ -388,6 +408,7 @@ export interface McmodderConfigData extends McmodderInputData {
   readonly title: string;
   readonly description: string;
   readonly permission: McmodderPermission;
+  readonly recommendation?: InputSimplifiedRecommendation[];
 }
 
 export interface PreSubmitData {
@@ -571,4 +592,22 @@ export interface SupabaseSyncSettingsResponse {
   mcmodder_settings?: string,
   user_profile?: string,
   template_list?: string
+}
+
+export interface SupabaseCustomSplash {
+  id?: number;
+  content: string;
+  author_id?: number;
+  author_name?: string;
+}
+
+export interface SupabaseUploadSplashResponse {
+  message?: string;
+  error?: string;
+  data?: any;
+}
+
+export interface SupabaseGetCustomSplashesResponse {
+  splashes?: SupabaseCustomSplash[];
+  error?: string;
 }

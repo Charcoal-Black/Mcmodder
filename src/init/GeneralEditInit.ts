@@ -1,4 +1,5 @@
 import { McmodderUtils } from "../Utils";
+import { InputList } from "../widget/InputList";
 import { McmodderInit } from "./Init";
 
 export class GeneralEditInit extends McmodderInit {
@@ -59,6 +60,12 @@ export class GeneralEditInit extends McmodderInit {
         .find(`[data-multi-id=${e.target.id.split("-").slice(-1)[0]}]`)
         .val($(e.target).val())
       });
+    });
+
+    // 下拉菜单
+    $("#mcmodder-textarea-remark, #mcmodder-textarea-reason").each((_, e) => {
+      const textarea = $(e);
+      new InputList(textarea, this.parent.utils, "editReasons", "；", true);
     });
   }
 }

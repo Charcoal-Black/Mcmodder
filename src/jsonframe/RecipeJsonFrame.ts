@@ -11,8 +11,11 @@ import { McmodderCollapsible } from "../widget/Collapsible";
 import { McmodderValues } from "../Values";
 
 export class RecipeJsonFrame extends JsonFrame<McmodderRecipeData> {
-  protected getConfigName() {
+  protected override getConfigName() {
     return "mcmodderRecipeJsonStorage";
+  }
+  protected override getAllowedKeys() {
+    return ["in_id", "out_id", "in_num", "out_num", "in_chance", "out_chance", "power_num", "gui_id"];
   }
   override readonly table: McmodderEditableTable<McmodderRecipeData>;
   private guiBoundTable?: McmodderEditableTable<RecipeJsonFrameGuiBound>;

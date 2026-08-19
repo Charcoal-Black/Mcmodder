@@ -9,7 +9,7 @@ export default defineConfig({
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
-        version: "2.2",
+        version: "2.2.1",
         description: "Mcmodder",
         license: "AGPL-3.0",
         icon: 'https://www.mcmod.cn/static/public/images/favicon.ico',
@@ -26,6 +26,7 @@ export default defineConfig({
           "https://www.mcmod.cn/item/aspects/*"
         ],
         grant: [
+          'unsafeWindow',
           'GM_cookie',
           'GM_registerMenuCommand',
           'GM_openInTab',

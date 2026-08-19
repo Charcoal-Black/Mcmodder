@@ -21,8 +21,8 @@ export class ClassEditorInit extends McmodderInit {
     let flag = false, flag2 = false;
     $("#mcversion-frame fieldset").each((_, _e) => {
       const e = $(_e);
-      if (e.attr("mcmodder-huv")) return;
-      e.attr("mcmodder-huv", "1");
+      if (e.attr("data-mcmodder-huv")) return;
+      e.attr("data-mcmodder-huv", "1");
       const loaderName = e.find("legend").text().split(":")[0];
       const loaderID = e.attr("id").split("-")[2];
       let h = $(), c = $();

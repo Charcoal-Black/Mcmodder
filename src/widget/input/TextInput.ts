@@ -8,7 +8,7 @@ export class McmodderTextInput extends McmodderInput<string> {
 
   protected getInstanceHTML() {
     return $(`
-      <input class="form-control" placeholder="${ this.title }">
+      <input class="form-control" placeholder="${ this.title }..">
     `);
   }
 

@@ -137,6 +137,8 @@ h6,
 .modlist-filter-block ul:not(.common-class-category) li.main a,
 .header-search #header-search-submit,
 .common-center .right .class-relation-list legend,
+.common-center .right .class-license-list legend,
+.common-center .right .class-license-list .license,
 .select-row legend,
 .common-rowlist-block .title .more a,
 .common-imglist-block .title .more a,
@@ -231,9 +233,6 @@ body .uknowtoomuch:hover {
 .item-modabbr,
 .common-center .right .tab-content ul.tab-ul p,
 .message-menu li a,
-.news_block .left .text #random_refresh,
-.news_block .left .text #new_more,
-.news_block .left .text #edit_more,
 .class_block .left .more a,
 .score-frame .score-block .time,
 .defaulthover a,
@@ -337,6 +336,7 @@ a:hover,
 .recent-buttons li.active a,
 .nav-frame .buttons a:hover,
 .recent-buttons .refresh:hover,
+.recent-buttons .recent-refresh:hover,
 .container-more a:hover,
 .common-center .post-row .postname .tool li a:hover,
 .message-menu li a:hover,
@@ -365,8 +365,25 @@ body .copyleft a:hover,
 .common-center .maintext .itemname .tool li a:hover,
 .common-index-block .head-more:hover,
 .defaulthover a:hover,
-.body-content a:hover {
+.body-content a:hover,
+.recent-buttons li a:hover,
+.recent-card .content .primary a:hover,
+.nav-frame .links a:hover .title,
+.common-center .links a:hover .icon svg,
+.common-center .links a:hover .icon i {
   color: var(--mcmodder-color-accent-dark2);
+}
+.recent-buttons .refresh,
+.recent-buttons .recent-refresh {
+  position: absolute;
+  right: 5px;
+  top: 0;
+  line-height: 30px;
+  color: var(--mcmodder-color-button);
+}
+.recent-buttons .refresh i,
+.recent-buttons .recent-refresh i {
+  margin-right: 5px;
 }
 .verify-list-list td a.text-muted:hover,
 .message-list li .content-tools li a:hover {
@@ -401,7 +418,8 @@ body .copyleft a:hover,
 .bd-callout p {
   color: var(--mcmodder-color-button);
 }
-.text-muted {
+.text-muted,
+.text-muted p {
   color: var(--mcmodder-color-button) !important;
 }
 .text-muted-muted {
@@ -457,14 +475,28 @@ th,
 .download-verison-area,
 body .top-main .pulldown .top_content,
 .post_block .list li .postText li.mainMod,
-.news_block .left .text #random_refresh,
-.news_block .left .text #new_more,
-.news_block .left .text #edit_more,
 .list-mod-category li img,
 #server-tool li,
 .message-menu ul,
-.edit-dataverify-frame {
+.edit-dataverify-frame,
+.common-center .item-skip-list fieldset,
+.comment-row .comment-delimiter {
   border-color: var(--mcmodder-color-background-dark2);
+}
+.news_block .left .text #random_refresh,
+.news_block .left .text #new_more,
+.news_block .left .text #edit_more,
+.news_block .left .text #recent_more {
+  float: right;
+  margin: 5px 10px 0 0;
+  padding: 0 5px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: 1px solid var(--mcmodder-color-background-dark2);
+  line-height: 20px;
+  color: var(--mcmodder-color-text-dark1);
+  -webkit-transition: .2s ease-in;
+  transition: .2s ease-in;
 }
 .common-text .common-text-menu:not(.style-vertical) ul {
   column-rule-color: var(--mcmodder-color-background-dark2);
@@ -497,6 +529,11 @@ body .top-main .pulldown .top_content,
 }
 .common-comment-block .comment-row-userinfo img {
   border-color: var(--mcmodder-color-background);
+}
+#relation-frame .relation-list .relation-group li.ui-sortable-helper,
+#modlist-frame .modlist-list .modlist-group li.ui-sortable-helper,
+#license-frame .license-list .license-group li.ui-sortable-helper {
+  border-color: transparent;
 }
 .form-control,
 .bootstrap-tagsinput,
@@ -959,6 +996,7 @@ body:not(.view),
 #mcmodder-template-newdescription,
 #mcmodder-history-search,
 #mcmodder-template-search,
+#mcmodder-input-alias,
 #jsonframe-submit-classid {
   text-align: center;
 }
@@ -971,6 +1009,7 @@ body:not(.view),
 }
 #mcmodder-verify-window-frame .TableBlock {
   position: relative;
+  image-rendering: pixelated;
 }
 .mcmodder-verify-locate {
   margin-left: var(--mcmodder-width-padding-3);
@@ -1145,6 +1184,7 @@ body:not(.view),
   background-image: linear-gradient(180deg, #0000, var(--mcmodder-color-background));
 }
 .comment-quote-block,
+.comment-skip-block,
 .comment-skip-block .common-text table th,
 th,
 .common-class-category li .normal.gray,
@@ -1153,6 +1193,9 @@ th,
   background-color: var(--mcmodder-color-background-dark1);
   border-color: var(--mcmodder-color-background-dark2);
   background-image: unset;
+}
+.comment-skip-block {
+  border-left-color: var(--mcmodder-color-text-info);
 }
 .mcmodder-mark-gold {
   background-color: #fd04 !important;
@@ -1433,6 +1476,7 @@ body > .container > *,
 .common-menu-page,
 .common-fuc-group li,
 .center-content.item-list li,
+.common-world-gen-itemlist ul li,
 .class_block .left .list .block img,
 .news_block .left .block img,
 .news_block .right .editor,
@@ -1453,8 +1497,12 @@ body > .container > *,
 .select-row fieldset,
 #mcversion-frame fieldset,
 .relation-list fieldset,
-.modlist-list fieldset {
+.modlist-list fieldset,
+.license-list fieldset {
   border-color: var(--mcmodder-color-background-dark2);
+}
+#mcmodder-fabric-hidever {
+  user-select: none;
 }
 .under {
   background: none;
@@ -1579,8 +1627,15 @@ body .top-main .pulldown .arrow {
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
 .news_block .left .text #edit_more:hover,
+.news_block .left .text #recent_more:hover,
 .member-list li.member-row {
   background-color: transparent;
+}
+.recent-buttons li a {
+  border-bottom-color: transparent;
+}
+.recent-buttons li.active a {
+  border-bottom-color: var(--mcmodder-color-accent-dark1);
 }
 .center-main.favorite .favorite-slot-ul li,
 .common-user-card .card-userinfo .exp-rate {
@@ -1660,6 +1715,9 @@ body .arrow {
 .verify-action-btns button,
 .assistant-action-btns button {
   margin-right: var(--mcmodder-width-padding-3);
+}
+#verify-reason, #assistant-reason {
+  margin-bottom: 0;
 }
 #connect-frame .table > thead > tr > th,
 #connect-frame .table > tbody > tr > th,
@@ -1800,6 +1858,13 @@ body .arrow {
 }
 .mcmodder-10th-cake {
   background-image: url("https://i.mcmod.cn/editor/upload/20250802/1754102714_179043_nNzj.png");
+}
+.item-table-hover,
+.item-table-block .TableBlock,
+#item-table-gui-frame .gui,
+.item-used-frame .item-table-hover img,
+.item-search-frame .item-table-hover img {
+  image-rendering: pixelated;
 }
 .text-dark,
 .item-table-block .NullItem,
@@ -2040,9 +2105,11 @@ body .top-main .info .user-info .top_content a:hover,
 body .top-main .info .more-info .top_content a:hover,
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
-.news_block .left .text #edit_more:hover {
+.news_block .left .text #edit_more:hover,
+.news_block .left .text #recent_more:hover {
   background-color: var(--mcmodder-color-accent);
   color: var(--mcmodder-color-text);
+  text-decoration: none;
   /* border-color: var(--mcmodder-color-accent-dark1); */
 }
 .mcmodder-tool-bar {
@@ -2310,25 +2377,55 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .mcmodder-input-container {
   position: relative;
+  display: inline-block;
 }
 .mcmodder-input-list {
   position: absolute;
-  top: 100%;
+  top: calc(100% + .2em);
   width: 100%;
-  background-color: var(--mcmodder-color-background-transparent);
+  background-color: var(--mcmodder-color-background);
   backdrop-filter: blur(10px);
   max-height: 300px;
-  overflow: scroll;
+  overflow-y: scroll;
   z-index: 1;
+  padding: .2em;
+  box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
 }
 .mcmodder-input-option {
   width: 100%;
-  display: block;
-  font-size: 1rem;
+  display: flex;
+  font-size: 14px;
   padding: .2em var(--mcmodder-width-padding-2);
+  text-wrap: nowrap;
+  border-radius: calc(var(--mcmodder-width-radius) * .5);
+  min-height: 24px;
+  color: var(--mcmodder-color-text);
+}
+.mcmodder-input-option .text {
+  max-width: calc(100% - 5 * var(--mcmodder-width-padding-3));
+  overflow: clip;
+  text-overflow: ellipsis;
+  padding: 0;
+}
+.mcmodder-input-option .text .alias {
+  font-size: 12px;
+  color: var(--mcmodder-color-text-dark2);
+  margin-left: 5px;
+}
+.mcmodder-input-extraoptions {
+  display: none;
+  margin-left: auto;
+}
+.mcmodder-input-extraoptions > * {
+  color: var(--mcmodder-color-text-dark2);
+  padding-left: var(--mcmodder-width-padding-3);
 }
 .mcmodder-input-option.selected {
   background-color: var(--mcmodder-color-primary-transparent1);
+}
+.mcmodder-input-option.selected .mcmodder-input-extraoptions {
+  display: block;
 }
 .mcmodder-collapsible-container {
   border: 1px solid var(--mcmodder-color-primary);
@@ -2430,6 +2527,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   padding: var(--mcmodder-width-padding-1);
   max-height: 100vh;
   overflow: scroll;
+  overscroll-behavior-y: contain;
   width: 100%;
 }
 .mcmodder-item-flip {
@@ -2488,6 +2586,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .mcmodder-item-localecount {
   color: var(--mcmodder-color-version-release-1);
+}
+.mcmodder-horizontal-window #item-table-item-frame {
+  margin-top: 0;
 }
 .mcmodder-recipe-display,
 #item-table-item-frame .item-table-hover.mcmodder-recipe-display {
@@ -2558,6 +2659,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .text-danger, .badge-danger {
   color: var(--mcmodder-color-text-danger) !important;
+}
+.text-warning, .badge-warning {
+  color: var(--mcmodder-color-text-warning) !important;
 }
 .text-info, .badge-info {
   color: var(--mcmodder-color-text-info) !important;
@@ -2667,8 +2771,10 @@ body .top-main .navs .app-url .li .text,
 .others-list li,
 #relation-frame .relation-list,
 #modlist-frame .modlist-list,
+#license-frame .license-list,
 #relation-frame .relation-list .relation-group li,
 #modlist-frame .modlist-list .modlist-group li,
+#license-frame .license-list .license-group li,
 .class-excount .infos,
 .common-index-block ul.list-block .info,
 .page-app::before,

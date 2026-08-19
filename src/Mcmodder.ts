@@ -68,6 +68,8 @@ export class Mcmodder {
     this.isMobileClient = McmodderUtils.isMobileClient();
     const headerUserName = $(".header-user-name a, .name.top-username a, .profilebox").first();
     this.currentUsername = headerUserName.text() || "";
+    const win = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+    (win as any).__mcmodder_username__ = this.currentUsername;
     this.currentUID = Number(headerUserName.attr("href")?.split("//center.mcmod.cn/")[1]?.split("/")[0]) || 0;
     this.ueditorFrame = [];
     this.href = window.location.href;
@@ -75,14 +77,14 @@ export class Mcmodder {
     this.title = this.titleNode.html().replace(" - MC百科|最大的Minecraft中文MOD百科", "");
     this.hostname = McmodderValues.hostname;
 
-    this.echartsUtils = new EchartsUtils(this);
-
     this.screenAttachedFrame = [];
     
     this.storageBuffer = new StorageBuffer(this);
     StorageBufferLoader.run(this.storageBuffer);
 
     this.utils = new McmodderUtils(this);
+
+    this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new McmodderConfigUtils(this);
     ConfigLoader.run(this.cfgutils);
@@ -384,34 +386,37 @@ export class Mcmodder {
   applyCustomFont(font: number) {
     switch (font) {
       case 1: {
-        McmodderUtils.addStyle('* {font-family: "-apple-system", "Segoe UI", "Roboto", "Ubuntu", "Arial", "Helvetica", sans-serif;}');
+        McmodderUtils.addStyle(`* {font-family: ${ McmodderValues.assets.font.fontFamily[font] };}`);
         break;
       }
-      case 2: {
+      case 2: case 3: {
         $(`
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+          <link href="${ McmodderValues.assets.font.link[font] }" rel="stylesheet">
         `).appendTo("head");
-        McmodderUtils.addStyle('* {font-family: "Noto Sans SC", sans-serif;}');
-        break;
-      }
-      case 3: {
-        $(`
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-        `).appendTo("head");
-        McmodderUtils.addStyle('* {font-family: "Inter", sans-serif;}');
+        McmodderUtils.addStyle(`* {font-family: "${ McmodderValues.assets.font.fontFamily[font] };}`);
         break;
       }
     }
   }
 
   async trackSplash() {
-    let splashText = "";
-    if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
-    else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
+    const win = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+    if ((win as any).__mcmodder_splash_tracked__) return;
+    if ((win as any).__mcmodder_custom_splash__) {
+      (win as any).__mcmodder_splash_tracked__ = true;
+      return;
+    }
+
+    let splashText = (win as any).__mcmodder_orig_splash__ || "";
+    if (!splashText) {
+      if (this.href === `${ this.hostname }/`) splashText = $(".ooops .text").first().text();
+      else if (this.href === `${ this.hostname }/v4/`) splashText = $(".splash span").first().text();
+    }
+    if (!splashText) return;
+
+    (win as any).__mcmodder_splash_tracked__ = true;
     splashText = splashText.replace(this.currentUsername || "百科酱", "%s");
     let splashes: string[] = GM_getValue("mcmodderSplashList_v2")?.split("\n") || [], flag = 0, index = -1;
     splashes.forEach((e, i) => {
@@ -580,11 +585,20 @@ export class Mcmodder {
     }
 
     // 闪烁标语追踪器
-    if (this.utils.getConfig("enableSplashTracker") &&
-      (this.href === `${ this.hostname }/` ||
+    if ((this.href === `${ this.hostname }/` ||
         this.href === `${ this.hostname }/v4/`) ||
       this.href === "https://play.mcmod.cn/") {
+      this.trackSplash();
       setTimeout(() => this.trackSplash(), 3e2);
+    }
+
+    // 后台抓取并更新云端自定义标语列表缓存
+    if (this.utils.getConfig("useSupabase") && this.utils.getConfig("fetchCustomSplashes")) {
+      this.supabaseUtils.fetchCustomSplashes().then(list => {
+        if (list && Array.isArray(list)) {
+          GM_setValue("mcmodderCustomSplashes", JSON.stringify(list));
+        }
+      }).catch(() => {});
     }
     if (this.utils.getConfig("splashStyle") === 1 &&
       (this.href === `${ this.hostname }/` ||
@@ -618,8 +632,14 @@ export class Mcmodder {
         let c = $(e).next();
         if (c.attr("class") === "figcaption") c.css("width", e.getBoundingClientRect().width + "px");
       };
-      $(".common-text .figure .lazy").each((_, e) => f(e));
-      $(document).on("load", ".common-text .figure .lazy", e => f(e.currentTarget));
+      $(".common-text .figure .lazy").each((_, _e) => {
+        const e = _e as HTMLImageElement;
+        if (e.complete) {
+          f(e);
+        } else {
+          e.onload = () => f(e);
+        }
+      });
     }
     else McmodderUtils.addStyle('.common-text .figure {align-items: center;}');
     $(".mold, .progress-list, .class-item-type li, .post-block, .tag li, .mcver li a, .tools-list li a, .edit-tools span, .comment-row, .comment-channel-list li a, .class-relation-list .relation li, .btn, .mcmodder-gui-alert, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-block.badges, .center-card-border, .modlist-block, .common-center .maintext .item-give, .common-center .post-row .postname .tool li a").addClass("mcmodder-content-block");
@@ -963,11 +983,11 @@ export class Mcmodder {
     $(".common-background").remove();
     $("#key").css("color", "var(--mcmodder-color-text)");
 
-    window.addEventListener("scroll", () => {
+    window.addEventListener("scroll", McmodderUtils.throttle(() => {
       this.screenAttachedFrame.forEach(e => {
         e.node.style.top = Math.max(0, window.scrollY - e.parentPosY + McmodderValues.headerContainerHeight) + "px";
       });
-    });
+    }, 16));
 
     this.updateItemTooltip();
     $(document).on("mouseover", ".tooltip", e => {

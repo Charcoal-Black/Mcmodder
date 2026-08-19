@@ -10,6 +10,9 @@ export class ConfigLoader {
     .addColorpickerConfig("themeColor3", "主题样式警告配色", "主题样式警告配色。", "#ff3030")
     .addCheckboxConfig("autoCheckUpdate", "自动检查更新", "每隔一段时间自动检查更新，并在有新更新可用时提醒。", true)
     .addCheckboxConfig("useSupabase", "启用云端服务", "是否启用 Mcmodder 云端服务与功能。相关服务由 Supabase 驱动。若禁用此项，所有依赖云端服务的功能都不会运作。")
+    .addCheckboxConfig("fetchCustomSplashes", "抓取云端闪烁标语", "是否抓取与显示用户投稿并审核通过的 Supabase 云端闪烁标语。")
+    .addNumberConfig("customSplashRate", "云端标语替换概率 (%)", "设置进入主页时使用云端自定义闪烁标语替换 MC百科 官方默认标语的概率。", 
+      50, [0, 100])
     .addCheckboxConfig("supabaseSplash", "云端闪烁标语同步", "[需要用户认证] 启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。")
     .addCheckboxConfig("supabaseByteChart", "云端字数统计数据", "启用后，脚本会从云端读取贡献榜数据，用于显示个人主页的字数统计图表。")
     .addCheckboxConfig("moveAds", "广告优化", "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）")
@@ -31,8 +34,10 @@ export class ConfigLoader {
     .addCheckboxConfig("enableSplashTracker", "闪烁标语追踪器", "打开百科任意主页时，自动记录页面所弹出的<del>重生骚话语录</del>闪烁标语。")
     .addDropdownConfig("splashStyle", "闪烁标语渲染风格", "选择主页闪烁标语的渲染效果。",
       0, { 0: "默认风格", 1: "3D Bloom 旋转字 (WebGPU)" })
-    .addTextConfig("splashFontUrl", "闪烁标语 3D 字体 URL", "闪烁标语在 3D Bloom 风格下所使用的 TTF 字体 CDN 链接。",
-      "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf")
+    .addDropdownTextConfig("splashFontUrl", "闪烁标语 3D 字体 URL", "闪烁标语在 3D Bloom 风格下所使用的 TTF 字体 CDN 链接。",
+      "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf", [
+        { html: "Noto Sans SC", value: "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf", showValue: true }
+      ])
     .addCheckboxConfig("enableLive2D", "Live2D", "召唤百科娘！（如果不小心赶跑了可以在这里恢复）")
     .addCheckboxConfig("enableAprilFools", "愚人节特性", "允许百科愚人节彩蛋在任意日期触发。")
     .addCheckboxConfig("autoCheckin", "自动签到", "每日首次访问百科，或是本机时间为 00:00:00 时，自动执行签到操作。")
@@ -83,7 +88,7 @@ export class ConfigLoader {
     .addCheckboxConfig("rememberVisited", "最近串门追踪", "自动记录我最近串门的用户。经常串门的用户会显示在“最近串门”当中。")
     .addDropdownConfig("favUserDisplayStyle", "收藏用户样式", "决定“最近串门”列表中已收藏用户的头像显示样式。",
       0, { 0: "星星", 1: "大头钉", 2: "爱心" })
-    .addCheckboxConfig("rememberVisitedMods", "最近浏览模组追踪", "自动记录我最近浏览的模组。这些模组会显示在 v3 主页。")
+    .addCheckboxConfig("rememberVisitedMods", "最近浏览模组追踪", "自动记录我最近浏览的模组。这些模组会显示在主页。")
     .addCheckboxConfig("centerMainExpand", "个人主页数据拓展", "显示平均字数和科龄，令模组区域并排显示，过长的模组区域默认压缩。")
     .addCheckboxConfig("byteChart", "字数活跃图表", "决定是否在个人主页显示字数活跃图表，以及是否在贡献榜查看历史贡献数据时自动获取编辑字数数据。")
     .addNumberConfig("maxByteColorValue", "字数活跃图表最大有效值", "决定字数活跃图表的总体颜色深度，当日编辑字节数大于该值时，对应字数图表中的色块始终为黑色。", 
@@ -102,7 +107,7 @@ export class ConfigLoader {
     .addNumberConfig("autoVerifyDelay", "自动查询待审项", "当打开百科页面时，自动查询所管理模组的待审项，并弹出提示消息。设置相邻两次自动查询待审项之间的最短冷却时间，单位为小时，设置为小于 0.01 以禁用。",
       0, [0, null], McmodderPermission.MANAGER)
     .addCheckboxConfig("splitScreenOnVerify", "审核页面分屏", "在后台查看一个待审项时，其内容只会占据右半区域，左半部分依旧可预览列表中的其他待审项。（为保证排版正常，此配置在移动端无效）",
-      false, McmodderPermission.MANAGER)
+      false, McmodderPermission.EDITOR)
     .addCheckboxConfig("itemListStylePreview", "样式管理预览", "编辑模组资料列表样式时，实时显示当前样式预览。",
       false, McmodderPermission.MANAGER)
     .addCheckboxConfig("itemListStyleFix", "样式管理修复", "修复百科本体 Bug：原始字符串未转义导致当前样式无法显示。",
@@ -114,18 +119,22 @@ export class ConfigLoader {
     .addCheckboxConfig("fastUrge", "快速催审", "在待审列表中显示“一键催审”按钮。")
     .addCheckboxConfig("enableStructureEditor", "结构编辑器", "启用结构编辑器。")
     .addCheckboxConfig("enableJsonHelper", "JSON导入辅助", "启用 JSON 导入辅助工具。")
+    .addDropdownConfig("itemRepository", "JSON存储方式", "配置使用 JSON 导入辅助工具时，JSON 应当以何种方式存储。（注意：切换此配置时，已存储的 JSON 文件不会自动同步，请手动转移）",
+      0, { 0: "脚本存储", 1: "IndexedDB (推荐)" })
     .addNumberConfig("minimumRequestInterval", "最短发包间隔", "设置脚本全局发送请求的最短间隔，单位为 ms。",
       750, [500, null])
     .addCheckboxConfig("lieqi", "猎奇仙人", "猎奇猎奇猎奇！！！")
     .addKeybindConfig("keybindFastLink", "自动链接", `在此可修改打开本脚本所提供“自动链接”功能的快捷键。百科原生自带的“自动链接”（通过 ${ McmodderUtils.keyToString({ altKey: true, keyCode: 88 }) } 打开）已终止支持，其入口会在将来的版本中移除。`,
       { altKey: true, key: "C", keyCode: 67 })
-    .addKeybindConfig("keybindFastSubmit", "快速提交", `在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 ${ McmodderUtils.keyToString({ ctrlKey: true, keyCode: 13 }) }，则其不会生效。）`,
+    .addKeybindConfig("keybindFastSubmit", "快速提交", `在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 ${ McmodderUtils.keyToString({ ctrlKey: true, keyCode: 13, key: "Enter" }) }，则其不会生效。）`,
       { ctrlKey: true, key: "Enter", keyCode: 13 })
-    .addKeybindConfig("keybindVerifyPass", "通过编辑", "在此可修改审核通过的快捷键。",
-      { ctrlKey: true, key: "Enter", keyCode: 13 }, McmodderPermission.MANAGER)
-    .addKeybindConfig("keybindVerifyRefund", "退回编辑", "在此可修改审核退回的快捷键。",
-      { shiftKey: true, key: "Enter", keyCode: 13 }, McmodderPermission.MANAGER)
+    .addKeybindConfig("keybindVerifyPass", "通过编辑", "在此可修改审核通过/助理建议通过的快捷键。",
+      McmodderUtils.getXplatCtrlCombinationKey({ key: "Enter", keyCode: 13 }), McmodderPermission.EDITOR)
+    .addKeybindConfig("keybindVerifyRefund", "退回编辑", "在此可修改审核退回/助理建议退回的快捷键。",
+      { shiftKey: true, key: "Enter", keyCode: 13 }, McmodderPermission.EDITOR)
+    .addKeybindConfig("keybindVerifyCheck", "需要检查", "在此可修改助理需要检查的快捷键（仅审核助理可用）。",
+      McmodderUtils.getXplatCtrlCombinationKey({ shiftKey: true, key: "Enter", keyCode: 13 }), McmodderPermission.EDITOR)
     .addKeybindConfig("keybindVerifyReason", "附言聚焦", "在此可修改聚焦到通过附言/退回原因输入框的快捷键。",
-      { key: "Tab", keyCode: 9 }, McmodderPermission.MANAGER);
+      { key: "Tab", keyCode: 9 }, McmodderPermission.EDITOR);
   }
 }

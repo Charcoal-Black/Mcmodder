@@ -295,6 +295,7 @@ export class CenterHomeInit extends CenterBaseInit {
             const id = editChartContainer.getAttribute("_echarts_instance_");
             const editChart = echarts.getInstanceById(id);
             this.getParent().echartsUtils.centerEditChart = editChart;
+            this.getParent().echartsUtils.setChartFont(editChart);
             this.editChartInit();
           }
         });
