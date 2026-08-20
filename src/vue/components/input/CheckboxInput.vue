@@ -7,7 +7,7 @@
     :data-original-title="withTooltip"
   >
     <input :id="fullID" ref="checkbox" type="checkbox" :checked="value" @change="onChange">
-    <label :for="fullID" v-html="title" />
+    <label v-if="withLabel" :for="fullID" v-html="title" />
   </span>
 </template>
 
