@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import monkey from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    vue(),
     monkey({
       entry: 'src/main.ts',
       userscript: {
@@ -59,6 +61,12 @@ export default defineConfig({
         ]
       },
       build: {
+        cssSideEffects: (css) => {
+          const style = document.createElement("style");
+          style.setAttribute("data-mcmodder-vue-css", "");
+          style.textContent = css;
+          (document.head || document.documentElement).appendChild(style);
+        },
         externalGlobals: {
           "codemirror": "CodeMirror",
           "turndown": "TurndownService",
