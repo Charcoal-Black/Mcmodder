@@ -395,7 +395,7 @@ export class Mcmodder {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="${ McmodderValues.assets.font.link[font] }" rel="stylesheet">
         `).appendTo("head");
-        McmodderUtils.addStyle(`* {font-family: "${ McmodderValues.assets.font.fontFamily[font] };}`);
+        McmodderUtils.addStyle(`* {font-family: ${ McmodderValues.assets.font.fontFamily[font] };}`);
         break;
       }
     }
@@ -861,7 +861,6 @@ export class Mcmodder {
         this.notifyUnreadMessage(0);
       });
     }
-    if (!this.isNightMode) $("#mcmodder-night-switch i").css("text-shadow", "0px 0px 5px gold");
 
     const msgAlert = Number($(".header-user-msg b").text());
     if (this.utils.getConfig("mcmodderUI")) {

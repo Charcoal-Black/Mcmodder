@@ -1170,6 +1170,8 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   display: flex;
   width: auto;
   flex-direction: column;
+  overflow: scroll;
+  border-color: transparent;
 }
 .common-text p {
   width: 100%;

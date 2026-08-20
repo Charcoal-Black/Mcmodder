@@ -17,8 +17,8 @@ export class AdminInit extends McmodderInit {
     const adminEntries: Record<string, (mutation: MutationRecord) => void> = {
       "模组区内容审核": _mutation => {
         // 调整排版顺序
-        const w = $(".container-widget").get(0);
-        w.insertBefore(w.childNodes[2], w.childNodes[1]);
+        const containerWidgets = $(".container-widget").children();
+        containerWidgets.eq(1).insertAfter(containerWidgets.eq(-1));
 
         const passButtonSelector = "#verify-pass-btn:not(.edit), #assistant-pass-btn";
         const refundButtonSelector = "#verify-refund-btn:not(.edit), #assistant-refund-btn";
@@ -33,6 +33,7 @@ export class AdminInit extends McmodderInit {
         let verifyFrame: JQuery;
         let verifyWindowDivider: HorizontalDraggableFrame;
         let verifyClassID: number | undefined;
+        let prevHeight = 0;
         // let itemID: number | undefined;
         let verifyID: number | undefined;
         const verifyInfo: Record<string, string> = {};
@@ -105,10 +106,24 @@ export class AdminInit extends McmodderInit {
           .bindRight(verifyContainer, true);
 
           if (!this.triggered.has("模组区内容审核")) {
+            const verifyWindowElement = verifyWindow.get(0);
             $(document).scroll(McmodderUtils.throttle(() => {
               const top = document.scrollingElement?.scrollTop;
+              const bottom = verifyContainer.prop("scrollHeight") as number;
               if (top != undefined) {
-                verifyWindow.css("margin-top", top + "px");
+                const height = Math.min(bottom - top, screen.height);
+                verifyWindow.css({
+                  "margin-top": top + "px",
+                  "height": height + "px"
+                });
+                if (height < prevHeight) {
+                  const scrollTopMax = verifyWindowElement.scrollHeight - verifyWindowElement.clientHeight;
+                  if (scrollTopMax - verifyWindowElement.scrollTop < 100) {
+                    const shift = prevHeight - height;
+                    verifyWindowElement.scrollBy({ top: shift });
+                  }
+                }
+                prevHeight = height;
               }
             }, 16))
             .on("click", ".mcmodder-compare-icon", e => {
@@ -147,13 +162,13 @@ export class AdminInit extends McmodderInit {
 
           // 打开待审项时打开分屏
           $("#connect-frame-sub").on("click", "tr[data-data]", _ => {
-            verifyFrame.empty();
+            verifyFrame.empty().addClass("mcmodder-loading-container").append(`<div class="mcmodder-loading"></div>`);
             verifyWindowDivider.expandIfCollapsed();
           });
 
           singleVerifyCallbackOnSplit = (mutation: MutationRecord) => {
             // 重排版
-            verifyFrame.empty();
+            verifyFrame.empty().removeClass("mcmodder-loading-container");
             $(mutation.target).contents().appendTo(verifyFrame);
             verifyFrame.find("> p:first-child()").next().hide();
             verifyFrame.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(e => {
@@ -241,12 +256,17 @@ export class AdminInit extends McmodderInit {
               verifyFrame.find("#mcmodder-text-area").remove();
               verifyFrame.find(".verify-copy-btn").parent()
               .filter((_, c) => $(c).css("position") === "absolute").remove(); // 移除原版复制按钮
+
+              const appendImgContainer = (_: number, e: Element) => {
+                const recipeContainer = $(`<div class="mcmodder-verify-imgcontainer">`).insertBefore(e);
+                $(e).appendTo(recipeContainer);
+              }
               
               $(".verify-info-table > tbody").contents().each((_, e) => {
                 const row = $(e);
                 const rowText = e.firstChild?.textContent;
                 if (!rowText) return;
-                else if (rowText.includes("介绍")) {
+                else if (rowText.includes("介绍") || rowText.includes("正文")) {
                   const insertPos = verifyFrame.find(".verify-action-btns, .assistant-action-btns").parent().children().first();
                   const textA = row.find("td:nth-child(3) .common-text");
                   const textB = row.find("td:nth-child(2) .common-text");
@@ -338,6 +358,12 @@ export class AdminInit extends McmodderInit {
                       }
                     }
                   })
+                }
+                else if (rowText === "合成表可视化") {
+                  row.find(".TableContainer").each(appendImgContainer);
+                }
+                else if (rowText === "模组封面") {
+                  row.find("img").each(appendImgContainer);
                 }
               });
 

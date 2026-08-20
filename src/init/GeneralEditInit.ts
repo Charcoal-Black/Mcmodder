@@ -67,5 +67,11 @@ export class GeneralEditInit extends McmodderInit {
       const textarea = $(e);
       new InputList(textarea, this.parent.utils, "editReasons", "；", true);
     });
+
+    // 针对应用 InputList 后原生输入框无法被检测到的修复
+    const parent = $(".common-rowlist-block .text");
+    parent.on("change", ".mcmodder-input-container textarea", e => {
+      parent.find(`[data-multi-id=${ e.target.id.split("-").slice(-1)[0] }]`).val($(e.target).val());
+    });
   }
 }

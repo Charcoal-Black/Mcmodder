@@ -942,6 +942,9 @@ body:not(.view),
   left: calc(50% - 8em);
   bottom: calc(50% - 5em);
 }
+.mcmodder-loading-container {
+  height: 100%;
+}
 .mcmodder-loading {
   height: 100%;
   width: 100%;
@@ -1003,9 +1006,13 @@ body:not(.view),
 #mcmodder-verify-window {
   max-height: calc(100vh - 60px);
   overflow: scroll;
+  overscroll-behavior-y: contain;
 }
 #mcmodder-verify-window-frame {
   padding: var(--mcmodder-width-padding-1);
+}
+#mcmodder-verify-window-frame.mcmodder-loading-container {
+  height: 100%;
 }
 #mcmodder-verify-window-frame .TableBlock {
   position: relative;
@@ -1013,6 +1020,9 @@ body:not(.view),
 }
 .mcmodder-verify-locate {
   margin-left: var(--mcmodder-width-padding-3);
+}
+.mcmodder-verify-imgcontainer {
+  overflow-x: scroll;
 }
 .mcmodder-template-delete {
   position: absolute;
@@ -1226,6 +1236,7 @@ pre#mcmodder-text-result {
   max-height: 300px;
   padding: .25em;
   font-size: 12px;
+  overscroll-behavior-y: contain;
 }
 pre del,
 #del_num {
@@ -2106,7 +2117,8 @@ body .top-main .info .more-info .top_content a:hover,
 .news_block .left .text #random_refresh:hover,
 .news_block .left .text #new_more:hover,
 .news_block .left .text #edit_more:hover,
-.news_block .left .text #recent_more:hover {
+.news_block .left .text #recent_more:hover,
+.top-main .navs .app-url .li:hover {
   background-color: var(--mcmodder-color-accent);
   color: var(--mcmodder-color-text);
   text-decoration: none;
@@ -2651,6 +2663,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .badge-row .text-info, .badge.badge-info {
   background-color: #55f5;
 }
+.badge-row .text-primary, .badge.badge-primary {
+  background-color: #55f5;
+}
 .badge-row .text-muted-muted {
   background-color: #ddd5;
 }
@@ -2665,6 +2680,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .text-info, .badge-info {
   color: var(--mcmodder-color-text-info) !important;
+}
+.text-primary, .badge-primary {
+  color: var(--mcmodder-color-text-primary) !important;
 }
 kbd {
   color: var(--mcmodder-color-text);
