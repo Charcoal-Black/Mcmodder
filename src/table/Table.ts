@@ -54,7 +54,7 @@ export class McmodderTable<McmodderTableData extends McmodderTableAcceptable> {
 
   onRefresh?: () => void;
 
-  protected currentData: McmodderTableRowData<McmodderTableData>[];
+  public currentData: McmodderTableRowData<McmodderTableData>[];
 
   private static parseHeadConfigInitializer<T>(config: HeadConfigInitializer<T>): HeadConfig<T> {
     if (typeof config === "string") return {

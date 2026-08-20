@@ -1,8 +1,8 @@
 import { GM_openInTab } from "$";
-import { McmodderLoggerFrame } from "../widget/logger/LoggerFrame";
 import { Mcmodder } from "../Mcmodder";
-import { InputRecommendation, ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData, McmodderItemList, McmodderTableRowSelection, McmodderUnpurifiedItemData } from "../types";
-import { Pagination } from "../widget/Pagination";
+import { InputRecommendation, McmodderItemData, McmodderItemList, McmodderTableRowSelection } from "../types";
+import type { ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderUnpurifiedItemData } from "../types";
+export type { ItemJsonFrameApplication, ItemJsonFrameConfig, McmodderItemData };
 import { McmodderDetailedItemListRequestQueue } from "../requestqueue/DetailedItemRequestQueue";
 import { McmodderInferItemListRequestQueue } from "../requestqueue/InferRequestQueue";
 import { BatchCommand } from "../table/command/BatchCommand";
@@ -10,10 +10,12 @@ import { EditRowCommand } from "../table/command/EditRowCommand";
 import { McmodderEditableTable } from "../table/EditableTable";
 import { McmodderTable } from "../table/Table";
 import { McmodderUtils } from "../Utils";
-import { JsonFrame } from "./JsonFrame";
 import { McmodderValues } from "../Values";
-import { InputList } from "../widget/InputList";
-import { McmodderInputType } from "../config/ConfigUtils";
+import { McmodderInputType, McmodderPermission } from "../config/ConfigUtils";
+import type { McmodderLogger } from "../widget/logger/Logger";
+import { GMStorageRepository } from "./repository/GMStorageRepository";
+import { IndexedDBRepository } from "./repository/IndexedDBRepository";
+import type { ItemRepository } from "./repository/ItemRepository";
 
 export interface McmodItemEditorInnerData {
   content: string,
@@ -36,30 +38,133 @@ export interface McmodItemEditorData {
   "item-data": McmodItemEditorInnerData
 }
 
-export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
-  protected override getConfigName() {
+export interface ItemJsonFrameLogEntry {
+  type: "info" | "warn" | "success" | "error" | "fatal" | "key";
+  prefix: string;
+  message: string;
+  time: string;
+}
+
+export interface ItemJsonFrameTaskConfig {
+  infer: boolean;
+  geticon: boolean;
+  getall: boolean;
+}
+
+export interface ItemJsonFrameExpose {
+  updateState(): void;
+  setLoggerEntries(entries: ItemJsonFrameLogEntry[]): void;
+  showClassSearchPanel(): void;
+  showOnlinePanel(): void;
+  setSearchButtonBusy(busy: boolean): void;
+  setOnlineFiles(files: ItemJsonFrameApplication[], maxPage: number): void;
+}
+
+export class ItemJsonFrameLogger implements McmodderLogger {
+  private entries: ItemJsonFrameLogEntry[] = [];
+  private listener?: (entries: ItemJsonFrameLogEntry[]) => void;
+
+  clear() {
+    this.entries = [];
+    this.listener?.(this.entries.slice());
+  }
+
+  setListener(listener: (entries: ItemJsonFrameLogEntry[]) => void) {
+    this.listener = listener;
+    this.listener(this.entries.slice());
+  }
+
+  private write(type: ItemJsonFrameLogEntry["type"], prefix: string, message: string) {
+    this.entries.push({
+      type,
+      prefix: prefix,
+      message: message,
+      time: McmodderUtils.getFormatted24hTime()
+    });
+    this.listener?.(this.entries.slice());
+  }
+
+  log(message: string) {
+    this.write("info", "", message);
+  }
+
+  warn(message: string) {
+    this.write("warn", "[WARN] ", message);
+  }
+
+  success(message: string) {
+    this.write("success", "[SUCCESS] ", message);
+  }
+
+  error(message: string) {
+    this.write("error", "[ERROR] ", message);
+  }
+
+  fatal(message: string) {
+    this.write("fatal", "[FATAL] ", message);
+  }
+
+  key(message: string) {
+    this.write("key", "", message);
+  }
+}
+
+export class ItemJsonFrame {
+
+  parent: Mcmodder;
+  id: string;
+  $instance: JQuery;
+  instance: Element;
+  logger = new ItemJsonFrameLogger();
+
+  protected getConfigName() {
     return "mcmodderJsonStorage";
   }
-  protected override getAllowedKeys() {
-    return ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName", 
-      "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum", 
+
+  protected getAllowedKeys() {
+    return ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName",
+      "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum",
       "OredictList", "harvestTools", "maxStackSize", "maxDurability"];
   }
-  logger = new McmodderLoggerFrame(this.parent);
+
+  protected purifyData(data: McmodderItemData) {
+    const allowedKeys = this.getAllowedKeys();
+    const entries = Object.entries(data);
+    const filteredEntries = entries.filter(([key]) => allowedKeys.includes(key));
+    return Object.fromEntries(filteredEntries) as McmodderItemData;
+  }
   maxPage?: number;
-  private classSearchFrame?: JQuery;
-  private classIDInput?: JQuery;
-  private typeIDInput?: JQuery;
-  private submitButton?: JQuery;
+  activeFileName = "";
+  selectionList: string[] = [];
+  hasRearranged = false;
 
-  protected inferRequestQueue = new McmodderInferItemListRequestQueue(this.parent, "inferRequestQueue", 1000, this.logger);
-  protected detailedRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent, "detailedRequestQueue", 6, 750, this.logger);
+  table: McmodderEditableTable<McmodderItemData>;
 
+  protected inferRequestQueue: McmodderInferItemListRequestQueue;
+  protected detailedRequestQueue: McmodderDetailedItemListRequestQueue;
   // 与另一个RequestQueue区分开，这个专用于处理用户手动发起的数据同步请求，只适用于小规模数据
-  protected manualRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent, "manualRequestQueue");
+  protected manualRequestQueue: McmodderDetailedItemListRequestQueue;
+  protected readonly itemRepository: ItemRepository<McmodderItemData>;
+
+  private component?: ItemJsonFrameExpose;
+  private mountPromise?: Promise<void>;
 
   constructor(id: string, parent: Mcmodder) {
-    super(id, parent);
+    this.id = id;
+    this.parent = parent;
+
+    if (this.parent.utils.getConfig("itemRepository")) {
+      this.itemRepository = new IndexedDBRepository(this.getConfigName(), this.getAllowedKeys());
+    } else {
+      this.itemRepository = new GMStorageRepository(this.parent, this.getConfigName());
+    }
+
+    this.$instance = $(`<div id="jsonframe_${ id }" class="mcmodder-jsonframe"></div>`);
+    this.instance = this.$instance.get(0);
+
+    this.inferRequestQueue = new McmodderInferItemListRequestQueue(this.parent, "inferRequestQueue", 1000, this.logger);
+    this.detailedRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent, "detailedRequestQueue", 6, 750, this.logger);
+    this.manualRequestQueue = new McmodderDetailedItemListRequestQueue(this.parent, "manualRequestQueue", 6, 750, this.logger);
 
     this.table = new McmodderEditableTable<McmodderItemData>(parent, {class: "table jsonframe-table"}, {
       itemType: ["类型", (type, item) => {
@@ -145,214 +250,108 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       content: null
     });
     this.table.onEdit = () => {
-      this.updateToolBar();
+      this.notifyUpdate();
+    };
+    this.table.onStopRearrange = () => {
+      this.hasRearranged = true;
+      this.notifyUpdate();
     };
 
-    this.initClassSearchFrame();
+    this.initContextMenu();
 
-    this.addTool("export", "导出当前文件至本地", () => !!this.activeFileName, () => this.exportJson(this.activeFileName));
+    this.itemRepository.init().then(() => this.updateSelection());
 
+    this.ensureMounted();
+  }
+
+  private async ensureMounted() {
+    if (this.component) return;
+    if (!this.mountPromise) {
+      this.mountPromise = Promise.all([
+        import("../vue/components/ItemJsonFrame.vue"),
+        import("../vue/mount")
+      ]).then(([module, mount]) => {
+        mount.mountVueApp(module.default, {
+          frame: this,
+          onReady: (api: ItemJsonFrameExpose) => {
+            this.component = api;
+            this.logger.setListener(entries => api.setLoggerEntries(entries));
+          }
+        }, this.$instance.get(0) as HTMLElement);
+      });
+    }
+    return this.mountPromise;
+  }
+
+  private notifyUpdate() {
+    this.component?.updateState();
+  }
+
+  private initContextMenu() {
     this.table.contextMenu
     .addItem({
       key: "syncRow",
       text: "从百科同步此行数据",
       displayRule: e => {
-        const index = this.table!.getElementIndex(e.target);
+        const index = this.table.getEventIndex(e);
         return !!(
-          index >= 0 && this.table!.getEditorData(index, "id") &&
+          index >= 0 && this.table.getEditorData(index, "id") &&
           this.parent.currentUID &&
           this.manualRequestQueue.isIdle
         );
       },
-      callback: e => this.preSyncRow(this.table!.getElementIndex(e.target))
+      callback: e => this.preSyncRow(this.table.getEventIndex(e))
     })
     .addItem({
       key: "syncMultipleRow",
       text: "从百科同步所有选中行数据",
       displayRule: _e => {
         return !!(
-          this.table!.selectedRowCount &&
+          this.table.selectedRowCount &&
           this.parent.currentUID &&
           this.manualRequestQueue.isIdle
         );
       },
-      callback: _e => this.preSyncRow(this.table!.getSelection())
+      callback: _e => this.preSyncRow(this.table.getSelection())
     })
     .addItem({
       key: "manualSubmitRow",
       text: "提交此行数据至百科",
       displayRule: e => {
-        const index = this.table!.getElementIndex(e.target);
+        const index = this.table.getEventIndex(e);
         return !!(index >= 0 && this.parent.currentUID);
       },
-      callback: e => this.preManualSubmitRow(this.table!.getElementIndex(e.target))
+      callback: e => this.preManualSubmitRow(this.table.getEventIndex(e))
     });
-
-    this.addTool("importClass", "从模组导入JSON", () => true, () => this.openClassSearchFrame())
-    .addTool("importOnline", "从收纳贴导入JSON", () => true, () => this.searchOnlineFiles())
-    .addTool("submitedit", "提交所有改动至百科", () => !!(this.activeFileName && this.table!.unsaved), () => this.submitEdit(), true);
-
-    this.table.$instance.appendTo(this.content);
   }
 
-  protected more() {
-    swal.fire({
-      title: "更多操作",
-      html: `
-      <p class="text-muted" style="font-size: 14px;">
-        <hr>
-        <p align="center">
-          <button id="jsonframe-autolink" class="btn">加入自动链接数据库</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong>**已拥有百科内资料 ID 的物品中**</strong>搜索~</p>
-      </p>`,
-        /*<hr>
-        <p align="center">
-          <button id="jsonframe-autolink" class="btn">清除所有格式化代码</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">清除所有原版可用的格式化代码。</p>
-      </p>*/
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: "完事了"
-    });
-    
-    let autolink = $("#jsonframe-autolink").click(_ => {
-      swal.close();
-      let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
-      if (linking.includes(this.activeFileName)) {
-        linking = linking.filter(e => e != this.activeFileName);
-        autolink.text("加入自动链接数据库");
-      }
-      else {
-        linking.push(this.activeFileName);
-        autolink.text("移出自动链接数据库");
-      }
-      this.parent.utils.setConfig("jsonDatabase", linking);
-    });
-    let linking = this.parent.utils.getConfig("jsonDatabase") || [];
-    if (linking.includes(this.activeFileName)) autolink.text("移出自动链接数据库");
-    
+
+  async updateSelection() {
+    this.selectionList = await this.itemRepository.listFilename();
+    this.notifyUpdate();
   }
 
-  setExecuteButtonState(disable: boolean) {
-    if (disable) {
-      this.submitButton?.addClass("disabled").attr("disabled", 1);
-    } else {
-      this.submitButton?.removeClass("disabled").removeAttr("disabled");
+  isAvailableFileName(fileName: string) {
+    return !!(fileName && this.selectionList.includes(fileName));
+  }
+
+  private getUniqueRegulatedFileName(name: string) {
+    let regulated = McmodderUtils.regulateFileName(name);
+    if (this.selectionList.includes(regulated)) {
+      let i = 2, dot = regulated.lastIndexOf("."), main = regulated.slice(0, dot), extension = regulated.slice(dot + 1);
+      let newName;
+      while ((newName = `${ main }(${ i }).${ extension }`) && this.selectionList.includes(newName)) i++;
+      regulated = newName!;
     }
+    return regulated;
   }
 
-  initClassSearchFrame() {
-    this.classSearchFrame = $(`
-      <div class="edit-autolink-frame">
-        <div class="input-group edit-autolink-seach">
-          <input placeholder="输入模组的百科数字 ID.." id="mcmodder-getitemlist-classid-input" class="form-control">
-          <input placeholder="输入资料类型 ID.. (留空默认为 1)" id="mcmodder-getitemlist-typeid-input" class="form-control">
-          <button id="mcmodder-getitemlist-submit" class="btn btn-dark">执行</button>
-        </div>
-        <div class="title">导入设置:</div>
-        <div class="edit-autolink-style">
-          <div class="checkbox">
-            <input id="jsonframe_${ this.id }-importclass-infer" name="infer" type="checkbox">
-            <label for="jsonframe_${ this.id }-importclass-infer">访问潜在资料 - 在一轮资料列表获取完毕后，考虑到同一类资料通常是在同一个批次中批量添加的，脚本会试图访问那些可能仍然属于目标模组区域，但是未出现在现有资料列表中的物品资料 ID。这种方法能够应对综合子资料数量大于 100 的情况，以及访问到部分隐藏分类中的资料。</label>
-          </div>
-          <div class="checkbox">
-            <input id="jsonframe_${ this.id }-importclass-geticon" name="geticon" type="checkbox">
-            <label for="jsonframe_${ this.id }-importclass-geticon">保存物品图标 - 读取的同时获取物品的小图标和大图标，并以 Base64 格式保存进 JSON 文件里。启用该项配置会显著增大输出文件体积；若不启用，则在显示物品图标时会实时从百科获取图标。</label>
-          </div>
-          <div class="checkbox">
-            <input id="jsonframe_${ this.id }-importclass-getall" name="getall" type="checkbox">
-            <label for="jsonframe_${ this.id }-importclass-getall">保存完整数据 - 读取一个资料的全部数据（包括图标、注册名、物品标签等所有可以在编辑页访问的数据）。启用该项配置会忽略“保存物品图标”的配置。确切来说，脚本会通过逐一访问所有物品的编辑页来获取这些数据。<strong>启用此项将会向服务器发送大量请求，使用前请务必妥善配置脚本“最短发包间隔”！！</strong></label>
-          </div>
-        </div>
-        <span class="mcmodder-getitemlist-result"></span>
-      </div>`);
-    this.classIDInput = this.classSearchFrame.find("#mcmodder-getitemlist-classid-input");
-    this.typeIDInput = this.classSearchFrame.find("#mcmodder-getitemlist-typeid-input");
-    this.submitButton = this.classSearchFrame.find("#mcmodder-getitemlist-submit");
-    this.logger.key("就绪。");
-    this.logger.$instance.insertAfter(this.classSearchFrame.find(".input-group"));
-
-    new InputList(this.typeIDInput, () => {
-      const classID = Number(this.classIDInput?.val());
-      const result: InputRecommendation[] = [];
-      let typeHTML = "";
-      this.parent.itemTypeList?.forEach(entry => {
-        if (entry.classID === 0 || entry.classID === classID) {
-          if (entry.classID === 0) {
-            typeHTML = entry.icon;
-          } else {
-            typeHTML = `<i class="fas ${ entry.icon }"></i>`;
-          }
-          result.push({
-            html: `<span style="color: ${ entry.color };"><span class="iconfont icon">${ typeHTML }</span> ${ entry.typeID } - ${ entry.text }</span>`,
-            value: entry.typeID.toString(),
-          });
-        }
-      });
-      return result;
-    });
-
-    this.classIDInput.keyup(e => {
-      if (e.key === "Enter") {
-        this.typeIDInput!.focus();
-      }
-    });
-    this.typeIDInput.keyup(e => {
-      if (e.key === "Enter") {
-        this.submitButton!.click();
-      }
-    });
-    this.submitButton.click(async _e => {
-      const classID = Number(this.classIDInput?.val().trim());
-      const typeID = Number(this.typeIDInput?.val().trim());
-      if (isNaN(classID)) {
-        McmodderUtils.commonMsg("请输入一个合法的模组 ID ~", false);
-        this.classIDInput?.focus();
-        return;
-      }
-      if (isNaN(typeID)) {
-        this.typeIDInput?.focus();
-        McmodderUtils.commonMsg("请输入一个合法的资料类型 ID ~", false);
-        return;
-      }
-      
-      this.classIDInput?.blur();
-      this.typeIDInput?.blur();
-      const startTime = Date.now();
-      this.setExecuteButtonState(true);
-      this.logger.key(`任务已创建，请等待执行结束，期间请勿关闭当前标签页。`);
-      
-      try {
-        await this.performClassSearch(classID, typeID || 1);
-      } catch (e) {
-        this.logger.fatal(String(e));
-        console.error(e);
-      } finally {
-        const endTime = Date.now();
-        this.setExecuteButtonState(false);
-        this.logger.key(`任务已结束，耗时 ${ McmodderUtils.getFormattedTime(endTime - startTime) }。`);
-      }
-      
-      // jsonFrameB.updateSelection();
-    });
+  onCaughtParseException(err: unknown) {
+    console.error("Error phasing raw JSON data: " + err);
+    McmodderUtils.commonMsg(String(err), false, "解析错误");
   }
 
-  async openClassSearchFrame() {
-    if (!this.classSearchFrame) return;
-    swal.fire({
-      title: "从现有模组资料导入JSON",
-      html: `<div class="jsonframe-importclass-frame" />`,
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: "完事了"
-    });
-    $(".jsonframe-importclass-frame").append(this.classSearchFrame);
-    this.logger.scrollToBottom();
-  }
-
-  protected override parseText(text: string) {
+  protected parseText(text: string) {
     let success = 0, fail = 0, save: McmodderItemData[] = [];
     const entries = text.split('\n');
     entries.forEach(item => {
@@ -384,6 +383,356 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       fail: fail,
       result: save
     };
+  }
+
+  async importFromText(text: string, saveAs: string) {
+    saveAs = this.getUniqueRegulatedFileName(saveAs);
+    const {success, fail, result} = this.parseText(text);
+    if (success) {
+      const purified = result!.map(e => this.purifyData(e));
+      await this.itemRepository.write(saveAs, purified);
+      await this.updateSelection();
+      McmodderUtils.commonMsg(`已读取并保存为 ${ saveAs }，其中 ${ success } 条解析成功，${ fail } 条解析失败。`);
+    }
+  }
+
+  importFromFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = o => {
+      const result = o.target?.result;
+      if (typeof result === "string") {
+        this.importFromText(result, file.name);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async newUnnamedJson() {
+    const regulated = this.getUniqueRegulatedFileName("Unnamed.json");
+    await this.itemRepository.createFile(regulated);
+    await this.updateSelection();
+    McmodderUtils.commonMsg(`创建了新的文件 ${ regulated } ~`);
+  }
+
+  async selectFile(fileName: string) {
+    this.activeFileName = fileName;
+    if (fileName) await this.loadJson(fileName);
+    else this.reset();
+  }
+
+  async loadJson(fileName: string) {
+    this.table.selectedRowCount = 0;
+    this.table.unsaved = false;
+    this.table.setAllData(await this.itemRepository.read(fileName) ?? []);
+    this.hasRearranged = false;
+    this.notifyUpdate();
+  }
+
+  async saveEdit() {
+    if (!this.table.unsaved) {
+      McmodderUtils.commonMsg("当前暂无需要保存的改动...", false);
+      return;
+    }
+    this.table.saveAll();
+    await this.itemRepository.write(this.activeFileName, this.table.getAllData());
+    McmodderUtils.commonMsg("所有改动均已保存~");
+    this.notifyUpdate();
+  }
+
+  rename() {
+    const name = this.activeFileName;
+    if (!name) return;
+    swal.fire({
+      title: "重命名当前文件",
+      html: `将当前已打开的文件重命名为... <input class="form-control" id="jsonframe-rename-input">`,
+      showCancelButton: true,
+      preConfirm: async () => {
+        const newName = this.getUniqueRegulatedFileName((input.val() as string || "").trim());
+        if (name === newName) return;
+
+        const fileData = await this.itemRepository.read(name);
+        await this.itemRepository.deleteFile(name);
+        await this.itemRepository.write(newName, fileData);
+
+        let database: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
+        database = database.filter(e => e != name);
+        database.push(newName);
+        this.parent.utils.setConfig("jsonDatabase", database);
+
+        McmodderUtils.commonMsg("文件重命名成功~");
+        this.activeFileName = newName;
+        await this.updateSelection();
+      }
+    });
+    const input = $("#jsonframe-rename-input").val(name).change(e => {
+      const target = e.currentTarget as HTMLInputElement;
+      let newName = target.value.trim();
+      target.value = McmodderUtils.regulateFileName(newName);
+    });
+  }
+
+  fileExistedInquire(fileName: string) {
+    return swal.fire({
+      type: "warning",
+      title: "文件名重复",
+      text: `在脚本内部存储中已存在拥有该文件名 (${ fileName }) 的文件，继续导入将会覆盖此文件，确定要继续吗？`,
+      showCancelButton: true,
+      confirmButtonText: "覆盖",
+      cancelButtonText: "取消",
+    });
+  }
+
+  async newJson(fileName: string, content: McmodderItemData[]) {
+    let storages = await this.itemRepository.listFilename();
+    if (storages.includes(fileName)) {
+      const isConfirm = await this.fileExistedInquire(fileName);
+      if (isConfirm.value) {
+        await this.itemRepository.write(fileName, content);
+        await this.updateSelection();
+        return true;
+      }
+      return false;
+    }
+    else {
+      await this.itemRepository.write(fileName, content);
+      await this.updateSelection();
+      return true;
+    }
+  }
+
+  fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState> {
+    const { promise, resolve } = Promise.withResolvers<SweetAlertCallbackState>();
+    swal.fire({
+      type: "warning",
+      title: "警告",
+      text: `您正在尝试删除 (${fileName})，此操作不可逆，确定要继续吗？`,
+      showCancelButton: true,
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+      confirmButtonColor: "var(--mcmodder-color-danger)"
+    }).then(isConfirm => resolve(isConfirm));
+    return promise;
+  }
+
+  async tryDeleteJson(fileName: string) {
+    if (!this.isAvailableFileName(fileName)) return false;
+    const isConfirm = await this.fileDeleteInquire(fileName);
+    if (isConfirm.value) {
+      await this.deleteJson(fileName);
+      McmodderUtils.commonMsg(`成功删除 ${fileName} ~`);
+      await this.updateSelection();
+      return true;
+    }
+    return false;
+  }
+
+  private async deleteJson(fileName: string) {
+    await this.itemRepository.deleteFile(fileName);
+    let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
+    this.parent.utils.setConfig("jsonDatabase", linking.filter(name => name != fileName));
+  }
+
+  reset() {
+    this.activeFileName = "";
+    this.table.selectedRowCount = 0;
+    this.table.empty();
+    this.notifyUpdate();
+  }
+
+  submitEdit() {
+    if (!this.parent.currentUID) {
+      McmodderUtils.commonMsg("请先登录~", false);
+      return;
+    }
+    const lv: number = this.parent.utils.getProfile("lv");
+    const permission: McmodderPermission = this.parent.utils.getProfile("permission");
+    if (lv < 5 && !(permission === McmodderPermission.EDITOR || permission >= McmodderPermission.ADMIN)) {
+      McmodderUtils.commonMsg("当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）", false);
+      return;
+    }
+    McmodderUtils.commonMsg("此功能尚未完工，敬请期待~");
+  }
+
+
+  more() {
+    swal.fire({
+      title: "更多操作",
+      html: `
+      <p class="text-muted" style="font-size: 14px;">
+        <hr>
+        <p align="center">
+          <button id="jsonframe-autolink" class="btn">加入自动链接数据库</button>
+        </p>
+        <p class="text-muted jsonframe-export-text">在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong>**已拥有百科内资料 ID 的物品中**</strong>搜索~</p>
+      </p>`,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: "完事了"
+    });
+    let autolink = $("#jsonframe-autolink").click(_ => {
+      swal.close();
+      let linking: string[] = this.parent.utils.getConfig("jsonDatabase") || [];
+      if (linking.includes(this.activeFileName)) {
+        linking = linking.filter(e => e != this.activeFileName);
+        autolink.text("加入自动链接数据库");
+      }
+      else {
+        linking.push(this.activeFileName);
+        autolink.text("移出自动链接数据库");
+      }
+      this.parent.utils.setConfig("jsonDatabase", linking);
+    });
+    let linking = this.parent.utils.getConfig("jsonDatabase") || [];
+    if (linking.includes(this.activeFileName)) autolink.text("移出自动链接数据库");
+  }
+
+
+  exportJson(fileName: string) {
+    if (!this.isAvailableFileName(fileName)) return false;
+    let content = "";
+    swal.fire({
+      title: "导出文件",
+      html: `
+      <p class="text-muted" style="font-size: 14px;">
+        即将保存 ${ fileName }，请注意未保存的改动不会被导出...
+        <hr>
+        <p align="center">
+          <button id="jsonframe-export-1" class="btn">保存为通用批量导入格式</button>
+        </p>
+        <p class="text-muted jsonframe-export-text">只保留对批量导入有用的部分，便于提交给重生来导入。</p>
+        <hr>
+        <p align="center">
+          <button id="jsonframe-export-2" class="btn">保存为完整格式</button>
+        </p>
+        <p class="text-muted jsonframe-export-text">
+          保留全部内容，便于转移到其他安装了 Mcmodder v1.6+ 的浏览器查看。
+          <strong>不支持批量导入，请勿直接提交此文件！！</strong>
+        </p>
+      </p>`,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: "完事了"
+    });
+    $("#jsonframe-export-1").click(() => {
+      content = "";
+      this.table.getAllData().forEach(e => {
+        content += JSON.stringify(this.convertToImportableFormat(e)) + "\r\n";
+      });
+      McmodderUtils.saveFile(fileName, content);
+      swal.close();
+    });
+    $("#jsonframe-export-2").click(() => {
+      content = "";
+      this.table.getAllData().forEach(entry => {
+        content += JSON.stringify(entry) + "\r\n";
+      });
+      McmodderUtils.saveFile(fileName, content);
+      swal.close();
+    });
+    return true;
+  }
+
+  private convertToImportableFormat(data: Partial<McmodderItemData>) {
+    const entry: Record<string, unknown> = {};
+    for (const key of McmodderValues.importableKeys) {
+      let value = (data as Record<string, unknown>)[key];
+      if (value === undefined || value === null || (typeof value === "number" && isNaN(value))) value = "";
+      switch (key) {
+        case "OredictList":
+          entry[key] = typeof value === "string" ? value.replaceAll(",", ", ") : value;
+          break;
+        case "smallIcon": case "largeIcon":
+          entry[key] = typeof value === "string" ? McmodderUtils.removeBase64ImgPrefix(value) : value;
+          break;
+        default: entry[key] = value;
+      }
+    }
+    return entry as unknown as McmodderItemData;
+  }
+
+
+  getTypeRecommendations(classID: number): InputRecommendation[] {
+    const result: InputRecommendation[] = [];
+    this.parent.itemTypeList?.forEach(entry => {
+      if (entry.classID === 0 || entry.classID === classID) {
+        const typeHTML = entry.classID === 0 ? entry.icon : `<i class="fas ${ entry.icon }"></i>`;
+        result.push({
+          html: `<span style="color: ${ entry.color };"><span class="iconfont icon">${ typeHTML }</span> ${ entry.typeID } - ${ entry.text }</span>`,
+          value: entry.typeID.toString(),
+        });
+      }
+    });
+    return result;
+  }
+
+  async openClassSearchFrame() {
+    await this.ensureMounted();
+    this.component?.showClassSearchPanel();
+  }
+
+  async performClassSearch(classID: number, typeID: number, config: ItemJsonFrameTaskConfig) {
+    // STEP 0: 前置数据收集
+    this.logger.log(`打开模组页 ${ classID }`);
+    const resp = await this.parent.utils.createRequest({
+      url: McmodderUtils.getClassURL(classID),
+      method: "GET",
+      anonymous: true
+    });
+    if (!resp.responseXML) {
+      this.logger.fatal(`打开模组页 ${ classID } 失败`);
+      return;
+    }
+    this.logger.log(`打开模组页 ${ classID } 完成`);
+    const doc = $(resp.responseXML);
+    const { classData } = McmodderUtils.parseClassDocument(doc);
+    const className = classData.name;
+    const classEname = classData.englishName;
+    const maxNumber = parseInt(doc.find(".mold.mold-1 .count").text()?.split("(")[1]?.split("条)")[0]) || 0;
+    if (!maxNumber) {
+      const num1 = Math.abs(classID);
+      const num2 = Math.abs(typeID);
+      this.logger.warn((
+        num1 === 114514 || num1 === 1919810 || num2 === 114514 || num2 === 1919810
+      ) ? "这里除了屏幕前的 Homo 以外啥都木有..." : "这里啥都木有...");
+      return;
+    }
+
+    const taskConfig: ItemJsonFrameConfig = {
+      classID: classID,
+      typeID: typeID,
+      infer: config.infer,
+      geticon: config.geticon,
+      getall: config.getall
+    };
+
+    let itemList: McmodderItemList = [];
+
+    const inferBackup = this.inferRequestQueue.backupManager.hasBackup();
+    const detailedBackup = this.detailedRequestQueue.backupManager.hasBackup();
+
+    // STEP 1: 初步获取所有物品的基础信息
+    if (!inferBackup && !detailedBackup) {
+      itemList = await this.getItemListByClassID(taskConfig);
+
+      // STEP 1.5: O.O 似乎仍然会出现重复 ID 资料? 在这加个去重好了
+      itemList = [...new Map(itemList.map(item => [item.id, item])).values()];
+    }
+
+    // STEP 2 (可选但推荐): 向前/向后拓展各个区间来获取隐藏资料的基础信息
+    if (!detailedBackup) {
+      if (taskConfig.infer) itemList = await this.inferRequestQueue.run(itemList, taskConfig);
+    }
+
+    // STEP 3 (可选): 访问各资料编辑页来获取各资料详细信息
+    if (taskConfig.getall) itemList = await this.detailedRequestQueue.run(itemList);
+    else if (taskConfig.geticon) itemList = await this.appendImageDataToItemList(itemList);
+
+    // STEP 4: 保存结果，任务结束
+    const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
+    const fileName = McmodderUtils.regulateFileName(rawName);
+    this.logger.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
+    await this.itemRepository.write(fileName, itemList);
+    await this.updateSelection();
   }
 
   async getImageBlobByItemList(itemList: McmodderItemList, width: 32 | 128, maxConcurrent = 6) { // 大力出奇迹
@@ -600,21 +949,6 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     const branchList = [`${ classID }-${ typeID }`];
     const branchNameList: string[] = [];
 
-    // 获取被隐藏分类（考虑到不同的分支会有不同的隐藏分类，目前尚不清楚后台分支管理的具体机制，此项功能暂且搁置）
-    // 欢迎了解此项后台功能的朋友们与我们合作完善此项功能！
-    /* if (this.utils.getProfile("editorModList").split(",").includes(classID)) { 
-      const resp = await this.createAsyncRequest({
-        url: "https://admin.mcmod.cn/frame/pageItemType-list/",
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
-        data: "data=" + JSON.stringify({classID: classID})
-      });
-      $("<div>").html(JSON.parse(resp.responseText).html).find("#item-type-table tr").each((_, c) => {
-        let categoryName = $(c).find("td:nth-child(2)").text();
-        if (categoryName.split(":").filter(e => e.charAt(0) === "{" || e.charAt(0) === "[").length) hiddenCategoryList.push($(c).find("td:nth-child(1)").text());
-      });
-    } */
-
     // 获取分支情况
     const resp = await this.parent.utils.createRequest({ 
       url: `${ this.parent.hostname }/item/list/${ classID }-${ typeID }.html`,
@@ -630,7 +964,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         branchNameList.push(c.textContent);
       });
     }
-    
+
     // 根据分支情况逐一读取总物品列表
     config.classID = classID;
     for (let i in branchList) {
@@ -639,96 +973,35 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       this.logger.log(`展开分支 [${ branchList[i] }] ${ branchNameList[i] || "默认分支" } 完成`);
     }
 
-    // 搁置
-    // for (let e of hiddenCategoryList) await this.getItemListFromPage(`https://www.mcmod.cn/item/list/${id}-1-${e}.html`, itemList);
-
     return itemList;
   }
 
-  async performClassSearch(classID: number, typeID: number) {
-    // STEP 0: 前置数据收集
-    this.logger.log(`打开模组页 ${ classID }`);
-    const resp = await this.parent.utils.createRequest({
-      url: McmodderUtils.getClassURL(classID),
-      method: "GET",
-      anonymous: true
-    });
-    if (!resp.responseXML) {
-      this.logger.fatal(`打开模组页 ${ classID } 失败`);
+
+  async searchOnlineFiles() {
+    if (!this.parent.currentUID) {
+      McmodderUtils.commonMsg("请先登录~", false);
       return;
     }
-    this.logger.log(`打开模组页 ${ classID } 完成`);
-    const doc = $(resp.responseXML);
-    const { classData } = McmodderUtils.parseClassDocument(doc);
-    const className = classData.name;
-    const classEname = classData.englishName;
-    const maxNumber = parseInt(doc.find(".mold.mold-1 .count").text()?.split("(")[1]?.split("条)")[0]) || 0;
-    if (!maxNumber) {
-      const num1 = Math.abs(classID);
-      const num2 = Math.abs(typeID);
-      this.logger.warn((
-        num1 === 114514 || num1 === 1919810 || num2 === 114514 || num2 === 1919810
-      ) ? "这里除了屏幕前的 Homo 以外啥都木有..." : "这里啥都木有...");
-      return;
-    }
-
-    const configTemp: Record<string, any> = {
-      classID: classID,
-      typeID: typeID
-    };
-    this.classSearchFrame!.find("input[name]").each((_, _input) => {
-      const input = _input as HTMLInputElement;
-      const name = input.getAttribute("name") as keyof ItemJsonFrameConfig;
-      if (name) configTemp[name] = input.checked;
-    });
-    const config = configTemp as ItemJsonFrameConfig;
-    
-    let itemList: McmodderItemList = [];
-
-    const inferBackup = this.inferRequestQueue.backupManager.hasBackup();
-    const detailedBackup = this.detailedRequestQueue.backupManager.hasBackup();
-
-    // STEP 1: 初步获取所有物品的基础信息
-    if (!inferBackup && !detailedBackup) {
-      itemList = await this.getItemListByClassID(config);
-
-      // STEP 1.5: O.O 似乎仍然会出现重复 ID 资料? 在这加个去重好了
-      itemList = [...new Map(itemList.map(item => [item.id, item])).values()];
-    }
-
-    // STEP 2 (可选但推荐): 向前/后拓展各个区间来获取隐藏资料的基础信息
-    if (!detailedBackup) {
-      if (config.infer) itemList = await this.inferRequestQueue.run(itemList, config);
-    }
-
-    // STEP 3 (可选): 访问各资料编辑页来获取各资料详细信息
-    if (config.getall) itemList = await this.detailedRequestQueue.run(itemList);
-    else if (config.geticon) itemList = await this.appendImageDataToItemList(itemList);
-
-    // STEP 4: 保存结果，任务结束
-    const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
-    const fileName = McmodderUtils.regulateFileName(rawName);
-    this.logger.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
-    this.parent.utils.setConfig(fileName, itemList, "mcmodderJsonStorage");
-    this.updateSelection();
+    await this.ensureMounted();
+    this.component?.showOnlinePanel();
+    await this.loadOnlineFiles(1);
   }
 
-  private async getJSONFromURL(url: string, table: McmodderTable<ItemJsonFrameApplication>) {
-    table.showLoading();
-    table.empty();
+  async loadOnlineFiles(page: number) {
+    const files = await this.getJSONByPage(page);
+    this.component?.setOnlineFiles(files || [], this.maxPage || 1);
+  }
+
+  private async getJSONFromURL(url: string): Promise<ItemJsonFrameApplication[] | undefined> {
     let resp = await this.parent.utils.createRequest({ url: url, method: "GET" });
-    if (!resp.responseXML) return;
+    if (!resp.responseXML) return undefined;
     let doc = $(resp.responseXML);
     if (doc.find("title").text() === "页面重载开启") {
-      return new Promise<void>(resolve => {
-        setTimeout(() => {
-          this.getJSONFromURL(url, table)
-          .then(() => resolve());
-        }, 1e3);
-      });
+      await McmodderUtils.sleep(1e3);
+      return this.getJSONFromURL(url);
     }
-    let jsonList = doc.find("ignore_js_op");
-    jsonList.each((_, _json) => {
+    let jsonList: ItemJsonFrameApplication[] = [];
+    doc.find("ignore_js_op").each((_, _json) => {
       const json = $(_json);
       const infoFrame = json.parents(".t_f");
       const infoCopied = infoFrame.clone();
@@ -736,7 +1009,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
       const avatar = json.parents(".plhin").find(".avatar a");
       const pid = Number(infoFrame.attr("id")?.slice(12)); // postmessage_xxxxx
       if (isNaN(pid)) return;
-      table.appendData({
+      jsonList.push({
         user: `${ McmodderUtils.abstractLastFromURL(avatar.attr("href"), "center") },${ avatar.children().attr("alt") }`,
         pid: pid,
         name: json.find("a").text(),
@@ -745,12 +1018,29 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
         op: json.find("a").prop("href")
       });
     });
-    table.refreshAll();
-    McmodderUtils.updateAllTooltip();
-
     // 读取尾页页码
     this.maxPage = Number(doc.find(".last").first().text().slice(4));
+    return jsonList;
   }
+
+  private async getJSONByPage(page: number) {
+    return this.getJSONFromURL(`${ Mcmodder.URL_JSON_POST }&extra=&page=${ page }`);
+  }
+
+  async downloadAndImportFile(url: string) {
+    // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
+    let resp = await this.parent.utils.createRequest({ url: url });
+    let headers = resp.responseHeaders;
+    if (!headers.includes("content-type: application/octet-stream")) {
+      McmodderUtils.commonMsg("下载失败...", false);
+      console.error("Error downloading JSON file: " + resp);
+      return;
+    }
+    let name = headers.split('filename="')[1].split('"\r\n')[0];
+    let text = resp.responseText;
+    this.importFromText(text, name);
+  }
+
 
   async preSyncRow(selection: number | number[]) {
     if (!(selection instanceof Array)) selection = [selection];
@@ -776,18 +1066,18 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     const length = selection.length;
     const itemList: McmodderItemData[] = new Array(length);
     for (const i in selection) {
-      itemList[i] = McmodderUtils.simpleDeepCopy(this.table!.getEditorRowData(selection[i]));
+      itemList[i] = McmodderUtils.simpleDeepCopy(this.table.getEditorRowData(selection[i]));
     }
     await this.manualRequestQueue.run(itemList);
-    const batch = new BatchCommand(this.table!);
+    const batch = new BatchCommand(this.table);
     for (const i in itemList) {
-      batch.push(new EditRowCommand(this.table!, selection[i], itemList[i]));
+      batch.push(new EditRowCommand(this.table, selection[i], itemList[i]));
     }
-    this.table!.execute(batch);
+    this.table.execute(batch);
   }
 
   async preManualSubmitRow(index: number) {
-    const data = this.table!.getData(index);
+    const data = this.table.getData(index);
     if (data.id) {
       this.manualSubmitRow(`${ this.parent.hostname }/item/edit/${ data.id }/`, index);
       return;
@@ -817,7 +1107,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
   }
 
   manualSubmitRow(url: string, index: number) {
-    const data = this.convertToImportableFormat(this.table!.getData(index));
+    const data = this.convertToImportableFormat(this.table.getData(index));
     const interactID = this.parent.utils.setInteract(JSON.stringify(data));
     GM_openInTab(`${ url }?i=${ interactID }`);
   }
@@ -827,132 +1117,8 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     const length = selection.length;
     const itemList = new Array(length);
     for (const i in selection) {
-      itemList[i] = McmodderUtils.simpleDeepCopy(this.table!.getData(selection[i]));
+      itemList[i] = McmodderUtils.simpleDeepCopy(this.table.getData(selection[i]));
     }
-    // await this.manualSubmitQueue.run(itemList);
     McmodderUtils.commonMsg("所有改动均已提交~");
-  }
-
-  private async getJSONByPage(page: number, table: McmodderTable<ItemJsonFrameApplication>) {
-    await this.getJSONFromURL(`${ Mcmodder.URL_JSON_POST }&extra=&page=${ page }`, table);
-  }
-
-  async downloadAndImportFile(url: string) {
-    // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
-    let resp = await this.parent.utils.createRequest({ url: url });
-    let headers = resp.responseHeaders;
-    if (!headers.includes("content-type: application/octet-stream")) {
-      McmodderUtils.commonMsg("下载失败...", false);
-      console.error("Error downloading JSON file: " + resp);
-      return;
-    }
-    let name = headers.split('filename="')[1].split('"\r\n')[0];
-    let text = resp.responseText;
-    this.importFromText(text, name);
-  }
-
-  async searchOnlineFiles() {
-    if (!this.parent.currentUID) {
-      McmodderUtils.commonMsg("请先登录~", false);
-    }
-
-    swal.fire({
-      title: "从收纳贴获取JSON",
-      html: `<div class="jsonframe-bbs-filelist" />`,
-      footer: `<a target="_blank" href="${ Mcmodder.URL_JSON_POST }">前往 JSON 收纳贴</a>`,
-      customClass: "swal2-popup-wider",
-      showConfirmButton: false,
-      showCancelButton: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      cancelButtonText: "完事了"
-    });
-    let fileTable = new McmodderTable<ItemJsonFrameApplication>(this.parent, {}, {
-      user: ["发表者", McmodderTable.DISPLAYRULE_LINK_CENTER_WITH_NAME],
-      pid: ["所属楼层编号", data => {
-        return `<a target="_blank" href="https://bbs.mcmod.cn/forum.php?mod=redirect&goto=findpost&ptid=1281&pid=${ data }">${ data }</da>`
-      }],
-      name: "文件名",
-      size: "文件大小",
-      info: ["额外信息", McmodderTable.DISPLAYRULE_HOVER],
-      op: ["操作", data => {
-        return `<a class="jsonframe-bbs-filedl" data-url="${ data }">下载并导入</a>`
-      }]
-    });
-    fileTable.$instance.appendTo(".jsonframe-bbs-filelist");
-
-    fileTable.$instance.on("click", ".jsonframe-bbs-filedl", e => {
-      const target = e.currentTarget as HTMLElement;
-      const url = target.getAttribute("data-url");
-      if (url) this.downloadAndImportFile(url);
-    });
-    
-    await this.getJSONByPage(1, fileTable);
-    let pagination = new Pagination(this.parent, null, this.maxPage, page => {
-      this.getJSONByPage(page, fileTable);
-    });
-    pagination.$instance.insertAfter(".jsonframe-bbs-filelist");
-  }
-
-  private convertToImportableFormat(data: Partial<McmodderItemData>) {
-    const entry: Record<string, any> = {};
-    for (const key of McmodderValues.importableKeys) {
-      let value = (data as any)[key];
-      if (value === undefined || value === null || (typeof value === "number" && isNaN(value))) value = "";
-      switch (key) {
-        case "OredictList":
-          entry[key] = value.replaceAll(",", ", ");
-          break;
-        case "smallIcon": case "largeIcon":
-          entry[key] = McmodderUtils.removeBase64ImgPrefix(value);
-          break;
-        default: entry[key] = value;
-      }
-    }
-    return entry as McmodderItemData;
-  }
-
-  exportJson(fileName: string) {
-    if (!this.isAvailableFileName(fileName)) return false;
-    let content = "";
-    swal.fire({
-      title: "导出文件",
-      html: `
-      <p class="text-muted" style="font-size: 14px;">
-        即将保存 ${ fileName }，请注意未保存的改动不会被导出...
-        <hr>
-        <p align="center">
-          <button id="jsonframe-export-1" class="btn">保存为通用批量导入格式</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">只保留对批量导入有用的部分，便于提交给重生来导入。</p>
-        <hr>
-        <p align="center">
-          <button id="jsonframe-export-2" class="btn">保存为完整格式</button>
-        </p>
-        <p class="text-muted jsonframe-export-text">
-          保留全部内容，便于转移到其他安装了 Mcmodder v1.6+ 的浏览器查看。
-          <strong>不支持批量导入，请勿直接提交此文件！！</strong>
-        </p>
-      </p>`,
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: "完事了"
-    });
-    $("#jsonframe-export-1").click(() => {
-      content = "";
-      this.table!.getAllData().forEach(e => {
-        content += JSON.stringify(this.convertToImportableFormat(e)) + "\r\n";
-      });
-      McmodderUtils.saveFile(this.activeFileName, content);
-      swal.close();
-    });
-    $("#jsonframe-export-2").click(() => {
-      content = "";
-      this.table!.getAllData().forEach(entry => {
-        content += JSON.stringify(entry) + "\r\n";
-      });
-      McmodderUtils.saveFile(this.activeFileName, content);
-      swal.close();
-    });
   }
 }

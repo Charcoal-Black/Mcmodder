@@ -1,89 +1,148 @@
-// import { Mcmodder } from "../Mcmodder";
-import { McmodderKeyData } from "../types";
+import type { McmodderKeyData } from "../types";
 import { McmodderUtils } from "../Utils";
 
 type ContextMenuDisplayRule = (e: JQueryMouseEventObject) => boolean;
-type ContextMenuCallback = (e: JQueryMouseEventObject) => void;
+type ContextMenuCallback = (e: any) => void;
+
+export interface ContextMenuEntry {
+  key: string;
+  text: string;
+  icon?: string;
+  shortcut?: McmodderKeyData;
+  callback: (e: unknown) => void;
+  shortcutHTML?: string;
+  iconGlyph?: string;
+}
+
+export interface ContextMenuExpose {
+  show: (x: number, y: number, activeIndexList: number[], entries: ContextMenuEntry[], event: unknown) => Promise<void>;
+  hide: () => void;
+  getActiveState: () => boolean;
+}
 
 type ContextMenuItem = {
-  key: string,
-  node: JQuery;
+  key: string;
+  text: string;
+  icon?: string;
   shortcut?: McmodderKeyData;
   displayRule: ContextMenuDisplayRule;
   callback: ContextMenuCallback;
-}
-type ContextMenuItems = ContextMenuItem[];
+};
 
-type ContextMenuItemOption = {
-  key: string,
-  text: string,
-  shortcut?: McmodderKeyData,
-  displayRule: ContextMenuDisplayRule,
-  callback: ContextMenuCallback
+export type ContextMenuItemOption = {
+  key: string;
+  text: string;
+  icon?: string;
+  shortcut?: McmodderKeyData;
+  displayRule: ContextMenuDisplayRule;
+  callback: ContextMenuCallback;
+};
+
+/** FontAwesome 字形缓存：从宿主页面读取 `::before` 内容，供 Shadow DOM 内渲染图标 */
+const faGlyphCache: Record<string, string> = {};
+
+function getFaGlyph(className: string): string {
+  if (!(className in faGlyphCache)) {
+    let glyph = "";
+    try {
+      const probe = document.createElement("i");
+      probe.className = className;
+      probe.style.visibility = "hidden";
+      probe.style.position = "fixed";
+      document.body.appendChild(probe);
+      const content = getComputedStyle(probe, "::before").content;
+      probe.remove();
+      glyph = content && content !== "none" ? content.replace(/^"|"$/g, "") : "";
+    } catch (e) {
+      console.warn("获取 FontAwesome 字形失败:", className, e);
+    }
+    faGlyphCache[className] = glyph;
+  }
+  return faGlyphCache[className];
 }
 
 export class McmodderContextMenu {
 
-  // private parent: Mcmodder;
   private $container: JQuery;
-  private container: Element;
+  private container: HTMLElement;
   private activeState: boolean;
-  private $instance: JQuery;
-  private instance: Element;
-  private menu: JQuery;
-  // private arrow: JQuery;
-  private items: ContextMenuItems;
-  private contextmenuEvent?: JQueryMouseEventObject;
-  private selected: number;
+    private $instance: JQuery;
+  instance: Element;
+  private items: ContextMenuItem[];
   private itemCount = 0;
+  private contextmenuEvent?: JQueryMouseEventObject;
   private activeIndexList: number[] = [];
-  private activeIndexLength = 0;
-  private pressArrowKeyBeforeMouseMove = false;
+  private component?: ContextMenuExpose;
+  private mountPromise?: Promise<void>;
 
-  constructor(/* parent: Mcmodder, */container: Element | JQuery) {
-    // this.parent = parent;
+  constructor(container: Element | JQuery) {
     this.$container = $(container).css("position", "relative");
-    this.container = this.$container.get(0);
+    this.container = this.$container.get(0) as HTMLElement;
     this.activeState = false;
     this.$instance = $(`
-      <div class="mcmodder-contextmenu" tabindex="-1">
-        <div class="mcmodder-contextmenu-inner">
-          <div class="arrow" />
-          <ul>
-            <li class="empty">当前无可用选项...</li>
-          </ul>
-        </div>
-      </div>`).prependTo(container).hide();
+      <div class="mcmodder-contextmenu-host" tabindex="-1"></div>`).prependTo(container);
     this.instance = this.$instance.get(0);
-    this.menu = this.$instance.find("ul");
-    // this.arrow = this.$instance.find(".arrow");
     this.items = [];
-    this.selected = -1;
+    // 宿主样式只需注入一次（宿主位于 Shadow DOM 之外）
+    if (!document.getElementById("mcmodder-contextmenu-host-style")) {
+      const style = document.createElement("style");
+      style.id = "mcmodder-contextmenu-host-style";
+      style.textContent = `
+        .mcmodder-contextmenu-host {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 0;
+          height: 0;
+          z-index: 1;
+        }
+      `;
+      document.head.appendChild(style);
+    }
     this.bindEvents();
+  }
+
+  private async ensureMounted() {
+    if (this.component) return;
+    if (!this.mountPromise) {
+      this.mountPromise = Promise.all([
+        import("../vue/components/ContextMenu.vue"),
+        import("../vue/mount")
+      ]).then(([module, mount]) => {
+        mount.mountVueApp(module.default, {
+          container: this.container,
+          onReady: (api: ContextMenuExpose) => {
+            this.component = api;
+          }
+        }, this.$instance.get(0) as HTMLElement);
+      });
+    }
+    return this.mountPromise;
   }
 
   protected bindEvents() {
     this.$container
     .contextmenu(_e => this.onContextmenu(_e))
     .click(_e => this.onClick(_e));
-
-    this.$instance
-    .keydown(_e => this.activeState && this.onMenuKeydown(_e));
-
-    this.$instance
-    .on("mouseenter", "li", _e => this.activeState && this.onItemMouseenter(_e))
-    .on("mousemove", "li", _e => this.activeState && this.onItemMousemove(_e))
-    .on("mouseleave", "li", _e => this.activeState && this.onItemMouseleave(_e))
-    .on("click", "li", _e => this.activeState && this.onItemClick(_e));
   }
 
   protected onContextmenu(e: JQueryMouseEventObject) {
     e.preventDefault();
     const absolutePos = McmodderUtils.getAbsolutePos(this.container);
     if (!this.activeState) {
+      this.activeState = true;
       this.contextmenuEvent = e;
       this.updateMenu(e);
-      this.show(e.pageX - absolutePos.x, e.pageY - absolutePos.y);
+      this.ensureMounted().then(() => {
+        if (!this.activeState) return;
+        this.component?.show(
+          e.pageX - absolutePos.x,
+          e.pageY - absolutePos.y,
+          this.activeIndexList,
+          this.getVisibleEntries(),
+          e
+        );
+      });
     }
   }
 
@@ -93,185 +152,52 @@ export class McmodderContextMenu {
     }
   }
 
-  private addSelectedClass() {
-    this.items[this.activeIndexList[this.selected]].node.addClass("selected");
-  }
-
-  private removeSelectedClass() {
-    this.items[this.activeIndexList[this.selected]].node.removeClass("selected");
-  }
-
-  protected onMenuKeydown(e: JQueryKeyEventObject) {
-    for (let i = 0; i < this.itemCount; i++) {
-      const shortcut = this.items[i].shortcut;
-      if (shortcut && McmodderUtils.isKeyMatch(shortcut, e)) {
-        this.items[i].node.addClass("selected").click();
-        return;
-      }
-    }
-    if (McmodderUtils.isKeyMatch({ keyCode: 13 }, e)) {
-      if (this.selected != -1) {
-        this.items[this.activeIndexList[this.selected]].node.click();
-      }
-    }
-    else if (McmodderUtils.isKeyMatch({ keyCode: 27 }, e)) {
-      e.preventDefault();
-      this.$instance.blur();
-      this.hide();
-    }
-    else if (McmodderUtils.isKeyMatch({ keyCode: 40 }, e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (this.activeIndexLength < 1) return;
-      this.pressArrowKeyBeforeMouseMove = true;
-      if (this.selected === -1) {
-        this.selected = 0;
-      } else {
-        this.removeSelectedClass();
-        this.selected = Math.min(this.selected + 1, this.activeIndexLength - 1);
-      }
-      this.addSelectedClass();
-    }
-    else if (McmodderUtils.isKeyMatch({ keyCode: 38 }, e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (this.activeIndexLength < 1) return;
-      this.pressArrowKeyBeforeMouseMove = true;
-      if (this.selected === -1) {
-        this.selected = this.activeIndexLength - 1;
-      } else {
-        this.removeSelectedClass();
-        this.selected = Math.max(this.selected - 1, 0);
-      }
-      this.addSelectedClass();
-    }
-  }
-
-  protected onItemMouseenter(_e: JQueryMouseEventObject) {
-    this.pressArrowKeyBeforeMouseMove = true;
-  }
-
-  protected onItemMousemove(e: JQueryMouseEventObject) {
-    if (!this.pressArrowKeyBeforeMouseMove) {
-      return;
-    }
-    if (this.selected !== -1) {
-      this.removeSelectedClass();
-    }
-    const index = Number(e.currentTarget.getAttribute("data-index"));
-    const activeIndex = this.activeIndexList.indexOf(index);
-    this.selected = activeIndex;
-    this.addSelectedClass();
-  }
-
-  protected onItemMouseleave(_e: JQueryMouseEventObject) {
-    if (this.selected !== -1) {
-      this.removeSelectedClass();
-      this.selected = -1;
-    }
-  }
-
-  protected onItemClick(e: JQueryMouseEventObject) {
-    const index = Number(e.currentTarget.getAttribute("data-index"));
-    this.items[index].callback(this.contextmenuEvent!);
-    setTimeout(() => {
-      this.items[index].node.removeClass("selected");
-    }, 2e2);
-  }
-
-  protected moveTo(x: number, y: number) {    
-    this.$instance.css({
-      left: x + "px",
-      top: y + "px"
-    })
+  private getVisibleEntries(): ContextMenuEntry[] {
+    return this.activeIndexList.map(index => {
+      const item = this.items[index];
+      return {
+        key: item.key,
+        text: item.text,
+        icon: item.icon,
+        shortcut: item.shortcut,
+        shortcutHTML: item.shortcut ? McmodderUtils.keyToHTML(item.shortcut) : undefined,
+        iconGlyph: item.icon ? getFaGlyph(item.icon) : undefined,
+        callback: item.callback
+      };
+    });
   }
 
   private updateMenu(e: JQueryMouseEventObject) {
-    let isEmpty = true;
-    const emptyNode = this.menu.find(".empty");
     this.activeIndexList.length = 0;
-    this.activeIndexLength = 0;
     this.items.forEach((option, index) => {
       if (option.displayRule(e)) {
-        option.node.show();
-        isEmpty = false;
         this.activeIndexList.push(index);
-        this.activeIndexLength++;
-      } else {
-        option.node.hide();
       }
     });
-    if (isEmpty) {
-      emptyNode.show();
-    } else {
-      emptyNode.hide();
-    }
   }
 
   show(x: number, y: number) {
     this.activeState = true;
-    this.$instance.removeClass("expand-left").removeClass("expand-right").show().focus();
-    this.selected = -1;
-    const em = Number(getComputedStyle(this.instance).fontSize.slice(0, -2));
-    let nx = x + (2.2 - 0.2) * em;
-    let ny = y + (-0.75 - 0.2) * em;
-    this.moveTo(nx, ny);
-    setTimeout(() => {
-      if (x && y) {
-        const menuRect = this.instance.getBoundingClientRect();
-        const containerRect = this.container.getBoundingClientRect();
-        if (menuRect.right <= containerRect.right) { // 箭头靠左
-          this.$instance.addClass("expand-right");
-        }
-        else { // 箭头靠右
-          this.$instance.addClass("expand-left");
-          nx = x + (-1.7 - 0.2) * em - menuRect.width;
-          ny = y + (-0.75 - 0.2) * em;
-        }
-        
-        this.moveTo(nx, ny);
-      }
-      this.$instance.removeClass("faded");
-    }, 0);
+    if (!this.component) return;
+    this.component.show(x, y, this.activeIndexList, this.getVisibleEntries(), this.contextmenuEvent);
   }
 
   hide() {
     this.activeState = false;
-    this.$instance.addClass("faded");
-    setTimeout(() => {
-      if (!this.activeState) this.$instance.hide();
-    }, 200);
+    this.component?.hide();
   }
 
   addItem(option: ContextMenuItemOption) {
-    const { key, text, shortcut, displayRule, callback } = option;
-  
-    const node = $(`
-      <li data-index="${
-        this.itemCount
-      }" id="mcmodder-contextmenu-${
-        key
-      }"><a>${
-        text
-      }</a></li>
-    `)
-    .appendTo(this.menu);
-
-    if (shortcut) {
-      $(`<span class="item-shortcut-left">`)
-      .html(McmodderUtils.keyToHTML(shortcut))
-      .appendTo(node);
-    }
-
+    const { key, text, icon, shortcut, displayRule, callback } = option;
     this.items.push({
       key,
-      node,
+      text,
+      icon,
       shortcut,
       displayRule,
-      callback,
-    })
+      callback
+    });
     this.itemCount++;
-
     return this;
   }
 
