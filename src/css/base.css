@@ -2720,6 +2720,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .badge-row .text-danger, .badge.badge-danger {
   background-color: #f555;
 }
+.badge-row .text-warning, .badge.badge-warning {
+  background-color: #fc55;
+}
 .badge-row .text-info, .badge.badge-info {
   background-color: #55f5;
 }
