@@ -1324,11 +1324,13 @@ pre ins,
   width: 288px;
   height: 288px;
 }
+#verify-window .common-text img.mcmodder-compare-icon,
 #mcmodder-verify-window .common-text img.mcmodder-compare-icon {
   image-rendering: pixelated;
   transition: width .15s ease-in-out, height .15s ease-in-out;
   cursor: zoom-in;
 }
+#verify-window .common-text img.mcmodder-compare-icon.large,
 #mcmodder-verify-window .common-text img.mcmodder-compare-icon.large {
   cursor: zoom-out;
 }
