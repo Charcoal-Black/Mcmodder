@@ -2365,6 +2365,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .form-control.mcmodder-table-input {
   padding: .1em;
   border-radius: 0;
+  text-align: center;
 }
 .common-item-mold-list .mold {
   margin: 5px 10px;

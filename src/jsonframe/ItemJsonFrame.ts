@@ -554,21 +554,46 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
 
         // 展开综合父资料
         this.logger.log(`${ itemData.id } 是综合父资料，展开此物品页`);
-        itemData.generalNum = Number(doc.find(".item-skip-list legend").text().split("共有 ")[1].split(" 个")[0]);
-        if (itemData.generalNum === 100) {
+        const generalLegend = doc.find(".item-skip-list legend");
+
+        let generalNum;
+        if (generalLegend.length) {
+          generalNum = Number(generalLegend.text().split("共有 ")[1].split(" 个")[0]);
+        } else {  
+          generalNum = doc.find(".item-row.general").length - 1;
+        }
+        itemData.generalNum = generalNum;
+        if (generalNum === 100) {
           this.logger.warn("综合子资料达到上限 (100) ，可能无法访问部分子资料");
         }
-        for (let _b of doc.find(".item-skip-list ul a").toArray()) {
-          const b = $(_b);
-          const s = doc.find(`.name[data-id=${b.attr("data-for")}]`);
-          const childID = McmodderUtils.abstractIDFromURL(s.next().find("a").first().attr("href"), "item");
+
+        let tempData: [id: number, name: string, englishName: string][] = [];
+        if (generalLegend.length) {
+          for (let _b of doc.find(".item-skip-list ul a").toArray()) {
+            const b = $(_b);
+            const s = doc.find(`.name[data-id=${b.attr("data-for")}]`);
+            const childID = McmodderUtils.abstractIDFromURL(s.next().find("a").first().attr("href"), "item");
+            const name = b.text();
+            const englishName = s.text().split(b.text() + " (")[1]?.split(")")[0];
+            tempData.push([childID, name, englishName]);
+          }
+        } else {
+          doc.find(".item-row.general .name h5").each((_, e) => {
+            const childID = McmodderUtils.abstractIDFromURL($(e).parent().next().find("a").first().attr("href"), "item");
+            const fullname = e.textContent;
+            const { name, englishName } = McmodderUtils.parseItemFullName(fullname);
+            tempData.push([childID, name, englishName]);
+          });
+        }
+        
+        tempData.forEach(([childID, name, englishName]) => {
           const generalData: McmodderItemData = {
             id: childID,
             itemType: config.typeID,
             smallIcon: "",
             largeIcon: "",
-            name: b.text(),
-            englishName: s.text().split(b.text() + " (")[1]?.split(")")[0],
+            name,
+            englishName,
             creativeTabName: itemData.creativeTabName,
             generalTo: itemData.id,
             branch: branchName,
@@ -576,7 +601,7 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
           };
           itemList.push(generalData);
           this.logger.success(`[${ generalData.id }] ${ McmodderUtils.getItemFullName(generalData.name, generalData.englishName) }`);
-        }
+        });
         this.logger.log(`展开物品 ${ itemData.id } 完成`);
       }
 
@@ -708,8 +733,9 @@ export class ItemJsonFrame extends JsonFrame<McmodderItemData> {
     // STEP 4: 保存结果，任务结束
     const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
     const fileName = McmodderUtils.regulateFileName(rawName);
-    this.logger.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
-    this.parent.utils.setConfig(fileName, itemList, "mcmodderJsonStorage");
+    this.logger.success(`成功加载全部 ${itemList.length.toLocaleString()}/${maxNumber.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
+    this.itemRepository.createFile(fileName);
+    this.itemRepository.write(fileName, itemList);
     this.updateSelection();
   }
 
