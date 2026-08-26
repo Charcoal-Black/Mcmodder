@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="root"
     class="mcmodder-contextmenu"
     :class="{
       'expand-right': expandRight,
@@ -23,7 +24,7 @@
             @click="onItemClick(i)"
           >
             <i v-if="entry.iconGlyph" class="mcmodder-contextmenu-icon">{{ entry.iconGlyph }}</i>
-            <a>{{ entry.text }}</a>
+            <a v-html="entry.text" />
             <span v-if="entry.shortcut" class="item-shortcut-left" v-html="entry.shortcutHTML" />
           </li>
         </template>
@@ -81,12 +82,16 @@ async function show(
   entries: ContextMenuEntry[],
   event: unknown
 ) {
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = undefined;
+  }
   active.value = true;
   activeIndexList.value = _activeIndexList;
   visibleItems.value = entries;
   contextmenuEvent = event;
   hidden.value = false;
-  faded.value = false;
+  faded.value = true;
   expandLeft.value = false;
   expandRight.value = false;
   selected.value = -1;
@@ -97,18 +102,23 @@ async function show(
   await nextTick();
   root.value?.focus();
 
-  if (_x && _y) {
-    const menuRect = root.value?.getBoundingClientRect();
-    const containerRect = props.container?.getBoundingClientRect();
-    if (!menuRect || !containerRect) return;
-    if (menuRect.right <= containerRect.right) {
-      expandRight.value = true;
-    } else {
-      expandLeft.value = true;
-      x.value = _x - 1.9 * getEm() - menuRect.width;
-      y.value = _y - 0.95 * getEm();
+  setTimeout(() => {
+    if (!active.value) return;
+    if (typeof _x === "number" && typeof _y === "number") {
+      const menuRect = root.value?.getBoundingClientRect();
+      const containerRect = props.container?.getBoundingClientRect();
+      if (menuRect && containerRect) {
+        if (menuRect.right <= containerRect.right) {
+          expandRight.value = true;
+        } else {
+          expandLeft.value = true;
+          x.value = _x - 1.9 * getEm() - menuRect.width;
+          y.value = _y - 0.95 * getEm();
+        }
+      }
     }
-  }
+    faded.value = false;
+  }, 0);
 }
 
 function hide() {
@@ -133,6 +143,8 @@ function getEm() {
 
 function triggerEntry(entry: ContextMenuEntry | null) {
   if (!entry) return;
+  const index = visibleItems.value.indexOf(entry);
+  if (index !== -1) selected.value = index;
   entry.callback(contextmenuEvent);
   window.setTimeout(() => {
     selected.value = -1;
