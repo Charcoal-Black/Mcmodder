@@ -32,7 +32,7 @@ export class McmodderUEditor {
     });
   }
 
-  init(editor: any) {
+  protected init(editor: any) {
     let iframe = editor.iframe;
 
     this.outerFrame = $(iframe).parents("#editor-ueeditor").get(0) as HTMLElement;

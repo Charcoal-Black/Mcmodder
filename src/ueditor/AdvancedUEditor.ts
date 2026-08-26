@@ -40,6 +40,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   autoLink?: McmodderAutoLink;
   template = new McmodderTemplate(this);
   private contentLock = false;
+  private pending = true;
+  private isFrameReady = false;
 
   private readonly templateObserver = new MutationObserver(mutationList => {
     for (let mutation of mutationList) {
@@ -57,7 +59,10 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
     this.autoUpdateEditorStatsThreshold = this.parent.utils.getConfig("editorStats");
     this.isModrinthVer = new URLSearchParams(window.location.search).has("mrid");
-    this.advinit();
+    if (this.isFrameReady) {
+      this.pending = false;
+      this.advinit();
+    }
   }
 
   private addTool(id: string, text: string, callback: () => any) {
@@ -67,6 +72,15 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     .hide()
     .appendTo(this.toolBar!)
     .click(callback);
+  }
+
+  protected override init(editor: any) {
+    super.init(editor);
+    this.isFrameReady = true;
+    if (this.pending) {
+      this.pending = false;
+      this.advinit();
+    }
   }
 
   private advinit() {
