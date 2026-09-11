@@ -129,8 +129,16 @@ export class CenterHomeInit extends CenterBaseInit {
           reject(err);
           return;
         }
-        profile.uuid = cookie[0].value,
-        profile.expirationDate = cookie[0].expirationDate ? cookie[0].expirationDate * 1e3 : -1;
+        if (!cookie || !cookie.length || !cookie[0]) {
+          reject(new Error("未找到 _uuid Cookie，可能未登录"));
+          return;
+        }
+        profile.uuid = cookie[0].value;
+        if (cookie[0].expirationDate) {
+          profile.expirationDate = cookie[0].expirationDate * 1e3;
+        } else if (!profile.expirationDate || profile.expirationDate <= Date.now()) {
+          profile.expirationDate = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        }
         if (this.getUtils().getConfig("customAdvancements") && profile.editByte >= 1e3 && profile.editAvg >= 120) {
           this.getParent().advutils.addProgress(AdvancementID.MASTER_EDITOR);
         }

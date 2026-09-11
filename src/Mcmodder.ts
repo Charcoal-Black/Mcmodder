@@ -1,6 +1,6 @@
-import { GM_getValue, GM_openInTab, GM_setValue } from "$";
+import { GM_cookie, GM_getValue, GM_openInTab, GM_setValue } from "$";
 import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils";
-import { McmodderConfigUtils } from "./config/ConfigUtils";
+import { McmodderConfigUtils, McmodderPermission } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
 import { AdvancementLoader } from "./loader/AdvancementLoader";
 import { ConfigLoader } from "./loader/ConfigLoader";
@@ -303,17 +303,310 @@ export class Mcmodder {
   switchProfile(uid: number) {
     if (uid) {
       const profile = this.utils.getProfile("*", uid);
-      $.cookie("_uuid", profile.uuid, { domain: ".mcmod.cn", path: "/", expires: new Date(profile.expirationDate) });
+      const expirationMs = (profile.expirationDate && profile.expirationDate > Date.now()) ? profile.expirationDate : Date.now() + 30 * 24 * 60 * 60 * 1000;
+      const expires = new Date(expirationMs);
+      $.cookie("_uuid", profile.uuid, { domain: ".mcmod.cn", path: "/", expires });
+      if (typeof GM_cookie !== "undefined" && GM_cookie.set && profile.uuid) {
+        GM_cookie.set({
+          name: "_uuid",
+          value: profile.uuid,
+          domain: ".mcmod.cn",
+          path: "/",
+          expirationDate: Math.floor(expirationMs / 1000)
+        }, () => {});
+      }
       this.currentUsername = profile.nickname;
     } else {
       $.cookie("_uuid", null, { domain: ".mcmod.cn", path: "/" });
+      if (typeof GM_cookie !== "undefined" && GM_cookie.delete) {
+        GM_cookie.delete({
+          name: "_uuid"
+        }, () => {});
+      }
       this.currentUsername = "";
     }
     this.currentUID = uid;
   }
+  parseCenterProfileFromHTML(htmlString: string, finalUrl: string, uuid: string): { uid: number, profile: McmodderProfileData } | null {
+    const doc = $(new DOMParser().parseFromString(htmlString, "text/html"));
+
+    let uid = 0;
+    if (finalUrl) {
+      const match = finalUrl.match(/center\.mcmod\.cn\/(\d+)/);
+      if (match) {
+        uid = Number(match[1]);
+      }
+    }
+    if (!uid) {
+      const href = doc.find(".header-user-name a, .name.top-username a, .user-icon a").first().attr("href");
+      if (href) {
+        const match = href.match(/center\.mcmod\.cn\/(\d+)/);
+        if (match) {
+          uid = Number(match[1]);
+        }
+      }
+    }
+
+    const metadataStr = doc.find("meta[name=keywords]").attr("content") || "";
+    const metadata = metadataStr.replace(",我的世界,minecraft,我的世界mod", "").split(",");
+
+    const nickname = metadata[0] || doc.find(".user-name .name, .user-name span").first().text().trim() || doc.find(".header-user-name a").text().trim();
+    const username = metadata[1] || nickname;
+
+    if (!uid || !nickname) {
+      return null;
+    }
+
+    let avatar = doc.find(".user-icon-img img").attr("src") || doc.find(".header-user-avatar img").attr("src") || "";
+    if (avatar.startsWith("//")) {
+      avatar = "https:" + avatar;
+    } else if (avatar.startsWith("/")) {
+      avatar = "https://www.mcmod.cn" + avatar;
+    }
+
+    const stats = doc.find(".center-total ul").contents();
+    const regTimeText = stats.eq(6).children().eq(1).text().trim();
+    const regTime = regTimeText ? Date.parse(regTimeText) : Date.now();
+
+    const lvText = doc.find(".user-name .user-lv, .user-lv").text().trim();
+    const lvMatch = lvText.match(/\d+/);
+    const lv = lvMatch ? Number(lvMatch[0]) : 0;
+
+    const userGroup = stats.eq(0).children().eq(1).text().trim() || "百科用户";
+
+    const editByteText = stats.eq(2).children().eq(1).text().replace(/,/g, "").replace(/字节/g, "").trim();
+    const editByte = Number(editByteText) || 0;
+
+    const editNumText = stats.eq(1).children().eq(1).text().replace(/,/g, "").replace(/次/g, "").trim();
+    const editNum = Number(editNumText) || 0;
+
+    let editAvg = 0;
+    const avgNode = stats.get(3);
+    if (avgNode) {
+      const avgText = $(avgNode.textContent || "").children().eq(1).text().replace(/,/g, "").replace(/字节/g, "").trim();
+      editAvg = Number(avgText) || 0;
+    }
+
+    const profile: McmodderProfileData = {
+      uuid,
+      expirationDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      avatar,
+      nickname,
+      username,
+      regTime,
+      lv,
+      userGroup,
+      editByte,
+      editNum,
+      editAvg,
+      permission: McmodderPermission.NONE
+    };
+
+    doc.find(".admin-list").each((_, _c) => {
+      const c = $(_c);
+      let s: number[] = [], l: "editorModList" | "adminModList" | "devModList" | null = null;
+      const t = c.find(".title").text().trim();
+      if (t.startsWith("编辑员")) l = "editorModList";
+      else if (t.startsWith("管理员")) l = "adminModList";
+      else if (t.startsWith("开发者")) l = "devModList";
+      if (l) {
+        c.find("li a").each((_, d) => {
+          const match = (d as HTMLAnchorElement).href?.match(/\/class\/(\d+)/);
+          if (match) s.push(Number(match[1]));
+        });
+        profile[l] = s.join(",");
+      }
+    });
+
+    let permission: McmodderPermission;
+    if (McmodderValues.adminIDList.includes(uid)) permission = McmodderPermission.ADMIN;
+    else if (profile.adminModList) permission = McmodderPermission.MANAGER;
+    else if (profile.devModList) permission = McmodderPermission.DEVELOPER;
+    else if (profile.editorModList) permission = McmodderPermission.EDITOR;
+    else if (["禁止发言", "禁止编辑", "禁止访问"].includes(profile.userGroup)) permission = McmodderPermission.BANNED;
+    else permission = McmodderPermission.NONE;
+    profile.permission = permission;
+
+    return { uid, profile };
+  }
+
+  async addProfileByUUID(rawInput: string) {
+    if (!rawInput) {
+      McmodderUtils.commonMsg("输入的登录凭证不能为空！", false);
+      return;
+    }
+    let uuid = rawInput.trim();
+    if (uuid.includes("_uuid=")) {
+      const match = uuid.match(/_uuid=([^;\s"']+)/);
+      if (match) {
+        uuid = match[1].trim();
+      }
+    }
+    uuid = uuid.replace(/^["']|["']$/g, "").trim();
+    if (!uuid) {
+      McmodderUtils.commonMsg("未能从输入中提取到有效的 _uuid 凭证！", false);
+      return;
+    }
+
+    swal.fire({
+      title: "正在验证登录凭证",
+      html: `<p>正在通过 _uuid 获取账号信息，请稍候...</p>`,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false
+    });
+
+    const previousUuid = $.cookie("_uuid");
+
+    try {
+      const initialExpirationMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
+      $.cookie("_uuid", uuid, { domain: ".mcmod.cn", path: "/", expires: new Date(initialExpirationMs) });
+      if (typeof GM_cookie !== "undefined" && GM_cookie.set) {
+        GM_cookie.set({
+          name: "_uuid",
+          value: uuid,
+          domain: ".mcmod.cn",
+          path: "/",
+          expirationDate: Math.floor(initialExpirationMs / 1000)
+        }, () => {});
+      }
+
+      const resp = await this.utils.createRequest({
+        url: "https://center.mcmod.cn/",
+        method: "GET",
+        headers: {
+          "Cookie": `_uuid=${uuid}`,
+          "User-Agent": navigator.userAgent,
+          "Referer": "https://www.mcmod.cn/"
+        }
+      });
+
+      const parsed = this.parseCenterProfileFromHTML(resp.responseText, resp.finalUrl || "", uuid);
+      if (!parsed) {
+        if (previousUuid) {
+          let restoreExpirationMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
+          try {
+            const myProfilesForRestore = this.utils.getConfigAsNumberList("myProfiles");
+            for (const rid of myProfilesForRestore) {
+              const rp = this.utils.getProfile("*", rid) as McmodderProfileData;
+              if (rp && rp.uuid === previousUuid && rp.expirationDate && rp.expirationDate > Date.now()) {
+                restoreExpirationMs = rp.expirationDate;
+                break;
+              }
+            }
+          } catch {}
+          $.cookie("_uuid", previousUuid, { domain: ".mcmod.cn", path: "/", expires: new Date(restoreExpirationMs) });
+          if (typeof GM_cookie !== "undefined" && GM_cookie.set) {
+            GM_cookie.set({ name: "_uuid", value: previousUuid, domain: ".mcmod.cn", path: "/", expirationDate: Math.floor(restoreExpirationMs / 1000) }, () => {});
+          }
+        } else {
+          $.cookie("_uuid", null, { domain: ".mcmod.cn", path: "/" });
+          if (typeof GM_cookie !== "undefined" && GM_cookie.delete) {
+            GM_cookie.delete({ name: "_uuid" }, () => {});
+          }
+        }
+        swal.close();
+        McmodderUtils.commonMsg("登录凭证无效或已过期，未能获取到账号信息！", false);
+        return;
+      }
+
+      const { uid, profile } = parsed;
+      const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
+      if (!myProfiles.includes(uid)) {
+        myProfiles.push(uid);
+        this.utils.setConfigAsNumberList("myProfiles", myProfiles);
+      }
+      this.utils.setAllProfile(profile, uid);
+      this.switchProfile(uid);
+
+      swal.fire({
+        type: "success",
+        title: "账号添加成功",
+        text: `已成功添加账号 [UID:${uid}] ${profile.nickname || profile.username} 并完成登录切换！是否立即刷新页面以应用新账号登录状态？`,
+        showCancelButton: true,
+        confirmButtonText: "立即刷新",
+        cancelButtonText: "稍后刷新"
+      }).then(confirmRes => {
+        if (confirmRes && confirmRes.value) {
+          window.location.reload();
+        } else {
+          this.fireProfileSelectFrame();
+        }
+      });
+    } catch (err) {
+      if (previousUuid) {
+        let restoreExpirationMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        try {
+          const myProfilesForRestore = this.utils.getConfigAsNumberList("myProfiles");
+          for (const rid of myProfilesForRestore) {
+            const rp = this.utils.getProfile("*", rid) as McmodderProfileData;
+            if (rp && rp.uuid === previousUuid && rp.expirationDate && rp.expirationDate > Date.now()) {
+              restoreExpirationMs = rp.expirationDate;
+              break;
+            }
+          }
+        } catch {}
+        $.cookie("_uuid", previousUuid, { domain: ".mcmod.cn", path: "/", expires: new Date(restoreExpirationMs) });
+        if (typeof GM_cookie !== "undefined" && GM_cookie.set) {
+          GM_cookie.set({ name: "_uuid", value: previousUuid, domain: ".mcmod.cn", path: "/", expirationDate: Math.floor(restoreExpirationMs / 1000) }, () => {});
+        }
+      } else {
+        $.cookie("_uuid", null, { domain: ".mcmod.cn", path: "/" });
+        if (typeof GM_cookie !== "undefined" && GM_cookie.delete) {
+          GM_cookie.delete({ name: "_uuid" }, () => {});
+        }
+      }
+      console.error(err);
+      swal.close();
+      McmodderUtils.commonMsg("获取账号信息失败，请检查网络或稍后重试！", false);
+    }
+  }
+
+  exportProfilesToJSON() {
+    const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
+    const profiles: Array<{ uid: number; username: string; nickname: string; uuid: string; expirationDate?: number }> = [];
+    myProfiles.forEach(uid => {
+      if (!uid) return;
+      const p = this.utils.getProfile("*", uid) as McmodderProfileData;
+      if (!p || !p.uuid) return;
+      profiles.push({
+        uid,
+        username: p.username,
+        nickname: p.nickname,
+        uuid: p.uuid,
+        expirationDate: p.expirationDate
+      });
+    });
+    if (!profiles.length) {
+      McmodderUtils.commonMsg("当前没有可导出的 _uuid 账号信息！", false);
+      return;
+    }
+    const payload = {
+      exportTime: new Date().toISOString(),
+      version: 1,
+      count: profiles.length,
+      profiles
+    };
+    const content = JSON.stringify(payload, null, 2);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `mcmodder-profiles-uuid-${dateStr}.json`;
+    McmodderUtils.saveFile(fileName, content);
+    McmodderUtils.commonMsg(`已导出 ${profiles.length} 个账号的 _uuid 至 ${fileName}`);
+  }
 
   fireProfileSelectFrame() {
-    const html = $('<div><p>登录过的用户至少需要在本机访问自己的个人主页一次才会在这里显示~</p><div id="mcmodder-profile-frame"><ul></ul></div></div>');
+    const html = $(`<div>
+      <p>登录过的用户至少需要在本机访问自己的个人主页一次才会在这里显示~</p>
+      <div class="mcmodder-profile-actions">
+        <button type="button" id="mcmodder-add-profile-uuid" class="btn btn-sm btn-outline-secondary">
+          <i class="fa fa-plus"></i> 使用 _uuid 添加账号
+        </button>
+        <button type="button" id="mcmodder-export-profile-uuid" class="btn btn-sm btn-outline-secondary">
+          <i class="fa fa-download"></i> 导出 _uuid 为 JSON
+        </button>
+      </div>
+      <div id="mcmodder-profile-frame"><ul></ul></div>
+    </div>`);
     const ul = html.find("ul");
     const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
     let uuid = $.cookie("_uuid");
@@ -351,10 +644,50 @@ export class Mcmodder {
       showConfirmButton: false
     });
     html.appendTo(".profile-option-container");
+    html.find("#mcmodder-add-profile-uuid").click(() => {
+      swal.fire({
+        title: "使用 _uuid 添加账号",
+        html: `
+          <p class="text-muted" style="font-size: 13px; text-align: left; margin-bottom: 8px;">
+            请输入或粘贴账号登录凭证 Cookie（支持直接输入 _uuid 值或完整 Cookie 字符串）：
+          </p>
+          <textarea id="mcmodder-uuid-input" class="form-control mcmodder-monospace" rows="3" placeholder="例如：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx 或 _uuid=..."></textarea>
+        `,
+        showCancelButton: true,
+        confirmButtonText: "添加并登录",
+        cancelButtonText: "取消"
+      }).then(async res => {
+        if (!res || !res.value) return;
+        const rawInput = $("#mcmodder-uuid-input").val() as string;
+        await this.addProfileByUUID(rawInput);
+      });
+    });
+    html.find("#mcmodder-export-profile-uuid").click(() => {
+      const myProfilesForCheck = this.utils.getConfigAsNumberList("myProfiles");
+      const exportableCount = myProfilesForCheck.filter(uid => {
+        const p = this.utils.getProfile("*", uid) as McmodderProfileData;
+        return p && !!p.uuid;
+      }).length;
+      if (!exportableCount) {
+        McmodderUtils.commonMsg("当前没有可导出的 _uuid 账号信息！", false);
+        return;
+      }
+      swal.fire({
+        title: "导出账号 _uuid",
+        html: `<p class="text-muted" style="font-size:13px;text-align:left;">即将导出 <b>${exportableCount}</b> 个已保存账号的 <code>_uuid</code> 凭证至 JSON 文件。<br><span class="text-danger">_uuid 为敏感登录凭证，请勿泄露给他人！妥善保管导出的文件。</span></p>`,
+        showCancelButton: true,
+        confirmButtonText: "确认导出",
+        cancelButtonText: "取消"
+      }).then(res => {
+        if (res && res.value) this.exportProfilesToJSON();
+      });
+    });
     $(".profile-option").click(f => {
       let uid = Number(f.currentTarget.getAttribute("uid"));
       if (f.target.className === "delete" || (f.target.parentNode as HTMLElement)?.className === "delete") {
-        this.utils.setConfig(uid, null, "userProfile");
+        this.utils.deleteAllProfile(uid);
+        const nextProfiles = this.utils.getConfigAsNumberList("myProfiles").filter(e => e !== uid);
+        this.utils.setConfigAsNumberList("myProfiles", nextProfiles);
         $("#mcmodder-profile-switch").click();
         return;
       }

@@ -2387,6 +2387,29 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark3);
 }
+.mcmodder-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 6px 0 8px 0;
+}
+.mcmodder-profile-actions button {
+  border: 1px solid var(--mcmodder-color-primary);
+  background-color: var(--mcmodder-color-background-transparent);
+  color: var(--mcmodder-color-text);
+  border-radius: var(--mcmodder-width-radius);
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mcmodder-profile-actions button:hover {
+  background-color: var(--mcmodder-color-primary-transparent2);
+  color: var(--mcmodder-color-primary);
+}
+.mcmodder-monospace {
+  font-family: monospace;
+}
 #mcmodder-profile-frame {
   max-height: 600px;
   overflow: auto;
