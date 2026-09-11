@@ -1771,6 +1771,7 @@ body .arrow {
 }
 .mcmodder-link-check .mcmodder-link-icon {
   margin: 2px;
+  text-indent: 0;
 }
 .center-block-head .more {
   color: var(--mcmodder-color-text-dark2);

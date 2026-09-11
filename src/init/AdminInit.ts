@@ -304,20 +304,26 @@ export class AdminInit extends McmodderInit {
                 if (!rowText) return;
                 else if (rowText.includes("介绍") || rowText.includes("正文")) {
                   const insertPos = verifyFrame.find(".verify-action-btns, .assistant-action-btns").parent().children().first();
-                  const textA = row.find("td:nth-child(3) .common-text");
-                  const textB = row.find("td:nth-child(2) .common-text");
-                  (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                  let textA = row.children("td:nth-child(3)");
+                  let textB = row.children("td:nth-child(2)");
+                  const commonTextA = textA.find(".common-text");
+                  const commonTextB = textB.find(".common-text");
+                  if (commonTextA.length) textA = commonTextA;
+                  if (commonTextB.length) textB = commonTextB;
+                  if (textA.length && textB.length) {
+                    (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                  }
                   new McmodderMainText(this.parent, textA);
                   new McmodderMainText(this.parent, textB);
                 }
                 else if (rowText === "模组关系") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   RelationCompareFrame.performCompare(prev, next);
                 }
                 else if (rowText === "相关链接") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   const addLink = (node: JQuery) => {
                     node.find("p").each((_, p) => {
                       const text = p.textContent;
@@ -333,8 +339,8 @@ export class AdminInit extends McmodderInit {
                   addLink(next);
                 }
                 else if (rowText === "支持MC版本") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   PlatformCompareFrame.performCompare(prev, next);
                 }
                 else if (rowText === "小图标" || rowText === "大图标") {
