@@ -1,46 +1,125 @@
 <template>
-  <select
-    class="mcmodder-select"
-    :value="value"
-    @change="emit('commit', Number(($event.target as HTMLSelectElement).value))"
+  <span
+    ref="container"
+    class="mcmodder-dropdown-container"
+    :class="{ expanded: selected }"
   >
-    <option
-      v-for="(label, num) in range"
-      :key="num"
-      :value="num"
-    >{{ label }}{{ Number(num) === defaultValue ? " (默认)" : "" }}</option>
-  </select>
+    <input
+      ref="valueInput"
+      readonly
+      class="hidden"
+      @change="onChange"
+    />
+    <input
+      ref="input"
+      readonly
+      class="btn mcmodder-dropdown-button"
+      :value="content"
+      @click="onClick"
+      @focus="onFocus"
+      @blur="onBlur"
+    >
+  </span>
 </template>
 
 <script setup lang="ts">
-import type { InputValueSet } from "../../../types";
+import { computed, onMounted, ref, useTemplateRef } from 'vue';
+import { InputControlRef, InputProps, InputValueSet } from '../../../types';
+import { InputListController } from '../../../widget/InputListController.ts';
+import { useInputBase } from '../../composables/useInputBase.ts';
 
-defineProps<{
-  value?: number | string;
-  range?: InputValueSet;
-  defaultValue?: any;
-}>();
+interface Props extends InputProps<number> {
+  range: InputValueSet
+}
 
-const emit = defineEmits<{
-  commit: [value: number];
-}>();
+const props = defineProps<Props>();
+const containerRef = useTemplateRef("container");
+const inputRef = useTemplateRef("input");
+const valueInputRef = useTemplateRef("valueInput");
+
+let eventSender: ReturnType<typeof InputListController.instance.add>;
+const selected = ref(false);
+let focusLock = false;
+
+const content = computed(() => {
+  return props.range[valueRef.value];
+})
+
+const {
+  valueRef,
+  getValue,
+  onChange
+} = useInputBase({
+  inputRef: valueInputRef,
+  value: props.value,
+  getDOMValue,
+  validate,
+  onSuccessfulChange: props.onSuccessfulChange
+});
+
+function getDOMValue() {
+  return Number(valueInputRef.value!.value);
+}
+
+function onClick() {
+  if (selected.value && !focusLock) {
+    inputRef.value!.blur();
+  }
+}
+
+function onFocus() {
+  selected.value = true;
+  focusLock = true;
+  setTimeout(() => {
+    focusLock = false;
+  }, 100);
+}
+
+function onBlur() {
+  selected.value = false;
+}
+
+onMounted(() => {
+  eventSender = InputListController.instance.add(inputRef.value!, {
+    inputListBindElement: valueInputRef.value!,
+    anchorElement: inputRef.value!,
+    alwaysShowAllSuggestions: true,
+    suggestionManager: {
+      onInitSuggestion: () => Object.entries(props.range).map(([value, html]) => ({ html, value }))
+    }
+  });
+})
+
+function validate(newValue: number) {
+  if (Object.keys(props.range).map(Number).includes(newValue)) return {
+    isok: true,
+    final: newValue
+  };
+  return {
+    isok: false,
+    msg: "你干~~嘛~~~哈哈哎~哟。"
+  };
+}
+
+function getInstance() {
+  return containerRef.value!;
+}
+
+function setCurrentValue(val: number) {
+  valueRef.value = val;
+  setDisplayValue(val);
+}
+
+function setDisplayValue(val: number) {
+  inputRef.value!.value = val.toString();
+  eventSender("input");
+}
+
+defineExpose<InputControlRef<number>>({
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+})
+
 </script>
-
-<style scoped>
-.mcmodder-select {
-  height: 34px;
-  padding: 4px 10px;
-  background-color: var(--mcmodder-color-background);
-  border: 1px solid var(--mcmodder-color-background-dark3);
-  border-radius: 10px;
-  color: var(--mcmodder-color-text);
-  font-size: 14px;
-  max-width: 100%;
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-.mcmodder-select:focus {
-  border-color: var(--mcmodder-color-accent);
-  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
-  outline: none;
-}
-</style>

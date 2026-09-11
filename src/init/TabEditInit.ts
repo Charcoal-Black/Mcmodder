@@ -4,10 +4,11 @@ import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 import { GeneralEditInit } from "./GeneralEditInit";
-import { McmodderItemData, McmodderRecipeData, McmodderRecipeIngredient, McmodderSimpleRecipeData, McmodderJsonStorage, RecipeJsonFrameGuiBound } from "../types";
+import { McmodderItemData, McmodderRecipeData, McmodderRecipeIngredient, McmodderSimpleRecipeData, McmodderJsonStorage, RecipeJsonFrameGuiBound, InputValidInfo } from "../types";
 import { McmodderMap } from "../map/Map";
-import { McmodderCheckboxInput } from "../widget/input/CheckboxInput";
 import { TabEditRecipeDisplay } from "../widget/TabEditRecipeDisplay";
+import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
+import { createApp } from "vue";
 
 interface CurrentUsedData {
   item: string[];
@@ -31,7 +32,7 @@ export class TabEditInit extends McmodderInit {
   private onGuiOpen = async () => {};
   private oredict?: string[];
   private guiLocker = 0;
-  private guiLockerToggle?: McmodderCheckboxInput;
+  private guiLockerToggle?: InstanceType<typeof CheckboxInput>;
   private shapeless = false;
   private mcmodShapelessToggle?: JQuery;
   private readonly isTabAdd = window.location.href.includes("/tab/add/");
@@ -790,30 +791,44 @@ export class TabEditInit extends McmodderInit {
     McmodderUtils.addClickCopyEvent(guiIdDisplay, "当前合成表 ID ", () => guiIdDisplay.children().text());
 
     // 快速设置GUI
+    const guiLockerContainer = $("<div>").appendTo($("#item-table-gui-select").parent());
     this.guiLocker = Number(this.parent.utils.getConfig("guiLocker"));
-    this.guiLockerToggle = new McmodderCheckboxInput("锁定当前 GUI", false, info => {
-      const guiID = this.getGuiID();
-      const newLockerID = info.final ? guiID : 0;
-      this.parent.utils.setConfig("guiLocker", newLockerID);
-      this.guiLocker = newLockerID;
-    }, "mcmodder-gui-lock", true, "开始添加合成表时，自动将 GUI 设置为当前所使用的 GUI。修改现有的合成表不会触发此特性。");
-    this.guiLockerToggle.getInstance().appendTo($("#item-table-gui-select").parent());
+    this.guiLockerToggle = createApp(CheckboxInput, {
+      title: "锁定当前 GUI",
+      value: false,
+      onSuccessfulChange: (info: InputValidInfo<boolean>) => {
+        const guiID = this.getGuiID();
+        const newLockerID = info.final ? guiID : 0;
+        this.parent.utils.setConfig("guiLocker", newLockerID);
+        this.guiLocker = newLockerID;
+      },
+      id: "mcmodder-gui-lock",
+      withLabel: true,
+      withTooltip: "开始添加合成表时，自动将 GUI 设置为当前所使用的 GUI。修改现有的合成表不会触发此特性。"
+    }).mount(guiLockerContainer.get(0)) as InstanceType<typeof CheckboxInput>;
     if (this.guiLocker > 0) {
       setTimeout(() => this.setGui(this.guiLocker), 1e3);
     }
 
     // 应用无序
+    const shapelessContainer = $("<div>").appendTo($("#edit-page-2 .tab-li").first());
     this.shapeless = this.parent.utils.getConfig("shapelessLocker");
     this.mcmodShapelessToggle = $("#item-table-data-orderly-1");
-    const shapelessToggle = new McmodderCheckboxInput("锁定无序", this.shapeless, info => {
-      const l = info.final ?? false;
-      this.shapeless = l;
-      this.parent.utils.setConfig("shapelessLocker", l);
-      if (l && !this.mcmodShapelessToggle!.attr("checked")) {
-        this.mcmodShapelessToggle!.click();
-      }
-    }, "mcmodder-shapeless-lock", true, "开始添加合成表时，自动将摆放要求设置为无序合成。修改现有的合成表不会触发此特性。");
-    shapelessToggle.getInstance().appendTo($("#edit-page-2 .tab-li").first());
+    createApp(CheckboxInput, {
+      title: "锁定无序",
+      value: this.shapeless,
+      onSuccessfulChangeCallback: (info: InputValidInfo<boolean>) => {
+        const l = info.final ?? false;
+        this.shapeless = l;
+        this.parent.utils.setConfig("shapelessLocker", l);
+        if (l && !this.mcmodShapelessToggle!.attr("checked")) {
+          this.mcmodShapelessToggle!.click();
+        }
+      },
+      id: "mcmodder-shapeless-lock",
+      withLabel: true,
+      withTooltip: "开始添加合成表时，自动将摆放要求设置为无序合成。修改现有的合成表不会触发此特性。"
+    }).mount(shapelessContainer.get(0));
 
     // 编辑记忆列表
     /*$(".item-used-frame .item-table-hover").on("contextmenu", function (e) {

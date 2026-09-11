@@ -1,5 +1,7 @@
 import { GmXmlhttpRequestOption, GmXmlhttpRequestType } from "$";
+import { ComputedRef } from "vue";
 import { McmodderPermission } from "./config/ConfigUtils";
+import { Mcmodder } from "./Mcmodder";
 
 declare const unsafeWindow: any;
 
@@ -337,17 +339,124 @@ export interface McmodderTableRowData<T> {
   edited?: Partial<T>;
 }
 
-export type McmodderTableDataMap<T extends Object> = Record<number, T>;
+export type McmodderTableDataMap<T extends McmodderTableAcceptable> = Record<number, T>;
 export type McmodderTableRowSelection = number[];
-export type McmodderTableDataList<T extends Object> = T[];
+export type McmodderTableDataList<T extends McmodderTableAcceptable> = T[];
 
 export interface McmodderTableRowRange {
   l: number;
   r: number;
 }
 
-export type McmodderTableDisplayRule<McmodderTableData> = (unit: any, row: Partial<McmodderTableData>) =>
+export type McmodderTableDisplayRule<T> = (unit: any, row: Partial<T>) =>
   JQuery | string | number | null | undefined;
+
+export interface McmodderTableProps<T extends McmodderTableAcceptable> {
+  parent: Mcmodder,
+  attr?: object,
+  headConfigs: HeadConfigsInitializer<T>,
+  editConfigs?: EditConfigsInitializer<T>
+}
+
+export interface McmodderTableContext<T extends McmodderTableAcceptable> {
+  empty: () => void,
+  showLoading: () => void,
+  refreshAll: () => void,
+  getData: (index: number) => T,
+  getRowData: (index: number) => McmodderTableRowData<T>,
+  editData: (index: number, key: keyof T, value: any) => void,
+  appendData: (data: T) => void,
+  appendDataList: (dataList: McmodderTableDataList<T>) => void,
+  insertRow: (index: number, newData?: T) => void,
+  insertRowWithDataMap: (dataMap: McmodderTableDataMap<T>) => void,
+  insertMultipleRowWithDataMap: (dataMap: McmodderTableDataMap<T>) => void,
+  deleteRow: (index: number) => McmodderTableDataMap<T>,
+  deleteMultipleRow: (selection: McmodderTableRowSelection) => McmodderTableDataMap<T>,
+  copyRow: (selection: McmodderTableRowSelection<T>) => void,
+  pasteRow: (index: number) => McmodderTableDataMap<T>,
+  dataMapToSelection: (dataMap: McmodderTableDataMap<T>) => number[]
+}
+
+export interface ConfigResourceFileListInteractorProps<T extends McmodderTableAcceptable> {
+  parent: Mcmodder,
+  id: string,
+  name: string
+}
+
+export type ConfigParser = (config: string) => any;
+export type DataParser = (key: string, value: any) => any;
+
+export interface ConfigResourceInteractorProps<T extends McmodderTableAcceptable> extends ConfigResourceFileListInteractorProps<T> {
+  headConfigs: HeadConfigsInitializer<T>,
+  configParser?: ConfigParser,
+  dataParser?: DataParser
+}
+
+export type TimerDataGetter = () => number;
+export type TimerDataFormatter = (t: number) => string;
+
+export type InputListBindElement = HTMLInputElement | HTMLTextAreaElement;
+export type InputListOnInitSuggestion = () => InputSimplifiedSuggestion[];
+export type InputListOnModifySuggestion = (list: InputSuggestion[]) => boolean;
+
+interface SuggestionCallbackManager {
+  // 手动指定初始化与修改时的回调函数
+  onInitSuggestion: InputListOnInitSuggestion,
+  onModifySuggestion?: InputListOnModifySuggestion
+}
+interface SuggestionConfigManager {
+  // 或是：设定好配置提供器和配置键名，组件自动从配置中获取推荐列表
+  utils: McmodderUtils,
+  configKey: string
+}
+
+export interface InputListOption {
+  inputListBindElement?: InputListBindElement,
+  anchorElement?: HTMLElement,
+  alwaysShowAllSuggestions?: boolean,
+  delimiter?: string,
+  hideBeforeInput?: boolean,
+  suggestionManager: SuggestionCallbackManager | SuggestionConfigManager
+}
+
+export interface JsonFrameProps {
+  id: string,
+  parent: Mcmodder
+}
+
+export interface GenericJsonFrameProps<T> extends JsonFrameProps, McmodderTableProps<T> {
+  configName: string,
+  allowedKeys: string[],
+  opts?: {
+    parseText?: (text: string) => {
+      success: number,
+      fail: number,
+      result: T[]
+    },
+    more?: () => void
+  }
+}
+
+export interface McmodItemEditorInnerData {
+  content: string,
+  name: string,
+  ename?: string,
+  type?: string,
+  category: Record<number, number>,
+  "icon-32x-data": string,
+  "icon-128x-data": string,
+  "is-general-node": string,
+  "is-general-parents": string,
+  oredict?: string,
+  maxstack?: string
+}
+
+export interface McmodItemEditorData {
+  action: "item_add" | "item_edit",
+  "edit-id": string,
+  "class-id": string,
+  "item-data": McmodItemEditorInnerData
+}
 
 export interface ClassNameData {
   className: string,
@@ -364,24 +473,61 @@ export interface McmodderKeyData {
   key?: string
 }
 
+export type ContextMenuDisplayRule = (e: MouseEvent) => boolean;
+export type ContextMenuCallback = (e: MouseEvent) => void;
+
+export type ContextMenuItem = {
+  key: string;
+  text: string;
+  shortcut?: McmodderKeyData;
+  displayRule: ContextMenuDisplayRule;
+  callback: ContextMenuCallback;
+}
+export type ContextMenuItems = ContextMenuItem[];
+
+export type ContextMenuItemOption = {
+  key: string,
+  text: string,
+  shortcut?: McmodderKeyData,
+  displayRule: ContextMenuDisplayRule,
+  callback: ContextMenuCallback
+}
+
+export type ProgressBarDisplayRule = (val: number, min: number, max: number) => string;
+
 export type ItemCustomTypeList = ItemTypeData[];
 
 export type InputValueNumericRange = [number | null, number | null];
+export type InputValueFiniteNumericRange = [number, number];
 export type InputValueSet = Record<number, string>;
 export type InputValueRange = InputValueNumericRange | InputValueSet;
 
-export interface InputRecommendation {
+export interface InputSuggestion {
   html?: string;
   value: string;
   showValue?: boolean;
   alias?: string[];
+  noEscape?: boolean;
 }
-export type InputSimplifiedRecommendation = InputRecommendation | string;
-export interface InputRatedRecommendation extends InputRecommendation {
+export type InputSimplifiedSuggestion = InputSuggestion | string;
+export interface InputRatedSuggestion extends InputSuggestion {
   matchScore: number;
 }
 
 type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
+
+export interface InputProps<T> {
+  title: string,
+  value: T,
+  onSuccessfulChange: InputSuccessfulChangeCallBack<T>
+}
+
+export interface InputControlRef<T> {
+  getInstance(): HTMLElement,
+  getValue(): T,
+  setCurrentValue(newValue: T): void,
+  setDisplayValue(newValue: T): void
+}
 
 export interface McmodderInputLimit {
   readonly type: McmodderInputType;
@@ -408,7 +554,7 @@ export interface McmodderConfigData extends McmodderInputData {
   readonly title: string;
   readonly description: string;
   readonly permission: McmodderPermission;
-  readonly recommendation?: InputSimplifiedRecommendation[];
+  readonly suggestion?: InputSimplifiedSuggestion[];
 }
 
 export interface PreSubmitData {
@@ -507,6 +653,18 @@ export interface McmodderFileDisplayData {
   size: number;
 }
 
+export type JsonFrameToolOnClickCallback = (ev: Event) => any;
+export type JsonFrameToolDisplayCondition = () => boolean;
+
+export interface JsonFrameToolData {
+  id: string,
+  text: string,
+  displayCondition: ComputedRef<boolean>,
+  onClick: JsonFrameToolOnClickCallback,
+  dangerMode: boolean,
+  labelAttr?: object
+}
+
 export interface ItemJsonFrameConfig {
   classID: number;
   typeID: number;
@@ -559,6 +717,7 @@ export type RequestQueueBackupData = Omit<RequestQueueExecution, "runningIndex">
 export type McmodderMapKeyHandler = (data: any) => any;
 
 export interface StructureEditorBlocktype {
+  id: number;
   itemID: number;
   blockName: string;
   class: string;

@@ -1,8 +1,9 @@
+import { createApp } from "vue";
 import { Mcmodder } from "../Mcmodder";
-import { AutoLinkAuthorEntry, AutoLinkClassEntry, AutoLinkEntries, AutoLinkItemEntry, AutoLinkOredictEntry, AutoLinkSearchTag, McmodderAuthorData, McmodderClassData, McmodderItemData, McmodderItemList, McmodderOredictData } from "../types";
+import { AutoLinkAuthorEntry, AutoLinkClassEntry, AutoLinkEntries, AutoLinkItemEntry, AutoLinkOredictEntry, AutoLinkSearchTag, InputValidInfo, McmodderAuthorData, McmodderClassData, McmodderItemData, McmodderItemList, McmodderOredictData } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
-import { McmodderCheckboxInput } from "./input/CheckboxInput";
+import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 
 export class McmodderAutoLink { 
 
@@ -19,8 +20,8 @@ export class McmodderAutoLink {
   private linkStyleTitle?: JQuery;
   private linkStyleFrame?: JQuery;
   private searchSourceSetting?: JQuery;
-  private sourceInputLocal?: McmodderCheckboxInput;
-  private sourceInputOnline?: McmodderCheckboxInput;
+  private sourceInputLocal?: InstanceType<typeof CheckboxInput>;
+  private sourceInputOnline?: InstanceType<typeof CheckboxInput>;
   private searchText?: string;
   private searchKeywords?: string[];
   private resultListItems?: JQuery[];
@@ -79,20 +80,20 @@ export class McmodderAutoLink {
     </div>`).appendTo(this.frame).hide();
     this.searchSourceSetting = $(`<div class="edit-autolink-source">`).appendTo(this.frame);
 
-    this.sourceInputLocal = new McmodderCheckboxInput(
-      "本地搜索",
-      this.parent.utils.getConfig("autolinkSourceLocal") ?? false,
-      info => this.parent.utils.setConfig("autolinkSourceLocal", info.final),
-      "edit-autolink-source-local", true
-    );
-    this.sourceInputOnline = new McmodderCheckboxInput(
-      "联网搜索",
-      this.parent.utils.getConfig("autolinkSourceOnline") ?? false,
-      info => this.parent.utils.setConfig("autolinkSourceOnline", info.final),
-      "edit-autolink-source-online", true
-    );
-    this.sourceInputLocal.getInstance().appendTo(this.searchSourceSetting);
-    this.sourceInputOnline.getInstance().appendTo(this.searchSourceSetting);
+    this.sourceInputLocal = createApp(CheckboxInput, {
+      title: "本地搜索",
+      value: this.parent.utils.getConfig("autolinkSourceLocal") ?? false,
+      onSuccessfulChange: (info: InputValidInfo<boolean>) => this.parent.utils.setConfig("autolinkSourceLocal", info.final),
+      id: "edit-autolink-source-local",
+      withLabel: true
+    }).mount($("<span>").appendTo(this.searchSourceSetting).get(0)) as InstanceType<typeof CheckboxInput>;
+    this.sourceInputOnline = createApp(CheckboxInput, {
+      title: "联网搜索",
+      value: this.parent.utils.getConfig("autolinkSourceOnline") ?? false,
+      onSuccessfulChange: (info: InputValidInfo<boolean>) => this.parent.utils.setConfig("autolinkSourceOnline", info.final),
+      id: "edit-autolink-source-online",
+      withLabel: true
+    }).mount($("<span>").appendTo(this.searchSourceSetting).get(0)) as InstanceType<typeof CheckboxInput>;
 
     if (!this.itemSourceList.length) this.searchSourceSetting.hide();
     else this.searchSourceSetting.show();
@@ -486,8 +487,8 @@ export class McmodderAutoLink {
       searchOnline = true;
     }
     else {
-      searchLocal = this.sourceInputLocal!.getCurrentValue();
-      searchOnline = this.sourceInputOnline!.getCurrentValue();
+      searchLocal = this.sourceInputLocal!.getValue();
+      searchOnline = this.sourceInputOnline!.getValue();
     }
     
     if (!this.searchText || !this.searchText.length) {

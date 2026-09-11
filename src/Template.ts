@@ -1,9 +1,10 @@
+import { createApp } from "vue";
 import { Mcmodder } from "./Mcmodder";
 import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { McmodderUEditor } from "./ueditor/UEditor";
 import { McmodderUtils } from "./Utils";
 import { McmodderValues } from "./Values";
-import { McmodderContextMenu } from "./widget/ContextMenu";
+import ContextMenu from "./vue/components/ContextMenu.vue";
 
 type McmodderTemplateData = {
   id: string;
@@ -18,7 +19,7 @@ export class McmodderTemplate {
   private list: McmodderTemplateData[];
   private newTitle: JQuery;
   private newDescription: JQuery;
-  private currentContextMenu?: McmodderContextMenu;
+  private currentContextMenu?: InstanceType<typeof ContextMenu>;
 
   constructor(editor: McmodderAdvancedUEditor) {
     this.editor = editor;
@@ -92,8 +93,10 @@ export class McmodderTemplate {
       });
     });
 
-    this.currentContextMenu = new McmodderContextMenu(/* this.parent, */$(".group"))
-    .addItem({
+    this.currentContextMenu = createApp(ContextMenu)
+      .mount($("<div>").appendTo(".group").get(0)) as InstanceType<typeof ContextMenu>;
+
+    this.currentContextMenu.addItem({
       key: "modifyTitle",
       text: "修改标题",
       displayRule: e => this.isValidSelection(e),
@@ -119,13 +122,13 @@ export class McmodderTemplate {
     });
   }
 
-  private getCurrentSelection(e: JQueryMouseEventObject) {
-    const target = $(e.target);
+  private getCurrentSelection(e: MouseEvent) {
+    const target = $(e.currentTarget!);
     if (target.prop("tagName") === "LI") return target; 
     return target.parents(".group li");
   }
 
-  private isValidSelection(e: JQueryMouseEventObject) {
+  private isValidSelection(e: MouseEvent) {
     return !this.getCurrentSelection(e).hasClass("mcmodder-template-add");
   }
 
@@ -150,7 +153,7 @@ export class McmodderTemplate {
     }
   }
 
-  private onModifyTitle(e: JQueryMouseEventObject) {
+  private onModifyTitle(e: MouseEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     const title = selection.find(".title").first();
@@ -172,7 +175,7 @@ export class McmodderTemplate {
     input.focus();
   }
 
-  private onModifyDescription(e: JQueryMouseEventObject) {
+  private onModifyDescription(e: MouseEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     const text = selection.find("p.text").first();
@@ -196,7 +199,7 @@ export class McmodderTemplate {
     input.focus();
   }
 
-  private onUpdateContent(e: JQueryMouseEventObject) {
+  private onUpdateContent(e: MouseEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     data.content = this.editor.editor.getContent();

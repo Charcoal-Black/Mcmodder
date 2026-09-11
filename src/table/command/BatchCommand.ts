@@ -1,15 +1,15 @@
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableContext } from "../../types";
 import { Command } from "./Command";
 
-export class BatchCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
-  commandList: Command<McmodderTableData>[];
+export class BatchCommand<T extends Object> extends Command<T> {
+  commandList: Command<T>[];
 
-  constructor(self: McmodderEditableTable<McmodderTableData>) {
+  constructor(self: McmodderTableContext<T>) {
     super(self);
     this.commandList = new Array;
   }
 
-  push(command: Command<McmodderTableData>) {
+  push(command: Command<T>) {
     this.commandList.push(command);
     return this;
   }

@@ -1,4 +1,6 @@
+import { createApp } from "vue";
 import { McmodderUtils } from "../Utils";
+import Timer from "../vue/components/Timer.vue";
 import { McmodderTimer } from "../widget/Timer";
 import { McmodderInit } from "./Init";
 
@@ -10,8 +12,14 @@ export class CommentInit extends McmodderInit {
   private displayPublishTime(target: JQuery) {
     target.find(".comment-reply-row-time").each((_, node) => {
       const published = Date.parse(node.textContent);
-      const timer = new McmodderTimer(this.parent, published, 1e3, McmodderTimer.DATAFORMATTER_ZH);
-      timer.$instance.appendTo(node).before(" (").after(")");
+      const container = $("<span>").appendTo(node).get(0);
+      createApp(Timer, {
+        parent: this.parent,
+        dataGetter: published,
+        dataFormatter: McmodderTimer.DATAFORMATTER_ZH
+      }).mount(container) as InstanceType<typeof Timer>;
+      container.insertAdjacentText("beforebegin", " (");
+      container.insertAdjacentText("afterend", ")");
     })
   }
 

@@ -1,15 +1,18 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderItemList, McmodderKeyData } from "../types";
+import { InputSuccessfulChangeCallBack, McmodderItemList, McmodderKeyData } from "../types";
 import { McmodderTemplate } from "../Template";
 import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderAutoLink } from "../widget/AutoLink";
 import { McmodderUEditor } from "./UEditor"
-import { McmodderCheckboxInput } from "../widget/input/CheckboxInput";
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
 import html_beautify from "js-beautify";
+import { createApp } from "vue";
+import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
+
+type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
 
 export class McmodderAdvancedUEditor extends McmodderUEditor {
 
@@ -23,10 +26,10 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   htmlEditorContainer?: JQuery;
   htmlEditor?: CodeMirror.Editor;
   turndownSurvice?: TurndownService;
-  protected mdEditorOption?: McmodderCheckboxInput;
-  protected htmlEditorOption?: McmodderCheckboxInput;
-  protected verticalOption?: McmodderCheckboxInput;
-  protected toolkitOption?: McmodderCheckboxInput;
+  protected mdEditorOption?: ContainerComponentPair;
+  protected htmlEditorOption?: ContainerComponentPair;
+  protected verticalOption?: ContainerComponentPair;
+  protected toolkitOption?: ContainerComponentPair;
   protected originalTextLength: number;
   protected currentTextLength: number;
   protected changedTextLength: number;
@@ -227,24 +230,36 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       $(".post-row").get(0).insertBefore($(".post-row > .mcmodder-editor-stats").get(0), $(".post-row > #editor-ueeditor").get(0));
     }
 
-    this.mdEditorOption = new McmodderCheckboxInput("Markdown 编辑器", false, _value => this.readyMarkdownEditor(), "mcmodder-option-md", true);
-    this.mdEditorOption.getInstance().appendTo(".mcmodder-option-bar");
+    this.mdEditorOption = this.addOption(
+      "Markdown 编辑器",
+      "mcmodder-option-md",
+      _value => this.readyMarkdownEditor()
+    );
 
-    this.htmlEditorOption = new McmodderCheckboxInput("源代码编辑器", false, _value => this.readyHtmlEditor(), "mcmodder-option-html", true);
-    this.htmlEditorOption.getInstance().appendTo(".mcmodder-option-bar");
+    this.htmlEditorOption = this.addOption(
+      "源代码编辑器",
+      "mcmodder-option-html",
+      _value => this.readyHtmlEditor(),
+    );
 
-    this.verticalOption = new McmodderCheckboxInput("纵向排列", false, _value => this.readyVerticalEditor(), "mcmodder-option-vertical", true);
-    this.verticalOption.getInstance().appendTo(".mcmodder-option-bar").hide();
+    this.verticalOption = this.addOption(
+      "纵向排列",
+      "mcmodder-option-vertical",
+      _value => this.readyVerticalEditor(),
+    );
 
-    this.toolkitOption = new McmodderCheckboxInput("实用工具", false, _value => this.readyToolkit(), "mcmodder-option-toolkit", true);
-    this.toolkitOption.getInstance().appendTo(".mcmodder-option-bar");
+    this.toolkitOption = this.addOption(
+      "实用工具",
+      "mcmodder-option-toolkit",
+      _value => this.readyToolkit(),
+    );
 
     if (this.parent.utils.getConfig("markdownIt") || this.isModrinthVer) {
-      this.mdEditorOption.click(); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
+      this.mdEditorOption![1].setCurrentValue(true); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
 
     if (this.parent.utils.getConfig("htmlEditor")) {
-      this.htmlEditorOption.click(); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
+      this.htmlEditorOption![1].setCurrentValue(true); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
 
     let isVertical = this.parent.utils.getConfig("editorVertical");
@@ -253,16 +268,27 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       this.parent.utils.setConfig("editorVertical", isVertical); 
     }
     if (isVertical) {
-      this.verticalOption.click();
+      this.verticalOption![1].setCurrentValue(true);
     }
 
     if (this.parent.utils.getConfig("editorToolkit")) {
-      this.toolkitOption.click();
+      this.toolkitOption![1].setCurrentValue(true);
     }
 
     // 匿名吐槽
     if (this.parent.utils.getConfig("anonymousUknowtoomuch"))
       this.anonymiseUknowtoomuch();
+  }
+
+  addOption(title: string, id: string, onSuccessfulChange: InputSuccessfulChangeCallBack<boolean>): ContainerComponentPair {
+    const container = $("<span>").appendTo(this.optionBar!).get(0) as HTMLSpanElement;
+    return [container, createApp(CheckboxInput, {
+      title,
+      value: false,
+      onSuccessfulChange,
+      id,
+      withLabel: true
+    }).mount(container) as InstanceType<typeof CheckboxInput>];
   }
 
   override widthAutoResize() {
@@ -274,10 +300,10 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
   override autoCalculateHeight() {
     let height = super.autoCalculateHeight();
-    if (this.mdEditorOption?.getCurrentValue()) {
+    if (this.mdEditorOption?.[1].getValue()) {
       height = Math.max(height, this.mdEditorContainer?.height() ?? 0);
     }
-    if (this.htmlEditorOption?.getCurrentValue()) {
+    if (this.htmlEditorOption?.[1].getValue()) {
       height = Math.max(height, this.htmlEditorContainer?.height() ?? 0);
     }
     return height;
@@ -289,7 +315,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     const finalHeight = this.$innerFrame?.css("height");
     const mdContainer = this.mdEditorOuterContainer?.get(0) as HTMLElement;
     const htmlContainer = this.htmlEditorOuterContainer?.get(0) as HTMLElement;
-    const isVertical = this.verticalOption?.getCurrentValue();
+    const isVertical = this.verticalOption?.[1].getValue();
     if (isVertical) {
       mdContainer?.style?.removeProperty("height");
       htmlContainer?.style?.removeProperty("height");
@@ -301,7 +327,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
   private async readyMarkdownEditor() {
     if (!this.$document || !this.head || !this.$outerFrame || !this.mdEditorContainer || !this.mdEditorOption) return;
-    const c = this.mdEditorOption.getCurrentValue();
+    const c = this.mdEditorOption![1].getValue();
     if (c) {
       // await McmodderUtils.loadScript(editorDoc.head, null, "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js", null, "mcmodder-script-markdownit");
       await McmodderUtils.loadScript(this.head, null, McmodderValues.assets.js.markdownit, null, "mcmodder-script-markdownit");
@@ -343,11 +369,11 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       
       if (this.isModrinthVer) $("#mcmodder-tool-md").click();
       $("#mcmodder-tool-md, #mcmodder-mdeditor").show();
-      this.verticalOption?.getInstance().show();
+      $(this.verticalOption![0]).show();
     }
     else {
       $("#mcmodder-tool-md, #mcmodder-mdeditor").hide();
-      this.verticalOption?.getInstance().hide();
+      $(this.verticalOption![0]).hide;
     }
     this.parent.utils.setConfig("markdownIt", c);
     this.onEditorStateChange();
@@ -355,7 +381,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
   private async readyHtmlEditor() {
     if (!this.htmlEditorContainer || !this.$body) return;
-    const c = this.htmlEditorOption?.getCurrentValue();
+    const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
       await McmodderUtils.loadStyle(document.head, null, McmodderValues.assets.css.codemirror, null, "mcmodder-style-codemirror");
       if (!this.htmlEditor) {
@@ -385,19 +411,19 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   }
 
   private onEditorStateChange() {
-    const md = this.mdEditorOption?.getCurrentValue();
-    const html = this.htmlEditorOption?.getCurrentValue();
+    const md = this.mdEditorOption?.[1].getValue();
+    const html = this.htmlEditorOption?.[1].getValue();
     if (md || html) {
-      this.verticalOption?.getInstance().show();
+      $(this.verticalOption![0]).show();
     } else {
-      this.verticalOption?.getInstance().hide();
+      $(this.verticalOption![0]).hide();
     }
     window.dispatchEvent(new Event("resize"));
     this.updateEditorStats();
   }
 
   private readyVerticalEditor() {
-    const c = this.verticalOption?.getCurrentValue();
+    const c = this.verticalOption?.[1].getValue();
     if (c) {
       this.$outerFrame?.addClass("vertical");
     } else {
@@ -408,7 +434,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   }
 
   private readyToolkit() {
-    const c = this.toolkitOption?.getCurrentValue();
+    const c = this.toolkitOption?.[1].getValue();
     if (c) {
       $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").show();
     } else {

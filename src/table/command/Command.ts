@@ -1,8 +1,8 @@
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableAcceptable, McmodderTableContext } from "../../types";
 
-export abstract class Command<McmodderTableData extends Object> {
-  self: McmodderEditableTable<McmodderTableData>;
-  constructor(self: McmodderEditableTable<McmodderTableData>) {
+export abstract class Command<T extends McmodderTableAcceptable> {
+  self: McmodderTableContext<T>;
+  constructor(self: McmodderTableContext<T>) {
     this.self = self;
   }
 

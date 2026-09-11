@@ -1,26 +1,26 @@
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableAcceptable, McmodderTableContext } from "../../types";
 import { Command } from "./Command";
 
-export class EditCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
+export class EditCommand<T extends McmodderTableAcceptable> extends Command<T> {
   index: number;
-  key: keyof McmodderTableData;
+  key: keyof T;
   newValue: any;
   originalValue: any;
 
-  constructor(self: McmodderEditableTable<McmodderTableData>, index: number, 
-      key: keyof McmodderTableData, newValue: any) {
+  constructor(self: McmodderTableContext<T>, index: number, 
+      key: keyof T, newValue: any) {
     super(self);
     this.index = index;
     this.key = key;
     this.newValue = newValue;
   }
 
-  execute() {
+  override execute() {
     this.originalValue = this.self.getRowData(this.index).content[this.key];
     this.self.editData(this.index, this.key, this.newValue);
   }
 
-  undo() {
+  override undo() {
     this.self.editData(this.index, this.key, this.originalValue);
   }
 }

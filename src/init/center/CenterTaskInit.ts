@@ -1,6 +1,7 @@
+import { createApp } from "vue";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
 import { McmodderUtils } from "../../Utils";
-import { ProgressBar } from "../../widget/progress/ProgressBar";
+import ProgressBar from "../../vue/components/ProgressBar.vue";
 import { CenterBaseInit } from "./CenterBaseInit";
 
 export class CenterTaskInit extends CenterBaseInit {
@@ -62,8 +63,12 @@ export class CenterTaskInit extends CenterBaseInit {
     });
     const now = McmodderUtils.getStartTime(new Date(), 0);
     let startTime = McmodderUtils.getStartTime(regTime, 0), endTime, resp, total = 0, verifyList: Element[] = [], maxPage, title, lastEdit, lastVerify;
-    const progressBar = new ProgressBar(regTime, regTime, now, ProgressBar.DISPLAYRULE_PERCENT);
-    progressBar.$instance.appendTo(".progress-container");
+    const progressBar = createApp(ProgressBar, {
+      val: regTime,
+      min: regTime,
+      max: now,
+      displayRule: ProgressBar.DISPLAYRULE_PERCENT
+    }).mount($(".progress-container").get(0)) as InstanceType<typeof ProgressBar>;
     do {
       endTime = Math.min(now, McmodderUtils.getStartTime(startTime, 29));
       resp = await this.getUtils().createRequest({

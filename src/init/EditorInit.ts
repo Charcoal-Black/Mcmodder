@@ -1,7 +1,7 @@
 import { EditorAlertForm, EditorAlertHTMLModifier, PreSubmitData } from "../types";
 import { McmodderUEditor } from "../ueditor/UEditor";
 import { McmodderUtils } from "../Utils";
-import { InputList } from "../widget/InputList";
+import { InputListController } from "../widget/InputListController";
 import { McmodderInit } from "./Init";
 
 abstract class EditorAlertLink {
@@ -302,8 +302,15 @@ export class EditorInit extends McmodderInit {
         `);
           $(".common-rowlist-block").last().append(submitButton);
           $("#mcmodder-presubmit-remark, #mcmodder-presubmit-reason").each((_, e) => {
-            const textarea = $(e);
-            new InputList(textarea, this.parent.utils, "editReasons", "；", true);
+            const textarea = $(e).get(0) as HTMLTextAreaElement;
+            InputListController.instance.add(textarea, {
+              delimiter: "；",
+              hideBeforeInput: true,
+              suggestionManager: {
+                utils: this.parent.utils,
+                configKey: "editReasons"
+              }
+            });
           });
           $(document).on("click", ".mcmodder-presubmit", _e => {
             let popup = $(".swal2-popup");

@@ -5,6 +5,7 @@
     "module": "ESNext",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "types": ["jquery", "jquery.cookie"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

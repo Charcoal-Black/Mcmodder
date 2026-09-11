@@ -1,86 +1,80 @@
 <template>
-  <div class="mcmodder-numberinput-container">
-    <input
-      class="form-control"
-      :placeholder="placeholder || (title ? title + '..' : undefined)"
-      :value="formatNumber(value)"
-      @change="commitNumber($event)"
-    >
-  </div>
+  <input ref="inputRef" class="form-control" :placeholder="title + '..'" @input="onInput" @change="onChange">
 </template>
 
 <script setup lang="ts">
-import { McmodderUtils } from "../../../Utils";
-import type { InputValueNumericRange } from "../../../types";
+import { useTemplateRef, watch } from 'vue';
+import { InputControlRef, InputProps, InputValidInfo, InputValueNumericRange } from '../../../types';
+import { useInputBase } from '../../composables/useInputBase';
 
-const props = defineProps<{
-  placeholder?: string;
-  title?: string;
-  value?: number | string;
-  range?: InputValueNumericRange;
-}>();
+interface Props extends InputProps<number> {
+  range?: InputValueNumericRange
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  range: () => [null, null]
+})
+
+watch(
+  () => [props?.range[0], props?.range[1]] as const,
+  ([min, max]) => {
+    if (min !== undefined && max !== undefined && min !== null && max !== null && min > max) {
+      throw new Error("范围右端点须不小于左端点。");
+    }
+  }
+)
+
+const inputRef = useTemplateRef("inputRef");
+
+const {
+  valueRef,
+  onChange,
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+} = useInputBase({
+  inputRef,
+  value: props.value,
+  validate,
+  getDOMValue,
+  setDOMValue,
+  onSuccessfulChange: props.onSuccessfulChange
+});
+
+function onInput() {
+  emit("input", getDOMValue());
+}
+
+function validate(newValue: number): InputValidInfo<number> {
+  const range = props.range;
+  const min = range[0] ?? NaN;
+  const max = range[1] ?? NaN;
+  if (isNaN(newValue)) return { isok: false, msg: `请输入一个正确的数值~` }; 
+  if (newValue === valueRef.value) return { isok: false };
+  if (!isNaN(min) && newValue < min) return { isok: false, msg: `您输入的数值 (${ newValue.toLocaleString() }) 低于允许的最小值 (${ min.toLocaleString() })，请重新设置~` };
+  if (!isNaN(max) && newValue > max) return { isok: false, msg: `您输入的数值 (${ newValue.toLocaleString() }) 高于允许的最大值 (${ max.toLocaleString() })，请重新设置~` };
+  return { isok: true, final: newValue };
+}
+
+function getDOMValue() {
+  return Number(inputRef.value!.value);
+}
+
+function setDOMValue(value: number) {
+  inputRef.value!.value = Number(value.toFixed(10)).toString();
+  emit("input", value);
+}
 
 const emit = defineEmits<{
-  commit: [value: number];
+  input: [ value: number ],
 }>();
 
-function formatNumber(val: any) {
-  if (val === undefined || val === null || val === "") return "";
-  const num = Number(val);
-  return isNaN(num) ? "" : String(Number(num.toFixed(10)));
-}
+defineExpose<InputControlRef<number>>({
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+})
 
-function getRange(): InputValueNumericRange {
-  return props.range || [null, null];
-}
-
-function commitNumber(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const newValue = Number(input.value);
-  const current = props.value;
-  const [min, max] = getRange();
-  const showError = (msg: string) => {
-    McmodderUtils.commonMsg(msg, false);
-    input.value = formatNumber(current);
-  };
-  if (isNaN(newValue)) {
-    showError("请输入一个正确的数值~");
-    return;
-  }
-  if (newValue === Number(current)) return;
-  if (min != null && newValue < min) {
-    showError(`您输入的数值 (${ newValue.toLocaleString() }) 低于允许的最小值 (${ min.toLocaleString() })，请重新设置~`);
-    return;
-  }
-  if (max != null && newValue > max) {
-    showError(`您输入的数值 (${ newValue.toLocaleString() }) 高于允许的最大值 (${ max.toLocaleString() })，请重新设置~`);
-    return;
-  }
-  emit("commit", newValue);
-}
 </script>
-
-<style scoped>
-.mcmodder-numberinput-container {
-  display: inline-block;
-}
-.form-control {
-  display: inline-block;
-  width: 180px;
-  max-width: 100%;
-  height: 34px;
-  padding: 6px 12px;
-  background-color: var(--mcmodder-color-background);
-  border: 1px solid var(--mcmodder-color-background-dark3);
-  border-radius: 10px;
-  color: var(--mcmodder-color-text);
-  font-size: 14px;
-  line-height: 1.428;
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-.form-control:focus {
-  border-color: var(--mcmodder-color-accent);
-  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
-  outline: none;
-}
-</style>

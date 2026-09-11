@@ -1,12 +1,11 @@
-import { McmodderTableDataMap } from "../../types";
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableContext, McmodderTableDataMap } from "../../types";
 import { Command } from "./Command";
 
-export class DeleteRowCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
+export class DeleteRowCommand<T extends Object> extends Command<T> {
   index: number;
-  deletedData?: McmodderTableDataMap<McmodderTableData>;
+  deletedData?: McmodderTableDataMap<T>;
 
-  constructor(self: McmodderEditableTable<McmodderTableData>, index: number) {
+  constructor(self: McmodderTableContext<T>, index: number) {
     super(self);
     this.index = index;
   }

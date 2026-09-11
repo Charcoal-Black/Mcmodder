@@ -11,7 +11,6 @@ import { StyleLoader } from "./loader/StyleLoader";
 import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseTrackSplashResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
-import { McmodderTimer } from "./widget/Timer";
 import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { McmodderUEditor } from "./ueditor/UEditor";
 import { McmodderUtils, ThemeColorData } from "./Utils";
@@ -24,6 +23,8 @@ import { McmodderSwiper } from "./widget/Swiper";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import { Mcmodder3DSplash } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
+import { createApp } from "vue";
+import Timer from "./vue/components/Timer.vue";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -342,7 +343,10 @@ export class Mcmodder {
           </div>
         </div>
       </li>`).appendTo(ul);
-      (new McmodderTimer(this, profile.expirationDate)).$instance.appendTo(h.find(".mcmodder-timer-pre"));
+      createApp(Timer, {
+        parent: this,
+        dataGetter: profile.expirationDate
+      }).mount(h.find(".mcmodder-timer-pre").get(0));
       if (profile.uuid === uuid) h.addClass("profile-selected");
     });
     swal.fire({

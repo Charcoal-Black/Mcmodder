@@ -1,12 +1,11 @@
-import { McmodderTableDataMap, McmodderTableRowSelection } from "../../types";
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableContext, McmodderTableDataMap, McmodderTableRowSelection } from "../../types";
 import { Command } from "./Command";
 
-export class DeleteMultipleRowCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
+export class DeleteMultipleRowCommand<T extends Object> extends Command<T> {
   selection: McmodderTableRowSelection;
-  deletedData?: McmodderTableDataMap<McmodderTableData>;
+  deletedData?: McmodderTableDataMap<T>;
 
-  constructor(self: McmodderEditableTable<McmodderTableData>, selection: McmodderTableRowSelection) {
+  constructor(self: McmodderTableContext<T>, selection: McmodderTableRowSelection) {
     super(self);
     this.selection = selection;
     this.deletedData = new Array(this.selection.length);

@@ -1,5 +1,6 @@
-import { VersionHelper } from "../VersionHelper";
+import { createApp } from "vue";
 import { McmodderInit } from "./Init";
+import VersionHelper from "../vue/components/VersionHelper.vue";
 
 export class VersionListInit extends McmodderInit {
   canRun() {
@@ -9,7 +10,10 @@ export class VersionListInit extends McmodderInit {
   }
   run() {
     if (this.parent.utils.getConfig("versionHelper")) {
-      new VersionHelper(this.parent);
+      const container = $("<div>").insertBefore(".version-menu, .version-content-empty").get(0);
+      createApp(VersionHelper, {
+        parent: this.parent
+      }).mount(container);
     }
   }
 }

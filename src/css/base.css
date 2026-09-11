@@ -841,7 +841,7 @@ body:not(.view),
 }
 .mcmodder-changelog-content {
   max-height: 300px;
-  overflow: auto;
+  overflow: scroll;
   text-align: left;
   font-size: 14px;
 }
@@ -909,7 +909,7 @@ body:not(.view),
 .jsonframe-table {
   font-size: 14px;
 }
-.mcmodder-guibound-container td {
+.mcmodder-recipejson-container .mcmodder-collapsible-container td {
   height: 300px;
 }
 .mcmodder-table-container {
@@ -936,7 +936,7 @@ body:not(.view),
   max-height: 300px;
   position: relative;
 }
-.mcmodder-table-loading-progress {
+.mcmodder-table-loading-container .mcmodder-progress {
   position: absolute;
   width: 16em;
   left: calc(50% - 8em);
@@ -1529,6 +1529,7 @@ body > .container > *,
   border-color: var(--mcmodder-color-background-dark2);
 }
 #mcmodder-fabric-hidever {
+  -webkit-user-select: none;
   user-select: none;
 }
 .under {
@@ -1605,11 +1606,13 @@ body .top-main .pulldown .arrow {
   text-wrap: nowrap;
   overflow: auto;
 }
-.pagination .page-custom {
+.pagination .page-custom .form-control {
   line-height: 0;
   background-color: var(--mcmodder-color-background);
   text-align: center;
   padding: 0 .5em 0 .5em;
+  display: inline-block;
+  width: 64px;
 }
 .center-total .changed {
   font-size: 75%;
@@ -1640,6 +1643,7 @@ body .top-main .pulldown .arrow {
   color: var(--mcmodder-color-text);
 }
 .mcmodder-text-stats .stats-opt > a {
+  -webkit-user-select: none;
   user-select: none;
 }
 .mcmodder-text-stats .stats-opt > a:hover {
@@ -1906,6 +1910,7 @@ body .arrow {
   border-radius: 5px;
   border: 1px solid var(--mcmodder-color-background-dark3);
   text-decoration: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 .common-center .center {
@@ -1991,7 +1996,7 @@ body .center-header .user-icon .user-icon-img.tapped {
 }
 .mcmodder-admin-container {
   display: flex;
-  overflow-x: auto;
+  overflow: auto;
 }
 @media (max-width: 500px) {
   .mcmodder-admin-container {
@@ -2151,6 +2156,7 @@ div#editor-ueeditor {
   border-radius: 3px;
   position: relative;
   cursor: var(--mcmodder-cursor-hand);
+  touch-action: none;
 }
 .mcmodder-slider-tap {
   height: 16px;
@@ -2164,6 +2170,7 @@ div#editor-ueeditor {
   transform: translate(-50%, -50%);
   left: 100%;
   cursor: grab;
+  -webkit-user-select: none;
   user-select: none;
   transition: background-color .2s ease-in-out, border-color .2s ease-in-out;
 }
@@ -2289,15 +2296,16 @@ body .top-main .info .more-info .top_content a:hover,
 .jsonframe-menu {
   padding: 3px;
   width: 100%;
+  height: 2.2em;
   overflow: auto;
   white-space: nowrap;
 }
 .jsonframe-fixedmenu {
   position: fixed;
-  top: 50px;
   z-index: 1;
   background-color: var(--mcmodder-color-background-transparent);
   backdrop-filter: blur(10px);
+  overflow-x: auto;
 }
 .jsonframe-menucontent > * {
   margin-right: .5em;
@@ -2319,6 +2327,7 @@ body .top-main .info .more-info .top_content a:hover,
   background-color: var(--mcmodder-color-accent-transparent2);
   width: 100%;
   overflow: auto;
+  overflow-anchor: none;
 }
 .jsonframe-content tr[data-index] {
   height: 48px;
@@ -2347,6 +2356,7 @@ body .top-main .info .more-info .top_content a:hover,
   margin-bottom: 0;
   width: 32px;
   height: 32px;
+  image-rendering: pixelated;
 }
 .jsonframe-oredict {
   margin-right: .25em;
@@ -2363,7 +2373,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   backdrop-filter: brightness(95%);
 }
-.form-control.mcmodder-table-input {
+.mcmodder-table-input .form-control {
   padding: .1em;
   border-radius: 0;
   text-align: center;
@@ -2451,22 +2461,35 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 #mcmodder-getitemlist-typeid-input {
   border-radius: 0;
 }
-.mcmodder-input-container {
-  position: relative;
-  display: inline-block;
-}
 .mcmodder-input-list {
   position: absolute;
-  top: calc(100% + .2em);
-  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 0;
   background-color: var(--mcmodder-color-background);
   backdrop-filter: blur(10px);
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 1;
-  padding: .2em;
+  z-index: 1001;
   box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
   border-radius: calc(var(--mcmodder-width-radius) * .5);
+  /* 和下拉菜单的高度预测功能冲突了，依旧 TODO */
+  /* transition: opacity 0.2s ease-out 0s, transform 0.2s ease-in-out 0s; */
+  transform-origin: top;
+  /* transform: scale(1); */
+}
+.mcmodder-input-list.faded {
+  opacity: 0;
+  /* transform: scale(0.98); */
+}
+.mcmodder-input-list-innerframe {
+  max-height: 300px;
+  margin: 2px;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.mcmodder-input-list.expand-upward {
+  margin-top: 0;
+  margin-bottom: 4px;
+  transform-origin: bottom;
 }
 .mcmodder-input-option {
   width: 100%;
@@ -2479,10 +2502,13 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   color: var(--mcmodder-color-text);
 }
 .mcmodder-input-option .text {
-  max-width: calc(100% - 5 * var(--mcmodder-width-padding-3));
+  max-width: 100%;
   overflow: clip;
   text-overflow: ellipsis;
   padding: 0;
+}
+.mcmodder-input-list.editable .mcmodder-input-option.selected .text {
+  max-width: calc(100% - 4 * var(--mcmodder-width-padding-3));
 }
 .mcmodder-input-option .text .alias {
   font-size: 12px;
@@ -2514,20 +2540,28 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   border-radius: var(--mcmodder-width-radius);
   background-image: linear-gradient(45deg, var(--mcmodder-color-primary-background), var(--mcmodder-color-accent-background));
   cursor: var(--mcmodder-cursor-hand);
+  -webkit-user-select: none;
   user-select: none;
 }
 .mcmodder-collapsible-container.expanded .mcmodder-collapsible-header {
   border-radius: var(--mcmodder-width-radius) var(--mcmodder-width-radius) 0 0;
 }
-.mcmodder-collapsible-header::after {
+.mcmodder-collapsible-header::after,
+.mcmodder-dropdown-container::after {
   position: absolute;
   content: "\f0d7";
   font-family: "FontAwesome";
   right: var(--mcmodder-width-padding-2);
   transition: transform .3s;
+  z-index: 1;
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: center;
+  pointer-events: none;
 }
-.mcmodder-collapsible-container.expanded .mcmodder-collapsible-header::after {
-  transform: rotate(-180deg);
+.mcmodder-collapsible-container.expanded .mcmodder-collapsible-header::after,
+.mcmodder-dropdown-container.expanded::after {
+  transform: translateY(-50%) rotate(-180deg);
 }
 .mcmodder-collapsible-header:hover {
   background-image: none;
@@ -2547,6 +2581,22 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .mcmodder-collapsible-container.expanded .mcmodder-collapsible-content > * {
   opacity: 1;
+}
+.mcmodder-dropdown-container {
+  display: inline-block;
+  margin: 0 var(--mcmodder-width-padding-3);
+  position: relative;
+}
+.btn.mcmodder-dropdown-button {
+  width: 220px;
+  padding-right: 1.5em;
+  text-align: left;
+  overflow-x: clip;
+  text-overflow: ellipsis;
+  caret-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  margin: 0;
 }
 .mcmodder-storage .size {
   position: absolute;

@@ -1,5 +1,5 @@
 import { Mcmodder } from "../Mcmodder";
-import { InputSimplifiedRecommendation, InputValueNumericRange, InputValueRange, InputValueSet, McmodderConfigData, McmodderKeyData } from "../types";
+import { InputSimplifiedSuggestion, InputValueNumericRange, InputValueRange, InputValueSet, McmodderConfigData, McmodderKeyData } from "../types";
 import { StorageBuffer } from "../StorageBuffer";
 
 export const enum McmodderInputType {
@@ -70,12 +70,12 @@ export class McmodderConfigUtils {
   addDropdownConfig(id: string, title: string, description: string, value?: number, range?: InputValueSet, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_MENU, value, range, permission);
   }
-  addDropdownTextConfig(id: string, title: string, description: string, value?: string, recommendation?: InputSimplifiedRecommendation[], permission?: McmodderPermission) {
-    return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_TEXT_MENU, value, undefined, permission, recommendation);
+  addDropdownTextConfig(id: string, title: string, description: string, value?: string, Suggestion?: InputSimplifiedSuggestion[], permission?: McmodderPermission) {
+    return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_TEXT_MENU, value, undefined, permission, Suggestion);
   }
 
   private addConfig(id: string, title: string, description: string, type = McmodderInputType.CHECKBOX, 
-    value: any = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, recommendation?: InputSimplifiedRecommendation[]) {
+    value: any = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, Suggestion?: InputSimplifiedSuggestion[]) {
     this.data[id] = {
       title: title,
       description: description,
@@ -83,7 +83,7 @@ export class McmodderConfigUtils {
       value: value,
       permission: permission,
       ...(range != undefined && { range }),
-      ...(recommendation != undefined && { recommendation })
+      ...(Suggestion != undefined && { Suggestion })
     };
     if (this.parent.utils.getConfig(id) === undefined) {
       this.parent.utils.setConfig(id, value || McmodderConfigUtils.defaultValue[type]);

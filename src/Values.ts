@@ -1,5 +1,5 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
-import { InputSimplifiedRecommendation, ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
+import { InputSimplifiedSuggestion, ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
 import defaultEditReasons from "./assets/json/input/EditReason.json";
 import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
 
@@ -323,7 +323,7 @@ export class McmodderValues {
     </table>`
   }];
 
-  static readonly defaultInputRecommendation: Record<string, InputSimplifiedRecommendation[]> = {
+  static readonly defaultInputSuggestion: Record<string, InputSimplifiedSuggestion[]> = {
     editReasons: defaultEditReasons,
     verifyReasons: defaultVerifyReasons 
   };

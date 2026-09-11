@@ -1,37 +1,46 @@
 <template>
-  <input
-    class="form-control mcmodder-colorpicker"
-    type="color"
-    :value="value"
-    @change="emit('commit', ($event.target as HTMLInputElement).value)"
-  >
+  <input ref="inputRef" type="color" class="form-control" :placeholder="title + '..'" @change="onChange">
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  value?: string;
-}>();
+import { useTemplateRef } from 'vue';
+import { InputControlRef, InputProps } from '../../../types';
+import { useInputBase } from '../../composables/useInputBase';
 
-const emit = defineEmits<{
-  commit: [value: string];
-}>();
+const props = defineProps<InputProps<string>>();
+
+const inputRef = useTemplateRef("inputRef");
+
+const {
+  onChange,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+} = useInputBase({
+  inputRef,
+  value: props.value,
+  getDOMValue,
+  setDOMValue,
+  onSuccessfulChange: props.onSuccessfulChange
+});
+
+function getDOMValue() {
+  return inputRef.value!.value;
+}
+
+function setDOMValue(value: string) {
+  inputRef.value!.value = value
+}
+
+function getInstance() {
+  return inputRef.value!;
+}
+
+defineExpose<InputControlRef<string>>({
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+})
+
 </script>
-
-<style scoped>
-.form-control.mcmodder-colorpicker {
-  display: inline-block;
-  width: 4.5em;
-  height: 2.4em;
-  padding: 2px;
-  background-color: var(--mcmodder-color-background);
-  border: 1px solid var(--mcmodder-color-background-dark3);
-  border-radius: 10px;
-  cursor: var(--mcmodder-cursor-hand);
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-.form-control.mcmodder-colorpicker:focus {
-  border-color: var(--mcmodder-color-accent);
-  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
-  outline: none;
-}
-</style>

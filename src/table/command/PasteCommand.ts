@@ -1,12 +1,11 @@
-import { McmodderTableDataMap } from "../../types";
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableAcceptable, McmodderTableContext, McmodderTableDataMap } from "../../types";
 import { Command } from "./Command";
 
-export class PasteCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
+export class PasteCommand<T extends McmodderTableAcceptable> extends Command<T> {
   index: number;
-  pastedData?: McmodderTableDataMap<McmodderTableData>;
+  pastedData?: McmodderTableDataMap<T>;
 
-  constructor(self: McmodderEditableTable<McmodderTableData>, index: number) {
+  constructor(self: McmodderTableContext<T>, index: number) {
     super(self);
     this.self = self;
     this.index = index;

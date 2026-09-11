@@ -1,7 +1,6 @@
 import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
-import { McmodItemEditorData, McmodItemEditorInnerData } from "./jsonframe/ItemJsonFrame";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderClassData, McmodderItemData, McmodderKeyData, McmodderProfileData, RGB, RGBA } from "./types";
+import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderClassData, McmodderItemData, McmodderKeyData, McmodderProfileData, McmodItemEditorData, McmodItemEditorInnerData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
@@ -112,6 +111,16 @@ export class McmodderUtils {
       val = obj[key];
       if (val === undefined || val === null || (typeof val === "number" && isNaN(val))) delete obj[key];
     });
+  }
+
+  static createRange(l: number, r: number) {
+    if (!Number.isInteger(l) || !Number.isInteger(r)) {
+      throw new Error("端点必须是整数。");
+    }
+    if (l > r) {
+      throw new Error("左端点必须不大于右端点。");
+    }
+    return Array.from({ length: r - l }, (_, i) => i + l);
   }
 
   getConfig(key?: string | number | null, item = "mcmodderSettings", defaultValue: any = undefined) {
@@ -769,9 +778,11 @@ export class McmodderUtils {
     if (a.altKey && !b.altKey) return false;
     if (a.metaKey && !b.metaKey) return false;
     if (a.keyCode && b.keyCode) {
-      if (a.keyCode >= 98 && a.keyCode <= 123) a.keyCode -= 32;
-      if (b.keyCode >= 98 && b.keyCode <= 123) b.keyCode -= 32;
-      if (a.keyCode != b.keyCode) return false;
+      let keyCodeA = a.keyCode;
+      let keyCodeB = b.keyCode;
+      if (keyCodeA >= 98 && keyCodeA <= 123) keyCodeA -= 32;
+      if (keyCodeB >= 98 && keyCodeB <= 123) keyCodeB -= 32;
+      if (keyCodeA !== keyCodeB) return false;
     }
     return true;
   }
@@ -795,8 +806,8 @@ export class McmodderUtils {
     '"': '&quot;',
     "'": '&#039;'
   };
-  static escapeHTML(str: string) {
-    return str.replace(/[&<>"']/g, char => (McmodderUtils.escapeHTMLMap as any)[char]);
+  static escapeHTML(str: string | number) {
+    return str.toString().replace(/[&<>"']/g, char => (McmodderUtils.escapeHTMLMap as any)[char]);
   }
 
   static getAbsolutePos(node: Element) {
@@ -828,6 +839,20 @@ export class McmodderUtils {
         lastTime = now;
       }
     };
+  }
+
+  static animationThrottle = (func: Function) => {
+    let isTicking = false;
+    return function (this: any, ...args: any[]) {
+      const context = this;
+      if (!isTicking) {
+        requestAnimationFrame(() => {
+          func.apply(context, args);
+          isTicking = false;
+        })
+        isTicking = true;
+      }
+    }
   }
 
   static addStyle(value: string, id = "", doc = document) {

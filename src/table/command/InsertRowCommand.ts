@@ -1,9 +1,9 @@
-import { McmodderEditableTable } from "../EditableTable";
+import { McmodderTableAcceptable, McmodderTableContext } from "../../types";
 import { Command } from "./Command";
 
-export class InsertRowCommand<McmodderTableData extends Object> extends Command<McmodderTableData> {
+export class InsertRowCommand<T extends McmodderTableAcceptable> extends Command<T> {
   index: number;
-  constructor(self: McmodderEditableTable<McmodderTableData>, index: number) {
+  constructor(self: McmodderTableContext<T>, index: number) {
     super(self);
     this.index = index;
   }

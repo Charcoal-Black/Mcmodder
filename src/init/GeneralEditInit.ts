@@ -1,5 +1,5 @@
 import { McmodderUtils } from "../Utils";
-import { InputList } from "../widget/InputList";
+import { InputListController } from "../widget/InputListController";
 import { McmodderInit } from "./Init";
 
 export class GeneralEditInit extends McmodderInit {
@@ -64,8 +64,15 @@ export class GeneralEditInit extends McmodderInit {
 
     // 下拉菜单
     $("#mcmodder-textarea-remark, #mcmodder-textarea-reason").each((_, e) => {
-      const textarea = $(e);
-      new InputList(textarea, this.parent.utils, "editReasons", "；", true);
+      const textarea = e as HTMLTextAreaElement;
+      InputListController.instance.add(textarea, {
+        delimiter: "；",
+        hideBeforeInput: true,
+        suggestionManager: {
+          utils: this.parent.utils,
+          configKey: "editReasons"
+        }
+      });
     });
 
     // 针对应用 InputList 后原生输入框无法被检测到的修复

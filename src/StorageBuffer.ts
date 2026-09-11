@@ -38,7 +38,7 @@ export class StorageBuffer {
   }
 
   isCacheable(key: string) {
-    return this.cacheableItems[key] != undefined;
+    return this.cacheableItems[key] !== undefined;
   }
 
   addCacheableItem(key: string, defaultProvider?: DefaultProvider, injectedEvent?: InjectedEvent) {
@@ -59,8 +59,7 @@ export class StorageBuffer {
       if (this.isDisabled[key]) return;
       this.disableItem(key);
       this.data[key] = JSON.parse(GM_getValue(key));
-      let injectedEvent = this.cacheableItems[key].injectedEvent;
-      if (injectedEvent) injectedEvent(this);
+      this.cacheableItems[key].injectedEvent?.(this);
       this.enableItem(key);
     });
 

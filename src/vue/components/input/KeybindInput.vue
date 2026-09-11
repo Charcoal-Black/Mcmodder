@@ -1,67 +1,67 @@
 <template>
   <input
+    ref="inputRef"
     class="form-control mcmodder-keybind-input"
-    :value="keybindDisplay()"
-    @focus="keybindOnFocus"
-    @keydown="keybindOnKeydown($event)"
-    @keyup="keybindOnKeyup($event)"
-    @blur="keybindOnBlur"
+    :value="content"
+    @focus="onFocus"
+    @keydown="onKeydown"
+    @keyup="onKeyup"
+    @blur="onBlur"
   >
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
-import { McmodderUtils } from "../../../Utils";
-import type { McmodderKeyData } from "../../../types";
+import { computed, ref, shallowRef, useTemplateRef } from 'vue';
+import { InputControlRef, InputProps, McmodderKeyData } from '../../../types';
+import { useInputBase } from '../../composables/useInputBase';
+import { McmodderUtils } from '../../../Utils';
 
-const props = defineProps<{
-  value?: McmodderKeyData;
-}>();
+const props = defineProps<InputProps<McmodderKeyData>>();
 
-const emit = defineEmits<{
-  commit: [value: McmodderKeyData];
-}>();
+const inputRef = useTemplateRef("inputRef");
+const valueRef = shallowRef(props.value);
 
-const keybindState = reactive<{ lastData?: McmodderKeyData; queue: number; finished: boolean }>({
-  queue: 0,
-  finished: false
+const {
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+} = useInputBase({
+  inputRef,
+  value: props.value,
+  validate,
+  onSuccessfulChange: props.onSuccessfulChange
 });
 
-function keybindDisplay() {
-  return McmodderUtils.keyToString(props.value || {});
+const keyFinished = ref(true);
+const keyQueue = ref(0);
+
+function onFocus() {
+  valueRef.value = {};
+  keyQueue.value = 0;
+  keyFinished.value = false;
 }
 
-function keybindOnFocus() {
-  keybindState.lastData = undefined;
-  keybindState.queue = 0;
-  keybindState.finished = false;
-}
-
-function keybindOnKeydown(e: KeyboardEvent) {
+function onKeydown(e: KeyboardEvent) {
   e.preventDefault();
   e.stopPropagation();
-  if (e.key === keybindState.lastData?.key) return;
+  if (e.key === valueRef.value?.key) return;
   if (e.key === "Escape") {
-    keybindState.lastData = undefined;
-    keybindState.queue = 0;
-    keybindState.finished = false;
-    (e.target as HTMLInputElement).blur();
+    inputRef.value!.blur();
     return;
   }
-  keybindState.lastData = e as unknown as McmodderKeyData;
-  keybindState.queue++;
-  (e.target as HTMLInputElement).value = McmodderUtils.keyToString(e as unknown as McmodderKeyData);
+  valueRef.value = e;
+  keyQueue.value++;
   if (e.metaKey && !["Control", "Alt", "Meta", "Shift"].includes(e.key)) {
-    keybindOnKeyup(e);
+    onKeyup(e);
   }
 }
 
-function keybindOnKeyup(e: KeyboardEvent) {
+function onKeyup(e: KeyboardEvent) {
   e.preventDefault();
-  if (--keybindState.queue) return;
-  const r = keybindState.lastData;
+  if (--keyQueue.value) return;
+  const d: McmodderKeyData = {}, r = valueRef.value;
   if (!r) return;
-  const d: McmodderKeyData = {};
   if (r.ctrlKey) d.ctrlKey = true;
   if (r.shiftKey) d.shiftKey = true;
   if (r.altKey) d.altKey = true;
@@ -69,38 +69,38 @@ function keybindOnKeyup(e: KeyboardEvent) {
   d.key = r.key;
   if (r.keyCode && r.keyCode >= 97 && r.keyCode <= 122) r.keyCode -= 32;
   d.keyCode = r.keyCode;
-  keybindState.finished = true;
-  emit("commit", d);
-  (e.target as HTMLInputElement).blur();
+  setCurrentValue(d);
+  keyFinished.value = true;
+  inputRef.value!.blur();
 }
 
-function keybindOnBlur() {
-  if (keybindState.finished) return;
-  emit("commit", {});
+function onBlur(e: Event) {
+  e.preventDefault();
+  if (!keyFinished.value) {
+    setCurrentValue({});
+    keyFinished.value = true;
+  }
 }
+
+const content = computed(() => {
+  if (!keyFinished.value && keyQueue.value === 0) {
+    return "";
+  }
+  return McmodderUtils.keyToString(valueRef.value);
+})
+
+function validate(newValue: McmodderKeyData) {
+  return {
+    isok: true,
+    final: newValue
+  };
+}
+
+defineExpose<InputControlRef<McmodderKeyData>>({
+  getInstance,
+  getValue,
+  setCurrentValue,
+  setDisplayValue
+})
+
 </script>
-
-<style scoped>
-.form-control {
-  display: inline-block;
-  width: 260px;
-  max-width: 100%;
-  height: 34px;
-  padding: 6px 12px;
-  background-color: var(--mcmodder-color-background);
-  border: 1px solid var(--mcmodder-color-background-dark3);
-  border-radius: 10px;
-  color: var(--mcmodder-color-text);
-  font-size: 14px;
-  line-height: 1.428;
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-.form-control:focus {
-  border-color: var(--mcmodder-color-accent);
-  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
-  outline: none;
-}
-.mcmodder-keybind-input {
-  font-family: Consolas, "Courier New", monospace !important;
-}
-</style>

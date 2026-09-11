@@ -1,7 +1,7 @@
-import { ItemJsonFrame } from "../jsonframe/ItemJsonFrame";
-import { RecipeJsonFrame } from "../jsonframe/RecipeJsonFrame";
+import { createApp } from "vue";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
+import JsonHelper from "../vue/components/JsonHelper.vue";
 import { McmodderInit } from "./Init";
 
 export class JsonHelperInit extends McmodderInit {
@@ -21,25 +21,9 @@ export class JsonHelperInit extends McmodderInit {
     await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.tableSorter);
     // $(`<link type="text/css" href="${ McmodderValues.assets.mcmod.css.bootstrapSelect }" rel="stylesheet">`).appendTo("head");
 
-    const itemJsonContainer = $(`<div id="mcmodder-itemjson-container">
-        <div class="common-text">
-          <span class="mcmodder-subtitle">物品JSON管理</span>
-          <div id="mcmodder-json-compare-frame"></div>
-        </div>
-      </div>`).appendTo(".center");
-    const itemJsonFrame = new ItemJsonFrame("itemjsonframe", this.parent);
-    itemJsonFrame.$instance.appendTo(itemJsonContainer);
-
-    const recipeJsonContainer = $(`<div id="mcmodder-recipejson-container">
-        <div class="common-text">
-          <span class="mcmodder-subtitle">合成表JSON管理</span>
-          <div id="mcmodder-json-compare-frame"></div>
-        </div>
-      </div>`).appendTo(".center");
-    const recipeJsonFrame = new RecipeJsonFrame("recipejsonframe", this.parent);
-    recipeJsonFrame.$instance.appendTo(recipeJsonContainer);
-
-    const guiBoundFrame = $("<div>").insertAfter(recipeJsonContainer);
-    recipeJsonFrame.guiBindFrame.getInstance().addClass("mcmodder-guibound-container").appendTo(guiBoundFrame);
+    const container = $("<div>").appendTo(".center");
+    createApp(JsonHelper, {
+      parent: this.parent
+    }).mount(container.get(0));
   }
 }
