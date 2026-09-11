@@ -430,7 +430,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   flex-direction: row;
   height: 100%;
   padding-top: 5px;
-  overflow-x: scroll;
+  overflow-x: auto;
   scrollbar-width: thin;
 }
 .mcmodder-favuser .user {
@@ -724,7 +724,7 @@ body .edui-default .edui-editor-iframeholder {
   padding: .5em;
   color: white;
   font-size: 12px;
-  overflow: scroll;
+  overflow: auto;
 }
 .mcmodder-logger * {
   font-family: inherit;
@@ -1201,7 +1201,7 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   display: flex;
   width: auto;
   flex-direction: column;
-  overflow: scroll;
+  overflow: auto;
   border-color: transparent;
 }
 .common-text p {
@@ -1256,7 +1256,7 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   width: 100%;
 }
 .modal-open {
-  overflow: scroll;
+  overflow: auto;
 }
 #verify-window-label {
   display: inline-block;

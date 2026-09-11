@@ -95,10 +95,56 @@ export class AdminInit extends McmodderInit {
           (new McmodderTimer(this.parent, McmodderTimer.DATAGETTER_SCHEDULE("autoCheckVerify", this.parent.currentUID, this.parent.scheduleRequestUtils))).$instance.appendTo(t);
         }
 
+        if (!this.triggered.has("模组区内容审核")) {
+          this.initAssistantViewed();
+          $(document).on("click", ".mcmodder-compare-icon", e => {
+            $(e.currentTarget).toggleClass("large");
+          })
+          .on("click", ".mcmodder-verify-locate", _e => {
+            if (verifyID === undefined) {
+              McmodderUtils.commonMsg("待审项 ID 获取失败...", false);
+              return;
+            }
+            const tr = this.getEntry(verifyID);
+            if (tr.length) {
+              McmodderUtils.highlight(tr, "gold", 2e3, true);
+            } else {
+              McmodderUtils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
+            }
+          })
+          .on("click", ".assistant-action-btns .action-btn", e => {
+            const data = (e.currentTarget as HTMLElement).dataset.data!;
+            const id = Number(JSON.parse(data).verifyID);
+            this.markEntryAsViewed(id);
+            this.getEntry(id).addClass("mcmodder-verify-commented");
+          })
+          .keydown(e => setTimeout(() => { // 由于swal自身的特性，直接检测会导致连续触发二次确认按钮，这里使用setTimeout
+            if (this.parent.isMobileClient) {
+              return;
+            }
+            if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
+              e.stopPropagation();
+              checkButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+              e.stopPropagation();
+              passButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+              e.stopPropagation();
+              refundButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+              e.preventDefault();
+              reasonInput?.focus();
+            }
+          }, 10));
+        }
+
         // 单项审核界面
         // 分屏
         let singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
-        const splitScreenOnVerify = this.parent.utils.getConfig("splitScreenOnVerify")
+        const splitScreenOnVerify = this.parent.utils.getConfig("splitScreenOnVerify");
         if (splitScreenOnVerify && !this.parent.isMobileClient) {
           const connectedFrame = document.getElementById("connect-frame");
           if (!connectedFrame) return;
@@ -110,7 +156,6 @@ export class AdminInit extends McmodderInit {
           .bindRight(verifyContainer, true);
 
           if (!this.triggered.has("模组区内容审核")) {
-            this.initAssistantViewed();
             const verifyWindowElement = verifyWindow.get(0);
             $(document).scroll(McmodderUtils.throttle(() => {
               const top = document.scrollingElement?.scrollTop;
@@ -130,49 +175,7 @@ export class AdminInit extends McmodderInit {
                 }
                 prevHeight = height;
               }
-            }, 16))
-            .on("click", ".mcmodder-compare-icon", e => {
-              $(e.currentTarget).toggleClass("large");
-            })
-            .on("click", ".mcmodder-verify-locate", _e => {
-              if (verifyID === undefined) {
-                McmodderUtils.commonMsg("待审项 ID 获取失败...", false);
-                return;
-              }
-              const tr = this.getEntry(verifyID);
-              if (tr.length) {
-                McmodderUtils.highlight(tr, "gold", 2e3, true);
-              } else {
-                McmodderUtils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
-              }
-            })
-            .on("click", ".assistant-action-btns .action-btn", e => {
-              const data = (e.currentTarget as HTMLElement).dataset.data!;
-              const id = Number(JSON.parse(data).verifyID);
-              this.markEntryAsViewed(id);
-              this.getEntry(id).addClass("mcmodder-verify-commented");
-            })
-            .keydown(e => setTimeout(() => { // 由于swal自身的特性，直接检测会导致连续触发二次确认按钮，这里使用setTimeout
-              if (this.parent.isMobileClient) {
-                return;
-              }
-              if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
-                e.stopPropagation();
-                checkButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
-                e.stopPropagation();
-                passButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
-                e.stopPropagation();
-                refundButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
-                e.preventDefault();
-                reasonInput?.focus();
-              }
-            }, 10));
+            }, 16));
           }
 
           // 打开待审项时打开分屏
@@ -301,20 +304,26 @@ export class AdminInit extends McmodderInit {
                 if (!rowText) return;
                 else if (rowText.includes("介绍") || rowText.includes("正文")) {
                   const insertPos = verifyFrame.find(".verify-action-btns, .assistant-action-btns").parent().children().first();
-                  const textA = row.find("td:nth-child(3) .common-text");
-                  const textB = row.find("td:nth-child(2) .common-text");
-                  (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                  let textA = row.children("td:nth-child(3)");
+                  let textB = row.children("td:nth-child(2)");
+                  const commonTextA = textA.find(".common-text");
+                  const commonTextB = textB.find(".common-text");
+                  if (commonTextA.length) textA = commonTextA;
+                  if (commonTextB.length) textB = commonTextB;
+                  if (textA.length && textB.length) {
+                    (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                  }
                   new McmodderMainText(this.parent, textA);
                   new McmodderMainText(this.parent, textB);
                 }
                 else if (rowText === "模组关系") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   RelationCompareFrame.performCompare(prev, next);
                 }
                 else if (rowText === "相关链接") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   const addLink = (node: JQuery) => {
                     node.find("p").each((_, p) => {
                       const text = p.textContent;
@@ -330,8 +339,8 @@ export class AdminInit extends McmodderInit {
                   addLink(next);
                 }
                 else if (rowText === "支持MC版本") {
-                  const prev = row.find("td:nth-child(3) .verify-copy-text");
-                  const next = row.find("td:nth-child(2) .verify-copy-text");
+                  const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
+                  const next = row.children("td:nth-child(2)").find(".verify-copy-text");
                   PlatformCompareFrame.performCompare(prev, next);
                 }
                 else if (rowText === "小图标" || rowText === "大图标") {
@@ -556,7 +565,7 @@ export class AdminInit extends McmodderInit {
   } as Record<number, string>;
 
   private getOpinions(elem: JQuery) {
-    return elem.find("td:nth-child(2) b.text");
+    return elem.find("td:nth-child(2) b.text").filter(e => !$(e).parents(".mcmodder-verify-changedopinions").length);
   }
 
   private parseOpinions(elem: JQuery): ParsedOpinion {
@@ -632,6 +641,7 @@ export class AdminInit extends McmodderInit {
           this.renderOpinions(changed, true).appendTo(rendered.children());
           currentElement.addClass("mcmodder-verify-newopinion");
         }
+        currentElement.removeClass(".mcmodder-verify-deletedentry");
       }
     });
     currentMap.forEach((_, id) => {
@@ -653,9 +663,10 @@ export class AdminInit extends McmodderInit {
     const changed = target.find(".mcmodder-verify-changedopinions");
     const changedText = changed.find("b.text");
     const parsedChanged = this.parseOpinions(changedText);
-    target.removeClass("mcmodder-verify-newopinion");
     const td = changed.parents("td").first();
-    const current = this.parseOpinions(this.getOpinions(td));
+    const tr = td.parents().first();
+    const current = this.parseOpinions(this.getOpinions(tr));
+    target.removeClass("mcmodder-verify-newopinion");
     const targetText = "[📚 助理意见：";
     for (let i = 0; i < 4; i++) {
       current[i] += parsedChanged[i];

@@ -129,7 +129,7 @@ export class McmodderContextMenu {
   protected onContextmenu(e: JQueryMouseEventObject) {
     e.preventDefault();
     const absolutePos = McmodderUtils.getAbsolutePos(this.container);
-    if (!this.activeState) {
+    if (!this.isActive()) {
       this.activeState = true;
       this.contextmenuEvent = e;
       this.updateMenu(e);
@@ -147,7 +147,7 @@ export class McmodderContextMenu {
   }
 
   protected onClick(_e: JQueryMouseEventObject) {
-    if (this.activeState) {
+    if (this.isActive()) {
       this.hide();
     }
   }
@@ -178,8 +178,10 @@ export class McmodderContextMenu {
 
   show(x: number, y: number) {
     this.activeState = true;
-    if (!this.component) return;
-    this.component.show(x, y, this.activeIndexList, this.getVisibleEntries(), this.contextmenuEvent);
+    this.ensureMounted().then(() => {
+      if (!this.activeState) return;
+      this.component?.show(x, y, this.activeIndexList, this.getVisibleEntries(), this.contextmenuEvent);
+    });
   }
 
   hide() {
@@ -202,6 +204,6 @@ export class McmodderContextMenu {
   }
 
   isActive() {
-    return this.activeState;
+    return this.component ? this.component.getActiveState() : this.activeState;
   }
 }

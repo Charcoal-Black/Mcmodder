@@ -1,82 +1,37 @@
-import { McmodderConfigResourceInteractor } from "../../config/ConfigResourceInteractor";
-import { McmodderInputType } from "../../config/ConfigUtils";
 import { Mcmodder } from "../../Mcmodder";
-import { McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData, SupabaseAuthenticatorResponse, SupabaseSyncSettingsResponse } from "../../types";
-import { McmodderTable } from "../../table/Table";
-import { McmodderTimer } from "../../widget/Timer";
-import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
-import { McmodderConfigResourceFileListInteractor } from "../../config/ConfigResouceFileListInteractor";
-import { McmodderConfigInteractor } from "../../config/ConfigInteractor";
-import { GM_getValue, GM_setValue } from "$";
+
+/** 与 SettingsModal.vue 约定的打开事件名（组件从 vue/mount 导入同一常量） */
+const OPEN_SETTINGS_EVENT = "mcmodder:open-settings";
+
+/** 弹窗宿主只挂载一次（run 可能随页面 mutation 多次触发） */
+let settingsModalHost: HTMLElement | null = null;
+
+function openSettingsModal(parent: Mcmodder) {
+  if (settingsModalHost) {
+    document.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
+    return;
+  }
+  settingsModalHost = document.createElement("div");
+  document.body.appendChild(settingsModalHost);
+  Promise.all([
+    import("../../vue/components/SettingsModal.vue"),
+    import("../../vue/mount")
+  ]).then(([settingsModule, mountModule]) => {
+    mountModule.mountVueApp(
+      settingsModule.default,
+      { parent },
+      settingsModalHost as HTMLElement
+    );
+    document.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
+  }).catch(() => {
+    settingsModalHost?.remove();
+    settingsModalHost = null;
+  });
+}
 
 export class CenterSettingInit extends CenterBaseInit {
-  private async accessPublicSplashList(manager: McmodderConfigResourceInteractor<McmodderSplashData>) {
-    const data = manager.table.getAllData().map(data => data.content).filter(data => data) as string[];
-    if (!data.length) {
-      McmodderUtils.commonMsg("还没有记录任何标语呢... 用“闪烁标语追踪器”记录一些标语后再试试？");
-      return;
-    }
-    const resp = await this.getUtils().createRequest({
-      url: Mcmodder.URL_PUBLIC_SPLASH_LIST_RAW,
-      method: "GET",
-      timeout: 5e3
-    });
-    if (resp?.status === 200) return this.performSplashCompare(resp.responseText, data);
-    const resp2 = await this.getUtils().createRequest({
-      url: Mcmodder.URL_ALTERNATIVE_PUBLIC_SPLASH_LIST_RAW,
-      method: "GET",
-      timeout: 5e3
-    });
-    if (resp2?.status === 200) return this.performSplashCompare(resp2.responseText, data);
-    McmodderUtils.commonMsg("公共标语库加载失败，请检查网络连接~", false);
-  }
-
-  private performSplashCompare(_publicList: string, localList: string[]) {
-    const publicList: string[] = JSON.parse(_publicList);
-    let unique: string[] = [], flag;
-    localList.forEach(e => {
-      if (!e) return;
-      e = e.toString().replace(this.getParent().currentUsername, "%s");
-      flag = true;
-      publicList.forEach(f => {
-        if (e === f) flag = false;
-      });
-      if (flag) unique.push(e);
-    });
-    const footer = `<a target="_blank" href="${ Mcmodder.URL_PUBLIC_SPLASH_LIST }">在 GitHub 查看公共标语库</a>`;
-    if (unique.length) {
-      swal.fire({
-        type: "info",
-        title: "对比完毕",
-        html: `
-          本地有 ${unique.length.toLocaleString()} 条标语尚未被公共标语库收录！<br>
-          检查确认无误后，您可以通过任意方式与作者取得联系来更新完善我们的公共标语库~<br>
-          未收录的标语如下：
-          <textarea id="mcmodder-unique-splashes" class="form-control mcmodder-monospace">`,
-        footer: footer
-      });
-      $("#mcmodder-unique-splashes").val(JSON.stringify(unique, null, 2));
-    }
-    else swal.fire({
-      type: "success",
-      title: "对比完毕",
-      text: "本地所有标语均已被公共标语库收录~",
-      footer: footer
-    });
-  }
-
-  private emptyScheduleRequest() {
-    const list = this.getParent().scheduleRequestUtils.get();
-    if (list.length) {
-      this.getParent().scheduleRequestUtils.empty();
-      McmodderUtils.commonMsg(`${ list.length.toLocaleString() } 项计划任务已被清除~`);
-    } else {
-      McmodderUtils.commonMsg("当前没有计划任务~");
-    }
-  }
-
   run() {
     // 事件解绑
     $(document)
@@ -108,378 +63,18 @@ export class CenterSettingInit extends CenterBaseInit {
     $("#setting-link-style-preview").attr("data-content", `<img alt="link style" src="${
       McmodderValues.assets.mcmod.iconStyleSample
     }" width="220" ></a>`);
-    // 脚本设置
-    let menuArea = $("div.center-main.setting.menuarea").get(0);
+
+    // 脚本设置菜单：点击直接弹出设置窗口。
+    // 捕获阶段拦截并阻止冒泡，避免百科页面的菜单切换逻辑将界面切到不存在的
+    // data-menu-frame="9"（设置界面已完全迁移至弹窗）。
     $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>')
     .appendTo("#center-setting-frame > div.center-sub-menu > ul")
-    .bind("change", e => {
-      const target = $(e.currentTarget);
-      const a = target.attr("data-menu-select");
-      if (a) {
-        const e = target.parent().parent().parent();
-        const t = e.parent().children(".center-main");
-        e.children("ul").find("a").removeClass("active");
-        target.addClass("active"), t.children(".center-block").hide();
-        t.children(`.center-block[data-menu-frame='${a}']`).show();
-      }
-    });
-
-    const mcmodderSettingMenu = $('<div class="center-block hidden" data-menu-frame="9" style="display: none;">')
-    .appendTo(menuArea);
-    mcmodderSettingMenu.html(
-      `<div class="center-block-head">
-        <span class="title">Mcmodder设置</span>
-        <span class="text">版本 v${McmodderValues.mcmodderVersion} ~ ☆</span>
-      </div>`);
-
-    let content = $('<div class="center-content"></div>'), permission = this.getUtils().getProfile("permission");
-    let interfaces = [];
-
-    Object.keys(this.getParent().cfgutils.data).forEach(key => {
-      const data = this.getParent().cfgutils.data[key];
-      if (data.permission && permission < data.permission) return;
-      if (data.type === McmodderInputType.KEYBIND && 
-        this.getParent().isMobileClient) return;
-      const entry = new McmodderConfigInteractor(key, this.getParent().cfgutils);
-      entry.$instance.appendTo(content);
-      interfaces.push(entry);
-    });
-    content.appendTo(mcmodderSettingMenu);
-
-    // 手动检查更新
-    const manualUpdateCheck = $('<button id="mcmodder-update-check-manual" class="btn">立即检查更新</button>')
-    .insertAfter("[for=settings-autoCheckUpdate]")
-    .click(() => this.getParent().scheduleRequestUtils.run("autoCheckUpdate"))
-    .parent();
-    if (this.getUtils().getConfig("autoCheckUpdate")) {
-      new McmodderTimer(this.getParent(), McmodderTimer.DATAGETTER_SCHEDULE(
-        "autoCheckUpdate",
-        null,
-        this.getParent().scheduleRequestUtils
-      ))
-      .$instance.appendTo(manualUpdateCheck);
-    }
-
-    // Supabase 用户认证
-    const useSupabaseLabel = $("[for=settings-useSupabase]");
-    const useSupabaseButton = useSupabaseLabel.prev();
-    const useSupabaseBlock = useSupabaseButton.parents(".center-setting-block");
-    const manualAuth = $('<button id="mcmodder-auth-manual" class="btn">立即认证</button>')
-    .insertAfter(useSupabaseLabel);
-    const authMessage = $('<span>当前已绑定: </span>')
-    .insertAfter(manualAuth);
-    const authUser = $('<span class="mcmodder-auth-user">').appendTo(authMessage);
-    const authState = $('<span class="mcmodder-auth-state">').appendTo(authMessage);
-    const updateAuthStateDisplay = () => {
-      const uid = this.getUtils().getProfile("auth_uid");
-      const name = this.getUtils().getProfile("auth_username");
-      const key = this.getUtils().getProfile("auth_key");
-      authUser.removeClass("text-success text-danger text-muted").empty();
-      authState.removeClass("text-success text-danger text-muted").empty();
-      if (!uid || !name) {
-        authUser.addClass("text-muted").text("?");
-        authState.addClass("text-danger").html(`<i class="fa fa-close" />`);
-      }
-      else {
-        authUser.addClass("text-success").text(`${ name } (UID:${ uid })`);
-        if (key) {
-          authState.addClass("text-success").html(`<i class="fa fa-check" />`);
-        } else {
-          authState.addClass("text-danger").html(`<i class="fa fa-close" />`);
-        }
-      }
-    }
-    updateAuthStateDisplay();
-    manualAuth.click(async () => {
-      McmodderUtils.setButtonLoadingState(manualAuth);
-      if (!this.getParent().supabaseUtils.hasClient()) {
-        return;
-      }
-      const resp = await this.getParent().supabaseUtils.invoke<SupabaseAuthenticatorResponse>("authenticator", {
-        body: { cookie: document.cookie }
-      });
-      if (!resp) {
-        return;
-      }
-      this.getUtils().setProfile("auth_uid", resp.user_id);
-      this.getUtils().setProfile("auth_username", resp.user_name);
-      this.getUtils().setProfile("auth_key", resp.auth_key);
-      updateAuthStateDisplay();
-      McmodderUtils.cancelButtonLoadingState(manualAuth);
-    });
-    if (!this.getUtils().getConfig("useSupabase")) {
-      manualAuth.hide();
-      authMessage.hide();
-    }
-    useSupabaseButton.click(() => {
-      if (!this.getUtils().getConfig("useSupabase")) {
-        manualAuth.hide();
-        authMessage.hide();
-        settingsSyncBlock.hide();
-      } else {
-        manualAuth.show();
-        authMessage.show();
-        settingsSyncBlock.show();
-      }
-    });
-
-    const settingsSyncBlock = $('<div class="center-setting-block">').insertAfter(useSupabaseBlock);
-    $(`<button class="btn">
-      <i class="fa fa-cloud-upload" />
-      保存所有配置数据至云端
-    </button>`).click(async e => {
-      const button = e.currentTarget;
-      const { value } = await swal.fire({
-        type: "warning",
-        title: "配置上传确认",
-        text: `即将把本地的所有脚本配置数据保存在云端（包括脚本设置、已保存的用户信息和模板列表），便于同步到其他终端设备上。
-          云端若已保存配置则会被覆盖，无法撤销。是否继续？`,
-        showCancelButton: true,
-        confirmButtonText: "确认",
-        cancelButtonText: "取消"
-      });
-      if (!value) return;
-      McmodderUtils.setButtonLoadingState(button);
-      const resp = await this.getParent().supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
-        body: {
-          auth_key: this.getUtils().getProfile("auth_key"),
-          content: {
-            mcmodder_settings: GM_getValue("mcmodderSettings"),
-            user_profile: GM_getValue("userProfile"),
-            template_list: GM_getValue("templateList"),
-          }
-        }
-      });
-      if (resp) {
-        McmodderUtils.commonMsg("已将本地配置保存至云端~");
-      }
-      McmodderUtils.cancelButtonLoadingState(button);
-    }).appendTo(settingsSyncBlock);
-    $(`<button class="btn">
-      <i class="fa fa-cloud-download" />
-      从云端同步所有配置数据
-    </button>`).click(async e => {
-      const button = e.currentTarget;
-      const { value } = await swal.fire({
-        type: "warning",
-        title: "配置下载确认",
-        text: `即将把云端所有已保存的脚本配置数据同步到本地（包括脚本设置、已保存的用户信息和模板列表）。
-          本地配置将会与云端配置合并（模板则是全部覆盖），无法撤销。是否继续？`,
-        showCancelButton: true,
-        confirmButtonText: "确认",
-        cancelButtonText: "取消"
-      });
-      if (!value) return;
-      McmodderUtils.setButtonLoadingState(button);
-      const resp = await this.getParent().supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
-        body: {
-          auth_key: this.getUtils().getProfile("auth_key")
-        }
-      });
-      if (resp) {
-        let success = 0;
-        if (resp.mcmodder_settings) {
-          try {
-            const obj1 = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
-            const obj2 = JSON.parse(resp.mcmodder_settings);
-            GM_setValue("mcmodderSettings", JSON.stringify(Object.assign({}, obj1, obj2)));
-            success++;
-          }
-          catch (e) {
-            McmodderUtils.commonMsg(String(e), false);
-          }
-        }
-        if (resp.user_profile) {
-          try {
-            const obj1 = JSON.parse(GM_getValue("userProfile") || "{}");
-            const obj2 = JSON.parse(resp.user_profile);
-            GM_setValue("userProfile", JSON.stringify(Object.assign({}, obj1, obj2)));
-            success++;
-          }
-          catch (e) {
-            McmodderUtils.commonMsg(String(e), false);
-          }
-        }
-        if (resp.template_list) {
-          GM_setValue("templateList", resp.template_list);
-          success++;
-        }
-        if (success > 0) {
-          const interval = Date.now() - Date.parse(resp.last_modified);
-          const formatted = McmodderUtils.getFormattedTime(interval);
-          McmodderUtils.commonMsg(`已将 ${
-            formatted
-          } 前保存在云端的 ${
-            success
-          } 项配置同步到本地，刷新标签页以查看同步后的配置~`);
-        } else {
-          McmodderUtils.commonMsg(`本地配置未发生变化...`);
-        }
-        McmodderUtils.cancelButtonLoadingState(button);
-      }
-    }).appendTo(settingsSyncBlock);
-
-    if (!window.matchMedia) $("[data-todo=adaptableNightMode]").parents(".center-setting-block").hide();
-
-    mcmodderSettingMenu.append(`
-    <div class="center-block-head">
-      <span class="title">资源管理</span>
-      <span style="font-size: 12px; color: gray; margin-left: 1em;">轻触各项可展开详情~</span>
-    </div>
-    <div class="center-content mcmodder-storage">
-      <ul></ul>
-    </div>`);
-
-    const storages = $(".mcmodder-storage ul");
-    const resourceManagers: McmodderConfigResourceInteractor<any>[] = [];
-      
-    const splashesManager = new McmodderConfigResourceInteractor<McmodderSplashData>(
-      this.getParent(),
-      "mcmodderSplashList_v2",
-      "已记录的闪烁标语", {
-        time: ["时间", (data: number) => data ? (new Date(data)).toLocaleString() : "未知"],
-        content: "记录内容",
-        num: ["次数", McmodderTable.DISPLAYRULE_NUMBER]
-      },
-      config => config?.split("\n") || [], // 最后一项是空，不考虑
-      (_, data) => {
-        const list = data.split(",");
-        return {
-          time: Number(list[0]),
-          content: list[1],
-          num: Number(list[2])
-        }
-      }
-    );
-    
-    resourceManagers.push(splashesManager,
-    new McmodderConfigResourceInteractor<McmodderClassRelationData>(
-      this.getParent(),
-      "modDependences_v2",
-      "已记录的模组前置信息", {
-        id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CLASS],
-        children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY]
-      }, null, (key, item) => new Object({
-        id: key,
-        children: item
-      })
-    ),
-    new McmodderConfigResourceInteractor<McmodderClassRelationData>(
-      this.getParent(),
-      "modExpansions_v2",
-      "已记录的模组拓展信息", {
-        id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CENTER],
-        children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY],
-      }, null, (key, item) => new Object({
-        id: key,
-        children: item
-      })
-    ),
-    new McmodderConfigResourceInteractor<McmodderRankDisplayData>(
-      this.getParent(),
-      "rankdata",
-      "已保存的贡献榜数据", {
-        date: ["日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH],
-        byteTop1: ["字数榜首", (rawData: string) => {
-          const data = rawData.split(",") as unknown as [number, number, number]; // [userID, bytes, ratio]
-          return `<a target="_blank" href="${ McmodderUtils.getCenterURL(data[0]) }">${ data[0] }</a> 
-            (${ data[1].toLocaleString() } 字节, ${ (data[2] * 100).toFixed(1) }%)`;
-        }],
-        totalEdited: ["前 60 名总编辑字数", (data: number) => `${data.toLocaleString()} 字节`],
-        size: ["数据大小", McmodderTable.DISPLAYRULE_SIZE]
-      }, null, (key, item) => {
-        let list = JSON.parse(item) as McmodderRankStorageData, sum = 0;
-        list.forEach(user => sum += user.value);
-        return {
-          date: Number(key),
-          byteTop1: [list[0].user, list[0].value, list[0].value / sum].join(","),
-          totalEdited: sum,
-          size: item.length
-        };
-      }
-    ),
-    new McmodderConfigResourceFileListInteractor(
-      this.getParent(),
-      "mcmodderJsonStorage",
-      "已保存的物品 JSON 文件"
-    ),
-    new McmodderConfigResourceFileListInteractor(
-      this.getParent(),
-      "mcmodderRecipeJsonStorage",
-      "已保存的合成表 JSON 文件"
-    ));
-
-    resourceManagers.forEach(manager => {
-      const li = $("<li>").appendTo(storages);
-      manager.instance.appendTo(li);
-    });
-    
-    splashesManager.container.getHeader().click(_e => {
-      const splashCompare = splashesManager.instance.find(`#${ Mcmodder.ID_SPLASH_COMPARE }`);
-      if (splashCompare.length) {
-        if (McmodderUtils.isNodeHidden(splashCompare)) splashCompare.show();
-        else splashCompare.hide();
-        return;
-      }
-      $(`<btn class="btn" id="${ Mcmodder.ID_SPLASH_COMPARE }">与公共标语库对比</btn>`)
-      .appendTo(splashesManager.instance)
-      .click(async e => {
-        const button = $(e.currentTarget);
-        McmodderUtils.setButtonLoadingState(button);
-        await this.accessPublicSplashList(splashesManager);
-        McmodderUtils.cancelButtonLoadingState(button);
-      });
-    });
-
-    $(`<div class="center-setting-block" style="margin-top: 2em;">
-      <h4 style="margin-bottom: 0.5em; font-weight: bold;">投稿自定义闪烁标语</h4>
-      <p class="text-muted" style="margin-bottom: 0.8em; font-size: 13px;">已登录用户可投稿标语至云端。投稿需经脚本管理员审核过审后方可被其它脚本用户抓取显示。</p>
-      <div class="setting-item" style="display: flex; gap: 8px; align-items: center;">
-        <input type="text" id="mcmodder-custom-splash-input" class="form-control" placeholder="输入自定义闪烁标语内容..." style="max-width: 400px; display: inline-block;">
-        <button class="btn btn-primary" id="mcmodder-custom-splash-submit">提交投稿</button>
-      </div>
-    </div>`).appendTo(mcmodderSettingMenu)
-    .find("#mcmodder-custom-splash-submit")
-    .click(async e => {
-      const button = $(e.currentTarget);
-      const input = $("#mcmodder-custom-splash-input");
-      const content = String(input.val() || "").trim();
-
-      if (!content) {
-        McmodderUtils.commonMsg("标语内容不能为空！", false);
-        return;
-      }
-
-      if (!this.getParent().currentUID) {
-        McmodderUtils.commonMsg("请先登录 MC百科 账号后再发起投稿！", false);
-        return;
-      }
-
-      const authKey = this.getParent().utils.getProfile("auth_key");
-      if (!authKey) {
-        McmodderUtils.commonMsg("未获取到登录校验 Key，请重新登录！", false);
-        return;
-      }
-
-      McmodderUtils.setButtonLoadingState(button);
-      const res = await this.getParent().supabaseUtils.uploadCustomSplash(content, authKey);
-      McmodderUtils.cancelButtonLoadingState(button);
-
-      if (res && res.message) {
-        McmodderUtils.commonMsg(res.message);
-        input.val("");
-      }
-    });
-
-    $(`<div class="center-setting-block" style="margin-top: 2em;">
-      <div class="setting-item">
-        <button class="btn">清除当前所有计划任务</button>
-      </div>
-      <p class="text-muted">这在某些时候很有用——也许吧？</p>
-    </div>`).appendTo(mcmodderSettingMenu)
-    .find("button")
-    .click(() => {
-      this.emptyScheduleRequest();
-    });
+    .find("a")
+    .get(0)
+    .addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openSettingsModal(this.getParent());
+    }, true);
   }
 }

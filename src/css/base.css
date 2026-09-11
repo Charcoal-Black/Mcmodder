@@ -841,7 +841,7 @@ body:not(.view),
 }
 .mcmodder-changelog-content {
   max-height: 300px;
-  overflow: scroll;
+  overflow: auto;
   text-align: left;
   font-size: 14px;
 }
@@ -1006,7 +1006,7 @@ body:not(.view),
 }
 #mcmodder-verify-window {
   max-height: calc(100vh - 60px);
-  overflow: scroll;
+  overflow: auto;
   overscroll-behavior-y: contain;
 }
 #mcmodder-verify-window-frame {
@@ -1023,7 +1023,7 @@ body:not(.view),
   margin-left: var(--mcmodder-width-padding-3);
 }
 .mcmodder-verify-imgcontainer {
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 .mcmodder-verify-deletedentry {
   opacity: .6;
@@ -1324,11 +1324,13 @@ pre ins,
   width: 288px;
   height: 288px;
 }
+#verify-window .common-text img.mcmodder-compare-icon,
 #mcmodder-verify-window .common-text img.mcmodder-compare-icon {
   image-rendering: pixelated;
   transition: width .15s ease-in-out, height .15s ease-in-out;
   cursor: zoom-in;
 }
+#verify-window .common-text img.mcmodder-compare-icon.large,
 #mcmodder-verify-window .common-text img.mcmodder-compare-icon.large {
   cursor: zoom-out;
 }
@@ -1601,7 +1603,7 @@ body .top-main .pulldown .arrow {
 }
 .pagination {
   text-wrap: nowrap;
-  overflow: scroll;
+  overflow: auto;
 }
 .pagination .page-custom {
   line-height: 0;
@@ -1769,6 +1771,7 @@ body .arrow {
 }
 .mcmodder-link-check .mcmodder-link-icon {
   margin: 2px;
+  text-indent: 0;
 }
 .center-block-head .more {
   color: var(--mcmodder-color-text-dark2);
@@ -1988,7 +1991,7 @@ body .center-header .user-icon .user-icon-img.tapped {
 }
 .mcmodder-admin-container {
   display: flex;
-  overflow: scroll;
+  overflow-x: auto;
 }
 @media (max-width: 500px) {
   .mcmodder-admin-container {
@@ -2192,7 +2195,7 @@ body .top-main .info .more-info .top_content a:hover,
 }
 #mcmodder-mdeditor,
 #mcmodder-htmleditor {
-  overflow: scroll;
+  overflow: auto;
   border: 1px solid var(--mcmodder-color-primary);
   border-radius: var(--mcmodder-width-radius);
   background-color: var(--mcmodder-color-background-transparent);
@@ -2210,7 +2213,7 @@ body .top-main .info .more-info .top_content a:hover,
   display: block;
 }
 .syntaxhighlighter {
-  overflow: scroll;
+  overflow: auto;
   background-color: var(--mcmodder-color-background);
 }
 .item-h5-ename::before {
@@ -2286,7 +2289,7 @@ body .top-main .info .more-info .top_content a:hover,
 .jsonframe-menu {
   padding: 3px;
   width: 100%;
-  overflow: scroll;
+  overflow: auto;
   white-space: nowrap;
 }
 .jsonframe-fixedmenu {
@@ -2315,7 +2318,7 @@ body .top-main .info .more-info .top_content a:hover,
   min-height: 300px;
   background-color: var(--mcmodder-color-accent-transparent2);
   width: 100%;
-  overflow: scroll;
+  overflow: auto;
 }
 .jsonframe-content tr[data-index] {
   height: 48px;
@@ -2363,6 +2366,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 .form-control.mcmodder-table-input {
   padding: .1em;
   border-radius: 0;
+  text-align: center;
 }
 .common-item-mold-list .mold {
   margin: 5px 10px;
@@ -2385,7 +2389,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 #mcmodder-profile-frame {
   max-height: 600px;
-  overflow: scroll;
+  overflow: auto;
 }
 .profile-option {
   position: relative;
@@ -2458,7 +2462,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   background-color: var(--mcmodder-color-background);
   backdrop-filter: blur(10px);
   max-height: 300px;
-  overflow-y: scroll;
+  overflow-y: auto;
   z-index: 1;
   padding: .2em;
   box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
@@ -2598,7 +2602,7 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
   position: absolute;
   padding: var(--mcmodder-width-padding-1);
   max-height: 100vh;
-  overflow: scroll;
+  overflow: auto;
   overscroll-behavior-y: contain;
   width: 100%;
 }
@@ -2719,6 +2723,9 @@ html.dark .mcmodder-table-mouseover-tr > .mcmodder-table-mouseover-td {
 }
 .badge-row .text-danger, .badge.badge-danger {
   background-color: #f555;
+}
+.badge-row .text-warning, .badge.badge-warning {
+  background-color: #fc55;
 }
 .badge-row .text-info, .badge.badge-info {
   background-color: #55f5;

@@ -43,10 +43,10 @@ export class McmodderMainText {
     })
     .each((_, a) => {
       if (warnList.includes(a.textContent)) {
-        a.classList.add("mcmodder-link-warn");
+        a.nextElementSibling?.classList.add("mcmodder-link-warn");
         clashFlag = true;
       } else if ((a as HTMLAnchorElement).href.includes("minecraft.fandom.com")) {
-        a.classList.add("mcmodder-link-warn");
+        a.nextElementSibling?.classList.add("mcmodder-link-warn");
         fandomFlag = true;
       }
     });
@@ -107,16 +107,24 @@ export class McmodderMainText {
   }
 
   private singleImageLocalizedCheck(img: HTMLImageElement) {
-    const src = img.src;
+    const src = img.dataset.src ?? img.src;
     fetch(src, { method: "HEAD" }).then(resp => {
+      const container = $(img).parent();
       if (resp.status != 200)
         return;
-      if (Number(resp.headers.get("content-length")) > 1024000)
-        return; // editor.options.fileMaxSize
-      if (!["image/png", "image/jpg", "image/jpeg", "image/gif"].includes(resp.headers.get("content-type") || ""))
-        return; // editor.options.fileAllowFiles ?
-      if (!src.includes("mcmod.cn")) $(img).parent()
-        .append('<span class="mcmodder-common-danger" style="display: inherit;">该图片尚未本地化！</span>')
+      const size = Number(resp.headers.get("content-length"));
+      const contentType = resp.headers.get("content-type") ?? "?";
+      const isLocalized = src.includes("mcmod.cn");
+      if (isLocalized)
+        return;
+      if (size > 1024000) container // editor.options.fileMaxSize
+        .append(`<span class="badge badge-warning" style="display: inherit;">该图片尚未本地化，但是体积 (${ McmodderUtils.getFormattedSize(size) }) 超过了本地图床最大体积限制</span>`)
+        .css("border", "10px solid var(--mcmodder-color-warning)");
+      else if (!["image/png", "image/jpg", "image/jpeg", "image/gif"].includes(contentType)) container // editor.options.fileAllowFiles ?
+        .append(`<span class="badge badge-warning" style="display: inherit;">该图片尚未本地化，但是使用了本地图床不支持的文件格式 (${ contentType })</span>`)
+        .css("border", "10px solid var(--mcmodder-color-warning)");
+      else container
+        .append('<span class="badge badge-danger" style="display: inherit;">该图片尚未本地化！</span>')
         .css("border", "10px solid var(--mcmodder-color-danger)");
     });
   }

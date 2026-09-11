@@ -10,35 +10,33 @@ export class ItemPageInit extends McmodderInit {
       !this.parent.href.includes("/diff/") && 
       !this.parent.href.includes("/list/")
   }
+
   run() {
     const itemTexts = $(".item-text");
     const isSingle = itemTexts.length === 1;
     const isGeneral = !isSingle && !itemTexts.first().children(".item-give").length;
     $("span.name > h5").each((i, _c) => { // 快速复制主/次要名称
       const c = $(_c);
-      let s = c.text();
+      let s = McmodderUtils.escapeHTML(c.text());
       const skipLinkList = $(".item-skip-list ul a");
       if ((!i && isGeneral) || isSingle) {
         const l = $("meta[name=keywords]").attr("content").split(",");
-        const t = `</a><span class="item-h5-ename">${
-          this.parent.utils.getConfig("mcmodderUI") ?
-          `<a>${ l[1] }</a>` :
-          `(<a>${ l[1] }</a>)`
-        }</span>`;
-        if (l[1]) s = ("<a>" + s).replace(` (${ l[1] })`, t);
+        const ename = McmodderUtils.escapeHTML(l[1]);
+        const t = `</a>${ this.renderEname(ename) }`;
+        if (ename) s = ("<a>" + s).replace(` (${ ename })`, t);
         else s = `<a>${ s }</a>`;
-      } else {
-        const l = skipLinkList.eq(isGeneral ? i - 1 : i).text();
+      }
+      else if (skipLinkList.length) {
+        const l = McmodderUtils.escapeHTML(skipLinkList.eq(isGeneral ? i - 1 : i).text());
         if (l === s) s = `<a>${ s }</a>`;
         else {
-          s = s + "//end";
-          let n = s.replace(l + " (", "").replace(")//end", "");
-          s = `<a>${ l }</a><span class="item-h5-ename">${
-            this.parent.utils.getConfig("mcmodderUI") ?
-            `<a>${ n }</a>` :
-            `(<a>${ n }</a>)`
-          }</span>`;
+          const ename = s.replace(l + " (", "").replace(/\)$/, "");
+          s = `<a>${ l }</a>${ this.renderEname(ename) }`;
         }
+      }
+      else { // 极端情况，例如：综合资料只有 1 个子资料，此时主/次要名称拆分方式不一定准确
+        const { name, englishName } = McmodderUtils.parseItemFullName(s);
+        s = `<a>${ name }</a>${ this.renderEname(englishName) }`;
       }
       c.html(s);
       if (this.parent.utils.getConfig("fastCopyName")) {
@@ -139,5 +137,13 @@ export class ItemPageInit extends McmodderInit {
     });
 
     new ItemTabInit(this.parent).run();
+  }
+
+  private renderEname(ename: string) {
+    return `<span class="item-h5-ename">${
+      this.parent.utils.getConfig("mcmodderUI") ?
+      `<a>${ ename }</a>` :
+      `(<a>${ ename }</a>)`
+    }</span>`;
   }
 }

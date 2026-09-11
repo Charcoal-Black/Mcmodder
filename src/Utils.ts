@@ -381,6 +381,13 @@ export class McmodderUtils {
     return res;
   }
 
+  static parseItemFullName(fullName: string) {
+    const pos = fullName.lastIndexOf(" (");
+    const name = pos >= 0 ? fullName.slice(0, pos) : fullName;
+    const englishName = pos >= 0 ? fullName.slice(pos + 2, -1) : "";
+    return { name, englishName };
+  }
+
   static async imageURL2base64(url: string) {
     try {
       const response = await fetch(url);
