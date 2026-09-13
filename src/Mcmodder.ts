@@ -879,14 +879,14 @@ export class Mcmodder {
     // TODO: 取消锁定导航栏
 
     if (this.isV4 && this.utils.getConfig("mcmodderUI")) {
-      $(window).resize(McmodderUtils.throttle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
+      $(window).resize(McmodderUtils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
         let l = $(".header-user").get(0).getBoundingClientRect();
         if (l.x + l.width / 2 + 400 / 2 >= window.screen.width - McmodderValues.headerContainerHeight) {
           $(".header-panel").addClass("mcmodder-header-panel-fixed");
         } else {
           $(".header-panel").removeClass("mcmodder-header-panel-fixed");
         }
-      }, 16)).resize();
+      })).resize();
     }
 
     if (this.isV4 && this.utils.getConfig("customAdvancements")) { // 更新自定义成就

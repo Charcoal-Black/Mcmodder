@@ -45,53 +45,9 @@ export class AdminInit extends McmodderInit {
         const verifyInfo: Record<string, string> = {};
 
         // 一键查询待审项
-        let work = () => {
-          const verifyDelay = this.parent.utils.getConfig("autoVerifyDelay");
-          if (verifyDelay && verifyDelay > 1e-2) {
-            this.parent.scheduleRequestUtils.deleteByTodo("autoCheckVerify");
-            this.parent.scheduleRequestUtils.create(Date.now() + verifyDelay * 60 * 60 * 1000, "autoCheckVerify", this.parent.currentUID);
-          }
-          $("#mcmodder-check-verification").text("一键查询待审项 (加载中...)").addClass("disabled");
-          const menuOptions = $("#class-version-list > option");
-          const menuElements = $("ul.dropdown-menu:nth-child(1)").children();
-          const modList = menuOptions.toArray()
-          .map((e, i) => [Number(e.getAttribute("value")), i])
-          .filter(([e, _i]) => e > 0) as [number, number][];
-          let t = 0;
-          const getUnverifiedNumber = ([id, index]: [number | string | null, number]) => {
-            if (id) this.parent.utils.createRequest({
-              url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-              data: $.param({ data: JSON.stringify({ classID: id }) })
-            })
-            .then(resp => {
-              const state = JSON.parse(resp.responseText)?.state;
-              if (state === undefined || state > 0) {
-                console.error("返回状态异常: ", resp);
-                return;
-              }
-              let n = Number($(JSON.parse(resp.responseText).html).find(".selectJump").next().text().slice(4, -2).replaceAll(",", ""));
-              if (n > 0 && t === 0) $("button.btn:nth-child(2)").first().click();
-              t += n;
-              if (n > 0) {
-                const li = menuElements.eq(index).addClass("mcmodder-mark-gold");
-                const firstChild = li.children().first();
-                firstChild.find(".mcmodder-admin-verify-notify").remove();
-                firstChild.append(`<span class="mcmodder-admin-verify-notify text-danger">${ n }个待审！</span>`).removeClass("disabled");
-              }
-              if (modList.length > index + 1) {
-                getUnverifiedNumber(modList[++index]);
-                return;
-              }
-              else $("#mcmodder-check-verification").text(`一键查询待审项 (${t}个)`).removeClass("disabled");
-            });
-          };
-          if (modList) getUnverifiedNumber(modList[0]);
-        }
         $('<button class="btn" id="mcmodder-check-verification" data-toggle="tooltip" data-original-title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>')
         .insertAfter(".selectJump.bs3")
-        .click(work);
+        .click(() => this.getVerificationCount());
         if (this.parent.utils.getConfig("autoVerifyDelay") >= 1e-2) {
           const title = $(`<span style="margin-left: 10px;">距离自动查询: </span>`).insertAfter("#mcmodder-check-verification");
           const text = $("<span>").appendTo(title).get(0);
@@ -118,7 +74,7 @@ export class AdminInit extends McmodderInit {
           if (!this.triggered.has("模组区内容审核")) {
             this.initAssistantViewed();
             const verifyWindowElement = verifyWindow.get(0);
-            $(document).scroll(McmodderUtils.throttle(() => {
+            $(window).scroll(McmodderUtils.animationThrottle(() => {
               const top = document.scrollingElement?.scrollTop;
               const bottom = verifyContainer.prop("scrollHeight") as number;
               if (top != undefined) {
@@ -136,7 +92,7 @@ export class AdminInit extends McmodderInit {
                 }
                 prevHeight = height;
               }
-            }, 16))
+            }))
             .on("click", ".mcmodder-compare-icon", e => {
               $(e.currentTarget).toggleClass("large");
             })
@@ -509,6 +465,10 @@ export class AdminInit extends McmodderInit {
       }
     });
     adminObserver.observe($(".connect-area").get(0), { childList: true });
+  }
+
+  private async getVerificationCount() {
+    this.parent.scheduleRequestUtils.run("autoCheckVerify");
   }
 
   private parseCurrentVerifyListConfig() {

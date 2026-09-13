@@ -38,11 +38,11 @@ export class OredictPageInit extends McmodderInit{
       list.css("grid-template-columns", `repeat(min(${ count }, var(--mcmodder-oredict-column)), 1fr)`);
     });
 
-    $(window).resize(McmodderUtils.throttle((_e: JQueryEventObject) => {
+    $(window).resize(McmodderUtils.animationThrottle((_e: JQueryEventObject) => {
       const width = sortContainer.get(0).getBoundingClientRect().width;
       const column = Math.floor(width / 300);
       document.documentElement.style.setProperty("--mcmodder-oredict-column", column.toString());
-    }, 16)).resize();
+    })).resize();
 
     sortFrame.insertBefore($(".oredict-item-list").first());
 
