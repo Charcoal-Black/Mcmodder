@@ -258,6 +258,8 @@ export class StyleLoader {
       "platform-neoforge": "#dc895c",
       "platform-quilt": "#8b61d4",
       "platform-liteloader": "#4c90de",
+      "platform-nilloader": "#dd5088",
+      "platform-javaagent": "#111827",
       "uknowtoomuch": "#000",
       "uknowtoomuch-hover": "#fff",
       "attitude-up": "#09f",

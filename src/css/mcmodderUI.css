@@ -595,11 +595,19 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
     width: 98%;
   }
 }
+.mcmodder-modloader-container {
+  display: flex;
+}
 .mcmodder-modloader {
   height: 24px;
   margin: 3px;
   display: flex;
   justify-content: center;
+}
+.mcmodder-modloader-container .more {
+  color: var(--mcmodder-color-button);
+  font-size: 14px;
+  margin: auto;
 }
 .mcmodder-loadername {
   font-size: 16px;

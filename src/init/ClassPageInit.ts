@@ -4,10 +4,12 @@ import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 import svgPlarformForge from "../assets/platform/forge.svg";
 import svgPlatformFabric from "../assets/platform/fabric.svg";
-import svgPlatformNeoforge from "../assets/platform/neoforge.svg";
+import svgPlatformNeoForge from "../assets/platform/neoforge.svg";
 import svgPlatformQuilt from "../assets/platform/quilt.svg";
 import svgPlatformRift from "../assets/platform/rift.svg";
-import svgPlatformLiteloader from "../assets/platform/liteloader.svg";
+import svgPlatformLiteLoader from "../assets/platform/liteloader.svg";
+import svgPlatformNilLoader from "../assets/platform/nilloader.svg";
+import svgPlatformJavaAgent from "../assets/platform/javaagent.svg";
 import svgPlatformDefault from "../assets/platform/default.svg";
 import { McmodderMainText } from "../widget/MainText";
 
@@ -193,22 +195,32 @@ export class ClassPageInit extends McmodderInit {
         if (!isNaN(Number(d[1]))) d[1] = Number(d[1]).toLocaleString();
         if (d[0] === "支持平台") d[1] = d[1].replace(" (JAVA Edition)", "").replace(" (Bedrock Edition)", "");
         else if (d[0] === "运作方式") {
-          const a = d[1].split(", "); d[1] = "";
-          a.forEach(e => {
+          const a = d[1].split(", ");
+          let innerHTML = "";
+          let tooltipHTML = "";
+          a.forEach((e, index) => {
             let svg;
             switch (e.toLowerCase()) {
               case "forge": svg = svgPlarformForge; break;
               case "fabric": svg = svgPlatformFabric; break;
-              case "neoforge": svg = svgPlatformNeoforge; break;
+              case "neoforge": svg = svgPlatformNeoForge; break;
               case "quilt": svg = svgPlatformQuilt; break;
               case "rift": svg = svgPlatformRift; break;
-              case "liteloader": svg = svgPlatformLiteloader; break;
+              case "liteloader": svg = svgPlatformLiteLoader; break;
+              case "nilloader": svg = svgPlatformNilLoader; break;
+              case "javaagent": svg = svgPlatformJavaAgent; break;
               default: svg = svgPlatformDefault;
             }
-            d[1] += `<a class="mcmodder-modloader" data-toggle="tooltip" data-original-title="${e}"><img src="${svg}">`;
-            if (a.length === 1) d[1] += `<span class="mcmodder-loadername" style="color: var(--mcmodder-color-platform-${a[0].toLowerCase()})">${a[0]}</span>`;
-            d[1] += "</a>";
+            const icon = `<img src="${ svg }" />`;
+            const text = `<span class="mcmodder-loadername" style="color: var(--mcmodder-color-platform-${ a[index].toLowerCase() })">${ a[index] }</span>`;
+            if (index < 3) {
+              innerHTML += `<a class="mcmodder-modloader">${ icon }${ a.length === 1 ? text : "" }</a>`;
+            } else if (index === 3) {
+              innerHTML += `<span class="more">..+${ a.length - index }</span>`;
+            }
+            tooltipHTML += `<a class="mcmodder-modloader">${ icon }${ text }</a>`;
           });
+          d[1] = `<div class="mcmodder-modloader-container" data-toggle="tooltip" data-html="true" data-original-title="${ McmodderUtils.escapeHTML(tooltipHTML) }">${ innerHTML }</div>`;
         }
         if (d[0] === "运行环境") {
           const a = d[1].split(", ");
