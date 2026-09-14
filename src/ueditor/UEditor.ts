@@ -28,7 +28,9 @@ export class McmodderUEditor {
     this.parent = parent;
     this.editor = editor;
     editor.ready(() => {
-      this.init(editor);
+      setTimeout(() => {
+        this.init(editor);
+      }, 0);
     });
   }
 

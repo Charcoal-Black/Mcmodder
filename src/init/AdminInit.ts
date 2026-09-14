@@ -92,8 +92,8 @@ export class AdminInit extends McmodderInit {
                 }
                 prevHeight = height;
               }
-            }))
-            .on("click", ".mcmodder-compare-icon", e => {
+            }));
+            $(document).on("click", ".mcmodder-compare-icon", e => {
               $(e.currentTarget).toggleClass("large");
             })
             .on("click", ".mcmodder-verify-locate", _e => {

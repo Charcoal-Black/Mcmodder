@@ -1298,6 +1298,15 @@ pre ins,
 .mcmodder-compare-invalidversion {
   border: 2px solid var(--mcmodder-color-danger-dark1);
 }
+.mcmodder-compare-icon {
+  background-image: 
+    linear-gradient(45deg, var(--mcmodder-color-background-dark1) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--mcmodder-color-background-dark1) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--mcmodder-color-background-dark1) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--mcmodder-color-background-dark1) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px
+}
 .mcmodder-compare-icon.item-32px {
   width: 32px;
   height: 32px;
@@ -1747,6 +1756,9 @@ body .arrow {
 .mcmodder-modjam-container .figcaption {
   padding: .2em var(--mcmodder-width-padding-3);
 }
+.mcmodder-localize-check {
+  display: inherit;
+}
 .edit-autolink-list li,
 .refresh-text,
 .mcmodder-copyable {
@@ -2115,6 +2127,7 @@ body .center-header .user-icon .user-icon-img.tapped {
 }
 .mcmodder-editor-container {
   display: flex;
+  overflow: auto;
 }
 .mcmodder-editor-stats {
   font-size: 12px;
@@ -2202,10 +2215,11 @@ body .top-main .info .more-info .top_content a:hover,
 }
 #mcmodder-mdeditor,
 #mcmodder-htmleditor {
-  overflow: auto;
+  overflow: auto clip;
   border: 1px solid var(--mcmodder-color-primary);
   border-radius: var(--mcmodder-width-radius);
   background-color: var(--mcmodder-color-background-transparent);
+  position: relative;
 }
 #mcmodder-mdeditor .title,
 #mcmodder-htmleditor .title {
@@ -3054,6 +3068,13 @@ html .edui-default .edui-editor-toolbarboxouter,
 .banner .m_menu .banner .m_menu {
   background-image: linear-gradient(to bottom, var(--mcmodder-color-background), var(--mcmodder-color-primary-background));
   border-bottom-color: var(--mcmodder-color-primary-light);
+}
+.mcmodder-editor-header {
+  background-image: linear-gradient(to bottom, var(--mcmodder-color-background), var(--mcmodder-color-primary-background));
+  border-bottom: 1px solid var(--mcmodder-color-primary-light);
+  box-shadow: 0 1px 4px var(--mcmodder-color-primary-light-transparent2);
+  width: 100%;
+  height: 32px;
 }
 .dark .selectTdClass {
   background-color: var(--mcmodder-color-primary-light) !important;

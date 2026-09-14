@@ -118,13 +118,13 @@ export class McmodderMainText {
       if (isLocalized)
         return;
       if (size > 1024000) container // editor.options.fileMaxSize
-        .append(`<span class="badge badge-warning" style="display: inherit;">该图片尚未本地化，但是体积 (${ McmodderUtils.getFormattedSize(size) }) 超过了本地图床最大体积限制</span>`)
+        .append(`<span class="badge badge-warning mcmodder-localize-check>该图片尚未本地化，但是体积 (${ McmodderUtils.getFormattedSize(size) }) 超过了本地图床最大体积限制</span>`)
         .css("border", "10px solid var(--mcmodder-color-warning)");
       else if (!["image/png", "image/jpg", "image/jpeg", "image/gif"].includes(contentType)) container // editor.options.fileAllowFiles ?
-        .append(`<span class="badge badge-warning" style="display: inherit;">该图片尚未本地化，但是使用了本地图床不支持的文件格式 (${ contentType })</span>`)
+        .append(`<span class="badge badge-warning mcmodder-localize-check">该图片尚未本地化，但是使用了本地图床不支持的文件格式 (${ contentType })</span>`)
         .css("border", "10px solid var(--mcmodder-color-warning)");
       else container
-        .append('<span class="badge badge-danger" style="display: inherit;">该图片尚未本地化！</span>')
+        .append('<span class="badge badge-danger mcmodder-localize-check">该图片尚未本地化！</span>')
         .css("border", "10px solid var(--mcmodder-color-danger)");
     });
   }

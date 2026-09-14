@@ -101,7 +101,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     // Markdown 转 HTML
     this.mdEditorOuterContainer = $(`
       <div id="mcmodder-mdeditor">
-        <div class="edui-default edui-editor-toolbarboxouter">
+        <div class="mcmodder-editor-header">
           <div class="title">
             <i class="fa fa-pencil"></i>
             Markdown
@@ -294,8 +294,12 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   override widthAutoResize() {
     if (!this.$innerFrame) return;
     super.widthAutoResize();
-    this.mdEditorOuterContainer?.css("height", this.$innerFrame.css("height"));
-    this.htmlEditorOuterContainer?.css("height", this.$innerFrame.css("height"));
+    const outerHeight = parseInt(this.$innerFrame.css("height"));
+    const innerHeight = outerHeight - 32;
+    this.mdEditorOuterContainer?.css("height", outerHeight + "px");
+    this.mdEditorContainer?.css("height", innerHeight + "px");
+    this.htmlEditorOuterContainer?.css("height", outerHeight + "px");
+    this.htmlEditorContainer?.css("height", innerHeight + "px");
   }
 
   override autoCalculateHeight() {

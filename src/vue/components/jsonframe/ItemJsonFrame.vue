@@ -52,7 +52,7 @@
     </div>
   </Teleport>
   <Teleport :to="exportContainer">
-    <p class="text-muted" style="font-size: 14px;">
+    <div class="text-muted" style="font-size: 14px;">
       即将保存 {{ jsonFrame?.activeFileName }}，请注意未保存的改动不会被导出...
       <hr>
       <p align="center">
@@ -69,10 +69,10 @@
         保留全部内容，便于转移到其他安装了 Mcmodder v1.6+ 的浏览器查看。
         <strong>不支持批量导入，请勿直接提交此文件！！</strong>
       </p>
-    </p>
+    </div>
   </Teleport>
   <Teleport :to="autoLinkContainer">
-    <p class="text-muted" style="font-size: 14px;">
+    <div class="text-muted" style="font-size: 14px;">
       <hr>
       <p align="center">
         <button id="jsonframe-autolink" class="btn" :disabled="!(jsonFrame?.activeFileName)" @click="onChangeLinkState">
@@ -86,7 +86,7 @@
         <button id="jsonframe-autolink" class="btn">清除所有格式化代码</button>
       </p>
       <p class="text-muted jsonframe-export-text">清除所有原版可用的格式化代码。</p> -->
-    </p>
+    </div>
   </Teleport>
 </template>
 

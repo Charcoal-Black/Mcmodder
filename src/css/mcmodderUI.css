@@ -713,7 +713,8 @@ body > .container > *,
 #edui1 {
   border-radius: var(--mcmodder-width-radius);
 }
-body .edui-default .edui-editor-toolbarboxouter {
+body .edui-default .edui-editor-toolbarboxouter,
+.mcmodder-editor-header {
   border-radius: var(--mcmodder-width-radius) var(--mcmodder-width-radius) 0 0;
 }
 body .edui-default .edui-editor-iframeholder {
