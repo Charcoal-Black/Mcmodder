@@ -12,6 +12,9 @@ const HOST_ID_PREFIX = "mcmodder-vue-host";
 /** 宿主页面点击"脚本设置"菜单时派发，通知已挂载的设置弹窗重新打开 */
 export const OPEN_SETTINGS_EVENT = "mcmodder:open-settings";
 
+/** 由 StyleLoader 注入的脚本基础样式 id，同样需要复制进 Shadow Root */
+export const SHARED_STYLE_ID = "mcmodder-global-style";
+
 let hostCount = 0;
 
 const BASE_RESET_STYLE = `
@@ -28,11 +31,12 @@ const BASE_RESET_STYLE = `
 
 /**
  * Shadow DOM 隔离宿主页面的全局样式，注入在宿主页面的 CSS 无法匹配 Shadow
- * Root 内部的元素，因此组件样式必须在每个 Shadow Root 内复制一份。
- * 样式带有 data-v-* scoped 属性，复制进多个 Shadow Root 不会互相污染。
+ * Root 内部的元素，因此组件样式与脚本基础样式都必须在每个 Shadow Root 内
+ * 复制一份。组件样式带有 data-v-* scoped 属性，复制进多个 Shadow Root 不会
+ * 互相污染；基础样式与宿主页面内一致，供依赖全局样式的通用控件使用。
  */
 export function syncVueStyles(root: ShadowRoot) {
-  const sources = document.querySelectorAll("style[data-mcmodder-vue-css]");
+  const sources = document.querySelectorAll(`style[data-mcmodder-vue-css], style#${ SHARED_STYLE_ID }`);
   sources.forEach(source => {
     const style = document.createElement("style");
     style.textContent = source.textContent;
