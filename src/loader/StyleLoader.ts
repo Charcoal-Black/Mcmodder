@@ -2,6 +2,7 @@ import { Mcmodder } from "../Mcmodder";
 import { McmodderPalette, PaletteModifierSchedule, PaletteModifierStep } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
+import { SHARED_STYLE_ID } from "../vue/mount";
 
 export class StyleLoader {
 
@@ -416,7 +417,8 @@ export class StyleLoader {
     }
 
     parent.css = style;
-    McmodderUtils.addStyle(style);
+    // 带 SHARED_STYLE_ID 的样式会被复制进 Vue Shadow Root（见 vue/mount.ts）
+    McmodderUtils.addStyle(style, SHARED_STYLE_ID);
 
     const radiusRatio: number | undefined = parent.utils.getConfig("radiusRatio");
     document.documentElement.style.setProperty("--mcmodder-ratio-radius", (radiusRatio === undefined ? 1 : radiusRatio).toString());

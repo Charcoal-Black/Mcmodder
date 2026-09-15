@@ -70,12 +70,12 @@ export class McmodderConfigUtils {
   addDropdownConfig(id: string, title: string, description: string, value?: number, range?: InputValueSet, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_MENU, value, range, permission);
   }
-  addDropdownTextConfig(id: string, title: string, description: string, value?: string, Suggestion?: InputSimplifiedSuggestion[], permission?: McmodderPermission) {
-    return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_TEXT_MENU, value, undefined, permission, Suggestion);
+  addDropdownTextConfig(id: string, title: string, description: string, value?: string, suggestion?: InputSimplifiedSuggestion[], permission?: McmodderPermission) {
+    return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_TEXT_MENU, value, undefined, permission, suggestion);
   }
 
   private addConfig(id: string, title: string, description: string, type = McmodderInputType.CHECKBOX, 
-    value: any = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, Suggestion?: InputSimplifiedSuggestion[]) {
+    value: any = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, suggestion?: InputSimplifiedSuggestion[]) {
     this.data[id] = {
       title: title,
       description: description,
@@ -83,7 +83,7 @@ export class McmodderConfigUtils {
       value: value,
       permission: permission,
       ...(range != undefined && { range }),
-      ...(Suggestion != undefined && { Suggestion })
+      ...(suggestion != undefined && { suggestion })
     };
     if (this.parent.utils.getConfig(id) === undefined) {
       this.parent.utils.setConfig(id, value || McmodderConfigUtils.defaultValue[type]);

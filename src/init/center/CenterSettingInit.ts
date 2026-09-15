@@ -1,7 +1,31 @@
+import { Mcmodder } from "../../Mcmodder";
 import { McmodderValues } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
-import { createApp } from "vue";
-import CenterSettings from "../../vue/components/CenterSettings.vue";
+import { mountVueApp, OPEN_SETTINGS_EVENT } from "../../vue/mount";
+
+/** 弹窗宿主只挂载一次（run 可能随页面 mutation 多次触发） */
+let settingsModalHost: HTMLElement | null = null;
+
+function openSettingsModal(parent: Mcmodder) {
+  if (settingsModalHost) {
+    document.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
+    return;
+  }
+  // 先占位再动态加载，避免连续点击触发重复挂载
+  settingsModalHost = document.createElement("div");
+  document.body.appendChild(settingsModalHost);
+  import("../../vue/components/SettingsModal.vue").then(({ default: SettingsModal }) => {
+    mountVueApp(
+      SettingsModal,
+      { parent },
+      settingsModalHost as HTMLElement
+    );
+    document.dispatchEvent(new Event(OPEN_SETTINGS_EVENT));
+  }).catch(() => {
+    settingsModalHost?.remove();
+    settingsModalHost = null;
+  });
+}
 
 export class CenterSettingInit extends CenterBaseInit {
   run() {
@@ -35,27 +59,20 @@ export class CenterSettingInit extends CenterBaseInit {
     $("#setting-link-style-preview").attr("data-content", `<img alt="link style" src="${
       McmodderValues.assets.mcmod.iconStyleSample
     }" width="220" ></a>`);
-    // 脚本设置
-    let menuArea = $("div.center-main.setting.menuarea").get(0);
-    $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>')
-    .appendTo("#center-setting-frame > div.center-sub-menu > ul")
-    .bind("change", e => {
-      const target = $(e.currentTarget);
-      const a = target.attr("data-menu-select");
-      if (a) {
-        const e = target.parent().parent().parent();
-        const t = e.parent().children(".center-main");
-        e.children("ul").find("a").removeClass("active");
-        target.addClass("active"), t.children(".center-block").hide();
-        t.children(`.center-block[data-menu-frame='${a}']`).show();
-      }
-    });
 
-    const mcmodderSettingMenu = $('<div class="center-block hidden" data-menu-frame="9" style="display: none;">')
-    .appendTo(menuArea);
-    
-    createApp(CenterSettings, {
-      parent: this.getParent()
-    }).mount(mcmodderSettingMenu.get(0));
+    // 脚本设置菜单：点击直接弹出设置窗口。
+    // 捕获阶段拦截并阻止冒泡，避免百科页面的菜单切换逻辑将界面切到不存在的
+    // data-menu-frame="9"（设置界面已完全迁移至弹窗）。
+    const menuList = $("#center-setting-frame > div.center-sub-menu > ul");
+    if (menuList.find("a[data-menu-select='9']").length) return;
+    $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>')
+    .appendTo(menuList)
+    .find("a")
+    .get(0)
+    .addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openSettingsModal(this.getParent());
+    }, true);
   }
 }
