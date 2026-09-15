@@ -301,23 +301,35 @@ export class Mcmodder {
     // this.screenAttachedFrame = $(".mcmodder-screenattached");
   }
 
-  switchProfile(uid: number) {
-    if (uid) {
-      const profile = this.utils.getProfile("*", uid);
-      $.cookie("_uuid", profile.uuid, { domain: ".mcmod.cn", path: "/", expires: new Date(profile.expirationDate) });
-      this.currentUsername = profile.nickname;
-    } else {
-      $.cookie("_uuid", null, { domain: ".mcmod.cn", path: "/" });
-      this.currentUsername = "";
+  /**
+   * 切换当前账号，即改写标识登录状态的 `_uuid` cookie
+   * 
+   * `_uuid` 为 HttpOnly cookie，只能通过油猴的 `GM_cookie` 接口改写
+   * 
+   * @returns 是否切换成功，失败时已向用户提示
+   */
+  async switchProfile(uid: number): Promise<boolean> {
+    const profile = uid ? this.utils.getProfile("*", uid) : undefined;
+    const success = profile ?
+      await McmodderUtils.setUuidCookie(profile.uuid, profile.expirationDate) :
+      await McmodderUtils.deleteUuidCookie();
+    if (!success) {
+      McmodderUtils.commonMsg(
+        "切换账号失败：无法改写 `_uuid` cookie。该 cookie 为 HttpOnly cookie，需要油猴测试版 (Tampermonkey beta) 并在设置中允许脚本访问 HttpOnly cookie ~",
+        false
+      );
+      return false;
     }
+    this.currentUsername = profile ? profile.nickname : "";
     this.currentUID = uid;
+    return true;
   }
 
-  fireProfileSelectFrame() {
+  async fireProfileSelectFrame() {
     const html = $('<div><p>登录过的用户至少需要在本机访问自己的个人主页一次才会在这里显示~</p><div id="mcmodder-profile-frame"><ul></ul></div></div>');
     const ul = html.find("ul");
     const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
-    let uuid = $.cookie("_uuid");
+    const uuid = await McmodderUtils.getUuidCookie();
     let h = $(`<li><div class="profile-option empty-profile" uid="0">-- 未登录状态 --</div></li>`).appendTo(ul);
     if (!uuid) h.addClass("profile-selected");
     myProfiles.forEach(uid => {
@@ -355,14 +367,14 @@ export class Mcmodder {
       showConfirmButton: false
     });
     html.appendTo(".profile-option-container");
-    $(".profile-option").click(f => {
+    $(".profile-option").click(async f => {
       let uid = Number(f.currentTarget.getAttribute("uid"));
       if (f.target.className === "delete" || (f.target.parentNode as HTMLElement)?.className === "delete") {
         this.utils.setConfig(uid, null, "userProfile");
         $("#mcmodder-profile-switch").click();
         return;
       }
-      this.switchProfile(uid);
+      if (!await this.switchProfile(uid)) return;
       $(".profile-selected").removeClass("profile-selected");
       f.currentTarget.classList.add("profile-selected");
     });
@@ -837,10 +849,10 @@ export class Mcmodder {
       <i class="fa fa-low-vision"></i>
     </button>`)
       .appendTo(".header-container .header-search")
-      .click(e => {
+      .click(async e => {
         if (McmodderUtils.isKeyMatch({ shiftKey: true }, e)) { // 按住 Shift 以快捷切换至上一个状态
           let t = this.currentUID, l = this.utils.getConfig("lastUid");
-          this.switchProfile(l);
+          if (!await this.switchProfile(l)) return;
           McmodderUtils.commonMsg("已快捷切换至" + (l ? ` UID:${l} ` : "未登录状态") + " ~");
           this.utils.setConfig("lastUid", t);
           return;

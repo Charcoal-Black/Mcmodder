@@ -53,6 +53,79 @@ export class McmodderUtils {
     }
   }
 
+  /**
+   * 针对 HttpOnly cookie 编写的读写接口
+   *
+   * HttpOnly cookie 无法通过 document.cookie 读取或覆写，只能经由油猴的 `GM_cookie` 接口访问；
+   * 该接口访问 `httpOnly` cookie 需要 Tampermonkey 测试版 (beta)，且需在油猴设置中允许，
+   * 故读取接口保留 `document.cookie` 作为降级回退。
+   *
+   * @see https://www.tampermonkey.net/documentation.php#api:GM_cookie.list
+   */
+  private static supportCookieAPI() {
+    return typeof GM_cookie !== "undefined";
+  }
+
+  /** 读取 `_uuid` cookie 的值，未登录或无权访问时返回空字符串 */
+  static getUuidCookie(): Promise<string> {
+    if (!McmodderUtils.supportCookieAPI()) return Promise.resolve($.cookie("_uuid") || "");
+    return new Promise(resolve => {
+      GM_cookie.list({ name: "_uuid" }, (cookies, err) => {
+        if (err) console.warn("读取 `_uuid` cookie 失败，回退至 document.cookie：", err);
+        resolve(cookies?.length ? cookies[0].value : ($.cookie("_uuid") || ""));
+      });
+    });
+  }
+
+  /** 写入 `_uuid` cookie（切换账号），返回是否写入成功 */
+  static setUuidCookie(uuid: string | undefined, expirationDate?: number): Promise<boolean> {
+    if (!uuid) {
+      console.warn("待写入的 `_uuid` cookie 为空，请先访问一次该账号的个人主页以记录登录信息。");
+      return Promise.resolve(false);
+    }
+    if (!McmodderUtils.supportCookieAPI()) {
+      console.warn("当前脚本管理器不支持 `GM_cookie`，无法写入 HttpOnly cookie `_uuid`。");
+      return Promise.resolve(false);
+    }
+    return new Promise(resolve => {
+      GM_cookie.set({
+        name: "_uuid",
+        value: uuid,
+        domain: ".mcmod.cn",
+        path: "/",
+        // 妥协mcmod的httponly以及保证XSS不能偷取用户cookie
+        httpOnly: true,
+        secure: true,
+        expirationDate: expirationDate && expirationDate > 0 ? Math.floor(expirationDate / 1e3) : undefined
+      }, err => {
+        if (err) {
+          console.warn("写入 `_uuid` cookie 失败：", err);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      });
+    });
+  }
+
+  /** 删除 `_uuid` cookie（退出登录），返回是否删除成功 */
+  static deleteUuidCookie(): Promise<boolean> {
+    if (!McmodderUtils.supportCookieAPI()) {
+      console.warn("当前脚本管理器不支持 `GM_cookie`，无法删除 HttpOnly cookie `_uuid`。");
+      return Promise.resolve(false);
+    }
+    return new Promise(resolve => {
+      GM_cookie.delete({ name: "_uuid" }, err => {
+        if (err) {
+          console.warn("删除 `_uuid` cookie 失败：", err);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      });
+    });
+  }
+
   static showTaskTip(imageUrl: string, title: string, text: string, achieveTime: string, progress: number, rewardExp: number | string) {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
