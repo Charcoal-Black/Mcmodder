@@ -61,6 +61,7 @@ export class ConfigLoader {
       10000, [0, null])
     .addCheckboxConfig("anonymousUknowtoomuch", "匿名吐槽", "创建吐槽时不再记录创建人（仅影响光标悬浮于其上时的提示信息，不影响改动对比数据）。")
     .addCheckboxConfig("autoExpandPage", "自动展开页面", "根据时间范围搜索待审列表和历史编辑记录时，自动展开所有页面。")
+    .addCheckboxConfig("autoCloseSwal", "渐入佳境", "成功提交审核后不再强制跳转至待审列表页面。对免审编辑无效。")
     .addCheckboxConfig("multiDiffCompare", "改动列表批量对比", "(WIP) 在改动列表页中分别选取起始项和终止项，即可一键获取并展示在此期间的所有改动详情。")
     .addCheckboxConfig("versionHelper", "日志智能管理", "允许从其他网站获取模组版本列表，并支持一键补充缺失的日志。支持 CurseForge 和 Modrinth 双平台。") 
     .addCheckboxConfig("versionEditorHelper", "日志搬运辅助工具", "允许直接输入版本更新日期，而不再需要通过下拉列表勾选日期。")

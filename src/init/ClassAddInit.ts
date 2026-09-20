@@ -34,7 +34,7 @@ export class ClassAddInit extends McmodderInit {
     });
     this.refreshCrashList();
 
-    if (this.parent.utils.getConfig("classAddHelper")) {
+    if (this.configs.getSettings("classAddHelper")) {
       $("#edit-page-2, #edit-page-3").attr("class", "tab-pane active");
       $("div.swiper-container").remove();
     }

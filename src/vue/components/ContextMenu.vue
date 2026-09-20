@@ -22,9 +22,9 @@
         <template v-for="(item, i) in visibleItems">
           <li
             :class="{ selected: selected === i }"
-            @mouseenter="onItemMouseenter(i)"
-            @mousemove="onItemMousemove(i)"
-            @mouseleave="onItemMouseleave(i)"
+            @pointerenter="onItemPointerenter(i)"
+            @pointermove="onItemPointermove(i)"
+            @pointerleave="onItemPointerleave(i)"
             @click="onItemClick(i)"
           >
             <a v-html="item.text"></a>
@@ -41,12 +41,11 @@
 <script setup lang="ts">
 
 import { onMounted, ref, useTemplateRef } from "vue";
-import { ContextMenuItemOption, ContextMenuItems } from "../../types";
 import { McmodderUtils } from "../../Utils";
 
-let contextmenuEvent: MouseEvent | undefined;
+let contextmenuEvent: PointerEvent | undefined;
 let activeState = false;
-let pressArrowKeyBeforeMouseMove = false;
+let pressArrowKeyBeforePointerMove = false;
 let itemCount = 0;
 let container: HTMLElement | null = null;
 const activeIndexList: number[] = [];
@@ -68,8 +67,8 @@ const cssY = ref(0);
 onMounted(() => {
   container = root.value?.parentElement!.parentElement!;
   $(container!)
-  .contextmenu(e => onContextmenu(e.originalEvent as MouseEvent))
-  .click(e => onClick(e.originalEvent as MouseEvent));
+  .contextmenu(e => onContextmenu(e.originalEvent as PointerEvent))
+  .click(e => onClick(e.originalEvent as PointerEvent));
 })
 
 function moveTo(x: number, y: number) {
@@ -107,7 +106,7 @@ function show(x: number, y: number) {
   }, 0);
 }
 
-function updateMenu(e: MouseEvent) {
+function updateMenu(e: PointerEvent) {
   activeIndexList.length = 0;
   visibleItems.value.length = 0;
   activeIndexLength.value = 0;
@@ -120,7 +119,7 @@ function updateMenu(e: MouseEvent) {
   });
 }
 
-function onContextmenu(e: MouseEvent) {
+function onContextmenu(e: PointerEvent) {
   e.preventDefault();
   const absolutePos = McmodderUtils.getAbsolutePos(container!);
   if (!activeState) {
@@ -130,7 +129,7 @@ function onContextmenu(e: MouseEvent) {
   }
 }
 
-function onClick(_e: MouseEvent) {
+function onClick(_e: PointerEvent) {
   if (activeState) {
     hide();
   }
@@ -176,7 +175,7 @@ function onMenuKeydown(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;
-    pressArrowKeyBeforeMouseMove = true;
+    pressArrowKeyBeforePointerMove = true;
     if (selected.value === -1) {
       selected.value = 0;
     } else {
@@ -187,7 +186,7 @@ function onMenuKeydown(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;
-    pressArrowKeyBeforeMouseMove = true;
+    pressArrowKeyBeforePointerMove = true;
     if (selected.value === -1) {
       selected.value = activeIndexLength.value - 1;
     } else {
@@ -196,25 +195,25 @@ function onMenuKeydown(e: KeyboardEvent) {
   }
 }
 
-function onItemMouseenter(_index: number) {
+function onItemPointerenter(_index: number) {
   if (!activeState) {
     return;
   }
-  pressArrowKeyBeforeMouseMove = true;
+  pressArrowKeyBeforePointerMove = true;
 }
 
-function onItemMousemove(index: number) {
+function onItemPointermove(index: number) {
   if (!activeState) {
     return;
   }
-  if (!pressArrowKeyBeforeMouseMove) {
+  if (!pressArrowKeyBeforePointerMove) {
     return;
   }
   // const activeIndex = activeIndexList.indexOf(index);
   selected.value = index;
 }
 
-function onItemMouseleave(_index: number) {
+function onItemPointerleave(_index: number) {
   if (!activeState) {
     return;
   }

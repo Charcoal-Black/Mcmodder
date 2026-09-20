@@ -1,20 +1,20 @@
-import { createClient, FunctionInvokeOptions, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type FunctionInvokeOptions, type SupabaseClient } from '@supabase/supabase-js';
 import { Mcmodder } from '../Mcmodder';
-import { SupabaseCustomSplash, SupabaseErrorResponse, SupabaseGetCustomSplashesResponse, SupabaseUploadSplashResponse } from '../types';
 import { McmodderUtils } from '../Utils';
+import type { ConfigRepository } from '../config/ConfigRepository';
 
 export class SupabaseUtils {
   private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
   
 
-  private readonly parent: Mcmodder;
+  private readonly configs: ConfigRepository;
   private readonly instance: SupabaseClient | null;
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
 
-    if (!this.parent.utils.getConfig("useSupabase")) {
+    if (!this.configs.getSettings("useSupabase")) {
       this.instance = null;
     }
 

@@ -1,4 +1,3 @@
-import { McmodderRecipeData } from "../types";
 import { McmodderMap } from "./Map";
 
 export class McmodderRecipeMap extends McmodderMap<McmodderRecipeData> {

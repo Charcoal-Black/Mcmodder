@@ -1,8 +1,7 @@
-import { GmResponseEvent } from "$";
+import type { GmResponseEvent } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { RequestQueue } from "../types";
 import { McmodderConsole } from "../widget/logger/Console";
-import { McmodderLogger } from "../widget/logger/Logger";
+import type { McmodderLogger } from "../widget/logger/Logger";
 import { McmodderRequestQueue } from "./RequestQueue";
 
 export class McmodderSubmitRequestQueue extends McmodderRequestQueue {
@@ -10,7 +9,7 @@ export class McmodderSubmitRequestQueue extends McmodderRequestQueue {
     super(parent, id, maxConcurrent, minInterval, logger);
   }
 
-  onCallback(_resp: GmResponseEvent<"text", any>, _index: number, _queue: RequestQueue) {
+  protected override onCallback(_resp: GmResponseEvent<"text", any>, _index: number, _queue: RequestQueue) {
     
   }
 }

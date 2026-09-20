@@ -6,7 +6,7 @@ export class PostPageInit extends McmodderInit {
       this.parent.href.includes(".html");
   }
   run() {
-    if (this.parent.utils.getConfig("removePostProtection")) {
+    if (this.configs.getSettings("removePostProtection")) {
       $(".owned").removeClass("owned");
     }
   }

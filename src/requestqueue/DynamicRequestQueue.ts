@@ -1,7 +1,6 @@
 import { Mcmodder } from "../Mcmodder";
-import { RequestData, RequestResult } from "../types";
 import { McmodderRequestQueue } from "./RequestQueue";
-import { McmodderLogger } from "../widget/logger/Logger";
+import type { McmodderLogger } from "../widget/logger/Logger";
 
 /** 
  * 传统的 `McmodderRequestQueue` 只能对付静态队列。

@@ -5,7 +5,35 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoCheckinScheduleRequest extends ScheduleRequestType {
-  protected override readonly priority = 10;
+  override readonly priority = 10;
+
+  private static readonly badgeNameMap = ["", "红", "黄", "绿", "蓝"] as const;
+
+  private static readonly candleMap = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 1, 1, 0],
+    [1, 0, 0, 1, 0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 1, 1, 0, 0, 1],
+    [0, 1, 1, 1, 0, 1, 1, 1, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 0],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1]
+  ] as const
+
+  private static readonly candlePos = [
+    [10, 55],
+    [16, 30],
+    [16, 80],
+    [25, 20],
+    [25, 55],
+    [25, 90],
+    [34, 30],
+    [34, 80],
+    [40, 55]
+  ] as const;
+
   async run(list: ScheduleRequestUtils) {
     list.create(McmodderUtils.getStartTime(new Date), "autoCheckin", this.parent.currentUID);
     const resp = await this.parent.utils.createRequest({
@@ -38,58 +66,47 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
       buttons: false,
       timer: 3e3
     });
+    this.checkAnnualCelebration();
+  }
 
-    let yr = parseInt(this.parent.utils.getProfile("annualCelebration")) || 0;
-    const regTime = new Date(parseInt(this.parent.utils.getProfile("regTime")));
+  private checkAnnualCelebration() {
+    let yr = this.configs.getProfile("annualCelebration") ?? 0;
+    const regTime = new Date(this.configs.getProfile("regTime"));
     const now = new Date;
-    if (regTime.getMonth() === now.getMonth() &&
+    if (
+      regTime.getMonth() === now.getMonth() &&
       regTime.getDate() === now.getDate() &&
-      regTime.getFullYear() + yr < now.getFullYear()) {
-      const m = ["", "红", "黄", "绿", "蓝"], candleMap = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 1, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 1, 1, 0],
-        [1, 0, 0, 1, 0, 1, 0, 0, 1],
-        [1, 0, 0, 1, 1, 1, 0, 0, 1],
-        [0, 1, 1, 1, 0, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 1, 0],
-        [1, 1, 1, 1, 0, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1]
-      ], candlePos = [
-        [10, 55],
-        [16, 30],
-        [16, 80],
-        [25, 20],
-        [25, 55],
-        [25, 90],
-        [34, 30],
-        [34, 80],
-        [40, 55]
-      ];
-      let a = "";
+      regTime.getFullYear() + yr < now.getFullYear()
+    ) {
+      let badgeHint = "";
       yr = now.getFullYear() - regTime.getFullYear();
-      this.parent.utils.setProfile("annualCelebration", yr);
-      if (yr < 5) a = `<br>微型${m[yr]}心勋章 现已解锁申请！`;
+      this.configs.setProfile("annualCelebration", yr);
+      if (yr < 5) badgeHint = `<br>微型${
+        AutoCheckinScheduleRequest.badgeNameMap[yr]
+      }心勋章 现已解锁申请！`;
       let candles = "";
       if (yr < 10) {
         for (let i = 0; i < 9; i++) {
-          if (candleMap[yr][i]) {
-            candles += `<i class="mcmodder-candle" style="top: ${ candlePos[i][0] }px; left: ${ candlePos[i][1] }px"></i>`;
+          if (AutoCheckinScheduleRequest.candleMap[yr][i]) {
+            candles += `<i class="mcmodder-candle" style="top: ${
+              AutoCheckinScheduleRequest.candlePos[i][0]
+            }px; left: ${
+              AutoCheckinScheduleRequest.candlePos[i][1]
+            }px"></i>`;
           }
         }
       }
       swal.fire({
         html: `
           <span 
-            class="swal2-icon-text ${yr < 10 ? "mcmodder-cake" : "mcmodder-10th-cake"}"
+            class="swal2-icon-text ${ yr < 10 ? "mcmodder-cake" : "mcmodder-10th-cake" }"
             data-toggle="tooltip"
             data-original-title="蛋糕是个谎言 - ${ yr.toLocaleString() } 周年限定"
           >${ candles }</span>
           <h2 class="swal2-title">怕你忘啦</h2>
           今天是建号 ${ yr.toLocaleString() } 周年！<br>
           百科感谢有你的一路陪伴~
-          ${ a }
+          ${ badgeHint }
         `,
         showConfirmButton: yr < 5,
         showCancelButton: true,

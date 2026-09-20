@@ -24,9 +24,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'vue';
-import { InputControlRef, InputProps, InputValueSet } from '../../../types';
 import { InputListController } from '../../../widget/InputListController.ts';
 import { useInputBase } from '../../composables/useInputBase.ts';
+import type { InputProps } from '../../../types/props';
 
 interface Props extends InputProps<number> {
   range: InputValueSet

@@ -1,6 +1,6 @@
 import { Mcmodder } from "../../Mcmodder";
 import { McmodderUtils } from "../../Utils";
-import { McmodderLogger } from "./Logger";
+import type { McmodderLogger } from "./Logger";
 
 export class McmodderLoggerFrame implements McmodderLogger {
 

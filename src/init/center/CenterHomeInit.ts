@@ -1,7 +1,6 @@
 import { GM_cookie } from "$";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
 import { McmodderPermission } from "../../config/ConfigUtils";
-import { McmodderProfileData, SupabaseByteChartResponse } from "../../types";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { CommentInit } from "../CommentInit";
@@ -26,8 +25,8 @@ export class CenterHomeInit extends CenterBaseInit {
         inRange: {
           color: ["#66CAC6", "#0078F0", "#3411B9", "#B711A9", "#680B2D", "#000000"]
         },
-        range: [0, this.getUtils().getConfig("maxByteColorValue")],
-        max: this.getUtils().getConfig("maxByteColorValue")
+        range: [0, this.configs.getSettings("maxByteColorValue")],
+        max: this.configs.getSettings("maxByteColorValue")
       }],
       tooltip: [{
         formatter: (e: any) => {
@@ -44,13 +43,13 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private addUserBlacklist(uid: number) {
-    const userBlacklist = this.getUtils().getConfigAsNumberList("userBlacklist");
+    const userBlacklist = this.configs.getSettingsAsNumberList("userBlacklist") ?? [];
     if (userBlacklist.includes(uid)) {
-      this.getUtils().setConfig("userBlacklist", userBlacklist.filter(e => e != uid).join(","));
+      this.configs.setSettings("userBlacklist", userBlacklist.filter(e => e != uid).join(","));
       McmodderUtils.commonMsg(`已将 UID:${ uid } 从用户黑名单中移除~`);
     } else {
       userBlacklist.push(uid);
-      this.getUtils().setConfig("userBlacklist", userBlacklist.join(","));
+      this.configs.setSettings("userBlacklist", userBlacklist.join(","));
       McmodderUtils.commonMsg(`已将 UID:${ uid } 加入用户黑名单~`);
     }
   }
@@ -59,17 +58,17 @@ export class CenterHomeInit extends CenterBaseInit {
     if (!this.center.pageProfileData) {
       throw new Error("当前页面的用户档案数据尚未初始化...");
     }
-    const userFavList = this.getUtils().getConfigAsNumberList("userFavList");
+    const userFavList = this.configs.getSettingsAsNumberList("userFavList") ?? [];
     if (userFavList.includes(uid)) {
-      this.getUtils().setConfig("userFavList", userFavList.filter(e => e != uid).join(","));
-      if (!this.getUtils().getConfig("rememberVisited")) {
-        this.getUtils().deleteAllProfile(this.center.getPageUID());
+      this.configs.setSettings("userFavList", userFavList.filter(e => e != uid).join(","));
+      if (!this.configs.getSettings("rememberVisited")) {
+        this.configs.deleteAllProfile(this.center.getPageUID());
       }
       McmodderUtils.commonMsg(`已将 UID:${ uid } 移出我的收藏列表~`);
     } else {
       userFavList.push(uid);
-      this.getUtils().setConfig("userFavList", userFavList.join(","));
-      this.getUtils().setAllProfile(this.center.pageProfileData, this.center.getPageUID())
+      this.configs.setSettings("userFavList", userFavList.join(","));
+      this.configs.setAllProfile(this.center.pageProfileData, this.center.getPageUID())
       McmodderUtils.commonMsg(`已将 UID:${ uid } 加入我的收藏列表~`);
     }
   }
@@ -107,7 +106,7 @@ export class CenterHomeInit extends CenterBaseInit {
 
     // 计算权限等级
     let permission: McmodderPermission;
-    if (McmodderValues.adminIDList.includes(this.getParent().currentUID)) permission = McmodderPermission.ADMIN;
+    if (McmodderValues.adminIDList.includes(this.parent.currentUID)) permission = McmodderPermission.ADMIN;
     else if (profile.adminModList) permission = McmodderPermission.MANAGER;
     else if (profile.devModList) permission = McmodderPermission.DEVELOPER;
     else if (profile.editorModList) permission = McmodderPermission.EDITOR;
@@ -131,8 +130,8 @@ export class CenterHomeInit extends CenterBaseInit {
         }
         profile.uuid = cookie[0].value,
         profile.expirationDate = cookie[0].expirationDate ? cookie[0].expirationDate * 1e3 : -1;
-        if (this.getUtils().getConfig("customAdvancements") && profile.editByte >= 1e3 && profile.editAvg >= 120) {
-          this.getParent().advutils.addProgress(AdvancementID.MASTER_EDITOR);
+        if (this.configs.getSettings("customAdvancements") && profile.editByte >= 1e3 && profile.editAvg >= 120) {
+          this.parent.advutils.addProgress(AdvancementID.MASTER_EDITOR);
         }
         resolve(profile);
       });
@@ -153,7 +152,7 @@ export class CenterHomeInit extends CenterBaseInit {
     const age = this.calculateAge();
     const centerTotal = $(".center-total > ul");
     const averageByte = centerTotal.contents().filter((_, content) => content.nodeType === Node.COMMENT_NODE).get(0);
-    if (this.getUtils().getConfig("centerMainExpand")) {
+    if (this.configs.getSettings("centerMainExpand")) {
       centerTotal.addClass("mcmodder-center-main-expand");
       $("<li>").addClass("edit-avg").html($(averageByte.textContent.replace(" 次", " 字节")).html())
       .insertBefore(centerTotal.find("li:nth-child(4)"));
@@ -180,7 +179,7 @@ export class CenterHomeInit extends CenterBaseInit {
     });
 
     // 模组区域压缩
-    if (this.getUtils().getConfig("centerMainExpand")) $(".admin-list ul").each((_, e) => {
+    if (this.configs.getSettings("centerMainExpand")) $(".admin-list ul").each((_, e) => {
       if (e.clientHeight > 4e2 && e.parentElement) {
         $(e).attr("style", "max-height: 400px; overflow: hidden;");
         $('<a class="mcmodder-slim-dark" style="width: 100%; display: inline-block; text-align: center;">轻触展开</a>')
@@ -196,24 +195,24 @@ export class CenterHomeInit extends CenterBaseInit {
     });
 
     if (this.center.isMyPage()) {
-      const myProfiles = this.getUtils().getConfigAsNumberList("myProfiles");
+      const myProfiles = this.configs.getSettingsAsNumberList("myProfiles") ?? [];
       const pageUID = this.center.getPageUID();
       if (!myProfiles.includes(pageUID)) {
         myProfiles.push(pageUID);
-        this.getUtils().setConfig("myProfiles", myProfiles.join(","));
+        this.configs.setSettings("myProfiles", myProfiles.join(","));
       }
       this.getMyProfileData().then(profile => {
-        this.getUtils().setAllProfile(profile);
+        this.configs.setAllProfile(profile);
       }).catch(err => {
         console.error(err);
         McmodderUtils.commonMsg("获取用户登录信息失败...");
       });
     }
-    else if (this.getUtils().doesProfileDataExist(this.center.getPageUID())) {
+    else if (this.configs.doesProfileDataExist(this.center.getPageUID())) {
       const newProfile = this.center.pageProfileData;
       if (newProfile) {
         if (this.center.isFavPage()) {
-          const oldProfile = this.getUtils().getAllProfile(this.center.getPageUID());
+          const oldProfile = this.configs.getAllProfile(this.center.getPageUID());
           if (oldProfile.lastUpdated) {
             const updateDiff = Date.now() - oldProfile.lastUpdated;
             const byteDiff = newProfile.editByte - oldProfile.editByte;
@@ -241,14 +240,14 @@ export class CenterHomeInit extends CenterBaseInit {
             });
           }
         }
-        this.getUtils().setAllProfile(newProfile, this.center.getPageUID());
+        this.configs.setAllProfile(newProfile, this.center.getPageUID());
       }
     }
 
     // 字数统计表
     // 使用前需要在贡献榜页面保存数据
-    if (this.getUtils().getConfig("byteChart") && !this.getUtils().getConfig("supabaseByteChart")) {
-      let rawData = this.getUtils().getAllConfig("rankData", []);
+    if (this.configs.getSettings("byteChart") && !this.configs.getSettings("supabaseByteChart")) {
+      let rawData = this.configs.getAll("rankData") ?? {};
       this.optionData = [[0, "center"], [1, "mcmod"], [2, "cn"]];
       this.tempData = {};
       Object.keys(rawData).forEach(t => {
@@ -278,7 +277,7 @@ export class CenterHomeInit extends CenterBaseInit {
     });
 
     // 夜间模式支持
-    if (this.getUtils().getConfig("nightMode")) $(".post-block img").bind("load", e => {
+    if (this.configs.getSettings("nightMode")) $(".post-block img").bind("load", e => {
       const img = e.currentTarget as HTMLImageElement;
       if (img.src === McmodderValues.assets.mcmod.imagesNone) {
         img.src = McmodderValues.assets.nightMode.imagesNone;
@@ -294,8 +293,8 @@ export class CenterHomeInit extends CenterBaseInit {
           if ((addedNode.firstChild as HTMLElement)?.tagName === "CANVAS") {
             const id = editChartContainer.getAttribute("_echarts_instance_");
             const editChart = echarts.getInstanceById(id);
-            this.getParent().echartsUtils.centerEditChart = editChart;
-            this.getParent().echartsUtils.setChartFont(editChart);
+            this.parent.echartsUtils.centerEditChart = editChart;
+            this.parent.echartsUtils.setChartFont(editChart);
             this.editChartInit();
           }
         });
@@ -304,10 +303,10 @@ export class CenterHomeInit extends CenterBaseInit {
     }
 
     // 更新物品提示
-    this.getParent().updateItemTooltip();
+    this.parent.updateItemTooltip();
 
     // 留言板区域
-    setTimeout(() => new CommentInit(this.getParent()).run(), 1e3);
+    setTimeout(() => new CommentInit(this.parent).run(), 1e3);
 
     // 用户收藏&屏蔽
     if (!this.center.isMyPage()) {
@@ -318,20 +317,20 @@ export class CenterHomeInit extends CenterBaseInit {
       $("#mcmodder-user-favlist").click(() => this.addUserFavlist(this.center.getPageUID()));
       $("#mcmodder-user-blacklist").click(() => this.addUserBlacklist(this.center.getPageUID()));
 
-      if (this.getUtils().getConfig("rememberVisited") && age >= 7) {
-        let recentlyVisited: number[] = this.getUtils().getConfig("recentlyVisited")?.split(",") || [];
+      if (this.configs.getSettings("rememberVisited") && age >= 7) {
+        let recentlyVisited = this.configs.getSettings("recentlyVisited")?.split(",").map(Number) || [];
         if (recentlyVisited.length >= CenterHomeInit.maxRecentlyVisitedLength) {
           recentlyVisited = recentlyVisited.slice(-CenterHomeInit.maxRecentlyVisitedLength + 1);
         }
         recentlyVisited.push(this.center.getPageUID());
-        this.getUtils().setConfig("recentlyVisited", recentlyVisited.join(","));
-        this.getUtils().setAllProfile(this.center.pageProfileData!, this.center.getPageUID());
+        this.configs.setSettings("recentlyVisited", recentlyVisited.join(","));
+        this.configs.setAllProfile(this.center.pageProfileData!, this.center.getPageUID());
       }
     }
   }
 
   private editChartInit() {
-    const editChart = this.getParent().echartsUtils.centerEditChart;
+    const editChart = this.parent.echartsUtils.centerEditChart;
     // editChart.setOption({
     //   tooltip: [{
     //     backgroundColor: "var(--mcmodder-color-background)",
@@ -346,7 +345,7 @@ export class CenterHomeInit extends CenterBaseInit {
     //     }
     //   }]
     // });
-    if (this.getUtils().getConfig("enableAprilFools")) {
+    if (this.configs.getSettings("enableAprilFools")) {
       let d = editChart.getOption();
       d.series[0].data = (d.series[0].data as [number, number][]).map(t => {
         if (t[0] < 3) return t;
@@ -359,12 +358,12 @@ export class CenterHomeInit extends CenterBaseInit {
     .click(e => {
       this.switchDisplayMode(e);
     });
-    this.getParent().updateNightMode();
+    this.parent.updateNightMode();
   }
 
   private async switchDisplayMode(e: JQueryKeyEventObject) {
     const target = e.currentTarget;
-    const editChart = this.getParent().echartsUtils.centerEditChart;
+    const editChart = this.parent.echartsUtils.centerEditChart;
     if (this.chartMode === 1) {
       if (!this.optionData || !this.tempData) {
         McmodderUtils.setButtonLoadingState(target);
@@ -392,8 +391,8 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private async fetchRemoteByteData() {
-    if (!this.getParent().supabaseUtils.hasClient()) return;
-    const resp = await this.getParent().supabaseUtils.invoke<SupabaseByteChartResponse>("get_byte_data", {
+    if (!this.parent.supabaseUtils.hasClient()) return;
+    const resp = await this.parent.supabaseUtils.invoke<SupabaseByteChartResponse>("get_byte_data", {
       body: {
         user_id: this.center.getPageUID()
       }

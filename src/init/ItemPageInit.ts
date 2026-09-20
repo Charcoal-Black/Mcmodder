@@ -39,13 +39,13 @@ export class ItemPageInit extends McmodderInit {
         s = `<a>${ name }</a>${ this.renderEname(englishName) }`;
       }
       c.html(s);
-      if (this.parent.utils.getConfig("fastCopyName")) {
+      if (this.configs.getSettings("fastCopyName")) {
         McmodderUtils.addClickCopyEvent(c.find("a"), "物品名称");
       }
     });
 
     // 矿物词典
-    if (this.parent.utils.getConfig("mcmodderUI")) $(".item-dict").each((_, c) => {
+    /* if (this.configs.getSettings("mcmodderUI")) */ $(".item-dict").each((_, c) => {
       if ($(c).contents().length) {
         const od = $(c).text().slice(6).split(",\u00a0");
         $(c).html("[矿物词典/物品标签] ");
@@ -58,7 +58,7 @@ export class ItemPageInit extends McmodderInit {
     })
 
     $(".maintext .table").filter((_, c) => $(c).css("width") === "100%").css("width", "unset");
-    const autoFoldTable = this.parent.utils.getConfig("autoFoldTable");
+    const autoFoldTable = this.configs.getSettings("autoFoldTable");
     if (autoFoldTable) {
       $(".table.table-bordered.text-nowrap tbody")
       .filter((_, c) => $(c).children().length >= autoFoldTable)
@@ -94,7 +94,7 @@ export class ItemPageInit extends McmodderInit {
 
     // 根据ID快速跳转
     const h = $("span.name > h5").parent().get(0);
-    if (this.parent.utils.getConfig("mcmodderUI") && h) {
+    if (/* this.configs.get("mcmodderUI") && */ h) {
       const s = $('<span class="small badge-row mcmodder-item-flip">').appendTo(h);
       const isTabPage = this.parent.href.includes("/tab/") ? "tab/" : "";
       const itemId = parseInt(this.parent.href.split("item/" + isTabPage)[1]);
@@ -102,7 +102,7 @@ export class ItemPageInit extends McmodderInit {
       s.append(`<a href="/item/${ isTabPage + (itemId + 1) }.html" class="text-success">${itemId + 1}<i class="fas fa-arrow-right" /></a>`);
     }
 
-    if (isCompactable && this.parent.utils.getConfig("compactedChild")) { // 综合子资料紧凑化
+    if (isCompactable && this.configs.getSettings("compactedChild")) { // 综合子资料紧凑化
       McmodderUtils.addStyle("table.table-bordered.righttable td {padding: 0rem;}");
       $(".col-lg-12.right > hr").remove();
       $("table.table-bordered.righttable").each((_, e) => {
@@ -141,9 +141,9 @@ export class ItemPageInit extends McmodderInit {
 
   private renderEname(ename: string) {
     return `<span class="item-h5-ename">${
-      this.parent.utils.getConfig("mcmodderUI") ?
-      `<a>${ ename }</a>` :
-      `(<a>${ ename }</a>)`
+      // this.configs.get("mcmodderUI") ?
+      `<a>${ ename }</a>` // :
+      // `(<a>${ ename }</a>)`
     }</span>`;
   }
 }

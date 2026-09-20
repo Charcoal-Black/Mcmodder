@@ -76,19 +76,19 @@ export class CommentInit extends McmodderInit {
           // 显示快速跳转面板
           this.renderPagination();
 
-          const alertHeight = this.parent.utils.getConfig("missileAlertHeight");
-          const expandHeight = this.parent.utils.getConfig("commentExpandHeight");
+          const alertHeight = this.configs.getSettings("missileAlertHeight")!;
+          const expandHeight = this.configs.getSettings("commentExpandHeight")!;
           $("div.comment-row-content", mutation.target).each((_, c) => {
             // 隐藏黑名单用户发布的短评
             const target = $(c);
             const uid = Number(target.find("a.poped").attr("data-uid"));
-            if (this.parent.utils.getConfigAsNumberList("userBlacklist").includes(uid)) { // 用户屏蔽
+            if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) { // 用户屏蔽
               target.parent().remove();
               return;
             }
 
             // 愚人节特性 全员管理
-            if (this.parent.utils.getConfig("enableAprilFools") && 
+            if (this.configs.getSettings("enableAprilFools") && 
                 uid === this.parent.currentUID && 
                 this.parent.href.includes("/class/")) {
               this.promoteAsManager(target);
@@ -97,7 +97,7 @@ export class CommentInit extends McmodderInit {
             // 楼中楼快速链接
             this.setReplyLink(target);
             const commentContent = target.find("div.comment-row-text-content.common-text.font14").get(0);
-            if (this.parent.utils.getConfig("ignoreEmptyLine")) {
+            if (this.configs.getSettings("ignoreEmptyLine")) {
               $(commentContent).children().filter((_, c) => c.innerHTML === "<br>").remove();
             }
 
@@ -109,7 +109,7 @@ export class CommentInit extends McmodderInit {
             }
             
             // 核弹警告
-            if (this.parent.utils.getConfig("missileAlert") && h > alertHeight) {
+            if (this.configs.getSettings("missileAlert") && h > alertHeight) {
               target.find("a.fold.text-muted")
               .append(` - <span class="mcmodder-slim-danger">核弹警告！</span>本楼展开后将会长达 <span class="mcmodder-common-danger">${ h.toLocaleString() } px</span>！`); // 核弹警告
             }
@@ -118,11 +118,11 @@ export class CommentInit extends McmodderInit {
             this.replaceMobileClientIcon(target);
           });
         }
-        else if (className === "comment-reply-floor" && this.parent.utils.getConfig("replyLink")) {
+        else if (className === "comment-reply-floor" && this.configs.getSettings("replyLink")) {
           $("div.comment-reply-row", mutation.target).each((_, _e) => {
             const e = $(_e);
             const uid = Number(e.find("a.poped").attr("data-uid"));
-            if (this.parent.utils.getConfigAsNumberList("userBlacklist").includes(uid)) e.remove();
+            if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) e.remove();
             this.setReplyLink(e);
             const replyContent = e.find("div.comment-reply-row-text-content.common-text.font14").first();
             const rawContent = replyContent.html().replaceAll("<br>", " ");
@@ -145,7 +145,7 @@ export class CommentInit extends McmodderInit {
 
   private unlockComment() {
     if ($(".common-comment-block.lazy").length && !$(".comment-close").length) return;
-    if (!this.parent.utils.getConfig("unlockComment")) return;
+    if (!this.configs.getSettings("unlockComment")) return;
     // 无限制留言板
     const commentClassName = "common-comment-block lazy";
     let messageCenter = $(".center-block:last-child()").get(0) || $(".common-comment-block.lazy .comment-editor").get(0) || $(".author-row").get(0);
@@ -197,14 +197,14 @@ export class CommentInit extends McmodderInit {
         setTimeout(() => target.removeClass("mcmodder-mark-gold"), 2e3);
       }, 8e2);
     }
-    if (this.parent.utils.getConfig("lieqi")) {
+    if (this.configs.getSettings("lieqi")) {
       this.lieqi(target);
     }
   }
 
   run() {
-    if (this.parent.utils.getConfig("commentExpandHeight")) {
-      let commentHeight = this.parent.utils.getConfig("commentExpandHeight") || "300";
+    if (this.configs.getSettings("commentExpandHeight")) {
+      let commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
       McmodderUtils.addStyle(`.comment-row-text {max-height: ${ commentHeight }px;}`);
     }
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {

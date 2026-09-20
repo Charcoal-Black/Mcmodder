@@ -13,8 +13,10 @@ export interface UserRankRecordData {
 
 export class RankInit extends McmodderInit {
   canRun() {
-    return this.parent.href.includes("/rank.html") && 
-      this.parent.utils.getConfig("advancedRanklist");
+    return !!(
+      this.parent.href.includes("/rank.html") && 
+      this.configs.getSettings("advancedRanklist")
+    );
   }
 
   private work(contentRank: JQuery): UserRankData {
@@ -94,14 +96,14 @@ export class RankInit extends McmodderInit {
     // setTimeout(commentInit, 1e3);
 
     // 保存贡献数据
-    if (this.parent.utils.getConfig("byteChart")) {
+    if (this.configs.getSettings("byteChart")) {
       let param = new URLSearchParams(window.location.search);
       let startTime = McmodderUtils.getStartTime(Math.floor(Number(param.get("starttime")) * 1e3), 0) / 1e3;
       let endTime = McmodderUtils.getStartTime(Math.floor(Number(param.get("endtime")) * 1e3), 0) / 1e3;
-      let minimumRequestInterval = this.parent.utils.getConfig("minimumRequestInterval") || 750;
+      let minimumRequestInterval = this.configs.getSettings("minimumRequestInterval") || 750;
       if (!(startTime && endTime)) return;
       let getRankData = (t: number) => {
-        if (this.parent.utils.getConfig((t - 24 * 60 * 60).toString(), "rankData")) return; // 一天误差
+        if (this.configs.get("rankData", (t - 24 * 60 * 60).toString())) return; // 一天误差
         this.parent.utils.createRequest({
           url: `${ this.parent.hostname }/rank.html?starttime=${ t }&endtime=${ t }`,
           method: "GET",
@@ -117,7 +119,7 @@ export class RankInit extends McmodderInit {
             });
           });
           let data = JSON.stringify(rawData);
-          this.parent.utils.setConfig(t - 24 * 60 * 60, data, "rankData");
+          this.configs.set("rankData", (t - 24 * 60 * 60).toString(), data);
           McmodderUtils.commonMsg(`成功保存${ McmodderUtils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ McmodderUtils.getFormattedSize(data.length) })`);
         });
         if (t <= Math.min(endTime, Date.now() / 1e3 - 24 * 60 * 60)) setTimeout(() => getRankData(t + 24 * 60 * 60), minimumRequestInterval);
@@ -125,12 +127,12 @@ export class RankInit extends McmodderInit {
       getRankData(Math.max(startTime, 1496332800)); // 字节贡献从 2017-06-02 开始记录
     }
 
-    ranklists.on("mouseenter", "li", e => {
+    ranklists.on("pointerenter", "li", e => {
       const uid = $(e.currentTarget).attr("data-uid");
       const result = ranklists.find(`[data-uid=${ uid }]`);
       if (result.length > 1) result.addClass("hover");
     })
-    .on("mouseleave", "li", _e => {
+    .on("pointerleave", "li", _e => {
       ranklists.find(".hover").removeClass("hover");
     })
   }

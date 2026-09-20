@@ -1,9 +1,9 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { McmodderValues } from "../Values";
 
 export class EchartsUtils {
-
-  parent: Mcmodder;
+  private readonly configs: ConfigRepository;
   classRatingChart: any;
   classUserEditChart: any;
   classUserWordChart: any;
@@ -13,7 +13,7 @@ export class EchartsUtils {
   font: 0 | 1 | 2 | 3 | undefined;
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     // Echarts 图表相关兼容
     if (typeof echarts != "undefined") {
       let t = document.getElementById("class-rating");
@@ -31,7 +31,7 @@ export class EchartsUtils {
       });
 
       // 获取字体
-      this.font = this.parent.utils.getConfig("customFont");
+      this.font = this.configs.getSettings("customFont");
 
       // 用户贡献饼图
       const classUserChartObserver = new MutationObserver(mutationList => {

@@ -68,9 +68,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef, type WritableComputedRef } from 'vue';
 import { McmodderConfigUtils, McmodderInputType } from '../../../config/ConfigUtils';
-import { InputValidInfo, InputValueFiniteNumericRange, InputValueNumericRange, InputValueSet } from '../../../types';
 import { McmodderUtils } from '../../../Utils';
 import CheckboxInput from '../input/CheckboxInput.vue';
 import TextInput from '../input/TextInput.vue';
@@ -80,17 +79,20 @@ import SliderInput from '../input/SliderInput.vue';
 import DropdownMenuInput from '../input/DropdownMenuInput.vue';
 import DropdownTextInput from '../input/DropdownTextInput.vue';
 import KeybindInput from '../input/KeybindInput.vue';
+import type { ConfigRepository } from '../../../config/ConfigRepository.ts';
 
 interface Props {
-  id: string,
-  cfgutils: McmodderConfigUtils
+  id: keyof McmodderSettings,
+  cfgutils: McmodderConfigUtils,
+  configs: ConfigRepository
 }
 
-const { id, cfgutils } = defineProps<Props>();
+const { id, cfgutils, configs } = defineProps<Props>();
 const configData = shallowRef(cfgutils.data[id]);
 const type = ref<Readonly<McmodderInputType>>(configData.value.type);
 const title = computed(() => configData.value.title);
-const value = computed(() => cfgutils.parent.utils.getConfig(id) ?? configData.value.value);
+const value = configs.getSettingsWritableRef(id) as WritableComputedRef<any>;
+// computed(() => configs.getSettings(id) ?? configData.value.value);
 
 const opt = computed(() => {
   const data = configData.value;
@@ -133,7 +135,8 @@ const suggestion = computed(() => opt.value.suggestion);
 
 function onConfigSuccessfulChange(resp: InputValidInfo<any>) {
   McmodderUtils.commonMsg(PublicLangData.center.setting.complete);
-  cfgutils.parent.utils.setConfig(id, resp.final);
+  value.value = resp.final;
+  // configs.setSettings(id, resp.final);
 }
 
 const description = computed(() => {

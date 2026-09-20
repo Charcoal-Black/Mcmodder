@@ -36,21 +36,21 @@
           v-for="index in renderingRowArray"
           :data-index="index"
           :class="{
-            'mcmodder-table-mouseover-tr': index === hoveringIndex,
+            'mcmodder-table-pointerover-tr': index === hoveringIndex,
             'mcmodder-table-unsaved-tr': currentData[index].edited && Object.keys(currentData[index].edited).length,
             'selected': currentData[index].selected
           }"
-          @mouseenter="rowOnMouseenter(index)"
+          @pointerenter="rowOnPointerenter(index)"
         >
           <td
             v-for="key in Object.keys(headConfigs)"
             :data-key="key"
             :class="{
-              'mcmodder-table-mouseover-td': key === hoveringKey,
+              'mcmodder-table-pointerover-td': key === hoveringKey,
               'mcmodder-table-unsaved-td': currentData[index].edited?.[key]
             }"
-            @mouseenter="unitOnMouseenter(index, key)"
-            @mouseleave="unitOnMouseleave(index, key)"
+            @pointerenter="unitOnPointerenter(index, key)"
+            @pointerleave="unitOnPointerleave(index, key)"
             @dblclick="onDblclick(index, key)"
           >
             <div
@@ -85,8 +85,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends McmodderTableAcceptable">
-import { computed, nextTick, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { EditConfigs, EditConfigsInitializer, HeadConfigs, InputSuccessfulChangeCallBack, InputValueNumericRange, McmodderTableAcceptable, McmodderTableContext, McmodderTableDataList, McmodderTableDataMap, McmodderTableInputData, McmodderTableProps, McmodderTableRowData, McmodderTableRowRange, McmodderTableRowSelection } from '../../../types';
+import { computed, nextTick, onMounted, ref, type ShallowRef, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
 import { McmodderTable } from '../../../table/Table.ts';
 import { McmodderUtils } from '../../../Utils.ts';
 import ContextMenu from '../ContextMenu.vue';
@@ -101,6 +100,7 @@ import { PasteCommand } from '../../../table/command/PasteCommand.ts';
 import { DeleteRowCommand } from '../../../table/command/DeleteRowCommand.ts';
 import { DeleteMultipleRowCommand } from '../../../table/command/DeleteMultipleRowCommand.ts';
 import ProgressBar from '../ProgressBar.vue';
+import type { McmodderTableProps } from '../../../types/props';
 
 const props = defineProps<McmodderTableProps<T>>();
 
@@ -124,7 +124,7 @@ const classLoadingOverlayFaded = ref(false);
 const contextMenu = useTemplateRef("contextMenu");
 
 const editable = ref(false);
-const editConfigsInitializer = shallowRef(props.editConfigs);
+const editConfigsInitializer: ShallowRef<EditConfigsInitializer<T> | undefined> = shallowRef(props.editConfigs);
 const editConfigs = shallowRef<EditConfigs<T>>();
 const unsaved = ref(false);
 const selectedRowCount = ref(0);
@@ -212,8 +212,8 @@ function bindEvents() {
 function gotoHandler(e: Event) {
   const target = e.composedPath()[0] as HTMLElement;
   if (target.classList.contains("mcmodder-table-goto")) {
-    const key = target.dataset["goto-key"] as keyof T;
-    const value = target.dataset["goto-value"];
+    const key = target.dataset.gotoKey as keyof T;
+    const value = target.dataset.gotoValue;
     const index = searchData(key, value);
     if (index === -1) McmodderUtils.commonMsg("没有找到该链接所指向的表格行...", false);
     else scrollTo(index);
@@ -685,7 +685,7 @@ function switchSelectState(index: number) {
   selectRow(index, selected);
 }
 
-function rowOnMouseenter(index: number) {
+function rowOnPointerenter(index: number) {
   if (!isShiftKeyPressed.value) return;
   if (prevHoverIndex.value != undefined) {
     if (index === prevHoverIndex.value) return;
@@ -697,12 +697,12 @@ function rowOnMouseenter(index: number) {
   switchSelectState(index);
 }
 
-function unitOnMouseenter(index: number, key: keyof T) {
+function unitOnPointerenter(index: number, key: keyof T) {
   hoveringIndex.value = index;
   hoveringKey.value = key;
 }
 
-function unitOnMouseleave(index: number, key: keyof T) {
+function unitOnPointerleave(index: number, key: keyof T) {
   if (hoveringIndex.value === index) {
     hoveringIndex.value = null;
   }
@@ -817,7 +817,7 @@ const ctx: McmodderTableContext<T> = {
   dataMapToSelection
 }
 
-function isMouseOnAnyRow() {
+function isPointerOnAnyRow() {
   return hoveringIndex.value !== null;
 }
 
@@ -839,19 +839,19 @@ function initContextMenu() {
   .addItem({
     key: "insertRowUpper",
     text: "在此行上方插入行",
-    displayRule: _e => editable.value && isMouseOnAnyRow(), 
+    displayRule: _e => editable.value && isPointerOnAnyRow(), 
     callback: e => execute(new InsertRowCommand(ctx, getElementIndex(e?.target)))
   })
   .addItem({
     key: "insertRowLower",
     text: "在此行下方插入行",
-    displayRule: _e => editable.value && isMouseOnAnyRow(),
+    displayRule: _e => editable.value && isPointerOnAnyRow(),
     callback: e => execute(new InsertRowCommand(ctx, getElementIndex(e?.target) + 1))
   })
   .addItem({
     key: "copyRow",
     text: "复制行",
-    displayRule: _e => editable.value && isMouseOnAnyRow(), 
+    displayRule: _e => editable.value && isPointerOnAnyRow(), 
     callback: e => copyRow([getElementIndex(e.target)])
   })
   .addItem({
@@ -864,19 +864,19 @@ function initContextMenu() {
   .addItem({
     key: "pasteRowUpper",
     text: "粘贴在其上方",
-    displayRule: _e => editable.value && isMouseOnAnyRow() && !isCopyboardEmpty(), 
+    displayRule: _e => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(), 
     callback: e => execute(new PasteCommand(ctx, getElementIndex(e?.target)))
   })
   .addItem({
     key: "pasteRowLower",
     text: "粘贴在其下方",
-    displayRule: _e => editable.value && isMouseOnAnyRow() && !isCopyboardEmpty(), 
+    displayRule: _e => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(), 
     callback: e => execute(new PasteCommand(ctx, getElementIndex(e?.target) + 1))
   })
   .addItem({
     key: "deleteRow",
     text: "删除该行",
-    displayRule: _e => editable.value && isMouseOnAnyRow(), 
+    displayRule: _e => editable.value && isPointerOnAnyRow(), 
     callback: e => execute(new DeleteRowCommand(ctx, getElementIndex(e?.target)))
   })
   .addItem({

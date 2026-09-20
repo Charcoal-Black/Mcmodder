@@ -6,7 +6,7 @@
 
   <div class="center-content">
     <template v-for="key in visibleConfigData">
-      <ConfigInteractor :id="key" :cfgutils="cfgutils">
+      <ConfigInteractor :id="key" :cfgutils="cfgutils" :configs="configs">
         <template #afterInput v-if="key === 'autoCheckUpdate'">
           <button
             id="mcmodder-update-check-manual"
@@ -20,12 +20,14 @@
           )" />
         </template>
         <template #afterInput v-else-if="key === 'useSupabase'">
-          <!-- 等待补充仅当 useSupabase = true 时启用的逻辑 -->
-          <SupabaseAuthBinder :parent="parent" />
+          <span v-show="configs.getSettingsRef('useSupabase').value">
+            <SupabaseAuthBinder :parent="parent" />
+          </span>
         </template>
         <template #afterItem v-if="key === 'useSupabase'">
-          <!-- 等待补充仅当 useSupabase = true 时启用的逻辑 -->
-          <SupabaseConfigLoader :parent="parent" />
+          <div v-show="configs.getSettingsRef('useSupabase').value">
+            <SupabaseConfigLoader :parent="parent" />
+          </div>
         </template>
       </ConfigInteractor>
     </template>
@@ -65,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import { McmodderValues } from '../../Values';
 import { McmodderInputType } from '../../config/ConfigUtils';
@@ -75,23 +77,24 @@ import Timer from './Timer.vue';
 import { McmodderTimer } from '../../widget/Timer.ts';
 import SupabaseConfigLoader from './supabase/SupabaseConfigLoader.vue';
 import ConfigResourceInteractor from './config/ConfigResourceInteractor.vue';
-import { ConfigResourceInteractorProps, McmodderClassRelationData, McmodderRankDisplayData, McmodderRankStorageData, McmodderSplashData } from '../../types';
 import { McmodderUtils } from '../../Utils.ts';
 import ConfigResourceFileListInteractor from './config/ConfigResourceFileListInteractor.vue';
 import SupabaseAuthBinder from './supabase/SupabaseAuthBinder.vue';
 import Button from './Button.vue';
+import type { ConfigResourceFileListInteractorProps, ConfigResourceInteractorProps } from '../../types/props';
 
 interface Props {
   parent: Mcmodder
 }
 
 const props = defineProps<Props>();
+const configs = computed(() => props.parent.configRepository);
 const cfgutils = props.parent.cfgutils;
-const configData = ref(cfgutils.data);
-const permission = props.parent.utils.getProfile("permission");
+const configData = shallowRef(cfgutils.data);
+const permission = props.parent.configRepository.getProfile("permission");
 const visibleConfigData = computed(() => {
-  const result: string[] = [];
-  Object.entries(configData.value).forEach(([key, value]) => {
+  const result: (keyof McmodderSettings)[] = [];
+  (Object.entries(configData.value) as [keyof McmodderSettings, McmodderConfigData][]).forEach(([key, value]) => {
     const data = value;
     if (data.permission && permission < data.permission) return;
     if (data.type === McmodderInputType.KEYBIND && 
@@ -116,14 +119,14 @@ const configResourceInteractorProps = [
     },
     configParser: config => config?.split("\n") || [], // 最后一项是空，不考虑
     dataParser: (_, data) => {
-      const list = data.split(",");
+      const list = (data as string).split(",");
       return {
         time: Number(list[0]),
         content: list[1],
         num: Number(list[2])
-      }
+      } as McmodderSplashData;
     }
-  } satisfies ConfigResourceInteractorProps<McmodderSplashData>,
+  } satisfies ConfigResourceInteractorProps<"mcmodderSplashList_v2", string[], McmodderSplashData>,
   {
     parent: props.parent,
     id: "modDependences_v2",
@@ -133,10 +136,10 @@ const configResourceInteractorProps = [
       children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY]
     },
     dataParser: (key, item) => ({
-      id: key,
-      children: item
-    })
-  } satisfies ConfigResourceInteractorProps<McmodderClassRelationData>,
+      id: Number(key),
+      children: item as number[]
+    } as any) // ???
+  } satisfies ConfigResourceInteractorProps<"modDependences_v2", Record<string, number[]>, McmodderClassRelationData>,
   {
     parent: props.parent,
     id: "modExpansions_v2",
@@ -146,13 +149,13 @@ const configResourceInteractorProps = [
       children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY],
     },
     dataParser: (key, item) => ({
-      id: key,
-      children: item
+      id: Number(key),
+      children: item as number[]
     })
-  } satisfies ConfigResourceInteractorProps<McmodderClassRelationData>,
+  } satisfies ConfigResourceInteractorProps<"modExpansions_v2", Record<string, number[]>, McmodderClassRelationData>,
   {
     parent: props.parent,
-    id: "rankdata",
+    id: "rankData",
     name: "已保存的贡献榜数据",
     headConfigs: {
       date: ["日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH],
@@ -165,16 +168,16 @@ const configResourceInteractorProps = [
       size: ["数据大小", McmodderTable.DISPLAYRULE_SIZE]
     }, 
     dataParser: (key, item) => {
-      let list = JSON.parse(item) as McmodderRankStorageData, sum = 0;
+      let list = JSON.parse(item as string) as McmodderRankStorageData, sum = 0;
       list.forEach(user => sum += user.value);
       return {
         date: Number(key),
         byteTop1: [list[0].user, list[0].value, list[0].value / sum].join(","),
         totalEdited: sum,
-        size: item.length
+        size: (item as string).length
       };
     }
-  } satisfies ConfigResourceInteractorProps<McmodderRankDisplayData>,  
+  } satisfies ConfigResourceInteractorProps<"rankData", Record<string, string>, McmodderRankDisplayData>,  
 ] as const;
 
 const configResourceFileListInteractorProps = [
@@ -182,11 +185,12 @@ const configResourceFileListInteractorProps = [
     parent: props.parent,
     id: "mcmodderJsonStorage",
     name: "已保存的物品 JSON 文件"
-  }, {
+  } satisfies ConfigResourceFileListInteractorProps<"mcmodderJsonStorage">,
+  {
     parent: props.parent,
     id: "mcmodderRecipeJsonStorage",
     name: "已保存的合成表 JSON 文件"
-  }
+  } satisfies ConfigResourceFileListInteractorProps<"mcmodderRecipeJsonStorage">
 ] as const;
 
 function emptyScheduleRequest() {
@@ -213,7 +217,7 @@ async function submitSplash() {
     return;
   }
 
-  const authKey = props.parent.utils.getProfile("auth_key");
+  const authKey = configs.value.getProfile("auth_key");
   if (!authKey) {
     McmodderUtils.commonMsg("未获取到登录校验 Key，请重新登录！", false);
     return;

@@ -1,5 +1,4 @@
-import { nextTick, shallowRef, ShallowRef } from "vue";
-import { InputSuccessfulChangeCallBack, InputValidInfo } from "../../types";
+import { onMounted, shallowRef, type ShallowRef } from "vue";
 import { McmodderUtils } from "../../Utils";
 
 export function useInputBase<T>(opts: {
@@ -8,7 +7,7 @@ export function useInputBase<T>(opts: {
   validate?: (newValue: T) => InputValidInfo<T>,
   getDOMValue?: () => T,
   setDOMValue?: (value: T) => void,
-  onSuccessfulChange: InputSuccessfulChangeCallBack<T>
+  onSuccessfulChange?: InputSuccessfulChangeCallBack<T>
 }) {
   const valueRef = shallowRef<T>(opts.value);
 
@@ -28,7 +27,7 @@ export function useInputBase<T>(opts: {
     const resp = validate(value);
     if (resp.isok) {
       valueRef.value = resp.final!;
-      opts.onSuccessfulChange(resp);
+      opts.onSuccessfulChange?.(resp);
     }
     else {
       if (resp.msg) {
@@ -55,7 +54,7 @@ export function useInputBase<T>(opts: {
     opts.setDOMValue?.(newValue);
   }
 
-  nextTick(() => {
+  onMounted(() => {
     setDisplayValue(opts.value);
   });
 

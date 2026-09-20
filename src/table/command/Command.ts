@@ -1,4 +1,3 @@
-import { McmodderTableAcceptable, McmodderTableContext } from "../../types";
 
 export abstract class Command<T extends McmodderTableAcceptable> {
   self: McmodderTableContext<T>;

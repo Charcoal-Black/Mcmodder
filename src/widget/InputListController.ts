@@ -1,6 +1,5 @@
 import { createApp } from "vue";
 import InputList from "../vue/components/InputList.vue";
-import { InputListBindElement, InputListOption } from "../types";
 import { McmodderUtils } from "../Utils.ts";
 
 export class InputListController {

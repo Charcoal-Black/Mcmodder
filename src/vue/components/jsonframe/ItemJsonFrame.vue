@@ -91,10 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ComputedRef, onMounted, ref, shallowRef, triggerRef, useTemplateRef } from 'vue';
+import { computed, type ComputedRef, onMounted, ref, useTemplateRef } from 'vue';
 import { McmodderInputType } from '../../../config/ConfigUtils.ts';
 import { McmodderTable } from '../../../table/Table.ts';
-import { EditConfigsInitializer, HeadConfigsInitializer, InputSuggestion, ItemJsonFrameApplication, ItemJsonFrameConfig, JsonFrameProps, McmodderItemData, McmodderItemList, McmodderTableContext, McmodderTableRowSelection, McmodderUnpurifiedItemData } from '../../../types';
 import { McmodderUtils } from '../../../Utils.ts';
 import Logger from '../logger.vue';
 import JsonFrame from './JsonFrame.vue';
@@ -109,6 +108,7 @@ import { BatchCommand } from '../../../table/command/BatchCommand.ts';
 import { EditRowCommand } from '../../../table/command/EditRowCommand.ts';
 import GenericTable from '../table/GenericTable.vue';
 import Pagination from '../Pagination.vue';
+import type { JsonFrameProps } from '../../../types/props';
 
 const props = withDefaults(defineProps<JsonFrameProps & {
   importContainer?: HTMLDivElement,
@@ -232,7 +232,7 @@ const classSearchFrame = useTemplateRef("classSearchFrame");
 const fileTable = useTemplateRef("fileTable");
 
 const maxPage = ref(1);
-const linking = shallowRef<string[]>(props.parent.utils.getConfig("jsonDatabase") ?? []);
+const linking = props.parent.configRepository.getSettingsWritableRef("jsonDatabase");
 
 const inferRequestQueue = new McmodderInferItemListRequestQueue(props.parent, "inferRequestQueue", 1000, logger.value!);
 const detailedRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "detailedRequestQueue", 6, 750, logger.value!);
@@ -732,7 +732,7 @@ async function performClassSearch(classID: number, typeID: number) {
   const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
   const fileName = McmodderUtils.regulateFileName(rawName);
   logger.value!.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
-  props.parent.utils.setConfig(fileName, itemList, "mcmodderJsonStorage");
+  props.parent.configRepository.set("mcmodderJsonStorage", fileName, itemList);
   jsonFrame.value!.updateSelection();
 }
 
@@ -977,7 +977,6 @@ function onChangeLinkState() {
   } else {
     linking.value.push(name);
   }
-  triggerRef(linking);
 }
 
 function more() {

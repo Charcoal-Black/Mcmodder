@@ -1,9 +1,8 @@
-import { GmResponseEvent } from "$";
+import type { GmResponseEvent } from "$";
 import { McmodderBackupManager } from "../BackupManager";
 import { Mcmodder } from "../Mcmodder";
-import { RequestData, RequestQueue, RequestQueueBackupData, RequestQueueExecution, RequestQueuePreExecution, RequestResult } from "../types";
 import { McmodderUtils } from "../Utils";
-import { McmodderLogger } from "../widget/logger/Logger";
+import type { McmodderLogger } from "../widget/logger/Logger";
 import { McmodderConsole } from "../widget/logger/Console";
 
 export abstract class McmodderRequestQueue {
@@ -35,6 +34,10 @@ export abstract class McmodderRequestQueue {
 
   protected async executeBackup() {
     const backup = this.backupManager.restore();
+    if (backup === null) {
+      this.logger.error("备份读取失败...");
+      return;
+    }
     this.isIdle = false;
     (backup as any).runningIndex = new Set<number>(backup.runningIndex);
     this.execution = (backup as any);

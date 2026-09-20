@@ -1,3 +1,4 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { McmodderUtils } from "../Utils";
 
@@ -354,6 +355,7 @@ async function ensureThreeLoaded() {
 
 export class Mcmodder3DSplash {
   private parent: Mcmodder;
+  private configs: ConfigRepository;
   private container: HTMLDivElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private renderer: any = null;
@@ -366,6 +368,7 @@ export class Mcmodder3DSplash {
 
   constructor(parent: Mcmodder) {
     this.parent = parent;
+    this.configs = parent.configRepository;
   }
 
   public init() {
@@ -476,7 +479,7 @@ export class Mcmodder3DSplash {
     dirLightTop.position.set(0, 10, 0);
     this.scene.add(dirLightTop);
 
-    const fontUrl = this.parent.utils.getConfig("splashFontUrl") || "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf";
+    const fontUrl = this.configs.getSettings("splashFontUrl") || "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf";
 
     const ttfLoader = new TTFLoader();
     (ttfLoader as any).displayText = displayText;

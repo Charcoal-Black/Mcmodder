@@ -1,5 +1,4 @@
 import { McmodderMap } from "../map/Map";
-import { McmodderItemData, McmodderItemList } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 

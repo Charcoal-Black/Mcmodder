@@ -1,4 +1,3 @@
-import { McmodderTableContext, McmodderTableDataMap } from "../../types";
 import { Command } from "./Command";
 
 export class DeleteRowCommand<T extends Object> extends Command<T> {

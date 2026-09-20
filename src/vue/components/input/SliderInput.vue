@@ -29,9 +29,9 @@
 
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue';
-import { InputControlRef, InputProps, InputValueFiniteNumericRange } from '../../../types';
 import NumberInput from './NumberInput.vue';
 import { McmodderUtils } from '../../../Utils.ts';
+import type { InputProps } from '../../../types/props';
 
 interface Props extends InputProps<number> {
   range: InputValueFiniteNumericRange,

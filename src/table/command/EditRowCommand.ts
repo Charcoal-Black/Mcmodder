@@ -1,4 +1,3 @@
-import { McmodderTableContext } from "../../types";
 import { BatchCommand } from "./BatchCommand";
 import { EditCommand } from "./EditCommand";
 

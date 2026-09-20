@@ -1,6 +1,5 @@
 import { TabEditInit } from "../init/TabEditInit";
 import { McmodderMap } from "../map/Map";
-import { McmodderSimpleRecipeData, McmodderItemData, RecipeJsonFrameGuiBound } from "../types";
 import { ItemDisplay } from "./ItemDisplay";
 
 export class RecipeDisplay {

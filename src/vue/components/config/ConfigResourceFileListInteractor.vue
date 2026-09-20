@@ -14,12 +14,12 @@
   />
 </template>
 
-<script setup lang="ts" generic="T extends McmodderTableAcceptable">
+<script setup lang="ts" generic="K extends keyof McmodderStorage">
 import { McmodderTable } from '../../../table/Table.ts';
-import { ConfigResourceFileListInteractorProps, McmodderTableAcceptable } from '../../../types';
+import type { ConfigResourceFileListInteractorProps } from '../../../types/props';
 import { McmodderUtils } from '../../../Utils.ts';
 import ConfigResourceInteractor from './ConfigResourceInteractor.vue';
 
-defineProps<ConfigResourceFileListInteractorProps<T>>();
+defineProps<ConfigResourceFileListInteractorProps<K>>();
 
 </script>

@@ -5,7 +5,7 @@ export class MessageInit extends McmodderInit {
     return this.parent.href.includes("/message/");
   }
   run() {
-    if (this.parent.utils.getConfig("lieqi")) {
+    if (this.configs.getSettings("lieqi")) {
       $(".content-comment-attitude > i").attr("class", "fas fa-surprise");
       $(".content-comment-attitude").each((_, c) => {
         $(c).contents().last().get(0).textContent = "猎奇";

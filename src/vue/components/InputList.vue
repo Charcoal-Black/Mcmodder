@@ -28,7 +28,7 @@
         :title="getTitle(entry)"
         :data-value="entry.value"
         :data-index="i"
-        @mouseenter="onOptionMouseenter(i)"
+        @pointerenter="onOptionPointerenter(i)"
         @click="onOptionClick(entry.value)"
       >
         <span class="text">
@@ -66,7 +66,7 @@
         :class="{ selected: selected === suggestedList.length }"
         :data-index="suggestedList.length"
         v-show="canCreateNew"
-        @mouseenter="onOptionMouseenter(suggestedList.length)"
+        @pointerenter="onOptionPointerenter(suggestedList.length)"
         @click="onNewOptionClick"
       >
         <span class="mcmodder-slim-dark">+ 保存为快捷输入项</span>
@@ -77,17 +77,23 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { InputListBindElement, InputListOnInitSuggestion, InputListOnModifySuggestion, InputListOption, InputRatedSuggestion, InputSuggestion, SuggestionCallbackManager, SuggestionConfigManager } from '../../types';
 import { McmodderUtils } from '../../Utils';
 import { McmodderValues } from '../../Values';
+import type { ConfigRepository } from '../../config/ConfigRepository';
 
 const intlCollator = new Intl.Collator("zh");
-const loadSuggestionFromConfig = (utils: McmodderUtils, key: string, defaultValue = McmodderValues.defaultInputSuggestion[key] ?? [], item: string = "inputList") => () => {
-  return utils.getConfig(key, item, defaultValue);
+const loadSuggestionFromConfig = <
+  T extends KeysOfType<Required<McmodderStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
+  K extends string = string
+>(configs: ConfigRepository, key: K, defaultValue = McmodderValues.defaultInputSuggestion[key] ?? [], item: T = "inputList" as T) => () => {
+  return configs.get(item, key) ?? defaultValue;
 };
-const saveSuggestionToConfig = (utils: McmodderUtils, key: string, item: string = "inputList") => (list: InputSuggestion[]) => {
+const saveSuggestionToConfig = <
+  T extends KeysOfType<Required<McmodderStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
+  K extends string = string
+>(configs: ConfigRepository, key: K, item: T = "inputList" as T) => (list: InputSuggestion[]) => {
   const simplified = list.map(e => typeof e === "string" ? e : { value: e.value, alias: e.alias });
-  utils.setConfig(key, simplified, item);
+  configs.set(item, key, simplified);
   return true;
 }
 
@@ -168,11 +174,11 @@ function setOption(option: Props) {
   suggestionManager.value = option.suggestionManager;
 
   onInitSuggestion.value = pick(
-    manager => loadSuggestionFromConfig(manager.utils, manager.configKey),
+    manager => loadSuggestionFromConfig(manager.configs, manager.configKey),
     manager => manager.onInitSuggestion
   );
   onModifySuggestion.value = pick(
-    manager => saveSuggestionToConfig(manager.utils, manager.configKey),
+    manager => saveSuggestionToConfig(manager.configs, manager.configKey),
     manager => manager.onModifySuggestion
   );
 
@@ -396,7 +402,7 @@ function onEditAliasClick(e: PointerEvent, val: string) {
   }
   const entry = suggestionList.value.filter(e => McmodderUtils.escapeHTML(e.value) === val)[0];
   const alias = entry.alias ? entry.alias.join("; ") : "";
-  swal.fire({
+  McmodderUtils.createModal({
     html: `
       <p>在此处修改选中项的内容与快捷名称...（使用 ';' 分隔多个快捷名称）</p>
       <input class="form-control" id="mcmodder-input-newtext" value="${ McmodderUtils.escapeHTML(val) }"/>
@@ -421,11 +427,13 @@ function onEditAliasClick(e: PointerEvent, val: string) {
         McmodderUtils.commonMsg("更新失败...", false);
       }
     }
+  }, {
+    focus: () => {}
   });
   e.stopPropagation();
 }
 
-function onOptionMouseenter(index: number) {
+function onOptionPointerenter(index: number) {
   selected.value = index;
 }
 
@@ -434,7 +442,7 @@ const pick = <T extends Function>(
   fromCallback: (manager: SuggestionCallbackManager) => T | undefined
 ) => {
   const manager = suggestionManager.value!;
-  if ("utils" in manager) {
+  if ("configs" in manager) {
     return fromConfig(manager);
   }
   return fromCallback(manager);

@@ -1,9 +1,8 @@
-import { GmResponseEvent } from "$";
+import type { GmResponseEvent } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { ItemJsonFrameConfig, McmodderItemList, RequestData, RequestResult } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderDynamicRequestQueue } from "./DynamicRequestQueue";
-import { McmodderLogger } from "../widget/logger/Logger";
+import type { McmodderLogger } from "../widget/logger/Logger";
 
 export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQueue {
   constructor(parent: Mcmodder, id: string, minInterval = 1000, logger: McmodderLogger) {

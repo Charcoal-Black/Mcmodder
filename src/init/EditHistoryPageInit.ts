@@ -42,6 +42,8 @@ export class EditHistoryPageInit extends McmodderInit {
   }
 
   run() {
+    const abortKey = { ctrlKey: true, keyCode: 67 };
+    
     // 高亮最新编辑记录
     const lastView = new URLSearchParams(window.location.search).get("t");
     if (lastView != null) {
@@ -50,7 +52,7 @@ export class EditHistoryPageInit extends McmodderInit {
       .addClass("mcmodder-mark-gold");
     }
 
-    if (this.parent.utils.getConfig("autoExpandPage")) {
+    if (this.configs.getSettings("autoExpandPage")) {
       this.stopExpand = false;
       if ($(".badge-secondary").text() === "最近100条") return;
       let maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0]);
@@ -58,9 +60,11 @@ export class EditHistoryPageInit extends McmodderInit {
       this.startTime = param.get("starttime") || "";
       this.endTime = param.get("endtime") || "";
       if (!maxPage) return;
-      McmodderUtils.commonMsg("准备自动展开，可随时按 Ctrl + C 取消~");
+      McmodderUtils.commonMsg(`准备自动展开，可随时按 ${
+        McmodderUtils.keyToString(abortKey)
+      } 取消~`);
       $("html").bind("keydown", e => {
-        if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 67 }, e)) this.stopExpand = true;
+        if (McmodderUtils.isKeyMatch(abortKey, e)) this.stopExpand = true;
       })
       this.getHistoryPage(2, maxPage);
       $(".pagination").remove();

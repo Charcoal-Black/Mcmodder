@@ -19,11 +19,11 @@ export class GeneralEditInit extends McmodderInit {
     } */
     let leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
-    .replace("Alt + X", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastLink")))
-    .replace("Ctrl + Enter", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastSubmit")));
+    .replace("Alt + X", McmodderUtils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+    .replace("Ctrl + Enter", McmodderUtils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
     // Bug修复：快速存档时当前菜单自动关闭
-    if (this.parent.utils.getConfig("autoSaveFix")) {
+    if (this.configs.getSettings("autoSaveFix")) {
       editAutoSaveLoop = function () {
         1 == nAutoSave ? $("#editor-frame").length > 0 && 0 == editor.getContent().trim().length ? nAutoSave = 60 : (editSave(), nAutoSave--) : nAutoSave > 0 && nAutoSave--, $("#edit-autosave-sec").text(nAutoSave), setTimeout(editAutoSaveLoop, 1e3)
       }
@@ -34,7 +34,7 @@ export class GeneralEditInit extends McmodderInit {
         if (this.parent.utils.isKeyMatchConfig("keybindFastSubmit", e)) {
           e.preventDefault();
           $('#edit-submit-button').click();
-          if (this.parent.utils.getConfig("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行
+          if (this.configs.getSettings("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行
         }
         if ((!e.shiftKey) && McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
           e.preventDefault();
@@ -69,7 +69,7 @@ export class GeneralEditInit extends McmodderInit {
         delimiter: "；",
         hideBeforeInput: true,
         suggestionManager: {
-          utils: this.parent.utils,
+          configs: this.configs,
           configKey: "editReasons"
         }
       });

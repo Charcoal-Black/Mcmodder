@@ -1,16 +1,15 @@
 import { Mcmodder } from "../Mcmodder";
-import { InputSuccessfulChangeCallBack, McmodderItemList, McmodderKeyData } from "../types";
 import { McmodderTemplate } from "../Template";
-import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
-import { McmodderAutoLink } from "../widget/AutoLink";
 import { McmodderUEditor } from "./UEditor"
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
 import html_beautify from "js-beautify";
 import { createApp } from "vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
+import AutoLink from "../vue/components/AutoLink.vue";
+import TextComparator from "../vue/components/TextComparator.vue";
 
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
 
@@ -40,7 +39,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   refreshHtmlNode?: JQuery;
   protected isModrinthVer: boolean;
   protected autoUpdateEditorStatsThreshold: number;
-  autoLink?: McmodderAutoLink;
+  autoLinkFrame?: JQuery;
+  autoLink?: InstanceType<typeof AutoLink>;
   template = new McmodderTemplate(this);
   private contentLock = false;
   private pending = true;
@@ -60,7 +60,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   constructor(editor: McmodderUEditor, parent: Mcmodder) {
     super(editor, parent);
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
-    this.autoUpdateEditorStatsThreshold = this.parent.utils.getConfig("editorStats");
+    this.autoUpdateEditorStatsThreshold = this.configs.getSettings("editorStats") ?? 1e4;
     this.isModrinthVer = new URLSearchParams(window.location.search).has("mrid");
     if (this.isFrameReady) {
       this.pending = false;
@@ -146,10 +146,14 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.addTool("mcmodder-tool-spacing", "中英间添加空格", () => this.performSpacingPage());
 
     let itemSourceList: McmodderItemList = [];
-    (this.parent.utils.getConfig("jsonDatabase") as string[])?.forEach(fileName => {
-      itemSourceList = itemSourceList.concat(this.parent.utils.getConfig(fileName, "mcmodderJsonStorage", []));
+    this.configs.getSettings("jsonDatabase")?.forEach(fileName => {
+      itemSourceList = itemSourceList.concat(this.configs.get("mcmodderJsonStorage", fileName) ?? []);
     });
-    this.autoLink = new McmodderAutoLink(this, itemSourceList);
+    this.autoLinkFrame = $('<div class="mcmodder-autolink-frame">');
+    this.autoLink = createApp(AutoLink, {
+      editor: this,
+      itemSourceList
+    }).mount(this.autoLinkFrame.get(0)) as InstanceType<typeof AutoLink>;
 
     // 快速提交
     this.$document.keydown(e => this.fastSubmitOverride(e));
@@ -254,29 +258,29 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       _value => this.readyToolkit(),
     );
 
-    if (this.parent.utils.getConfig("markdownIt") || this.isModrinthVer) {
+    if (this.configs.getSettings("markdownIt") || this.isModrinthVer) {
       this.mdEditorOption![1].setCurrentValue(true); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
 
-    if (this.parent.utils.getConfig("htmlEditor")) {
+    if (this.configs.getSettings("htmlEditor")) {
       this.htmlEditorOption![1].setCurrentValue(true); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
 
-    let isVertical = this.parent.utils.getConfig("editorVertical");
+    let isVertical = this.configs.getSettings("editorVertical");
     if (isVertical === undefined) {
       isVertical = screen.width < 741;
-      this.parent.utils.setConfig("editorVertical", isVertical); 
+      this.configs.setSettings("editorVertical", isVertical); 
     }
     if (isVertical) {
       this.verticalOption![1].setCurrentValue(true);
     }
 
-    if (this.parent.utils.getConfig("editorToolkit")) {
+    if (this.configs.getSettings("editorToolkit")) {
       this.toolkitOption![1].setCurrentValue(true);
     }
 
     // 匿名吐槽
-    if (this.parent.utils.getConfig("anonymousUknowtoomuch"))
+    if (this.configs.getSettings("anonymousUknowtoomuch"))
       this.anonymiseUknowtoomuch();
   }
 
@@ -379,7 +383,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       $("#mcmodder-tool-md, #mcmodder-mdeditor").hide();
       $(this.verticalOption![0]).hide;
     }
-    this.parent.utils.setConfig("markdownIt", c);
+    this.configs.setSettings("markdownIt", c);
     this.onEditorStateChange();
   }
 
@@ -410,7 +414,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     } else {
       $("#mcmodder-htmleditor").hide();
     }
-    this.parent.utils.setConfig("htmlEditor", c);
+    this.configs.setSettings("htmlEditor", c);
     this.onEditorStateChange();
   }
 
@@ -433,7 +437,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     } else {
       this.$outerFrame?.removeClass("vertical");
     }
-    this.parent.utils.setConfig("editorVertical", c);
+    this.configs.setSettings("editorVertical", c);
     this.heightAutoResize();
   }
 
@@ -444,7 +448,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     } else {
       $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").hide();
     }
-    this.parent.utils.setConfig("editorToolkit", c);
+    this.configs.setSettings("editorToolkit", c);
   }
 
   performMarkdownIt() {
@@ -733,7 +737,8 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       if (t) tb += t + "\n";
     });
     this.updateTextLengthDisplay();
-    new TextCompareFrame($(".tab-content").first(), ta, tb).performCompare();
+    const comparatorFrame = $("<div>").insertBefore($(".tab-content").first());
+    createApp(TextComparator, { textA: ta, textB: tb }).mount(comparatorFrame.get(0));
     // this.updateEditorStats();
   }
 
@@ -803,6 +808,15 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   }
 
   showAutoLinkList() {
+    McmodderUtils.createModal({ // 初始化
+      title: PublicLangData.editor.autolink.title,
+      html: `<div class="mcmodder-autolink-outerframe" />`,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: PublicLangData.close,
+      preConfirm: () => { }
+    }, this.autoLink!.interceptEvents);
+    this.autoLinkFrame?.appendTo(".swal2-content .mcmodder-autolink-outerframe");
     this.autoLink?.init();
   }
 

@@ -1,3 +1,4 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { McmodderUtils } from "../Utils";
 
@@ -8,19 +9,19 @@ type LinkMarkReplaceRule = {
 }
 
 export class McmodderMainText {
-  private readonly parent: Mcmodder;
+  private readonly configs: ConfigRepository;
   private readonly container: JQuery;
 
   constructor(parent: Mcmodder, container: Node | JQuery) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     this.container = $(container);
 
-    if (this.parent.utils.getConfig("linkCheck")) {
+    if (this.configs.getSettings("linkCheck")) {
       this.linkCheck();
     }
 
     // 图像本地化检测
-    if (this.parent.utils.getConfig("imageLocalizedCheck")) {
+    if (this.configs.getSettings("imageLocalizedCheck")) {
       this.imageLocalizedCheck();
     }
   }
@@ -35,7 +36,7 @@ export class McmodderMainText {
     .each((_, a) => {
       const key = a.textContent;
       const value = (a as HTMLAnchorElement).href.replaceAll(/https:\/\/www1?\.mcmod\.cn/g, "");
-      if (this.parent.utils.getConfig("linkMark")) {
+      if (this.configs.getSettings("linkMark")) {
         this.generateLinkMark(value).insertAfter(a);
       }
       if (!linkMap.has(key)) linkMap.set(key, value);

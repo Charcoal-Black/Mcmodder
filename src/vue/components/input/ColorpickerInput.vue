@@ -4,8 +4,8 @@
 
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
-import { InputControlRef, InputProps } from '../../../types';
 import { useInputBase } from '../../composables/useInputBase';
+import type { InputProps } from '../../../types/props';
 
 const props = defineProps<InputProps<string>>();
 

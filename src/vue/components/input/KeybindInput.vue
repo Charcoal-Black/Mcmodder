@@ -12,9 +12,9 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, useTemplateRef } from 'vue';
-import { InputControlRef, InputProps, McmodderKeyData } from '../../../types';
 import { useInputBase } from '../../composables/useInputBase';
 import { McmodderUtils } from '../../../Utils';
+import type { InputProps } from '../../../types/props';
 
 const props = defineProps<InputProps<McmodderKeyData>>();
 

@@ -4,7 +4,7 @@ import { McmodderUtils } from "../Utils";
 export class McmodderTimer {
   static CLASSNAME = "mcmodder-timer";
 
-  static DATAGETTER_SCHEDULE = (id: string, user: number | null, list: ScheduleRequestUtils) => () => list.find(id, user)?.time || 0;
+  static DATAGETTER_SCHEDULE = (id: keyof ScheduleRequestTypes, user: number | null, list: ScheduleRequestUtils) => () => list.find(id, user)?.time || 0;
   static DATAGETTER_CONSTANT = (time: number) => () => time;
 
   static DATAFORMATTER_EN = McmodderUtils.getFormattedTime;

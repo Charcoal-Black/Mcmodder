@@ -4,8 +4,8 @@
 
 <script setup lang="ts">
 import { useTemplateRef, watch } from 'vue';
-import { InputControlRef, InputProps, InputValidInfo, InputValueNumericRange } from '../../../types';
 import { useInputBase } from '../../composables/useInputBase';
+import type { InputProps } from '../../../types/props';
 
 interface Props extends InputProps<number> {
   range?: InputValueNumericRange

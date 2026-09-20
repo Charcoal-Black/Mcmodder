@@ -1,5 +1,5 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { AdvancementData } from "../types";
 
 export const enum AdvancementID {
   OLD_TEXT_WORD_LENGTH_1000,
@@ -45,11 +45,12 @@ type RewardGenerator = ((tier: number) => number) | null;
 
 export class AdvancementUtils {
 
-  parent: Mcmodder;
-  list: AdvancementData[];
+  // parent: Mcmodder;
+  private readonly configs: ConfigRepository;
+  private readonly list: AdvancementData[];
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     this.list = [];
   }
 
@@ -88,12 +89,16 @@ export class AdvancementUtils {
     return this;
   }
 
+  getList() {
+    return this.list;
+  }
+
   getData(id: AdvancementID) {
     return this.list.filter(e => e.id == id)[0];
   }
 
   getAll() {
-    return JSON.parse(this.parent.utils.getProfile("advancements") || "[]");
+    return JSON.parse(this.configs.getProfile("advancements") ?? "[]") as AdvancementProgressionData[];
   }
 
   getSingleProgress(id: AdvancementID) {
@@ -105,7 +110,7 @@ export class AdvancementUtils {
   }
 
   setProgress(id: AdvancementID, value: number) {
-    if (!this.parent.utils.getConfig("customAdvancements")) return;
+    if (!this.configs.getSettings("customAdvancements")) return;
     let advancements = this.getAll(), max = this.getData(id).range, f = 1;
     for (let i of advancements) {
       if (i.id == id) {
@@ -113,19 +118,19 @@ export class AdvancementUtils {
         if (i.progress == max && value >= i.progress) return;
         i.progress = Math.min(value, max);
         if (i.progress >= max) {
-          const rawCompletion: string = this.parent.utils.getProfile("completed");
+          const rawCompletion = this.configs.getProfile("completed");
           let completion: AdvancementID[] = [];
           if (rawCompletion) {
             completion = rawCompletion.split(",").map(Number);
           }
           completion.push(id);
-          this.parent.utils.setProfile("completed", completion.join(","));
+          this.configs.setProfile("completed", completion.join(","));
         }
         break;
       }
     }
     if (f) advancements.push({ id: id, progress: value });
-    this.parent.utils.setProfile("advancements", JSON.stringify(advancements));
+    this.configs.setProfile("advancements", JSON.stringify(advancements));
   }
 
   addProgress(id: AdvancementID, value = 1) {

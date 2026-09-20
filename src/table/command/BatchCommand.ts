@@ -1,4 +1,3 @@
-import { McmodderTableContext } from "../../types";
 import { Command } from "./Command";
 
 export class BatchCommand<T extends Object> extends Command<T> {

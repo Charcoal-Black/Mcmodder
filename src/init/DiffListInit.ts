@@ -3,9 +3,11 @@ import { McmodderInit } from "./Init";
 
 export class DiffListInit extends McmodderInit {
   canRun() {
-    return this.parent.href.includes("/diff/") &&
+    return !!(
+      this.parent.href.includes("/diff/") &&
       this.parent.href.includes("/list/") &&
-      this.parent.utils.getConfig("multiDiffCompare");
+      this.configs.getSettings("multiDiffCompare")
+    );
   }
   run() {
     $('<button class="btn btn-sm btn-dark" id="diff-multicompare-btn">批量对比选中项</button><div class="mcmodder-multicompare-frame"></div>').insertAfter(".difference-top");

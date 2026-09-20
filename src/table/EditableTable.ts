@@ -1,14 +1,13 @@
 import { McmodderUtils } from "../Utils";
 import { McmodderTable } from "./Table";
 import { McmodderConfigUtils, McmodderInputType } from "../config/ConfigUtils";
-import { EditConfigInitializer, McmodderTableInputData } from "../types";
 
 export class McmodderEditableTable extends McmodderTable {
 
   static readonly CLASSNAME_UNSAVED_TR = "mcmodder-table-unsaved-tr";
   static readonly CLASSNAME_UNSAVED_TD = "mcmodder-table-unsaved-td";
-  static readonly CLASSNAME_MOUSEOVER_TR = "mcmodder-table-mouseover-tr";
-  static readonly CLASSNAME_MOUSEOVER_TD = "mcmodder-table-mouseover-td";
+  static readonly CLASSNAME_POINTEROVER_TR = "mcmodder-table-pointerover-tr";
+  static readonly CLASSNAME_POINTEROVER_TD = "mcmodder-table-pointerover-td";
 
   static readonly undoKey = McmodderUtils.getXplatCtrlCombinationKey('Z');
   static readonly redoKey = McmodderUtils.getXplatCtrlCombinationKey('Y');

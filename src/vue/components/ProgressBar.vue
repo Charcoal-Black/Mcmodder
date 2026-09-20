@@ -16,7 +16,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { ProgressBarDisplayRule } from '../../types';
 import { McmodderUtils } from '../../Utils';
 
 interface Props {

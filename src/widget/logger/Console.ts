@@ -1,4 +1,4 @@
-import { McmodderLogger } from "./Logger";
+import type { McmodderLogger } from "./Logger";
 
 export class McmodderConsole implements McmodderLogger {
   log(message: string) {

@@ -55,7 +55,7 @@ export class CenterSettingInit extends CenterBaseInit {
     .appendTo(menuArea);
     
     createApp(CenterSettings, {
-      parent: this.getParent()
+      parent: this.parent
     }).mount(mcmodderSettingMenu.get(0));
   }
 }

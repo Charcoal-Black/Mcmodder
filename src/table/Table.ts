@@ -1,4 +1,3 @@
-import { HeadConfig, HeadConfigInitializer } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 

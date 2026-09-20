@@ -4,7 +4,6 @@ import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 import { GeneralEditInit } from "./GeneralEditInit";
-import { McmodderItemData, McmodderRecipeData, McmodderRecipeIngredient, McmodderSimpleRecipeData, McmodderJsonStorage, RecipeJsonFrameGuiBound, InputValidInfo } from "../types";
 import { McmodderMap } from "../map/Map";
 import { TabEditRecipeDisplay } from "../widget/TabEditRecipeDisplay";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
@@ -145,11 +144,11 @@ export class TabEditInit extends McmodderInit {
     const recipeContainer = this.recipeFrame.find("#recipe-item");
 
     // 初始化 guiBoundMap
-    let guiBounds: RecipeJsonFrameGuiBound[] = this.parent.utils.getAllConfig("guiBound") || McmodderValues.defaultGuiBound;
+    let guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || McmodderValues.defaultGuiBound;
     this.guiBoundMap.add(guiBounds);
 
     // 尝试搜索此物品的标签，同时为 ItemDisplay 构造 itemMap 和 tagMap
-    const itemFiles: McmodderJsonStorage<McmodderItemData> = this.parent.utils.getAllConfig("mcmodderJsonStorage", {});
+    const itemFiles: McmodderJsonStorage<McmodderItemData> = this.configs.getAll("mcmodderJsonStorage") ?? {};
     Object.values(itemFiles).forEach(file => {
       this.itemMap.add(file);
       this.tagMap.add(file);
@@ -162,7 +161,7 @@ export class TabEditInit extends McmodderInit {
 
     // 将一个复合配方拆解成若干个简单配方，并显示
     const matchedRecipes: McmodderSimpleRecipeData[] = [];
-    const recipeFiles: McmodderJsonStorage<McmodderRecipeData> = this.parent.utils.getAllConfig("mcmodderRecipeJsonStorage", {});
+    const recipeFiles: McmodderJsonStorage<McmodderRecipeData> = this.configs.getAll("mcmodderRecipeJsonStorage") ?? {};
     Object.values(recipeFiles).forEach(file => {
       file.forEach(recipe => {
         if (!recipe.out_id) return;
@@ -726,7 +725,7 @@ export class TabEditInit extends McmodderInit {
 
     const ingredientSelectFrame = $("<div>");
     const ingredientSelectWindow = $('<div class="mcmodder-horizontal-window">').appendTo(ingredientSelectFrame);
-    const tabEditHorizontalDivider = new HorizontalDraggableFrame({}, $(".common-menu-area").get(0), {
+    const tabEditHorizontalDivider = new HorizontalDraggableFrame("tabEditHorizontalDivider", this.configs, {}, $(".common-menu-area").get(0) as HTMLElement, {
       initPos: 0.5,
       leftCollapseThreshold: 0,
       rightCollapseThreshold: 0.7,
@@ -748,9 +747,9 @@ export class TabEditInit extends McmodderInit {
     GM_setValue("modDependences", "");
     GM_setValue("modExpansions", "");
 
-    this.dependences = this.parent.utils.getConfigAsNumberList(this.modID, "modDependences_v2");
-    // this.expansions = this.parent.utils.getConfigAsNumberList(this.modID, "modExpansions_v2");
-    if (this.parent.utils.getConfig("tabSelectorInfo")) {
+    this.dependences = this.configs.getAsNumberList("modDependences_v2", this.modID.toString()) ?? [];
+    // this.expansions = this.configs.getAsNumberList(this.modID, "modExpansions_v2");
+    if (this.configs.getSettings("tabSelectorInfo")) {
       const mutationCallback: MutationCallback = (_mutationList, itemSearchObserver) => {
         itemUsedObserver.disconnect();
         itemSearchObserver.disconnect();
@@ -792,14 +791,14 @@ export class TabEditInit extends McmodderInit {
 
     // 快速设置GUI
     const guiLockerContainer = $("<div>").appendTo($("#item-table-gui-select").parent());
-    this.guiLocker = Number(this.parent.utils.getConfig("guiLocker"));
+    this.guiLocker = Number(this.configs.getSettings("guiLocker"));
     this.guiLockerToggle = createApp(CheckboxInput, {
       title: "锁定当前 GUI",
       value: false,
       onSuccessfulChange: (info: InputValidInfo<boolean>) => {
         const guiID = this.getGuiID();
         const newLockerID = info.final ? guiID : 0;
-        this.parent.utils.setConfig("guiLocker", newLockerID);
+        this.configs.setSettings("guiLocker", newLockerID);
         this.guiLocker = newLockerID;
       },
       id: "mcmodder-gui-lock",
@@ -812,7 +811,7 @@ export class TabEditInit extends McmodderInit {
 
     // 应用无序
     const shapelessContainer = $("<div>").appendTo($("#edit-page-2 .tab-li").first());
-    this.shapeless = this.parent.utils.getConfig("shapelessLocker");
+    this.shapeless = this.configs.getSettings("shapelessLocker") ?? false;
     this.mcmodShapelessToggle = $("#item-table-data-orderly-1");
     createApp(CheckboxInput, {
       title: "锁定无序",
@@ -820,7 +819,7 @@ export class TabEditInit extends McmodderInit {
       onSuccessfulChangeCallback: (info: InputValidInfo<boolean>) => {
         const l = info.final ?? false;
         this.shapeless = l;
-        this.parent.utils.setConfig("shapelessLocker", l);
+        this.configs.setSettings("shapelessLocker", l);
         if (l && !this.mcmodShapelessToggle!.attr("checked")) {
           this.mcmodShapelessToggle!.click();
         }

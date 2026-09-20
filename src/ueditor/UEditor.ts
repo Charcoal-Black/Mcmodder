@@ -1,3 +1,4 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
@@ -6,6 +7,7 @@ export class McmodderUEditor {
 
   editor: any;
   parent: Mcmodder;
+  configs: ConfigRepository;
   outerFrame?: Element;
   $outerFrame?: JQuery;
   innerFrame?: Element;
@@ -26,6 +28,7 @@ export class McmodderUEditor {
 
   constructor(editor: any, parent: Mcmodder) {
     this.parent = parent;
+    this.configs = parent.configRepository;
     this.editor = editor;
     editor.ready(() => {
       setTimeout(() => {
@@ -65,7 +68,7 @@ export class McmodderUEditor {
     });
 
     // 现代化按钮
-    if (this.parent.utils.getConfig("mcmodderUI")) {
+    // if (this.configs.get("mcmodderUI")) {
       let toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
       for (let i = 0; i < McmodderValues.ueButton1.length; i++) {
         toolBar.find(`.edui-for-${McmodderValues.ueButton1[i]} .edui-icon`)
@@ -73,7 +76,7 @@ export class McmodderUEditor {
         .css("background-image", "none");
       }
       toolBar.find(".edui-arrow").addClass("mcmodder-edui-arrow fa fa-caret-down").css("background-image", "none");
-    }
+    // }
 
     // 宽度自适应
     window.addEventListener("resize", () => this.widthAutoResize());

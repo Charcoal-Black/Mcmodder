@@ -17,7 +17,6 @@ import { onMounted, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import GenericTable from './table/GenericTable.vue';
 import { McmodderTable } from '../../table/Table.ts';
-import { HeadConfigsInitializer, PreSubmitData } from '../../types';
 import { McmodderValues } from '../../Values.ts';
 import Timer from './Timer.vue';
 import { McmodderTimer } from '../../widget/Timer.ts';
@@ -49,7 +48,7 @@ const tableRef = useTemplateRef("table");
 onMounted(() => {
   const table = tableRef.value!;
 
-  const preSubmitList = props.parent.utils.getProfile("preSubmitList") || [] as PreSubmitData[];
+  const preSubmitList = props.parent.configRepository.getProfile("preSubmitList") || [] as PreSubmitData[];
   table.setAllData(preSubmitList);
   table.refreshAll();
 
@@ -64,7 +63,7 @@ onMounted(() => {
       if (isConfirm.value) {
         const index = table.getElementIndex(e.currentTarget);
         table.deleteData(index);
-        props.parent.utils.setProfile("preSubmitList", table.getAllData());
+        props.parent.configRepository.setProfile("preSubmitList", table.getAllData());
         McmodderUtils.commonMsg("预编辑项删除成功！");
       }
     });
@@ -88,7 +87,7 @@ onMounted(() => {
           const newData = JSON.parse(input.val());
           table.setValue(index, "rawData", newData);
           table.deleteValue(index, "errState");
-          props.parent.utils.setProfile("preSubmitList", table.getAllData());
+          props.parent.configRepository.setProfile("preSubmitList", table.getAllData());
           table.refreshAll();
           McmodderUtils.commonMsg("预编辑项编辑完成！");
           return true;

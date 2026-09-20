@@ -4,13 +4,11 @@
 
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import { InputControlRef, InputListBindElement, InputListOption, InputProps } from '../../../types';
 import TextInput from './TextInput.vue';
 import { InputListController } from '../../../widget/InputListController.ts';
+import type { DropdownTextInputProps } from '../../../types/props';
 
-interface Props extends InputProps<string>, InputListOption {}
-
-const props = defineProps<Props>();
+const props = defineProps<DropdownTextInputProps>();
 const inputRef = useTemplateRef("textInput");
 
 onMounted(() => {

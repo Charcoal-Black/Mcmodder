@@ -16,24 +16,24 @@ export class DraggableFrame {
 
     this.$instance.addClass("mcmodder-draggable");
 
-    this.$instance.bind({
-      'mousedown': (e: JQueryMouseEventObject) => this.onMousedown(e)
-    });
-    $(document).bind({
-      'mousemove': (e: JQueryMouseEventObject) => this.onMousemove(e),
-      'mouseup': (e: JQueryMouseEventObject) => this.onMouseup(e)
-    });
+    this.instance.addEventListener("pointerdown", ev => this.onPointerdown(ev as PointerEvent));
+    this.instance.addEventListener("pointermove", ev => this.onPointermove(ev as PointerEvent));
+    this.instance.addEventListener("pointerup", ev => this.onPointerup(ev as PointerEvent));
+    this.instance.addEventListener("pointercancel", ev => this.onPointerup(ev as PointerEvent));
   }
 
-  onMousedown(e: JQueryMouseEventObject) {
+  private onPointerdown(e: PointerEvent) {
     this.dragging = true;
     this.startX = e.clientX;
     this.startY = e.clientY;
     this.offsetX = e.offsetX;
     this.offsetY = e.offsetY;
+    if (!this.instance.hasPointerCapture(e.pointerId)) {
+      this.instance.setPointerCapture(e.pointerId);
+    }
   }
 
-  onMousemove(e: JQueryMouseEventObject) {
+  private onPointermove(e: PointerEvent) {
     if (!this.dragging) return;
     this.$instance.css({
       "left": (this.startX - this.offsetX) + (e.clientX - this.startX) + 'px',
@@ -41,7 +41,10 @@ export class DraggableFrame {
     });
   }
 
-  onMouseup(_e: JQueryMouseEventObject) {
+  private onPointerup(e: PointerEvent) {
     this.dragging = false;
+    if (this.instance.hasPointerCapture(e.pointerId)) {
+      this.instance.releasePointerCapture(e.pointerId);
+    }
   }
 }

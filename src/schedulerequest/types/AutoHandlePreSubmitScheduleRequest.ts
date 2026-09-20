@@ -1,14 +1,17 @@
-import { PreSubmitData } from "../../types";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
-  protected override readonly priority = 200;
+  override readonly priority = 200;
   async run(list: ScheduleRequestUtils) {
-    list.create(Date.now() + this.parent.utils.getConfig("preSubmitCheckInterval") * 60 * 60 * 1000, "autoHandlePreSubmit", this.parent.currentUID);
-    const preSubmitList: (PreSubmitData | null)[] = (this.parent.utils.getProfile("preSubmitList") as PreSubmitData[]).filter(e => !e.errState);
+    const preSubmitCheckInterval = this.configs.getSettings("preSubmitCheckInterval");
+    if (!preSubmitCheckInterval) {
+      return;
+    }
+    list.create(Date.now() + preSubmitCheckInterval * 60 * 60 * 1000, "autoHandlePreSubmit", this.parent.currentUID);
+    const preSubmitList: (PreSubmitData | null)[] = (this.configs.getProfile("preSubmitList") as PreSubmitData[]).filter(e => !e.errState);
     let f = true;
     if (!preSubmitList.length) return;
     for (let i in preSubmitList) {
@@ -40,6 +43,6 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       }
     }
     if (f) McmodderUtils.commonMsg("自动检查预编辑项已执行~ 当前暂无可正式提交的项目~");
-    else this.parent.utils.setProfile("preSubmitList", preSubmitList.filter(o => o));
+    else this.configs.setProfile("preSubmitList", preSubmitList.filter(Boolean) as PreSubmitData[]);
   }
 }

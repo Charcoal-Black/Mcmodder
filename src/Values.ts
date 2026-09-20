@@ -1,5 +1,4 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
-import { InputSimplifiedSuggestion, ItemCustomTypeList, RecipeJsonFrameGuiBound } from "./types";
 import defaultEditReasons from "./assets/json/input/EditReason.json";
 import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
 
@@ -241,7 +240,8 @@ export class McmodderValues {
     "class": { text: '模组', icon: "fa-cubes" },
     "modpack": { text: '整合包', icon: "fa-file-zip-o" },
     "author": { text: '个人作者', icon: "fa-user" },
-    "authors": { text: '开发团队', icon: "fa-users" }
+    "authors": { text: '开发团队', icon: "fa-users" },
+    "oredict": { text: '矿物词典/物品标签', icon: "fa-tag" }
   } as const;
 
   static readonly itemDefaultTypeList: ItemCustomTypeList = [ // 默认资料类型
@@ -291,41 +291,7 @@ export class McmodderValues {
     id: "general_armor",
     title: "套装/盔甲/铠甲/XX套",
     description: "适用于将“头盔”、“胸甲”、“护腿”、“靴子”综合到同一个父资料中一起介绍时使用。",
-    content: `<p><br/></p>
-    <table width="435">
-      <tbody>
-        <tr>
-          <th style="word-break: break-all;" valign="top" align="center">装备部位<br/></th>
-          <th style="word-break: break-all;" valign="top" align="center">提供盔甲值<br/></th>
-          <th style="word-break: break-all;" valign="top" align="center">提供盔甲韧性<br/></th>
-          <th style="word-break: break-all;">特殊属性<br/></th>
-        </tr>
-        <tr>
-          <td style="word-break: break-all;" valign="middle" align="center">头盔</td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td>
-          <td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td>
-        </tr>
-        <tr>
-          <td style="word-break: break-all;" valign="middle" align="center">胸甲<br/>
-          </td><td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td>
-          <td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td>
-        </tr>
-        <tr>
-          <td style="word-break: break-all;" valign="middle" align="center">护腿<br/></td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td>
-          <td colspan="1" rowspan="1" valign="middle" align="center">-<br/></td>
-        </tr>
-        <tr>
-          <td style="word-break: break-all;" valign="middle" align="center">靴子<br/></td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:armor=1, ]</td>
-          <td style="word-break: break-all;" valign="middle" align="center">[icon:toughness=1, ]</td
-          <td colspan="1" rowspan="1" style="word-break: break-all;" valign="middle" align="center">-<br/></td>
-        </tr>
-      </tbody>
-    </table>`
+    content: (import.meta.glob('./html/defaultTemplate.html', { query: "?raw", eager: true })['./html/defaultTemplate.html'] as { default: string }).default
   }];
 
   static readonly defaultInputSuggestion: Record<string, InputSimplifiedSuggestion[]> = {

@@ -1,5 +1,4 @@
 import { TabEditInit } from "../init/TabEditInit";
-import { McmodderSimpleRecipeData } from "../types";
 import { McmodderUtils } from "../Utils";
 import { RecipeDisplay } from "./RecipeDisplay";
 

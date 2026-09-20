@@ -1,17 +1,16 @@
-import { GmResponseEvent } from "$";
+import type { GmResponseEvent } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderItemList, RequestQueue } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderRequestQueue } from "./RequestQueue";
 import { McmodderConsole } from "../widget/logger/Console";
-import { McmodderLogger } from "../widget/logger/Logger";
+import type { McmodderLogger } from "../widget/logger/Logger";
 
 export class McmodderDetailedItemListRequestQueue extends McmodderRequestQueue {
   constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: McmodderLogger = new McmodderConsole) {
     super(parent, id, maxConcurrent, minInterval, logger);
   }
 
-  onCallback(resp: GmResponseEvent<"text", any>, index: number, requestQueue: RequestQueue) {
+  protected override onCallback(resp: GmResponseEvent<"text", any>, index: number, requestQueue: RequestQueue) {
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
     const data = McmodderUtils.parseItemEditorDocument(doc);

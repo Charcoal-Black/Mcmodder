@@ -7,14 +7,14 @@ export class ItemTabInit extends McmodderInit {
   }
   run() {
     // GTCEu
-    if (this.parent.utils.getConfig("gtceuIntegration")) {
+    if (this.configs.getSettings("gtceuIntegration")) {
       $(".power_area").each((_, c) => {
         new GTCEuEnergyFrame(c);
       });
     }
 
     // 紧凑合成表
-    /* if (!this.parent.utils.getConfig("compactedTablist")) return;
+    /* if (!this.configs.get("compactedTablist")) return;
     McmodderUtils.addStyle(`
       .item-table-block p {
         display: inline; margin: 2px;

@@ -1,6 +1,6 @@
 import { Mcmodder } from "../Mcmodder";
-import { InputSimplifiedSuggestion, InputValueNumericRange, InputValueRange, InputValueSet, McmodderConfigData, McmodderKeyData } from "../types";
 import { StorageBuffer } from "../StorageBuffer";
+import type { ConfigRepository } from "./ConfigRepository";
 
 export const enum McmodderInputType {
   CHECKBOX,
@@ -24,7 +24,7 @@ export const enum McmodderPermission {
 
 export class McmodderConfigUtils {
 
-  static defaultValue: Record<McmodderInputType, any> = {
+  static readonly defaultValue = {
     [McmodderInputType.CHECKBOX]: false,
     [McmodderInputType.NUMBER]: 0,
     [McmodderInputType.SLIDER]: 0,
@@ -33,50 +33,50 @@ export class McmodderConfigUtils {
     [McmodderInputType.KEYBIND]: new Object,
     [McmodderInputType.DROPDOWN_MENU]: 0,
     [McmodderInputType.DROPDOWN_TEXT_MENU]: ""
-  }
+  } as const;
 
-  parent: Mcmodder;
-  data: Record<string, McmodderConfigData>;
+  private readonly configs: ConfigRepository;
+  data: Record<keyof McmodderSettings, McmodderConfigData>;
   buffer: StorageBuffer;
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
-    this.data = {};
-    this.buffer = new StorageBuffer(this.parent);
+    this.configs = parent.configRepository;
+    this.data = {} as any;
+    this.buffer = new StorageBuffer(parent);
   }
 
-  addCheckboxConfig(id: string, title: string, description: string, value?: boolean | null, permission?: McmodderPermission) {
+  addCheckboxConfig<T extends KeysOfType<Required<McmodderSettings>, boolean>>(id: T, title: string, description: string, value?: McmodderSettings[T] | null, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.CHECKBOX, value, undefined, permission);
   }
-  addTextConfig(id: string, title: string, description: string, value?: string | null, permission?: McmodderPermission) {
+  addTextConfig<T extends KeysOfType<Required<McmodderSettings>, string>>(id: T, title: string, description: string, value?: McmodderSettings[T] | null, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.TEXT, value, undefined, permission);
   }
-  addColorpickerConfig(id: string, title: string, description: string, value?: string | null, permission?: McmodderPermission) {
+  addColorpickerConfig<T extends KeysOfType<Required<McmodderSettings>, string>>(id: T, title: string, description: string, value?: McmodderSettings[T] | null, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.COLORPICKER, value, undefined, permission);
   }
-  addNumberConfig(id: string, title: string, description: string, value?: number | null, rangeOrPermission?: InputValueNumericRange | McmodderPermission, permission?: McmodderPermission) {
+  addNumberConfig<T extends KeysOfType<Required<McmodderSettings>, number>>(id: T, title: string, description: string, value?: McmodderSettings[T] | null, rangeOrPermission?: InputValueNumericRange | McmodderPermission, permission?: McmodderPermission) {
     if (rangeOrPermission instanceof Array) {
       return this.addConfig(id, title, description, McmodderInputType.NUMBER, value, rangeOrPermission, permission);
     } else {
       return this.addConfig(id, title, description, McmodderInputType.NUMBER, value, [null, null], rangeOrPermission);
     }
   }
-  addSliderConfig(id: string, title: string, description: string, value: number, range: [number, number], permission?: McmodderPermission) {
+  addSliderConfig<T extends KeysOfType<Required<McmodderSettings>, number>>(id: T, title: string, description: string, value: McmodderSettings[T], range: [number, number], permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.SLIDER, value, range, permission);
   }
-  addKeybindConfig(id: string, title: string, description: string, value?: McmodderKeyData | null, permission?: McmodderPermission) {
+  addKeybindConfig<T extends KeysOfType<Required<McmodderSettings>, McmodderKeyData>>(id: T, title: string, description: string, value?: McmodderSettings[T] | null, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.KEYBIND, value, undefined, permission);
   }
-  addDropdownConfig(id: string, title: string, description: string, value?: number, range?: InputValueSet, permission?: McmodderPermission) {
+  addDropdownConfig<T extends KeysOfType<Required<McmodderSettings>, number>>(id: T, title: string, description: string, value?: McmodderSettings[T], range?: InputValueSet, permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_MENU, value, range, permission);
   }
-  addDropdownTextConfig(id: string, title: string, description: string, value?: string, Suggestion?: InputSimplifiedSuggestion[], permission?: McmodderPermission) {
+  addDropdownTextConfig<T extends KeysOfType<Required<McmodderSettings>, string>>(id: T, title: string, description: string, value?: McmodderSettings[T], Suggestion?: InputSimplifiedSuggestion[], permission?: McmodderPermission) {
     return this.addConfig(id, title, description, McmodderInputType.DROPDOWN_TEXT_MENU, value, undefined, permission, Suggestion);
   }
 
-  private addConfig(id: string, title: string, description: string, type = McmodderInputType.CHECKBOX, 
-    value: any = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, Suggestion?: InputSimplifiedSuggestion[]) {
-    this.data[id] = {
+  private addConfig<T extends keyof McmodderSettings>(id: T, title: string, description: string, type = McmodderInputType.CHECKBOX, 
+    value: McmodderSettings[T] | null = null, range: InputValueRange | undefined, permission = McmodderPermission.NONE, Suggestion?: InputSimplifiedSuggestion[]) {
+    (this.data as any)[id] = {
       title: title,
       description: description,
       type: type,
@@ -85,13 +85,13 @@ export class McmodderConfigUtils {
       ...(range != undefined && { range }),
       ...(Suggestion != undefined && { Suggestion })
     };
-    if (this.parent.utils.getConfig(id) === undefined) {
-      this.parent.utils.setConfig(id, value || McmodderConfigUtils.defaultValue[type]);
+    if (this.configs.getSettings(id) === undefined) {
+      this.configs.setSettings(id, value || McmodderConfigUtils.defaultValue[type]);
     }
     return this;
   }
 
-  getData(id: string) {
+  getData<T extends keyof McmodderSettings>(id: T) {
     return this.data[id];
   }
 }

@@ -6,8 +6,10 @@ import { McmodderInit } from "./Init";
 
 export class JsonHelperInit extends McmodderInit {
   canRun() {
-    return this.parent.href === `${ this.parent.hostname }/mcmodder/jsonhelper/` && 
-      this.parent.utils.getConfig("enableJsonHelper");
+    return !!(
+      this.parent.href === `${ this.parent.hostname }/mcmodder/jsonhelper/` && 
+      this.configs.getSettings("enableJsonHelper")
+    );
   }
   async run() {
     const pageName = "JSON导入辅助";

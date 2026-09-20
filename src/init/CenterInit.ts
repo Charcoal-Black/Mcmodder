@@ -1,4 +1,3 @@
-import { McmodderProfileData } from "../types";
 import { McmodderValues } from "../Values";
 import { CenterCardInit } from "./center/CenterCardInit";
 import { CenterHomeInit } from "./center/CenterHomeInit";
@@ -22,7 +21,7 @@ export class CenterInit extends McmodderInit {
   }
 
   isFavPage() {
-    const favList = this.parent.utils.getConfigAsNumberList("userFavList");
+    const favList = this.configs.getSettingsAsNumberList("userFavList") ?? [];
     return favList.includes(this.pageUID) && !this.isMyPage();
   }
 
@@ -81,17 +80,17 @@ export class CenterInit extends McmodderInit {
     if ($("#center-page-card").length) {
       this.centerCardObserver.observe($("#center-page-card").get(0), { childList: true });
     }
-    if ($("#center-page-task").length && this.parent.utils.getConfig("customAdvancements")) {
+    if ($("#center-page-task").length && this.configs.getSettings("customAdvancements")) {
       this.centerTaskObserver.observe($("#center-page-task").get(0), { childList: true });
     }
-    if (this.parent.utils.getConfig("expCalculator")) {
+    if (this.configs.getSettings("expCalculator")) {
       this.centerRankObserver.observe($("#center-page-rank").get(0), { childList: true });
     }
 
     // 快捷获取背景图像
     const bgImg = window.getComputedStyle(document.body).backgroundImage.replace('url("', "").replace('")', "");
     const suffix = bgImg.split(".").pop()?.toLowerCase();
-    if (bgImg != this.parent.utils.getConfig("defaultBackground") && 
+    if (bgImg !== this.configs.getSettings("defaultBackground") && 
         suffix && McmodderValues.supportedImageSuffix.includes(suffix)) 
       $("div.bbs-link").append(`<p align="right"><a href="${ bgImg }" target="_blank">查看个人中心背景图片</a></p>`);
 

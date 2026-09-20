@@ -1,17 +1,32 @@
 import { GM_openInTab } from "$";
+import { createApp } from "vue";
 import { McmodderUtils } from "../../Utils";
 import { McmodderValues } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
+import UpdateReminder from "../../vue/components/UpdateReminder.vue";
 
 export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
-  protected override readonly priority = 10;
+  override readonly priority = 10;
   override async run(list: ScheduleRequestUtils) {
+    list.create(Date.now() + 60 * 60 * 1000, "autoCheckUpdate", 0);
+    try {
+      await this.check(list);
+    } catch (e) {
+      McmodderUtils.commonMsg("获取更新信息失败...", false);
+      console.error("获取更新信息失败: ", e);
+    }
+  }
+
+  private async check(list: ScheduleRequestUtils) {
     const resp = await this.parent.utils.createRequest({
       url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
       method: "GET"
     });
-    if (!resp.responseXML) return;
+    if (!resp.responseXML) {
+      McmodderUtils.commonMsg("脚本发布帖打开失败...", false);
+      return;
+    }
     const doc = $(resp.responseXML);
     const title = doc.find("title").text();
     if (title === "页面重载开启") {
@@ -28,26 +43,17 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
       const changelog = doc.find("#postmessage_85878 .spoilerbody").first().html();
       const a = "https://bbs.mcmod.cn/" + doc.find(".attnm a").first().attr("href");
       swal.fire({
-        html: `
-        <div class="mcmodder-changelog-cover">
-          <span class="mcmodder-changelog-title">啊哈哈哈、更新来咯！</span>
-          <span class="mcmodder-changelog-subtitle">
-            <span class="mcmodder-common-danger">${ McmodderValues.mcmodderVersion }</span>
-            &nbsp;→&nbsp;
-            <span class="mcmodder-common-light">${ latestVersion }</span>
-          </span>
-        </div>
-        <div class="mcmodder-changelog-content">${ changelog }</div>`,
+        html: `<div class="mcmodder-changelog-container" />`,
         confirmButtonText: "立即下载",
         showCancelButton: true,
         cancelButtonText: "稍后提醒"
       }).then(isConfirm => {
         if (isConfirm.value) GM_openInTab(a, { active: true });
-        else list.create(Date.now() + 60 * 60 * 1000, "autoCheckUpdate", 0);
       });
+      const container = $(".mcmodder-changelog-container").get(0);
+      createApp(UpdateReminder, { latestVersion, changelog }).mount(container);
     } else {
       if ($("#mcmodder-update-check-manual").length) McmodderUtils.commonMsg("当前脚本已是最新版本~");
-      list.create(Date.now() + 60 * 60 * 1000, "autoCheckUpdate", 0);
     }
     if (this.parent.currentUID && this.parent.currentUID != 179043) {
       fetch(`https://www.mcmod.cn/item/650136.html`, { method: "GET" });

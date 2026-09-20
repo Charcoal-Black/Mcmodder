@@ -1,4 +1,3 @@
-import { McmodderMapKeyHandler } from "../types";
 
 export class McmodderMap<T extends object> {
   private readonly map = new Map<any, T[]>();

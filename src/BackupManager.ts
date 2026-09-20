@@ -1,26 +1,27 @@
+import type { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
 
 export class McmodderBackupManager<BackupData> {
-  parent: Mcmodder;
+  configs: ConfigRepository;
   id: string;
   constructor(parent: Mcmodder, id: string) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     this.id = id;
   }
 
   backup(data: BackupData) {
-    this.parent.utils.setConfig(this.id, data, "mcmodderBackup");
+    this.configs.set("mcmodderBackup", this.id, data);
   }
 
   hasBackup() {
     return this.restore() != null;
   }
 
-  restore(): BackupData {
-    return this.parent.utils.getConfig(this.id, "mcmodderBackup", null);
+  restore(): BackupData | null {
+    return this.configs.get("mcmodderBackup", this.id) as BackupData ?? null;
   }
 
   clear() {
-    this.parent.utils.setConfig(this.id, null, "mcmodderBackup");
+    this.configs.set("mcmodderBackup", this.id, null);
   }
 }

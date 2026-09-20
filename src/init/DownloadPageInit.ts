@@ -6,7 +6,7 @@ export class DownloadPageInit extends McmodderInit {
     return this.parent.href.includes("/download/");
   }
   run() {
-    if (this.parent.utils.getConfig("customAdvancements")) {
+    if (this.configs.getSettings("customAdvancements")) {
       $(document).on("click", ".download-setting-button", () => {
         this.parent.advutils.addProgress(AdvancementID.DOWNLOAD_MODS_1);
       });

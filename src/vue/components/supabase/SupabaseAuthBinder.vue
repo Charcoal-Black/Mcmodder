@@ -12,30 +12,30 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, useTemplateRef } from 'vue';
+import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../../Mcmodder.ts';
 import { McmodderUtils } from '../../../Utils.ts';
-import { SupabaseAuthenticatorResponse } from '../../../types';
 import Button from '../Button.vue';
 
 interface Props {
   parent: Mcmodder
 }
+const configs = computed(() => parent.configRepository);
 
 onMounted(() => {
   updateAuthState();
 })
 
 const { parent } = defineProps<Props>();
-const uid = ref<string>();
+const uid = ref<number>();
 const name = ref<string>();
 const key = ref<string>();
 const buttonRef = useTemplateRef("button");
 
 function updateAuthState() {
-  uid.value = parent.utils.getProfile("auth_uid");
-  name.value = parent.utils.getProfile("auth_username");
-  key.value = parent.utils.getProfile("auth_key");
+  uid.value = configs.value.getProfile("auth_uid");
+  name.value = configs.value.getProfile("auth_username");
+  key.value = configs.value.getProfile("auth_key");
 }
 
 async function onButtonClick() {
@@ -56,9 +56,9 @@ async function updateAuthData() {
   if (!resp) {
     return;
   }
-  parent.utils.setProfile("auth_uid", resp.user_id);
-  parent.utils.setProfile("auth_username", resp.user_name);
-  parent.utils.setProfile("auth_key", resp.auth_key);
+  configs.value.setProfile("auth_uid", resp.user_id);
+  configs.value.setProfile("auth_username", resp.user_name);
+  configs.value.setProfile("auth_key", resp.auth_key);
 }
 
 </script>

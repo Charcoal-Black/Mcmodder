@@ -4,8 +4,10 @@ import { createApp } from "vue";
 
 export class StructureEditorInit extends McmodderInit {
   canRun() {
-    return this.parent.href === `${ this.parent.hostname }/mcmodder/structureeditor/` && 
-      this.parent.utils.getConfig("enableStructureEditor");
+    return !!(
+      this.parent.href === `${ this.parent.hostname }/mcmodder/structureeditor/` && 
+      this.configs.getSettings("enableStructureEditor")
+    );
   }
 
   async run() {

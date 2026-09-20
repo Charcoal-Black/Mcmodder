@@ -24,7 +24,6 @@
 import { useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import { McmodderTable } from '../../table/Table.ts';
-import { CFVersionData, HeadConfigsInitializer, MRVersionData, VersionCompareData, VersionData } from '../../types';
 import { McmodderUtils } from '../../Utils.ts';
 import GenericTable from './table/GenericTable.vue';
 import { GM_openInTab } from '$';

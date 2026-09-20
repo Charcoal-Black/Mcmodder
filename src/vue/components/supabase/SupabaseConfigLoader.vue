@@ -12,8 +12,8 @@
 
 <script setup lang="ts">
 import { GM_getValue, GM_setValue } from '$';
+import { computed } from 'vue';
 import { Mcmodder } from '../../../Mcmodder';
-import { SupabaseSyncSettingsResponse } from '../../../types';
 import { McmodderUtils } from '../../../Utils.ts';
 import Button from '../Button.vue';
 
@@ -22,6 +22,7 @@ interface Props {
 }
 
 const { parent } = defineProps<Props>();
+const configs = computed(() => parent.configRepository);
 
 async function onUpload() {
   const { value } = await swal.fire({
@@ -36,7 +37,7 @@ async function onUpload() {
   if (!value) return;
   const resp = await parent.supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
     body: {
-      auth_key: parent.utils.getProfile("auth_key"),
+      auth_key: configs.value.getProfile("auth_key"),
       content: {
         mcmodder_settings: GM_getValue("mcmodderSettings"),
         user_profile: GM_getValue("userProfile"),
@@ -62,7 +63,7 @@ async function onDownload() {
   if (!value) return;
   const resp = await parent.supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
     body: {
-      auth_key: parent.utils.getProfile("auth_key")
+      auth_key: configs.value.getProfile("auth_key")
     }
   });
   if (resp) {

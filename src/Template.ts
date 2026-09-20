@@ -1,20 +1,13 @@
 import { createApp } from "vue";
-import { Mcmodder } from "./Mcmodder";
 import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { McmodderUEditor } from "./ueditor/UEditor";
 import { McmodderUtils } from "./Utils";
 import { McmodderValues } from "./Values";
 import ContextMenu from "./vue/components/ContextMenu.vue";
-
-type McmodderTemplateData = {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-}
+import type { ConfigRepository } from "./config/ConfigRepository.ts";
 
 export class McmodderTemplate {
-  private parent: Mcmodder;
+  private configs: ConfigRepository;
   private editor: McmodderUEditor;
   private list: McmodderTemplateData[];
   private newTitle: JQuery;
@@ -23,27 +16,27 @@ export class McmodderTemplate {
 
   constructor(editor: McmodderAdvancedUEditor) {
     this.editor = editor;
-    this.parent = this.editor.parent;
+    this.configs = this.editor.configs;
 
     // v1.x 旧版本遗留修复
-    let legacyList = this.parent.utils.getConfig("templateList");
+    let legacyList = this.configs.getSettings("templateList");
     if (legacyList) {
-      this.parent.utils.setAllConfig("templateList", legacyList);
-      this.parent.utils.deleteConfig("templateList");
+      this.configs.setAll("templateList", legacyList);
+      this.configs.deleteSettings("templateList");
     }
 
     // v2.0 去序列化修复
-    legacyList = this.parent.utils.getAllConfig("templateList");
-    if (typeof legacyList === "string") {
-      this.parent.utils.setAllConfig("templateList", JSON.parse(legacyList));
+    let legacyList_v2 = this.configs.getAll("templateList") as unknown as string;
+    if (typeof legacyList_v2 === "string") {
+      this.configs.setAll("templateList", JSON.parse(legacyList_v2));
     }
 
     // 初始化模板配置
-    if (!this.parent.utils.getAllConfig("templateList", []).length) {
-      this.parent.utils.setAllConfig("templateList", McmodderValues.defaultTemplateList);
+    if (!this.configs.getAll("templateList")?.length) {
+      this.configs.setAll("templateList", McmodderValues.defaultTemplateList);
     }
 
-    this.list = this.parent.utils.getAllConfig("templateList", []);
+    this.list = this.configs.getAll("templateList") ?? [];
     this.newTitle = this.newDescription = $();
   }
 
@@ -122,18 +115,18 @@ export class McmodderTemplate {
     });
   }
 
-  private getCurrentSelection(e: MouseEvent) {
+  private getCurrentSelection(e: PointerEvent) {
     const target = $(e.currentTarget!);
     if (target.prop("tagName") === "LI") return target; 
     return target.parents(".group li");
   }
 
-  private isValidSelection(e: MouseEvent) {
+  private isValidSelection(e: PointerEvent) {
     return !this.getCurrentSelection(e).hasClass("mcmodder-template-add");
   }
 
   private syncTemplateConfig() {
-    this.parent.utils.setAllConfig("templateList", this.list);
+    this.configs.setAll("templateList", this.list);
   }
 
   private add() {
@@ -153,7 +146,7 @@ export class McmodderTemplate {
     }
   }
 
-  private onModifyTitle(e: MouseEvent) {
+  private onModifyTitle(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     const title = selection.find(".title").first();
@@ -175,7 +168,7 @@ export class McmodderTemplate {
     input.focus();
   }
 
-  private onModifyDescription(e: MouseEvent) {
+  private onModifyDescription(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     const text = selection.find("p.text").first();
@@ -199,17 +192,17 @@ export class McmodderTemplate {
     input.focus();
   }
 
-  private onUpdateContent(e: MouseEvent) {
+  private onUpdateContent(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     data.content = this.editor.editor.getContent();
-    this.parent.utils.setAllConfig("templateList", this.list);
+    this.configs.setAll("templateList", this.list);
     McmodderUtils.commonMsg(`${ data.title } 内容已更新~`);
   }
 
   private delete(id: string | null) {
     this.list = this.list.filter(item => item.id != id);
-    this.parent.utils.setAllConfig("templateList", this.list);
+    this.configs.setAll("templateList", this.list);
     this.editor.$outerFrame?.find(".edui-for-mctemplate .edui-button-body").click();
   }
 

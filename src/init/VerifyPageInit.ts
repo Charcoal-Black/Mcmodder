@@ -1,50 +1,34 @@
+import { createApp } from "vue";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
 import { PreSubmitInit } from "./PreSubmitInit";
+import VerifyRowList from "../vue/components/VerifyRowList.vue";
 
 export class VerifyPageInit extends McmodderInit {
   canRun() {
     return false;
   }
   run() {
-    if ((new URLSearchParams(window.location.search)).get("selfonly") && this.parent.utils.getConfig("preSubmitCheckInterval") >= 0.1) {
+    const preSubmitCheckInterval = this.configs.getSettings("preSubmitCheckInterval");
+    if ((new URLSearchParams(window.location.search)).get("selfonly") && preSubmitCheckInterval && preSubmitCheckInterval >= 0.1) {
       new PreSubmitInit(this.parent);
     }
 
     // 排版调整
-    if (this.parent.utils.getConfig("mcmodderUI")) {
+    // if (this.configs.get("mcmodderUI")) {
       const p = $(".verify-list-frame .list-row-limit p").first();
       const d = p.text().match(/\d+/g)?.map(Number).map(e => e.toLocaleString());
-      if (d) p.html(`
-        <ul class="verify-rowlist">
-          <li>
-            <span class="title">${d[1]}</span>
-            <span class="text">
-              <i data-toggle="tooltip" data-original-title="日常审核时间段为 19:00 ~ 次日 07:00" class="fa fa-question-circle"></i>
-              48 小时内已处理
-            </span>
-          </li>
-          <li>
-            <span class="title">${d[2]}</span>
-            <span class="text">今日已处理</span>
-          </li>
-          <li>
-            <span class="title">${d[3]}</span>
-            <span class="text">今日新提交</span>
-          </li>
-          <li>
-            <span class="title">${d[4]}</span>
-            <span class="text">剩余待审</span>
-          </li>
-        </ul>`);
-    }
+      if (d) createApp(VerifyRowList, {
+        data: d
+      }).mount(p.get(0));
+    // }
 
     if ($("p.empty").length) return;
     // if ($("#mcmodder-verify-search").length) return;
 
     // 紧凑式待审列表
-    if (this.parent.utils.getConfig("compactedVerifylist")) {
+    if (this.configs.getSettings("compactedVerifylist")) {
       McmodderUtils.addStyle(".table-bordered thead td, .table-bordered thead th {text-align: center; min-width: 3em;} .btn-group-sm > .btn, .btn-sm {padding: .0rem .5rem} .table > tbody > tr > td:nth-child(4) > p {display: inline;} td {text-overflow: ellipsis; overflow: hidden; white-space: nowrap;} .verify-list-list td:nth-child(4) i {width: unset; margin: unset;}");
       const verifyTable = $(".table");
       const stateLang = Object.entries(PublicLangData.verify_list.state.list);
@@ -179,7 +163,7 @@ export class VerifyPageInit extends McmodderInit {
     }
 
     // 一键催审
-    if (this.parent.utils.getConfig("fastUrge")) {
+    if (this.configs.getSettings("fastUrge")) {
       // $("div.bd-callout-warning").first().html('审核周期通常在 24 小时以内，有管理员的模组区域审核周期通常在 7 日以内，如逾期未审，<span class="mcmodder-common-dark">可点“一键催审”按钮给重生上强度！！</span> (´・ω・`)');
       $('<button id="mcmodder-fast-urge" class="btn btn-dark btn-sm" data-toggle="tooltip" data-html="true" data-original-title="一键对当前列表中可催审的审核项催审！审核项提交 24 小时后可催审，首次催审后每隔 1 小时可再次催审。<br>催审并不会对管理员发送强提醒，但能够使审核项在后台的待审列表中排在更靠前的位置。">一键催审</button>')
       .insertBefore(".verify-list-list")

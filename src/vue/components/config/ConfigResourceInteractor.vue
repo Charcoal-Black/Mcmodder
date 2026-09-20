@@ -16,28 +16,32 @@
   </Collapsible>
 </template>
 
-<script setup lang="ts" generic="T extends McmodderTableAcceptable">
+<script setup lang="ts" generic="K extends keyof McmodderStorage, TConfig extends object = Extract<McmodderStorage[K], object>, TData extends McmodderTableAcceptable = Extract<TConfig, McmodderTableAcceptable>">
 import { useTemplateRef } from 'vue';
-import { ConfigResourceInteractorProps, McmodderTableAcceptable } from '../../../types';
 import Collapsible from '../Collapsible.vue';
 import { GM_getValue } from '$';
 import { McmodderUtils } from '../../../Utils.ts';
 import GenericTable from '../table/GenericTable.vue';
+import type { ConfigResourceInteractorProps } from '../../../types/props.d.ts';
 
 let isLoaded = false;
 let isShown = false;
 
-const props = withDefaults(defineProps<ConfigResourceInteractorProps<T>>(), {
-  configParser: (config: any) => JSON.parse(config || "{}"),
-  dataParser: ((_: any, item: any) => item)
+const props = withDefaults(defineProps<ConfigResourceInteractorProps<K, TConfig, TData>>(), {
+  configParser: () => (config: string) => JSON.parse(config || "{}") as TConfig,
+  dataParser: () => (_key: string, item: unknown) => item as TData
 });
 const table = useTemplateRef("table");
 
 function load() {
-  let data = props.configParser(GM_getValue(props.id));
+  const rawData = GM_getValue(props.id) as string;
+  if (rawData === undefined) {
+    return;
+  }
+  let config = props.configParser(rawData);
   table.value!.showLoading();
-  Object.keys(data).forEach(key => {
-    table.value!.appendData(props.dataParser(key, data[key]));
+  Object.keys(config).forEach(key => {
+    table.value!.appendData(props.dataParser(key, (config as any)[key]));
   });
   table.value!.refreshAll();
   isLoaded = true;

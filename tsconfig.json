@@ -23,7 +23,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["src"],
 }

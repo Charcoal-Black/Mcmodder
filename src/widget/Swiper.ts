@@ -19,13 +19,13 @@ export class McmodderSwiper {
     this.ul.on("click", "li", _e => {
       this.update();
     })
-    .on("mouseenter", "li", _e => {
+    .on("pointerenter", "li", _e => {
       this.hover = true;
       this.timeout = setTimeout(() => {
         this.update();
       }, 550);
     })
-    .on("mouseleave", "li", _e => {
+    .on("pointerleave", "li", _e => {
       if (this.hover) {
         this.hover = false;
         clearTimeout(this.timeout);

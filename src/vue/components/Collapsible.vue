@@ -19,14 +19,14 @@
 import { ref } from 'vue';
 
 interface Props {
-  onClick?: (e: MouseEvent) => any;
+  onClick?: (e: PointerEvent) => any;
 }
 
 const props = defineProps<Props>();
 
 const classExpanded = ref(false);
 
-function onClick(e: MouseEvent) {
+function onClick(e: PointerEvent) {
   classExpanded.value = !classExpanded.value;
   props.onClick?.(e);
 }

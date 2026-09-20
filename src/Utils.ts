@@ -1,6 +1,6 @@
-import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, GmResponseEvent, GmXmlhttpRequestOption } from "$";
+import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, type GmResponseEvent, type GmXmlhttpRequestOption } from "$";
+import { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
-import { ClassNameData, HSL, HSLA, ItemTypeData, McmodderClassData, McmodderItemData, McmodderKeyData, McmodderProfileData, McmodItemEditorData, McmodItemEditorInnerData, RGB, RGBA } from "./types";
 import { McmodderValues } from "./Values";
 
 export interface ThemeColorData {
@@ -9,11 +9,12 @@ export interface ThemeColorData {
 }
 
 export class McmodderUtils {
-
-  parent: Mcmodder;
+  private readonly parent: Mcmodder;
+  readonly configs: ConfigRepository;
 
   constructor(parent: Mcmodder) {
     this.parent = parent;
+    this.configs = new ConfigRepository(parent);
   }
 
   private static m_isMac: boolean | undefined;
@@ -52,6 +53,36 @@ export class McmodderUtils {
       });
     }
   }
+
+  static createModal(option: SweetAlertOption, interceptEvents: Record<string, (ev: Event) => any> = {}) {
+    swal.fire(option).then(() => {
+      Object.entries(events).forEach(([eventName, callback]) => {
+        window.removeEventListener(eventName, callback);
+      })
+    });
+    const modal = $(".swal2-modal").get(0);
+    const events: Record<string, (this: Window, ev: any) => any> = {};
+    Object.entries(interceptEvents).forEach(([eventName, callback]) => {
+      events[eventName] = (ev: Event) => {
+        const target = ev.target;
+        if (target instanceof Node && !(target instanceof Document) && modal.contains(target)) {
+          ev.stopPropagation();
+          callback(ev);
+        }
+      }
+    })
+    Object.entries(events).forEach(([eventName, callback]) => {
+      window.addEventListener(eventName, callback, true);
+    })
+  }
+
+  // static rawMap(mods: Record<string, { default: string }>) {
+  //   const out: Record<string, string> = {};
+  //   for (const [p, m] of Object.entries(mods)) {
+  //     out[p.match(/([^/]+)\.\w+$/)![1]] = m.default;
+  //   }
+  //   return out;
+  // }
 
   /**
    * 针对 HttpOnly cookie 编写的读写接口
@@ -130,10 +161,10 @@ export class McmodderUtils {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
-  static getThemeColors = (utils: McmodderUtils): ThemeColorData => {
+  static getThemeColors = (configs: ConfigRepository): ThemeColorData => {
     return {
-      tc1: utils.getConfig("themeColor1"),
-      tc2: utils.getConfig("themeColor2")
+      tc1: configs.getSettings("themeColor1")!,
+      tc2: configs.getSettings("themeColor2")!
     }
   }
 
@@ -186,148 +217,21 @@ export class McmodderUtils {
     });
   }
 
-  static createRange(l: number, r: number) {
+  static createRange(l: number, r: number, step = 1) {
     if (!Number.isInteger(l) || !Number.isInteger(r)) {
       throw new Error("端点必须是整数。");
     }
     if (l > r) {
       throw new Error("左端点必须不大于右端点。");
     }
-    return Array.from({ length: r - l }, (_, i) => i + l);
-  }
-
-  getConfig(key?: string | number | null, item = "mcmodderSettings", defaultValue: any = undefined) {
-    // mcmodderUI 被修复后请移除下一行
-    if (key === "mcmodderUI" && item === "mcmodderSettings") return true;
-
-    if (key === undefined) return defaultValue;
-    let isCacheable = this.parent.storageBuffer.isCacheable(item);
-    let data;
-    if (isCacheable) data = this.parent.storageBuffer.data[item];
-    else {
-      let raw = GM_getValue(item);
-      if (raw === undefined) return defaultValue;
-      data = JSON.parse(raw);
+    if (!Number.isInteger(step) || step < 1) {
+      throw new Error("步长必须是正整数。");
     }
-    if (data === undefined) return defaultValue;
-    if (key === null) return data;
-    let entry = data[key];
-    if (entry === undefined) return defaultValue;
-    return entry;
-  }
-
-  getConfigAsNumberList(key?: string | number | null, item = "mcmodderSettings") {
-    let config = this.getConfig(key, item, []) || "";
-    if (typeof config === "string") config = config.replaceAll(" ", "").split(",");
-    return config.map(Number) as number[];
-  }
-
-  getAllConfig(item = "mcmodderSettings", defaultValue?: any) {
-    let res = this.getConfig(null, item, defaultValue);
-    if (res != undefined) return res;
-    return defaultValue;
-  }
-
-  setConfig(key: number | string | null | undefined, value: any, item = "mcmodderSettings") {
-    if (!key) return;
-    let obj = JSON.parse(GM_getValue(item) || "{}");
-    if (value === null) delete obj[key];
-    else obj[key] = value;
-    GM_setValue(item, JSON.stringify(obj));
-  }
-
-  setConfigAsNumberList(key: number | string | null | undefined, value: number[], item = "mcmodderSettings") {
-    return this.setConfig(key, value.join(","), item);
-  }
-
-  deleteConfig(key: number | string | null | undefined, item = "mcmodderSettings") {
-    this.setConfig(key, null, item);
-  }
-
-  setAllConfig(item: string | null | undefined, value: any) {
-    if (!item) return;
-    GM_setValue(item, JSON.stringify(value));
-  }
-
-  doesProfileDataExist(uid = this.parent.currentUID) {
-    const rawData = GM_getValue("userProfile");
-    if (!rawData) return false;
-    const profiles: Record<string, string> = JSON.parse(rawData);
-    return profiles.hasOwnProperty(uid);
-  }
-
-  private getRecord(storageKey: string, key: string, id: number) {
-    let raw = GM_getValue(storageKey);
-    if (!raw) {
-      GM_setValue(storageKey, "{}");
-      raw = "{}";
-    }
-    let result = JSON.parse(JSON.parse(raw)[id] || "{}");
-    if (key === "*") return result;
-    return result[key];
-  }
-
-  private getAllRecord<T extends object>(storageKey: string, id: number) {
-    return this.getRecord(storageKey, "*", id) as T;
-  }
-
-  private setRecord(storageKey: string, key: string, value: any, id: number) {
-    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
-    let profile = JSON.parse(profiles[id] || "{}");
-    profile[key] = value;
-    profiles[id] = JSON.stringify(profile);
-    GM_setValue(storageKey, JSON.stringify(profiles));
-  }
-
-  private setAllRecord<T extends object>(storageKey: string, content: T, id: number) {
-    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
-    let profile = JSON.parse(profiles[id] || "{}");
-    profile = Object.assign(profile, content);
-    profile.lastUpdated = Date.now();
-    profiles[id] = JSON.stringify(profile);
-    GM_setValue(storageKey, JSON.stringify(profiles));
-  }
-
-  private deleteAllRecord(storageKey: string, id: number) {
-    const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
-    delete profiles[id];
-    GM_setValue(storageKey, JSON.stringify(profiles));
-  }
-
-  getProfile(key = "*", uid = this.parent.currentUID) {
-    return this.getRecord("userProfile", key, uid);
-  }
-  getAllProfile(uid = this.parent.currentUID) {
-    return this.getAllRecord<McmodderProfileData>("userProfile", uid);
-  }
-  setProfile(key: string, value: any, uid = this.parent.currentUID) {
-    this.setRecord("userProfile", key, value, uid);
-  }
-  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
-    this.setAllRecord("userProfile", content, uid);
-  }
-  deleteAllProfile(uid = this.parent.currentUID) {
-    this.deleteAllRecord("userProfile", uid);
-  }
-
-  getClass(key = "*", classID: number) {
-    return this.getRecord("classData", key, classID);
-  }
-  getAllClass(classID: number) {
-    return this.getAllRecord<McmodderClassData>("classData", classID);
-  }
-  setClass(key: string, value: any, classID: number) {
-    this.setRecord("classData", key, value, classID);
-  }
-  setAllClass(content: McmodderClassData, classID: number) {
-    this.setAllRecord("classData", content, classID);
-  }
-  deleteAllClass(classID: number) {
-    this.deleteAllRecord("classData", classID);
+    return Array.from({ length: (r - l) / step }, (_, i) => i * step + l);
   }
 
   getProfileAbstract(target: number | McmodderProfileData, showLv = false, plainText = false) {
-    const profile = typeof target === "number" ? this.getAllProfile(target) : target;
+    const profile = typeof target === "number" ? this.configs.getAllProfile(target) : target;
     if (!Object.keys(profile).length) {
       const text = "用户信息获取失败...";
       return plainText ? text : `<span class="text-danger">${ text }</span>`;
@@ -352,15 +256,16 @@ export class McmodderUtils {
     return content.join(" · ");
   }
 
-  getInteract(id?: string | null) {
-    const result = this.getConfig(id, "mcmodderInteracts");
-    this.setConfig(id, null, "mcmodderInteracts");
+  getInteract(id: string | null) {
+    if (id === null || id === undefined) return undefined;
+    const result = this.configs.get("mcmodderInteracts", id);
+    this.configs.set("mcmodderInteracts", id, null);
     return result;
   }
 
   setInteract(value: any) {
     const id = McmodderUtils.randStr(8);
-    this.setConfig(id, value, "mcmodderInteracts");
+    this.configs.set("mcmodderInteracts", id, value);
     return id;
   }
 
@@ -411,22 +316,24 @@ export class McmodderUtils {
   }
 
   static getFormattedNumber(n: number) {
-    if (n >= 1e12) return (n / 1e12).toFixed(Number(n % 1e12 != 0)) + "T";
-    if (n >= 1e9) return (n / 1e9).toFixed(Number(n % 1e9 != 0)) + "G";
-    if (n >= 1e6) return (n / 1e6).toFixed(Number(n % 1e6 != 0)) + "M";
-    if (n >= 1e4) return (n / 1e3).toFixed(Number(n % 1e3 != 0)) + "k";
+    if (n >= 1e12) return (n / 1e12).toFixed(Number(n % 1e12 !== 0)) + "T";
+    if (n >= 1e9) return (n / 1e9).toFixed(Number(n % 1e9 !== 0)) + "G";
+    if (n >= 1e6) return (n / 1e6).toFixed(Number(n % 1e6 !== 0)) + "M";
+    if (n >= 1e4) return (n / 1e3).toFixed(Number(n % 1e3 !== 0)) + "k";
     return n.toString();
   }
 
+  static getClassFullName(name: string, ename: string, abbr: string): string;
+  static getClassFullName(data: McmodderClassData): string | undefined;
   static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: McmodderClassData]) {
-    const name = args.length === 1 ? args[0].name : args[0];
-    const ename = args.length === 1 ? args[0].englishName : args[1];
-    const abbr = args.length === 1 ? args[0].abbr : args[2];
+    const name = (args.length === 1 ? args[0].name : args[0]).trim();
+    const ename = (args.length === 1 ? args[0].englishName : args[1]).trim();
+    const abbr = (args.length === 1 ? args[0].abbr : args[2]).trim();
     if (!name) return undefined;
     let res = "";
-    if (abbr) res += `[${abbr}] `;
+    if (abbr) res += `[${ abbr }] `;
     res += name;
-    if (ename) res += ` (${ename})`;
+    if (ename) res += ` (${ ename })`;
     return res;
   }
 
@@ -437,7 +344,7 @@ export class McmodderUtils {
       if (fullName.charAt(0) === "[") {
         indexOf = fullName.indexOf("]");
         abbr = fullName.slice(1, indexOf);
-        fullName = fullName.slice(indexOf + 2);
+        fullName = fullName.slice(indexOf + 1).trim();
       } else {
         abbr = "";
       }
@@ -451,15 +358,16 @@ export class McmodderUtils {
       }
     }
     return {
-      className: name,
-      classEname: ename,
-      classAbbr: abbr
+      className: name.trim(),
+      classEname: ename.trim(),
+      classAbbr: abbr.trim()
     };
   }
 
   static getItemFullName(name: string, ename?: string | null) {
-    let res = name;
-    if (ename) res += ` (${ ename })`;
+    let res = name.trim();
+    let trimedEname = ename?.trim();
+    if (trimedEname) res += ` (${ trimedEname })`;
     return res;
   }
 
@@ -505,7 +413,7 @@ export class McmodderUtils {
   }
 
   static appendBase64ImgPrefix(v?: string) {
-    if (v && v.slice(0, 11) != "data:image/") return "data:image/png;base64," + v;
+    if (v && v.slice(0, 11) !== "data:image/") return "data:image/png;base64," + v;
     return v;
   }
 
@@ -589,7 +497,7 @@ export class McmodderUtils {
   }
 
   static getCenterURL(id: number) {
-    return `https://center.mcmod.cn/${ id }`;
+    return `https://center.mcmod.cn/${ id }/`;
   }
 
   static URLToAnchor(url: string, text?: string) {
@@ -860,8 +768,12 @@ export class McmodderUtils {
     return true;
   }
 
-  isKeyMatchConfig(a: string, b: McmodderKeyData) {
-    return McmodderUtils.isKeyMatch(this.getConfig(a), b);
+  isKeyMatchConfig(a: KeysOfType<McmodderSettings, McmodderKeyData>, b: McmodderKeyData) {
+    const config = this.configs.getSettings(a);
+    if (config === undefined) {
+      return false;
+    }
+    return McmodderUtils.isKeyMatch(config, b);
   }
 
   static randStr(l = 32) {
@@ -1076,15 +988,15 @@ export class McmodderUtils {
   }
 
   updateRequestTime() {
-    let minimumRequestInterval = Math.max(this.getConfig("minimumRequestInterval"), 500);
+    let minimumRequestInterval = Math.max(this.configs.getSettings("minimumRequestInterval")!, 500);
     let now = (new Date()).getTime();
-    let lastRequestTime: number = this.getConfig("lastRequestTime") || now;
+    let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
     if (lastRequestTime > now + minimumRequestInterval * McmodderValues.MAX_REQUEST_COUNT) {
       console.warn("Scheduled requests have exceeded the maximum limit. New request is ignored.");
       return -1;
     }
     if (now > lastRequestTime) lastRequestTime = now;
-    this.setConfig("lastRequestTime", lastRequestTime + minimumRequestInterval);
+    this.configs.setSettings("lastRequestTime", lastRequestTime + minimumRequestInterval);
     return lastRequestTime;
   }
 
@@ -1209,21 +1121,21 @@ export class McmodderUtils {
   }
 
   updateClassNameIDMap(className: string, classID: string) {
-    let classNameIDMap = this.getAllConfig("classNameIDMap", {});
-    let idClassNameMap = this.getAllConfig("idClassNameMap", {});
+    let classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
+    let idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
     classNameIDMap[className] = classID;
     idClassNameMap[classID] = className;
     GM_setValue("classNameIDMap", JSON.stringify(classNameIDMap));
     GM_setValue("idClassNameMap", JSON.stringify(idClassNameMap));
   }
 
-  getClassNameByClassID(classID: number) {
-    let idClassNameMap = this.getAllConfig("idClassNameMap", {});
-    return idClassNameMap[classID];
+  getClassNameByClassID(classID: string | number) {
+    let idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
+    return idClassNameMap[classID.toString()];
   }
 
   getClassIDByClassName(className: string) {
-    let classNameIDMap = this.getAllConfig("classNameIDMap", {});
+    let classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
     return classNameIDMap[className];
   }
 

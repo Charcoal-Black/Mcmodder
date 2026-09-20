@@ -1,4 +1,3 @@
-import { McmodderTableAcceptable, McmodderTableContext } from "../../types";
 import { Command } from "./Command";
 
 export class EditCommand<T extends McmodderTableAcceptable> extends Command<T> {

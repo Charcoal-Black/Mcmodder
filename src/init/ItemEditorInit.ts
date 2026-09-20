@@ -1,4 +1,3 @@
-import { McmodderItemData } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 import { McmodderInit } from "./Init";
@@ -117,7 +116,7 @@ export class ItemEditorInit extends McmodderInit {
     const params = new URLSearchParams(window.location.search);
     if (params.has("i")) {
       const interactID = params.get("i");
-      const data = this.parent.utils.getInteract(interactID);
+      const data = this.parent.utils.getInteract(interactID) as string;
       if (data) {
         jsonUploader.val(data).change();
       }

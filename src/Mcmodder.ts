@@ -8,12 +8,11 @@ import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
-import { ItemCustomTypeList as ItemTypeList, McmodderProfileData, SupabaseTrackSplashResponse } from "./types";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { McmodderUEditor } from "./ueditor/UEditor";
-import { McmodderUtils, ThemeColorData } from "./Utils";
+import { McmodderUtils, type ThemeColorData } from "./Utils";
 import { McmodderValues } from "./Values";
 import { McmodderInit } from "./init/Init";
 import { InitLoader } from "./loader/InitLoader";
@@ -24,7 +23,9 @@ import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import { Mcmodder3DSplash } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
 import { createApp } from "vue";
-import Timer from "./vue/components/Timer.vue";
+import FavUser from "./vue/components/FavUser.vue";
+import ProfileSelector from "./vue/components/ProfileSelector.vue";
+import { ConfigRepository } from "./config/ConfigRepository.ts";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement,
@@ -34,6 +35,7 @@ interface ScreenAttachedFrameData {
 
 export class Mcmodder {
   utils: McmodderUtils;
+  configRepository: ConfigRepository;
   currentUID: number;
   currentUsername: string;
   advutils: AdvancementUtils;
@@ -55,7 +57,7 @@ export class Mcmodder {
   isNightMode = false;
   title = "";
   css = "";
-  itemTypeList?: ItemTypeList;
+  itemTypeList?: ItemCustomTypeList;
   readonly hostname: string;
   private msgAlertCount = 0;
   private readonly titleNode = $("title");
@@ -84,12 +86,13 @@ export class Mcmodder {
     StorageBufferLoader.run(this.storageBuffer);
 
     this.utils = new McmodderUtils(this);
+    this.configRepository = this.utils.configs;
 
     this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new McmodderConfigUtils(this);
     ConfigLoader.run(this.cfgutils);
-    this.styleColors = McmodderUtils.getThemeColors(this.utils);
+    this.styleColors = McmodderUtils.getThemeColors(this.configRepository);
 
     this.advutils = new AdvancementUtils(this);
     AdvancementLoader.run(this.advutils);
@@ -124,7 +127,7 @@ export class Mcmodder {
   });
 
   updateItemTooltip() { // 鼠标悬浮预览介绍
-    if (this.utils.getConfig("hoverDescription")) {
+    if (this.configRepository.getSettings("hoverDescription")) {
       $(".common-imglist li, .item-list-type-right span, .relation a").off();
       $("a").filter((_, e) => {
         const href = (e as HTMLAnchorElement).href;
@@ -155,9 +158,12 @@ export class Mcmodder {
           `
         });
       });
-      $(document).on("mouseenter", ".mcmodder-item-link", async e => {
+      document.addEventListener("pointerover", async e => {
+        const target = e.target;
+        if (!(target instanceof HTMLAnchorElement && target.classList.contains("mcmodder-item-link"))) {
+          return;
+        }
         await McmodderUtils.sleep(250);
-        const target = e.currentTarget as HTMLAnchorElement;
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${ sourceUrl }"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
@@ -219,7 +225,7 @@ export class Mcmodder {
           const mciconsHtml = (module['./html/mcicons.html'] as any).default as string;
           $(mciconsHtml).prependTo(document.body);
         }
-        if (this.utils.getConfig("hoverImage")) {
+        if (this.configRepository.getSettings("hoverImage")) {
           previewFrame.find("img").each((_, img) => {
             showImg(img);
             $(img).attr("src", $(img).attr("data-src"));
@@ -309,7 +315,7 @@ export class Mcmodder {
    * @returns 是否切换成功，失败时已向用户提示
    */
   async switchProfile(uid: number): Promise<boolean> {
-    const profile = uid ? this.utils.getProfile("*", uid) : undefined;
+    const profile = uid ? this.configRepository.getAllProfile(uid) : undefined;
     const success = profile ?
       await McmodderUtils.setUuidCookie(profile.uuid, profile.expirationDate) :
       await McmodderUtils.deleteUuidCookie();
@@ -325,59 +331,21 @@ export class Mcmodder {
     return true;
   }
 
-  async fireProfileSelectFrame() {
-    const html = $('<div><p>登录过的用户至少需要在本机访问自己的个人主页一次才会在这里显示~</p><div id="mcmodder-profile-frame"><ul></ul></div></div>');
-    const ul = html.find("ul");
-    const myProfiles = this.utils.getConfigAsNumberList("myProfiles");
-    const uuid = await McmodderUtils.getUuidCookie();
-    let h = $(`<li><div class="profile-option empty-profile" uid="0">-- 未登录状态 --</div></li>`).appendTo(ul);
-    if (!uuid) h.addClass("profile-selected");
-    myProfiles.forEach(uid => {
-      if (!uid) return;
-      const profile = this.utils.getProfile("*", uid);
-      h = $(`<li><div class="profile-option" uid="${uid}">
-        <div class="avatar">
-          <img src="${profile.avatar}">
-        </div>
-        <div class="info">
-          <div class="title">
-            <span class="uid mcmodder-slim-dark">[UID:${uid}]</span>
-            <span class="username mcmodder-subtitle">${profile.username + (profile.nickname ? ` (${profile.nickname})` : "")}</span>
-            <span class="lv">
-              <a class="common-user-lv lv-${profile.lv}">Lv.${profile.lv || "null"}</a>
-            </span>
-          </div>
-          <div class="text">
-            ${ this.utils.getProfileAbstract(profile) }
-            <a class="delete">
-              <i class="fa fa-trash"></i>
-            </a>
-          </div>
-        </div>
-      </li>`).appendTo(ul);
-      createApp(Timer, {
-        parent: this,
-        dataGetter: profile.expirationDate
-      }).mount(h.find(".mcmodder-timer-pre").get(0));
-      if (profile.uuid === uuid) h.addClass("profile-selected");
-    });
+  private profileSelectorContainer = $("<div>");
+  private profileSelector?: InstanceType<typeof ProfileSelector>;
+
+  fireProfileSelectFrame() {
     swal.fire({
       title: "切换当前账号",
       html: `<div class="profile-option-container"></div>`,
       showConfirmButton: false
     });
-    html.appendTo(".profile-option-container");
-    $(".profile-option").click(async f => {
-      let uid = Number(f.currentTarget.getAttribute("uid"));
-      if (f.target.className === "delete" || (f.target.parentNode as HTMLElement)?.className === "delete") {
-        this.utils.setConfig(uid, null, "userProfile");
-        $("#mcmodder-profile-switch").click();
-        return;
-      }
-      if (!await this.switchProfile(uid)) return;
-      $(".profile-selected").removeClass("profile-selected");
-      f.currentTarget.classList.add("profile-selected");
-    });
+    if (!this.profileSelector) {
+      this.profileSelector = createApp(ProfileSelector, {
+        parent: this
+      }).mount(this.profileSelectorContainer.get(0)) as InstanceType<typeof ProfileSelector>;
+    }
+    this.profileSelectorContainer.appendTo(".profile-option-container");
   }
 
   updateSplashListData() {
@@ -449,11 +417,11 @@ export class Mcmodder {
     if (flag) McmodderUtils.commonMsg(`该标语在本地累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
     else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
 
-    if (this.utils.getConfig("supabaseSplash")) {
+    if (this.configRepository.getSettings("supabaseSplash")) {
       if (!this.supabaseUtils.hasClient() || !this.currentUID) return;
       const resp = await this.supabaseUtils.invoke<SupabaseTrackSplashResponse>('track_splash_v2', {
         body: {
-          auth_key: this.utils.getProfile("auth_key"),
+          auth_key: this.configRepository.getProfile("auth_key"),
           splash_text: splashText
         }
       }, errorMsg => {
@@ -505,7 +473,7 @@ export class Mcmodder {
 
   updateNightMode() {
     const icon = $("#mcmodder-night-switch i");
-    if (this.utils.getConfig("nightMode")) {
+    if (this.configRepository.getSettings("nightMode")) {
       icon.removeClass("on");
       if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) {
         $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
@@ -538,7 +506,7 @@ export class Mcmodder {
 
   updatePageWidth() {
     const icon = $("#mcmodder-pagewidth-switch i");
-    if (this.utils.getConfig("preferredWiderScreen")) {
+    if (this.configRepository.getSettings("preferredWiderScreen")) {
       this.preferredWiderScreen = true;
       McmodderUtils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: calc(6 * var(--mcmodder-width-padding-1));}`, "mcmodder-pagewidth-controller");
       icon.attr("class", "fa fa-compress");
@@ -551,9 +519,9 @@ export class Mcmodder {
 
   switchNightMode() {
     if (this.isNightMode) {
-      this.utils.setConfig("nightMode", false);
+      this.configRepository.setSettings("nightMode", false);
     } else {
-      this.utils.setConfig("nightMode", true);
+      this.configRepository.setSettings("nightMode", true);
     }
     this.isNightMode = !this.isNightMode;
   }
@@ -564,18 +532,18 @@ export class Mcmodder {
   }
 
   main() {
-    if (this.utils.getConfig("forceV4") && (this.href === `${ this.hostname }/`)) {
+    if (this.configRepository.getSettings("forceV4") && (this.href === `${ this.hostname }/`)) {
       window.location.href = `${ this.hostname }/v4/`;
     }
 
     // v2.2- 自定义字体配置兼容
-    const useNotoSans = this.utils.getConfig("useNotoSans");
+    const useNotoSans = this.configRepository.getSettings("useNotoSans");
     if (useNotoSans) {
-      this.utils.deleteConfig("useNotoSans");
-      this.utils.setConfig("customFont", 2);
+      this.configRepository.deleteSettings("useNotoSans");
+      this.configRepository.setSettings("customFont", 2);
     }
 
-    const customFont = this.utils.getConfig("customFont");
+    const customFont = this.configRepository.getSettings("customFont");
     if (customFont) {
       this.applyCustomFont(customFont);
     }
@@ -588,9 +556,9 @@ export class Mcmodder {
     });
 
     // 自定义物品类型
-    this.itemTypeList = this.utils.getConfig("itemCustomTypeList") || [];
+    this.itemTypeList = this.configRepository.getSettings("itemCustomTypeList") ?? [];
     if (typeof this.itemTypeList === "string") {
-      this.utils.setConfig("itemCustomTypeList", McmodderValues.itemCustomTypeList);
+      this.configRepository.setSettings("itemCustomTypeList", McmodderValues.itemCustomTypeList);
       this.itemTypeList = McmodderValues.itemCustomTypeList;
     }
     this.itemTypeList = this.itemTypeList!.concat(McmodderValues.itemDefaultTypeList);
@@ -609,21 +577,21 @@ export class Mcmodder {
     }
 
     // 后台抓取并更新云端自定义标语列表缓存
-    if (this.utils.getConfig("useSupabase") && this.utils.getConfig("fetchCustomSplashes")) {
+    if (this.configRepository.getSettings("useSupabase") && this.configRepository.getSettings("fetchCustomSplashes")) {
       this.supabaseUtils.fetchCustomSplashes().then(list => {
         if (list && Array.isArray(list)) {
           GM_setValue("mcmodderCustomSplashes", JSON.stringify(list));
         }
       }).catch(() => {});
     }
-    if (this.utils.getConfig("splashStyle") === 1 &&
+    if (this.configRepository.getSettings("splashStyle") === 1 &&
       (this.href === `${ this.hostname }/` ||
         this.href === `${ this.hostname }/v4/`)) {
       this.splash3D = new Mcmodder3DSplash(this);
       this.splash3D.init();
     }
     // 冻结进度
-    if (this.utils.getConfig("freezeAdvancements")) {
+    if (this.configRepository.getSettings("freezeAdvancements")) {
       $(".common-task-tip").attr({
         "id": "task-mcmodder-frozen",
         "class": "mcmodder-task-tip"
@@ -631,18 +599,18 @@ export class Mcmodder {
     }
 
     // 愚人节特性
-    if (this.utils.getConfig("enableAprilFools")) {
+    if (this.configRepository.getSettings("enableAprilFools")) {
       if (this.href.includes("/author/22957.html")) {
         $("div.author-user-avatar img").attr("src", "https://i.mcmod.cn/editor/upload/20230331/1680246648_2_vWiM.gif");
       }
     }
 
     // 表格修复
-    if (this.utils.getConfig("tableFix")) {
+    if (this.configRepository.getSettings("tableFix")) {
       this.tableFix();
     }
 
-    if (this.utils.getConfig("tableLeftAlign")) {
+    if (this.configRepository.getSettings("tableLeftAlign")) {
       // StyleLoader CSS
       let f = (e: Element) => {
         let c = $(e).next();
@@ -661,7 +629,7 @@ export class Mcmodder {
     $(".mold, .progress-list, .class-item-type li, .post-block, .tag li, .mcver li a, .tools-list li a, .edit-tools span, .comment-row, .comment-channel-list li a, .class-relation-list .relation li, .btn, .mcmodder-gui-alert, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-block.badges, .center-card-border, .modlist-block, .common-center .maintext .item-give, .common-center .post-row .postname .tool li a").addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
-    if (this.utils.getConfig("defaultBackground") != "none") {
+    if (this.configRepository.getSettings("defaultBackground") != "none") {
       $("body").filter((_, c) => $(c).css("background-image") === "none").css({
         "background": "var(--mcmodder-image-background)",
         "background-size": "cover"
@@ -669,137 +637,49 @@ export class Mcmodder {
     }
 
     // 个人菜单
-    if (this.utils.getConfig("mcmodderUI")) {
-      const myProfile = this.utils.getAllProfile() as Partial<McmodderProfileData>;
-      const avatar = myProfile.avatar ?
-        `<a href="//center.mcmod.cn/${ this.currentUID }/" target="_blank">
-          <img alt="${ myProfile.nickname }" src="${ myProfile.avatar }">
-        </a>` : $(".header-user-avatar").html();
-      const nickname = myProfile.nickname || $(".header-user-name").text();
-      const lv = myProfile.lv ? `<span class="mcmodder-profile-lv common-user-lv lv-${ myProfile.lv }">Lv.${ myProfile.lv }</span>` : "";
-      const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
-      .insertBefore(".header-user .header-layer-block:first-child()");
+    if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
+      const insertPos = $(".header-user .header-layer-block:first-child()");
+      if (insertPos.length) {
+        const myProfile = this.configRepository.getAllProfile() as Partial<McmodderProfileData>;
+        const avatar = myProfile.avatar ?
+          `<a href="//center.mcmod.cn/${ this.currentUID }/" target="_blank">
+            <img alt="${ myProfile.nickname }" src="${ myProfile.avatar }">
+          </a>` : $(".header-user-avatar").html();
+        const nickname = myProfile.nickname || $(".header-user-name").text();
+        const lv = myProfile.lv ? `<span class="mcmodder-profile-lv common-user-lv lv-${ myProfile.lv }">Lv.${ myProfile.lv }</span>` : "";
+        const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
+        .insertBefore(insertPos);
 
-      let userFavList = this.utils.getConfigAsNumberList("userFavList").filter(e => e);
-      const myProfileList = this.utils.getConfigAsNumberList("myProfiles");
-      let recentlyVisited = this.utils.getConfigAsNumberList("recentlyVisited").filter(e => e && !userFavList.includes(e) && !myProfileList.includes(e));
-
-      let userList;
-      if (recentlyVisited.length) {
-        // 其实可以预处理把这一步的时间复杂度砍成常数的，但是感觉意义不大
-        const userRecentMap: Map<number, number> = new Map;
-        recentlyVisited.forEach(id => {
-          const count = userRecentMap.get(id);
-          userRecentMap.set(id, count ? count + 1 : 1);
-        });
-        const userRecentCountList: {id: number, count: number}[] = [];
-        userRecentMap.forEach((count, id) => {
-          userRecentCountList.push({ id: id, count: count });
-        });
-        const userRecentList = userRecentCountList.sort((a, b) => b.count - a.count).map(e => e.id);
-        userList = userFavList.concat(userRecentList);
-      }
-      else userList = userFavList;
-      userList = userList.filter(e => !myProfileList.includes(e));
-
-      if (userList.length) {
-        $(".header-layer-block").addClass("with-favuser");
         const favUserOuterContainer = $(`
-          <div class="mcmodder-favuser">
-            <div class="title">
-              最近串门
-              <span class="edit">
-                <i class="fa fa-pencil"></i>
-              </span>
-            </div>
-            <div class="mcmodder-favuser-container">
-              <div class="content"></div>
-            </div>
-          </div>
+          <div class="mcmodder-favuser-outercontainer" />
         `).insertAfter(myAvatar);
-        const favUserContainer = favUserOuterContainer.find(".mcmodder-favuser-container");
-        const favUserContent = favUserContainer.find(".content");
-        userList.forEach(uid => {
-          const profile: McmodderProfileData = this.utils.getAllProfile(uid);
-          const node = $(`
-            <a class="user" data-uid="${
-              uid
-            }" data-nickname="${
-              profile.nickname
-            }" title="${
-              profile.nickname
-            } · ${
-              this.utils.getProfileAbstract(profile, true, true)
-            }" target="_blank" href="https://center.mcmod.cn/${
-              uid
-            }/">
-              <div class="avatar">
-                <img alt="${ profile.nickname }" src="${ profile.avatar }">
-              </div>
-              <div class="nickname">${ profile.nickname }</div>
-              <div class="nickname delete-text">移除</div>
-            </a>
-          `).appendTo(favUserContent);
-          if (userFavList.includes(uid)) node.addClass("user-fav");
-          else node.addClass("user-recent");
-        });
-
-        const className = ["star", "pin", "heart"][this.utils.getConfig("favUserDisplayStyle") || 0];
-        favUserOuterContainer.addClass(className);
-
-        let deleteMode = false;
-        const favUserEdit = favUserOuterContainer.find(".edit");
-        const favUserEditIcon = favUserEdit.children().first();
-        favUserEdit.click(() => {
-          deleteMode = !deleteMode;
-          if (deleteMode) {
-            favUserOuterContainer.addClass("delete-mode");
-            favUserEditIcon.attr("class", "fa fa-close");
-          } else {
-            favUserOuterContainer.removeClass("delete-mode");
-            favUserEditIcon.attr("class", "fa fa-pencil");
-          }
-        });
-        favUserContainer.on("click", ".user", e => {
-          if (deleteMode) {
-            e.preventDefault();
-            const target = $(e.currentTarget);
-            const uid = Number(target.attr("data-uid"));
-            userFavList = userFavList.filter(id => id != uid);
-            recentlyVisited = recentlyVisited.filter(id => id != uid);
-            this.utils.setConfigAsNumberList("userFavList", userFavList);
-            this.utils.setConfigAsNumberList("recentlyVisited", recentlyVisited);
-            target.addClass("deleted");
-            setTimeout(() => {
-              target.remove();
-              const count = favUserContainer.find(".user").length;
-              if (count < 1) {
-                favUserOuterContainer.remove();
-              }
-            }, 300);
-          }
+        const favUserApp = createApp(FavUser, {
+          parent: this
+        }).mount(favUserOuterContainer.get(0)) as InstanceType<typeof FavUser>;
+        if (!favUserApp.isEmpty()) {
+          $(".header-layer-block").addClass("with-favuser");
+        }
+        
+        $(".header-user .header-layer-block li a").each((_, _c) => {
+          const c = $(_c);
+          const text = c.text();
+          c.replaceWith(`<a${c.text() === "退出登录" ? 
+          ` id="common-logout-btn"` : 
+          ` href="${
+            c.prop("href")
+          }" target="_blank"`}><i class="${
+            (McmodderValues.iconMap as any)[text]
+          }"/><span>${
+            text
+          }</span><i class="fa fa-chevron-right" /></a>`);
         });
       }
-      
-      $(".header-user .header-layer-block li a").each((_, _c) => {
-        const c = $(_c);
-        const text = c.text();
-        c.replaceWith(`<a${c.text() === "退出登录" ? 
-        ` id="common-logout-btn"` : 
-        ` href="${
-          c.prop("href")
-        }" target="_blank"`}><i class="${
-          (McmodderValues.iconMap as any)[text]
-        }"/><span>${
-          text
-        }</span><i class="fa fa-chevron-right" /></a>`);
-      });
     }
 
     const textArea = $(".text-area.common-text, .item-content.common-text, .post-row");
-    if (this.utils.getConfig("mcmodderUI")) {
+    if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       // 去除正文异常背景
-      if (!this.utils.getConfig("disableAutoStyleFix")) {
+      if (!this.configRepository.getSettings("disableAutoStyleFix")) {
         textArea.find("*").filter((_i, c) => $(c).css("background-color") === "rgb(255, 255, 255)").css("background-color", "");
         textArea.find("span").filter((_i, c) => $(c).css("color") === "rgb(0, 0, 0)").css("color", "");
       }
@@ -812,7 +692,7 @@ export class Mcmodder {
     }
 
     // 夜间模式正文颜色自动适配
-    if (!this.utils.getConfig("disableAutoStyleFix")) {
+    if (!this.configRepository.getSettings("disableAutoStyleFix")) {
       textArea.find("*").each((_, _e) => {
         const e = _e as HTMLElement;
         const css = (e as HTMLElement).style.getPropertyValue("color");
@@ -827,19 +707,19 @@ export class Mcmodder {
       });
     }
 
-    if (this.utils.getConfig("adaptableNightMode")) {
+    if (this.configRepository.getSettings("adaptableNightMode")) {
       const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-      this.utils.setConfig("nightMode", scheme.matches);
+      this.configRepository.setSettings("nightMode", scheme.matches);
       scheme.addEventListener("change", _ => {
-        this.utils.setConfig("nightMode", scheme.matches);
+        this.configRepository.setSettings("nightMode", scheme.matches);
       });
     }
-    else this.isNightMode = this.utils.getConfig("nightMode");
+    else this.isNightMode = this.configRepository.getSettings("nightMode") ?? false;
 
     this.updateNightMode();
     this.updatePageWidth();
 
-    if (!this.utils.getConfig("adaptableNightMode")) {
+    if (!this.configRepository.getSettings("adaptableNightMode")) {
       $('<button id="mcmodder-night-switch" data-toggle="tooltip" data-original-title="夜间模式"><i class="fa fa-lightbulb-o"></i></button>')
       .appendTo(".header-container .header-search, .top-right")
       .click(() => this.switchNightMode());
@@ -851,25 +731,26 @@ export class Mcmodder {
       .appendTo(".header-container .header-search")
       .click(async e => {
         if (McmodderUtils.isKeyMatch({ shiftKey: true }, e)) { // 按住 Shift 以快捷切换至上一个状态
-          let t = this.currentUID, l = this.utils.getConfig("lastUid");
-          if (!await this.switchProfile(l)) return;
-          McmodderUtils.commonMsg("已快捷切换至" + (l ? ` UID:${l} ` : "未登录状态") + " ~");
-          this.utils.setConfig("lastUid", t);
+          const currentUID = this.currentUID;
+          const lastUID = this.configRepository.getSettings("lastUid") ?? 0;
+          if (!await this.switchProfile(lastUID)) return;
+          McmodderUtils.commonMsg("已快捷切换至" + (lastUID ? ` UID:${ lastUID } ` : "未登录状态") + " ~");
+          this.configRepository.setSettings("lastUid", currentUID);
           return;
         }
         this.fireProfileSelectFrame();
       });
     
-    this.preferredWiderScreen = this.utils.getConfig("preferredWiderScreen");
+    this.preferredWiderScreen = this.configRepository.getSettings("preferredWiderScreen") ?? false;
     $(`<button id="mcmodder-pagewidth-switch" data-toggle="tooltip" data-original-title="宽窄屏切换">
       <i class="fa fa-${ this.preferredWiderScreen ? "compress" : "expand" }"></i>
     </button>`)
     .appendTo(".header-container .header-search")
     .click(_e => {
-      this.utils.setConfig("preferredWiderScreen", !this.preferredWiderScreen);
+      this.configRepository.setSettings("preferredWiderScreen", !this.preferredWiderScreen);
     });
 
-    if (this.currentUID && this.utils.getConfig("mcmodderUI")) {
+    if (this.currentUID /* && this.configRepository.getSettings("mcmodderUI") */) {
       $('<button id="mcmodder-message-center" data-toggle="tooltip" data-original-title="消息中心"><i class="fa fa-bell-o"></i></button>')
       .appendTo(".header-container .header-search")
       .click(() => {
@@ -879,7 +760,7 @@ export class Mcmodder {
     }
 
     const msgAlert = Number($(".header-user-msg b").text());
-    if (this.utils.getConfig("mcmodderUI")) {
+    if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       $(".header-user-msg").remove();
       $(`<div class="mcmodder-rednum">`).appendTo("#mcmodder-message-center");
       this.notifyUnreadMessage(msgAlert);
@@ -890,10 +771,11 @@ export class Mcmodder {
 
     // TODO: 取消锁定导航栏
 
-    if (this.isV4 && this.utils.getConfig("mcmodderUI")) {
+    if (this.isV4 /* && this.configRepository.getSettings("mcmodderUI") */) {
       $(window).resize(McmodderUtils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
-        let l = $(".header-user").get(0).getBoundingClientRect();
-        if (l.x + l.width / 2 + 400 / 2 >= window.screen.width - McmodderValues.headerContainerHeight) {
+        const header = $(".header-user").get(0).getBoundingClientRect();
+        const menuWidth = 400;
+        if (header.x + header.width / 2 + menuWidth / 2 >= window.innerWidth - McmodderValues.headerContainerHeight) {
           $(".header-panel").addClass("mcmodder-header-panel-fixed");
         } else {
           $(".header-panel").removeClass("mcmodder-header-panel-fixed");
@@ -901,11 +783,12 @@ export class Mcmodder {
       })).resize();
     }
 
-    if (this.isV4 && this.utils.getConfig("customAdvancements")) { // 更新自定义成就
-      let completed: string = this.utils.getProfile("completed");
+    if (this.isV4 && this.configRepository.getSettings("customAdvancements")) { // 更新自定义成就
+      let completed = this.configRepository.getProfile("completed");
       if (completed) {
-        completed.split(",")?.forEach(id => {
-          let data = this.advutils.list.filter(e => e.id == id)[0];
+        completed.split(",")?.forEach(sid => {
+          const id = Number(sid);
+          let data = this.advutils.getData(id);
           McmodderUtils.showTaskTip(data.image || "",
             PublicLangData.center.task.list[data.lang].title,
             PublicLangData.center.task.list[data.lang].content,
@@ -914,11 +797,11 @@ export class Mcmodder {
           // playSound();
         });
       }
-      this.utils.setProfile("completed", "");
+      this.configRepository.setProfile("completed", "");
     }
 
     // 实时通讯
-    const autoNotifyDelay = this.utils.getConfig("alwaysNotify");
+    const autoNotifyDelay = this.configRepository.getSettings("alwaysNotify");
     if (!window.location.href.includes("https://admin.mcmod.cn/") && typeof fuc_topmenu_sync != "undefined" && autoNotifyDelay && autoNotifyDelay >= 0.1) setInterval(() => {
       this.utils.createRequest({
         url: `${ this.hostname }/frame/CommonHeader/`,
@@ -962,7 +845,7 @@ export class Mcmodder {
       }, 1e3);
     }
 
-    if (this.href.startsWith(this.hostname) && !this.href.includes("tools/cbcreator") && this.utils.getConfig("enableLive2D")) {
+    if (this.href.startsWith(this.hostname) && !this.href.includes("tools/cbcreator") && this.configRepository.getSettings("enableLive2D")) {
 
       const waifuFrame = $(`<div class="waifu">
         <div class="waifu-tips" style="opacity: 0;"></div>
@@ -988,9 +871,9 @@ export class Mcmodder {
 
       $(document).on("click", ".waifu-tool .fui-cross", _ => {
         $.cookie("mcmodgirl_hide", null, { path: "/" });
-        this.utils.setConfig("enableLive2D", false);
+        this.configRepository.setSettings("enableLive2D", false);
       });
-      if (this.utils.getConfig("customAdvancements")) $(document).on("click", ".waifu", () => {
+      if (this.configRepository.getSettings("customAdvancements")) $(document).on("click", ".waifu", () => {
         this.advutils.addProgress(AdvancementID.CLICK_GIRL_100_TIMES);
       });
     }
@@ -1005,8 +888,12 @@ export class Mcmodder {
     }, 16));
 
     this.updateItemTooltip();
-    $(document).on("mouseover", ".tooltip", e => {
-      e.currentTarget.remove();
+    document.addEventListener("pointerover", e => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement && target.classList.contains("tooltip"))) {
+        return;
+      }
+      target.remove();
     });
 
     this.copyright();

@@ -9,7 +9,7 @@ export class VersionListInit extends McmodderInit {
       this.parent.href.includes("/class/version/")
   }
   run() {
-    if (this.parent.utils.getConfig("versionHelper")) {
+    if (this.configs.getSettings("versionHelper")) {
       const container = $("<div>").insertBefore(".version-menu, .version-content-empty").get(0);
       createApp(VersionHelper, {
         parent: this.parent

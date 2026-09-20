@@ -1,5 +1,4 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderPalette, PaletteModifierSchedule, PaletteModifierStep } from "../types";
 import { McmodderUtils } from "../Utils";
 import { McmodderValues } from "../Values";
 
@@ -45,15 +44,19 @@ export class StyleLoader {
   }
 
   static async run(parent: Mcmodder) {
+    const configs = parent.configRepository;
     const module = import.meta.glob('../css/*.css', { query: "?raw", eager: true });
-    const baseCss = (module["../css/base.css"] as any).default as string;
-    const mcmodderUICss = (module["../css/mcmodderUI.css"] as any).default as string;
-    const aprilFoolsCss = (module["../css/aprilFools.css"] as any).default as string;
-    const tableThemeColorCss = (module["../css/tableThemeColor.css"] as any).default as string;
-    const tableLeftAlignCss = (module["../css/tableLeftAlign.css"] as any).default as string;
-    const tabSelectorInfoCss = (module["../css/tabSelectorInfo.css"] as any).default as string;
-    const splitScreenOnVerifyCss = (module["../css/splitScreenOnVerify.css"] as any).default as string;
-    const codemirrorCss = (module["../css/codemirror.css"] as any).default as string;
+    const mods = module as Record<string, { default: string }>;
+    const importCSS = (name: string) => mods[`../css/${ name }.css`].default;
+
+    const baseCss = importCSS("base");
+    const mcmodderUICss = importCSS("mcmodderUI");
+    const aprilFoolsCss = importCSS("aprilFools");
+    const tableThemeColorCss = importCSS("tableThemeColor");
+    const tableLeftAlignCss = importCSS("tableLeftAlign");
+    const tabSelectorInfoCss = importCSS("tabSelectorInfo");
+    const splitScreenOnVerifyCss = importCSS("splitScreenOnVerify");
+    const codemirrorCss = importCSS("codemirror");
 
     const basePalette: McmodderPalette = {
       "background": "#fff",
@@ -203,8 +206,16 @@ export class StyleLoader {
         } }
     }]);
 
-    const backgroundAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("backgroundAlpha")), 128, 255) / 0xFF;
-    const textShadowAlpha = McmodderUtils.clamp(Number(parent.utils.getConfig("textShadowAlpha")), 0, 255) / 0xFF;
+    const highlightPalette: McmodderPalette = {
+      "highlight-gold": "#fd0",
+      "highlight-aqua": "#8fd",
+      "highlight-pink": "#fcc",
+      "highlight-greenyellow": "#bf3"
+    }
+    const highlightPaletteCss = this.applyPaletteModifier(highlightPalette, [paletteTransparentStep]);
+
+    const backgroundAlpha = McmodderUtils.clamp(Number(configs.getSettings("backgroundAlpha")), 128, 255) / 0xFF;
+    const textShadowAlpha = McmodderUtils.clamp(Number(configs.getSettings("textShadowAlpha")), 0, 255) / 0xFF;
     const otherPaletteBaseCss = this.applyPaletteModifier({
       "background-transparent": McmodderUtils.setColorAlpha(basePalette.background, backgroundAlpha),
       "text-shadow": "#FFF0",
@@ -345,8 +356,8 @@ export class StyleLoader {
       "classstatus-6": "#333"
     }, []);
 
-    const bg = parent.utils.getConfig("defaultBackground") || McmodderValues.assets.bg;
-    const bgNight = parent.utils.getConfig("defaultNightBackground") || McmodderValues.assets.nightMode.bg;
+    const bg = configs.getSettings("defaultBackground") || McmodderValues.assets.bg;
+    const bgNight = configs.getSettings("defaultNightBackground") || McmodderValues.assets.nightMode.bg;
     const otherCss = `
       --mcmodder-image-background: ${ bg === "none" ? "none" : `url(${ bg }) fixed` };
     `
@@ -360,6 +371,7 @@ export class StyleLoader {
         ${ basePaletteBackgroundCss }
         ${ basePaletteTextCss }
         ${ themePaletteBaseCss }
+        ${ highlightPaletteCss }
         ${ codemirrorPaletteCss }
         ${ otherPaletteBaseCss }
         ${ otherCss }
@@ -383,42 +395,42 @@ export class StyleLoader {
     };
 
     const htmlNode = $("html");
-    if (parent.utils.getConfig("disableGradient")) {
+    if (configs.getSettings("disableGradient")) {
       htmlNode.addClass("mcmodder-config-disable-gradient");
     }
-    // if (parent.utils.getConfig("disableFadeTransition")) {
+    // if (configs.get("disableFadeTransition")) {
     //   htmlNode.addClass("mcmodder-config-disable-fade-transition")
     // }
 
     let style = "";
     style += css.themeColor;
     style += css.base;
-    if (parent.utils.getConfig("mcmodderUI")) {
+    // if (configs.get("mcmodderUI")) {
       style += css.mcmodderUI;
-    }
-    if (parent.utils.getConfig("mcmodderUI") && parent.utils.getConfig("tableThemeColor")) {
+    // }
+    if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {
       style += css.tableThemeColor;
     }
-    if (parent.utils.getConfig("tableLeftAlign")) {
+    if (configs.getSettings("tableLeftAlign")) {
       style += css.tableLeftAlign;
     }
-    if (parent.utils.getConfig("tabSelectorInfo")) {
+    if (configs.getSettings("tabSelectorInfo")) {
       style += css.tabSelectorInfo;
     }
-    if (parent.utils.getConfig("splitScreenOnVerify")) {
+    if (configs.getSettings("splitScreenOnVerify")) {
       style += css.splitScreenOnVerify;
     }
-    // if (parent.utils.getConfig("markdownIt")) {
+    // if (configs.get("markdownIt")) {
     style += css.codemirrorCss;
     // }
-    if (parent.utils.getConfig("enableAprilFools")) { /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
+    if (configs.getSettings("enableAprilFools")) { /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
       style += css.aprilFools;
     }
 
     parent.css = style;
     McmodderUtils.addStyle(style);
 
-    const radiusRatio: number | undefined = parent.utils.getConfig("radiusRatio");
+    const radiusRatio: number | undefined = configs.getSettings("radiusRatio");
     document.documentElement.style.setProperty("--mcmodder-ratio-radius", (radiusRatio === undefined ? 1 : radiusRatio).toString());
 
     parent.updateNightMode();

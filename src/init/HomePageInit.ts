@@ -1,8 +1,8 @@
 import { GM_setValue } from "$";
-import { McmodderAlmanacs } from "../widget/Almanacs";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
-import { RecentlyVisitedData } from "../types";
+import { createApp } from "vue";
+import Almanacs from "../vue/components/Almanacs.vue";
 
 export class HomePageInit extends McmodderInit {
   canRun() {
@@ -29,27 +29,26 @@ export class HomePageInit extends McmodderInit {
       )
     }
 
-    if (this.parent.utils.getConfig("almanacs")) {
+    if (this.configs.getSettings("almanacs")) {
       // 数据迁移
-      let almanacsList = this.parent.utils.getConfig("almanacsList");
+      let almanacsList = this.configs.getSettings("almanacsList");
       if (almanacsList) {
         GM_setValue("almanacsList", almanacsList);
-        this.parent.utils.setConfig("almanacsList", "");
+        this.configs.setSettings("almanacsList", "");
       }
 
-      const almanacs = new McmodderAlmanacs(this.parent);
-      almanacs.get(McmodderUtils.getStartTime(new Date(), 0));
-      almanacs.getInstance().insertAfter($(".news_block").first());
+      const container = $(`<div class="news_block mcmodder-almanacs">`).insertAfter($(".news_block").first());
+      createApp(Almanacs, { parent: this.parent }).mount(container.get(0));
     }
 
-    if (this.parent.utils.getConfig("rememberVisitedMods")) {
+    if (this.configs.getSettings("rememberVisitedMods")) {
       this.initRecentlyVisitedMods();
     }
   }
 
   private initRecentlyVisitedMods() {
     const v4 = this.parent.isV4;
-    const recentlyVisitedMods = (this.parent.utils.getConfig("recentlyVisitedMods") as RecentlyVisitedData[]).reverse();
+    const recentlyVisitedMods = this.configs.getSettings("recentlyVisitedMods")?.reverse() ?? []
     const maxPage = Math.ceil(recentlyVisitedMods.length / 10);
     if (maxPage === 0) return;
     let page = 0;
@@ -114,7 +113,7 @@ export class HomePageInit extends McmodderInit {
     const maxItem = Math.min(length, (page + 1) * 10);
     for (let i = page * 10; i < maxItem; i++) {
       const { id, time } = list[i];
-      const data = this.parent.utils.getAllClass(id);
+      const data = this.configs.getAllClass(id);
       const link = McmodderUtils.getClassURL(id);
       const card = $(v4 ? '<div class="recent-item">' : '<div class="block">').appendTo(content);
       const block = v4 ? $('<div class="recent-card">').appendTo(card) : card;

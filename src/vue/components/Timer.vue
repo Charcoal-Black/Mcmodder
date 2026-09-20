@@ -5,7 +5,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { TimerDataFormatter, TimerDataGetter } from '../../types';
 import { McmodderTimer } from '../../widget/Timer';
 
 interface Props {
@@ -17,7 +16,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   updateInterval: 1000,
-  dataFormatter: McmodderTimer.DATAFORMATTER_EN
+  dataFormatter: () => McmodderTimer.DATAFORMATTER_EN
 });
 
 const dataGetter = typeof props.dataGetter === "number" ?

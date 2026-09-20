@@ -4,8 +4,10 @@ import { ItemTabInit } from "./ItemTabInit";
 
 export class OredictPageInit extends McmodderInit{
   canRun() {
-    return this.parent.href.includes("/oredict/") &&
-      this.parent.utils.getConfig("advancedOredictPage");
+    return !!(
+      this.parent.href.includes("/oredict/") &&
+      this.configs.getSettings("advancedOredictPage")
+    );
   }
 
   run() {

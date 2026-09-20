@@ -1,4 +1,3 @@
-import { EditorAlertForm, EditorAlertHTMLModifier, PreSubmitData } from "../types";
 import { McmodderUEditor } from "../ueditor/UEditor";
 import { McmodderUtils } from "../Utils";
 import { InputListController } from "../widget/InputListController";
@@ -179,7 +178,7 @@ export class EditorInit extends McmodderInit {
     )
   }
 
-  private runLatex() {
+  // private runLatex() {
     // let mathjax_config = document.createElement("script");
     // mathjax_config.id = "mcmodder-mathjax-config";
     // mathjax_config.innerHTML = "\
@@ -213,14 +212,14 @@ export class EditorInit extends McmodderInit {
     //     })
     //   });
     // }, 2e3);
-  }
+  // }
 
   private readonly swalObserver = new MutationObserver(mutationList => {
     for (let mutation of mutationList) {
       if (!(mutation.addedNodes[0] as HTMLElement)?.className?.includes("swal2")) continue;
       let st = $(".swal2-title").text();
       if (st === PublicLangData.editor.success.title) {
-        if (this.parent.utils.getConfig("autoCloseSwal")) {
+        if (this.configs.getSettings("autoCloseSwal")) {
           swal.close();
           McmodderUtils.commonMsg("提交成功，请等待管理员审核~");
         }
@@ -251,7 +250,7 @@ export class EditorInit extends McmodderInit {
           }
         });
 
-        if (this.parent.utils.getConfig("noSubmitWarningDelay") && $(".edit-dataverify-frame .warning li").length) {
+        if (this.configs.getSettings("noSubmitWarningDelay") && $(".edit-dataverify-frame .warning li").length) {
           McmodderUtils.commonMsg("您已启用“取消提交警告延时”，请检查编辑内容无误后再提交！", false, "警告");
           $(".swal2-confirm").removeAttr("disabled");
         }
@@ -279,7 +278,7 @@ export class EditorInit extends McmodderInit {
         $("<p>").text("改动说明: " + desc).appendTo(".edit-user-alert");
 
         // 预提交
-        if (this.parent.utils.getConfig("preSubmitCheckInterval") >= 0.1) {
+        if (this.configs.getSettings("preSubmitCheckInterval")! >= 0.1) {
           let strEditTypeName;
           if (strEditType === "author") strEditTypeName = $("#author-team").prop("checked") ? PublicLangData[strEditType].alter.team : PublicLangData[strEditType].alter.single;
           else strEditTypeName = PublicLangData[strEditType].alter;
@@ -307,7 +306,7 @@ export class EditorInit extends McmodderInit {
               delimiter: "；",
               hideBeforeInput: true,
               suggestionManager: {
-                utils: this.parent.utils,
+                configs: this.configs,
                 configKey: "editReasons"
               }
             });
@@ -354,7 +353,7 @@ export class EditorInit extends McmodderInit {
                 rawData: editorData,
                 config: config
               };
-              const preSubmitList = this.parent.utils.getProfile("preSubmitList") || [];
+              const preSubmitList = this.configs.getProfile("preSubmitList") ?? [];
               for (const i in preSubmitList) {
                 if (preSubmitEntry && preSubmitEntry.url === preSubmitList[i].url) {
                   preSubmitList[i] = Object.assign({}, preSubmitEntry);
@@ -362,7 +361,7 @@ export class EditorInit extends McmodderInit {
                 }
               }
               if (preSubmitEntry) preSubmitList.push(preSubmitEntry);
-              this.parent.utils.setProfile("preSubmitList", preSubmitList);
+              this.configs.setProfile("preSubmitList", preSubmitList);
               McmodderUtils.commonMsg(`预编辑内容${ preSubmitEntry ? "保存" : "替换" }成功，将会在正式提交时提醒~`);
               swal.close();
             })
@@ -373,9 +372,9 @@ export class EditorInit extends McmodderInit {
       // 其他一堆并进 McmodderAdvancedUEditor 的小玩意儿
 
       // LaTeX 编辑器
-      if (this.parent.utils.getConfig("latexEditor")) {
-        this.runLatex();
-      }
+      // if (this.configs.get("latexEditor")) {
+      //   this.runLatex();
+      // }
     }
 
     this.swalObserver.observe(document.body, { childList: true });

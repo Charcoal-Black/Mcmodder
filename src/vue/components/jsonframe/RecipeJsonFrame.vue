@@ -31,12 +31,12 @@ import { onMounted, useTemplateRef } from 'vue';
 import { McmodderInputType } from '../../../config/ConfigUtils.ts';
 import { McmodderMap } from '../../../map/Map.ts';
 import { McmodderTable } from '../../../table/Table.ts';
-import { EditConfigsInitializer, HeadConfigsInitializer, JsonFrameProps, McmodderItemData, McmodderJsonStorage, McmodderRecipeData, McmodderRecipeIngredient, RecipeJsonFrameGuiBound } from '../../../types';
 import { ItemDisplay } from '../../../widget/ItemDisplay.ts';
 import Collapsible from '../Collapsible.vue';
 import GenericTable from '../table/GenericTable.vue';
 import JsonFrame from './JsonFrame.vue';
 import { McmodderValues } from '../../../Values.ts';
+import type { JsonFrameProps } from '../../../types/props';
 
 const props = defineProps<JsonFrameProps>();
 
@@ -79,7 +79,7 @@ const tagMap = new McmodderMap<McmodderItemData>("OredictList");
 const guiMap = new McmodderMap<RecipeJsonFrameGuiBound>("guiID");
 let guiBound: RecipeJsonFrameGuiBound[] | undefined;
 
-const selection: McmodderJsonStorage<McmodderItemData> = props.parent.utils.getAllConfig("mcmodderJsonStorage", {});
+const selection: McmodderJsonStorage<McmodderItemData> = props.parent.configRepository.getAll("mcmodderJsonStorage") ?? {};
 Object.values(selection).forEach(content => {
   itemMap.add(content);
   tagMap.add(content);
@@ -118,7 +118,7 @@ function onRefresh() {
 
 function updateGuiBound() {
   guiMap.clear();
-  guiBound = props.parent.utils.getAllConfig("guiBound") ?? McmodderValues.defaultGuiBound;
+  guiBound = props.parent.configRepository.getAll("guiBound") ?? McmodderValues.defaultGuiBound;
   guiMap.add(guiBound!);
 }
 
@@ -149,7 +149,7 @@ function updateBindFrame() {
 
 function onEditGuiBound() {
   guiBoundTable.value!.saveAll();
-  props.parent.utils.setAllConfig("guiBound", guiBoundTable.value!.getAllData().filter(bound => bound.mcmodID > 0));
+  props.parent.configRepository.setAll("guiBound", guiBoundTable.value!.getAllData().filter(bound => bound.mcmodID > 0));
 }
 
 </script>

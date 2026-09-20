@@ -1,39 +1,40 @@
+import type { ConfigRepository } from "../../config/ConfigRepository";
 import { Mcmodder } from "../../Mcmodder";
-import { ItemRepository } from "./ItemRepository";
+import type { ItemRepository } from "./ItemRepository";
 
 export class GMStorageRepository<T extends object> implements ItemRepository<T> {
-  private readonly parent: Mcmodder;
-  private readonly configName: string;
+  private readonly configs: ConfigRepository;
+  private readonly configName: KeysOfType<Required<McmodderStorage>, Record<string, object[]>>;
 
-  constructor(parent: Mcmodder, configName: string) {
-    this.parent = parent;
+  constructor(parent: Mcmodder, configName: KeysOfType<Required<McmodderStorage>, Record<string, object[]>>) {
+    this.configs = parent.configRepository;
     this.configName = configName;
   }
 
   async init() {
-    if (this.parent.utils.getAllConfig(this.configName) === undefined) {
-      this.parent.utils.setAllConfig(this.configName, {});
+    if (this.configs.getAll(this.configName) === undefined) {
+      this.configs.setAll(this.configName, {});
     }
   }
 
   async listFilename() {
-    const selection = this.parent.utils.getAllConfig(this.configName);
+    const selection = this.configs.getAll(this.configName)!;
     return Object.keys(selection);
   }
 
   async createFile(filename: string) {
-    this.parent.utils.setConfig(filename, [], this.configName);
+    this.configs.set(this.configName, filename, []);
   }
 
   async deleteFile(filename: string) {
-    this.parent.utils.deleteConfig(filename, this.configName);
+    this.configs.delete(this.configName, filename);
   }
 
   async read(filename: string) {
-    return this.parent.utils.getConfig(filename, this.configName);
+    return this.configs.get(this.configName, filename)! as T[];
   }
 
   async write(filename: string, data: T[]) {
-    this.parent.utils.setConfig(filename, data, this.configName);
+    this.configs.set(this.configName, filename, data);
   }
 }

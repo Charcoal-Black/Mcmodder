@@ -42,7 +42,6 @@
 import { onMounted, ref, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import { McmodderTable } from '../../table/Table.ts';
-import { HeadConfigsInitializer, StructureEditorBlocktype } from '../../types';
 import { McmodderUtils } from '../../Utils.ts';
 import GenericTable from './table/GenericTable.vue';
 import { McmodderValues } from '../../Values.ts';
@@ -88,7 +87,7 @@ function onInputChange(e: Event) {
 }
 
 function onStructureSelectorChange(e: Event) {
-  parent.utils.setConfig("structureSelected", (e.currentTarget as HTMLInputElement).value);
+  parent.configRepository.setSettings("structureSelected", (e.currentTarget as HTMLInputElement).value);
   location.reload();
 }
 
@@ -99,7 +98,7 @@ async function loadScripts() {
   await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.threeOrbitControls);
   await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.threeTween);
   McmodderUtils.loadScript(document.head, 'import{EXGridHelper}from"/static/public/plug/three/three.ex-grid-helper.js";window.structure_enchanted_grid_helper=function(r,e,t,i,d){return new EXGridHelper(r,e,t,i,d)}', null, "module");
-  McmodderUtils.loadScript(document.body, `comment_container = ${ parent.utils.getConfig("structureSelected") || "36016" };`);
+  McmodderUtils.loadScript(document.body, `comment_container = ${ parent.configRepository.getSettings("structureSelected") || "36016" };`);
   await McmodderUtils.loadScript(document.body, null, McmodderValues.assets.mcmod.js.structureBrowser);
   await McmodderUtils.loadScript(document.body, null, McmodderValues.assets.mcmod.js.item);
 }

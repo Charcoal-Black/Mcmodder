@@ -1,6 +1,6 @@
 import Dexie from "dexie";
 import type { EntityTable, Version } from "dexie";
-import { ItemRepository } from "./ItemRepository";
+import type { ItemRepository } from "./ItemRepository";
 
 export class IndexedDBRepository<T extends object> implements ItemRepository<T> {
   private readonly db: Dexie;

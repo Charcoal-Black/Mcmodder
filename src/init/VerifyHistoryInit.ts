@@ -9,7 +9,7 @@ export class VerifyHistoryInit extends McmodderInit {
     return this.parent.href.includes("/verify.html");
   }
   run() {
-    if (this.parent.utils.getConfig("autoExpandPage")) {
+    if (this.configs.getSettings("autoExpandPage")) {
       this.stopExpand = false;
       let maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0])
       let param = window.location.href.split("verify.html?")[1]?.split("&page=")[0]

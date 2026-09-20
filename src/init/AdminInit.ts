@@ -1,5 +1,4 @@
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderTimer } from "../widget/Timer";
 import { McmodderUtils } from "../Utils";
 import { McmodderInit } from "./Init";
@@ -10,11 +9,18 @@ import { McmodderMainText } from "../widget/MainText";
 import { InputListController } from "../widget/InputListController";
 import { createApp } from "vue";
 import Timer from "../vue/components/Timer.vue";
+import TextComparator from "../vue/components/TextComparator.vue";
 
 type ParsedOpinion = [number, number, number, number];
 
 export class AdminInit extends McmodderInit {
   private triggered: Set<string> = new Set;
+
+  private verifyContainer?: JQuery;
+  private verifyWindow?: JQuery;
+  private verifyFrame?: JQuery;
+  private verifyWindowDivider?: HorizontalDraggableFrame;
+
   canRun() {
     return this.parent.href.includes("admin.mcmod.cn");
   }
@@ -33,10 +39,6 @@ export class AdminInit extends McmodderInit {
         let refundButton: JQuery;
         let checkButton: JQuery;
         let reasonInput: JQuery;
-        let verifyContainer: JQuery;
-        let verifyWindow: JQuery;
-        let verifyFrame: JQuery;
-        let verifyWindowDivider: HorizontalDraggableFrame;
         let verifyClassID: number | undefined;
         let prevHeight = 0;
         // let itemID: number | undefined;
@@ -48,7 +50,8 @@ export class AdminInit extends McmodderInit {
         $('<button class="btn" id="mcmodder-check-verification" data-toggle="tooltip" data-original-title="快捷统计全部所管理模组区域的待审项数目，并予以高亮提示！对资深编辑员不适用。">一键查询待审项</button>')
         .insertAfter(".selectJump.bs3")
         .click(() => this.getVerificationCount());
-        if (this.parent.utils.getConfig("autoVerifyDelay") >= 1e-2) {
+        const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
+        if (autoVerifyDelay && autoVerifyDelay >= 1e-2) {
           const title = $(`<span style="margin-left: 10px;">距离自动查询: </span>`).insertAfter("#mcmodder-check-verification");
           const text = $("<span>").appendTo(title).get(0);
           createApp(Timer, {
@@ -60,26 +63,25 @@ export class AdminInit extends McmodderInit {
         // 单项审核界面
         // 分屏
         let singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
-        const splitScreenOnVerify = this.parent.utils.getConfig("splitScreenOnVerify")
+        const splitScreenOnVerify = this.configs.getSettings("splitScreenOnVerify")
         if (splitScreenOnVerify && !this.parent.isMobileClient) {
           const connectedFrame = document.getElementById("connect-frame");
           if (!connectedFrame) return;
-          verifyContainer = $("<div>").appendTo(connectedFrame);
-          verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(verifyContainer);
-          verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(verifyWindow);
-          verifyWindowDivider = new HorizontalDraggableFrame({}, connectedFrame)
+          this.verifyContainer = $("<div>").appendTo(connectedFrame);
+          this.verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(this.verifyContainer);
+          this.verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(this.verifyWindow);
+          this.verifyWindowDivider = new HorizontalDraggableFrame("verifyWindowDivider", this.configs, {}, connectedFrame)
           .setHorizontalPos(1)
-          .bindRight(verifyContainer, true);
+          .bindRight(this.verifyContainer, true);
 
           if (!this.triggered.has("模组区内容审核")) {
-            this.initAssistantViewed();
-            const verifyWindowElement = verifyWindow.get(0);
+            const verifyWindowElement = this.verifyWindow.get(0);
             $(window).scroll(McmodderUtils.animationThrottle(() => {
               const top = document.scrollingElement?.scrollTop;
-              const bottom = verifyContainer.prop("scrollHeight") as number;
+              const bottom = this.verifyContainer!.prop("scrollHeight") as number;
               if (top != undefined) {
                 const height = Math.min(bottom - top, screen.height);
-                verifyWindow.css({
+                this.verifyWindow!.css({
                   "margin-top": top + "px",
                   "height": height + "px"
                 });
@@ -93,10 +95,7 @@ export class AdminInit extends McmodderInit {
                 prevHeight = height;
               }
             }));
-            $(document).on("click", ".mcmodder-compare-icon", e => {
-              $(e.currentTarget).toggleClass("large");
-            })
-            .on("click", ".mcmodder-verify-locate", _e => {
+            $(document).on("click", ".mcmodder-verify-locate", _e => {
               if (verifyID === undefined) {
                 McmodderUtils.commonMsg("待审项 ID 获取失败...", false);
                 return;
@@ -107,53 +106,24 @@ export class AdminInit extends McmodderInit {
               } else {
                 McmodderUtils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
               }
-            })
-            .on("click", ".assistant-action-btns .action-btn", e => {
-              const data = (e.currentTarget as HTMLElement).dataset.data;
-              if (!data) {
-                return;
-              }
-              const id = Number(JSON.parse(data).verifyID);
-              this.markEntryAsViewed(id);
-              this.getEntry(id).addClass("mcmodder-verify-commented");
-            })
-            .keydown(e => setTimeout(() => { // 由于swal自身的特性，直接检测会导致连续触发二次确认按钮，这里使用setTimeout
-              if (this.parent.isMobileClient) {
-                return;
-              }
-              if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
-                e.stopPropagation();
-                checkButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
-                e.stopPropagation();
-                passButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
-                e.stopPropagation();
-                refundButton?.click();
-              }
-              else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
-                e.preventDefault();
-                reasonInput?.focus();
-              }
-            }, 10));
+            });
           }
 
           // 打开待审项时打开分屏
           $("#connect-frame-sub").on("click", "tr[data-data]", e => {
-            verifyFrame.empty().addClass("mcmodder-loading-container").append(`<div class="mcmodder-loading"></div>`);
-            verifyWindowDivider.expandIfCollapsed();
+            this.verifyFrame!.empty().addClass("mcmodder-loading-container").append(`<div class="mcmodder-loading"></div>`);
+            this.verifyWindowDivider!.expandIfCollapsed();
             const target = $(e.currentTarget);
             this.mergeChangedOpinions(target);
           });
 
           singleVerifyCallbackOnSplit = (mutation: MutationRecord) => {
             // 重排版
-            verifyFrame.empty().removeClass("mcmodder-loading-container").trigger("scroll");
-            $(mutation.target).contents().appendTo(verifyFrame);
-            verifyFrame.find("> p:first-child()").next().hide();
-            verifyFrame.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(e => {
+            if (!this.verifyFrame) return;
+            this.verifyFrame.empty().removeClass("mcmodder-loading-container");
+            $(mutation.target).contents().appendTo(this.verifyFrame);
+            this.verifyFrame.find("> p:first-child()").next().hide();
+            this.verifyFrame.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(e => {
               let t = $(e.currentTarget);
               if (t.attr("hide") === "1") {
                 t.attr("hide", "0").next().show();
@@ -163,10 +133,50 @@ export class AdminInit extends McmodderInit {
                 t.find("span").html("[展开]");
               }
             });
-            verifyFrame.find("> hr").remove();
-            verifyFrame.find(".verify-action-btns br").remove();
-            verifyFrame.find(".assistant-action-btns br").remove();
+            this.verifyFrame.find("> hr").remove();
+            this.verifyFrame.find(".verify-action-btns br").remove();
+            this.verifyFrame.find(".assistant-action-btns br").remove();
+            // setTimeout(() => {
+              window.dispatchEvent(new Event("scroll"));
+            // }, 100);
           }
+        }
+
+        if (!this.triggered.has("模组区内容审核")) {
+          this.initAssistantViewed();
+          $(document).on("click", ".mcmodder-compare-icon", e => {
+            $(e.currentTarget).toggleClass("large");
+          })
+          .on("click", ".assistant-action-btns .action-btn", e => {
+            const data = (e.currentTarget as HTMLElement).dataset.data;
+            if (!data) {
+              return;
+            }
+            const id = Number(JSON.parse(data).verifyID);
+            this.markEntryAsViewed(id);
+            this.getEntry(id).addClass("mcmodder-verify-commented");
+          })
+          .keydown(e => setTimeout(() => { // 由于swal自身的特性，直接检测会导致连续触发二次确认按钮，这里使用setTimeout
+            if (this.parent.isMobileClient) {
+              return;
+            }
+            if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
+              e.stopPropagation();
+              checkButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+              e.stopPropagation();
+              passButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+              e.stopPropagation();
+              refundButton?.click();
+            }
+            else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+              e.preventDefault();
+              reasonInput?.focus();
+            }
+          }, 10));
         }
 
         const lastRefundText: Record<number, string> = {};
@@ -178,13 +188,13 @@ export class AdminInit extends McmodderInit {
               if (singleVerifyCallbackOnSplit) {
                 singleVerifyCallbackOnSplit(mutation);
               } else {
-                verifyFrame = $("#verify-window-frame");
+                this.verifyFrame = $("#verify-window-frame");
               }
 
               // 定位
               try {
-                verifyID = verifyFrame.find("#verify-pass-btn, #assistant-pass-btn").data("data").verifyID;
-                const p = $(`<p>本待审项 ID = </p>`).prependTo(verifyFrame);
+                verifyID = this.verifyFrame!.find("#verify-pass-btn, #assistant-pass-btn").data("data").verifyID;
+                const p = $(`<p>本待审项 ID = </p>`).prependTo(this.verifyFrame!);
                 const id = $(`<span class="mcmodder-slim-dark">${ verifyID }</span>`).appendTo(p);
                 McmodderUtils.addClickCopyEvent(id, "本待审项 ID ", verifyID);
                 if (splitScreenOnVerify) {
@@ -196,7 +206,7 @@ export class AdminInit extends McmodderInit {
 
               // 解析基本信息
               let currentPos = 0;
-              const verifyInfoText = verifyFrame.children("p").filter((_, p) => p.textContent.startsWith("操作类型")).get(0).firstChild as Text;
+              const verifyInfoText = this.verifyFrame!.children("p").filter((_, p) => p.textContent.startsWith("操作类型")).get(0).firstChild as Text;
               verifyInfoText.data.split("，")
               .forEach(text => {
                 const colon = text.indexOf("：");
@@ -226,17 +236,17 @@ export class AdminInit extends McmodderInit {
               //   itemID = McmodderUtils.abstractIDFromURL(itemLink, "item");
               // }
 
-              passButton = verifyFrame.find(passButtonSelector);
-              refundButton = verifyFrame.find(refundButtonSelector);
-              checkButton = verifyFrame.find(checkButtonSelector);
-              reasonInput = verifyFrame.find(reasonInputSelector);
+              passButton = this.verifyFrame!.find(passButtonSelector);
+              refundButton = this.verifyFrame!.find(refundButtonSelector);
+              checkButton = this.verifyFrame!.find(checkButtonSelector);
+              reasonInput = this.verifyFrame!.find(reasonInputSelector);
 
               if (!this.parent.isMobileClient) {
-                passButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyPass")));
-                refundButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyRefund")));
-                checkButton.append(" " + McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindVerifyCheck")));
+                passButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyPass")!));
+                refundButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyRefund")!));
+                checkButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyCheck")!));
                 reasonInput.attr("placeholder", `填写附言或退回理由.... (按下 ${
-                  McmodderUtils.keyToString(this.parent.utils.getConfig("keybindVerifyReason"))
+                  McmodderUtils.keyToString(this.configs.getSettings("keybindVerifyReason")!)
                 } 以快速聚焦)`);
               }
 
@@ -244,14 +254,14 @@ export class AdminInit extends McmodderInit {
                 delimiter: "；",
                 hideBeforeInput: true,
                 suggestionManager: {
-                  utils: this.parent.utils,
+                  configs: this.configs,
                   configKey: "verifyReasons"
                 }
               });
 
               // 正文对比
-              verifyFrame.find("#mcmodder-text-area").remove();
-              verifyFrame.find(".verify-copy-btn").parent()
+              this.verifyFrame!.find("#mcmodder-text-area").remove();
+              this.verifyFrame!.find(".verify-copy-btn").parent()
               .filter((_, c) => $(c).css("position") === "absolute").remove(); // 移除原版复制按钮
 
               const appendImgContainer = (_: number, e: Element) => {
@@ -264,7 +274,7 @@ export class AdminInit extends McmodderInit {
                 const rowText = e.firstChild?.textContent;
                 if (!rowText) return;
                 else if (rowText.includes("介绍") || rowText.includes("正文")) {
-                  const insertPos = verifyFrame.find(".verify-action-btns, .assistant-action-btns").parent().children().first();
+                  const insertPos = this.verifyFrame!.find(".verify-action-btns, .assistant-action-btns").parent().children().first();
                   let textA = row.children("td:nth-child(3)");
                   let textB = row.children("td:nth-child(2)");
                   const commonTextA = textA.find(".common-text");
@@ -272,7 +282,8 @@ export class AdminInit extends McmodderInit {
                   if (commonTextA.length) textA = commonTextA;
                   if (commonTextB.length) textB = commonTextB;
                   if (textA.length && textB.length) {
-                    (new TextCompareFrame(insertPos, textA, textB)).performCompare();
+                    const comparatorFrame = $("<div>").insertBefore(insertPos);
+                    createApp(TextComparator, { textA, textB }).mount(comparatorFrame.get(0));
                   }
                   new McmodderMainText(this.parent, textA);
                   new McmodderMainText(this.parent, textB);
@@ -397,7 +408,7 @@ export class AdminInit extends McmodderInit {
         singleVerifyObserver.observe($("#connect-frame-sub").get(0), { childList: true, subtree: true });
 
         clearInterval(intervalEventID);
-        const interval = this.parent.utils.getConfig("alwaysNotifyVerification") ?? 0;
+        const interval = this.configs.getSettings("alwaysNotifyVerification") ?? 0;
         if (interval > 0.1) {
           setInterval(() => {
             if ($(".page-header .title").text() != "模组区内容审核") {
@@ -421,14 +432,14 @@ export class AdminInit extends McmodderInit {
             // const preview = $('<table class="table table-bordered item-list-table item-list-table-1"><thead><tr><th colspan="3"><span class="title"><a target="_blank" href="//www.mcmod.cn/class/8.html">[M3]更多喵呜机 (More Meowing Machinery)</a> 的 物品/方块 资料 (预览)</span></th></tr></thead><tbody><tr><th class="item-list-type-left" style="padding: 0px">一级分类</th><th class="item-list-type-left" style="padding: 0px">二级分类</th><td class="item-list-type-right" style="padding: 0px"><ul><li><span><a href="/item/5281.html" target="_blank"><img class="icon" alt="锡矿石" src="//i.mcmod.cn/item/icon/32x32/0/5281.png?v=3" width="15" height="15"></a><a href="/item/5281.html" target="_blank" >锡矿石</a></span></li><li><span><a href="//www.mcmod.cn/item/40226.html" target="_blank"><img class="icon" alt="锇矿石" src="//i.mcmod.cn/item/icon/32x32/4/40226.png?v=5" width="15" height="15"></a><a href="//www.mcmod.cn/item/40226.html" target="_blank" >锇矿石</a></span></li><li><span><a href="/item/40227.html" target="_blank"><img class="icon" alt="铜矿石" src="//i.mcmod.cn/item/icon/32x32/4/40227.png?v=3" width="15" height="15"></a><a href="//www.mcmod.cn/item/40227.html" target="_blank" >铜矿石</a></span></li><li><span><a href="/item/40337.html" target="_blank"><img class="icon alt="盐块" src="//i.mcmod.cn/item/icon/32x32/4/40337.png?v=2" width="15" height="15"></a><a href="//www.mcmod.cn/item/40337.html" target="_blank" >盐块</a></span></li></ul></td></tr></tbody></table>').insertBefore($(".table-condensed").get(1));
             McmodderUtils.addStyle('', "mcmodder-style-preview");
 
-            if (this.parent.utils.getConfig("itemListStyleFix")) {
+            if (this.configs.getSettings("itemListStyleFix")) {
               const h = $("#connect-frame-sub script").html() + "//end";
               $("#itemlist-head-th").val(h.split('$("#itemlist-head-th").val("')[1].split('");$("#itemlist-body-th").val("')[0].replaceAll("\\n", "\n"));
               $("#itemlist-body-th").val(h.split('");$("#itemlist-body-th").val("')[1].split('");$("#itemlist-body-td").val("')[0].replaceAll("\\n", "\n"));
               $("#itemlist-body-td").val(h.split('");$("#itemlist-body-td").val("')[1].split('");//end')[0].replaceAll("\\n", "\n"));
             }
             $("#connect-frame-sub textarea").addClass("mcmodder-monospace");
-            if (this.parent.utils.getConfig("itemListStylePreview")) {
+            if (this.configs.getSettings("itemListStylePreview")) {
               $("textarea.style-box").each(function () {
                 $(this).bind("change", function () {
                   const t = (c: string) => $(c).val().replace(/<!--[\s\S]*?-->/g, "");
@@ -651,7 +662,7 @@ export class AdminInit extends McmodderInit {
     $(document.createTextNode("]")).appendTo(td);
   }
 
-  private readonly assistantViewed = this.parent.utils.getAllConfig("assistantViewed", {}) as Record<number, number[]>;
+  private readonly assistantViewed = this.configs.getAll("assistantViewed") ?? {};
   private readonly assistantViewedSet = new Set<number>();
   
   private initAssistantViewed() {
@@ -676,7 +687,7 @@ export class AdminInit extends McmodderInit {
       this.assistantViewed[date].push(id);
     }
     this.assistantViewedSet.add(id);
-    this.parent.utils.setAllConfig("assistantViewed", this.assistantViewed);
+    this.configs.setAll("assistantViewed", this.assistantViewed);
   }
 
   private getVerifyID(elem: JQuery | Node) {

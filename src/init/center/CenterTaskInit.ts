@@ -7,7 +7,7 @@ import { CenterBaseInit } from "./CenterBaseInit";
 export class CenterTaskInit extends CenterBaseInit {
   private appendCustomAdvancements() {
     // 添加自定义成就
-    this.getParent().advutils.list.forEach(e => {
+    this.parent.advutils.getList().forEach(e => {
       let c = $();
       if (e.isCustom) c = $(`
         <div class="center-task-block ">
@@ -27,7 +27,7 @@ export class CenterTaskInit extends CenterBaseInit {
             <span class="task-rate">
               <i class="fas fa-hourglass-half" style="margin-right:4px;font-size:10px;"></i>
               进度: ${
-                this.getParent().advutils.getSingleProgress(e.id)
+                this.parent.advutils.getSingleProgress(e.id)
               } / ${
                 e.range || PublicLangData.center.task.list[e.lang].range
               }
@@ -49,7 +49,7 @@ export class CenterTaskInit extends CenterBaseInit {
   }
 
   private async checkIfAllYourFault() {
-    const regTime = this.getUtils().getProfile("regTime");
+    const regTime = this.configs.getProfile("regTime");
     if (!regTime) {
       McmodderUtils.commonMsg("尚未获取到我的账号注册时间，触发失败... 请访问一次自己的个人中心主页再试试~", false);
       return;
@@ -71,8 +71,8 @@ export class CenterTaskInit extends CenterBaseInit {
     }).mount($(".progress-container").get(0)) as InstanceType<typeof ProgressBar>;
     do {
       endTime = Math.min(now, McmodderUtils.getStartTime(startTime, 29));
-      resp = await this.getUtils().createRequest({
-        url: `${ this.getParent().hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
+      resp = await this.utils.createRequest({
+        url: `${ this.parent.hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
         method: "GET"
       });
       if (!resp.responseXML) return;
@@ -82,8 +82,8 @@ export class CenterTaskInit extends CenterBaseInit {
         verifyList.push(c);
       });
       if (maxPage) for (let i = 2; i <= maxPage; i++) {
-        resp = await this.getUtils().createRequest({
-          url: `${ this.getParent().hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
+        resp = await this.utils.createRequest({
+          url: `${ this.parent.hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
           method: "GET"
         });
         if (!resp.responseXML) return;
@@ -102,7 +102,7 @@ export class CenterTaskInit extends CenterBaseInit {
       lastVerify = new Date(title.split("最后审核: ")[1]?.split("(")[0]).valueOf();
       if (lastEdit + 48 * 60 * 60 * 1000 < lastVerify) total++;
     });
-    this.getParent().advutils.setProgress(AdvancementID.ALL_YOUR_FAULT, total);
+    this.parent.advutils.setProgress(AdvancementID.ALL_YOUR_FAULT, total);
     location.reload();
   }
 
@@ -110,7 +110,7 @@ export class CenterTaskInit extends CenterBaseInit {
     let expTotal = 0, expEarned = 0;
     $(`.task [data-menu-frame=${ frameID }] .center-task-block`).each((_, e) => {
       let t = $(e).find(".title").text(), exp = 0, c = $(e).find(".finished").length;
-      let f = this.getParent().advutils.list.find(a => PublicLangData.center.task.list[a.lang].title === t);
+      let f = this.parent.advutils.getList().find(a => PublicLangData.center.task.list[a.lang].title === t);
       if (!f?.tier) exp += f?.exp || 0, expTotal += exp, expEarned += c * exp;
       else {
         let cur = f, prev, next, sum = 0;

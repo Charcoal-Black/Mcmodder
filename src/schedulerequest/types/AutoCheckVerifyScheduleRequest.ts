@@ -4,11 +4,15 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
 export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
-  protected override readonly priority = 2;
+  override readonly priority = 2;
 
   override async run(list: ScheduleRequestUtils) {
-    list.create(Date.now() + this.parent.utils.getConfig("autoVerifyDelay") * 60 * 60 * 1000, "autoCheckVerify", this.parent.currentUID);
-    const adminModList: string[] = this.parent.utils.getProfile("adminModList")?.split(",") || [];
+    const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
+    if (!autoVerifyDelay) {
+      return;
+    }
+    list.create(Date.now() + autoVerifyDelay * 60 * 60 * 1000, "autoCheckVerify", this.parent.currentUID);
+    const adminModList: string[] = this.configs.getProfile("adminModList")?.split(",") || [];
     if (adminModList.length === 0) {
       McmodderUtils.commonMsg("脚本尚未记录您的管理模组区域，可能是由于您已经是全域审核员，或是从未访问过自己的个人主页，请访问一次后重试~", false);
       return;
@@ -40,7 +44,8 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
           text: `当前所管理的模组共有 ${ total } 个待审项，请尽快处理~`,
           showCancelButton: true,
           confirmButtonText: "前往后台",
-          cancelButtonText: "稍后提醒"
+          cancelButtonText: "稍后提醒",
+          allowOutsideClick: false
         });
         if (value) {
           GM_openInTab("https://admin.mcmod.cn/", { active: true });

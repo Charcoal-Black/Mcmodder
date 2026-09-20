@@ -1,8 +1,9 @@
+import { createApp } from "vue";
 import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
 import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
-import { TextCompareFrame } from "../widget/compare/TextCompareFrame";
 import { McmodderInit } from "./Init";
+import TextComparator from "../vue/components/TextComparator.vue";
 
 export class DiffPageInit extends McmodderInit {
   canRun() {
@@ -12,7 +13,8 @@ export class DiffPageInit extends McmodderInit {
   run() {
     const textA = $(".difference-content-right");
     const textB = $(".difference-content-left");
-    (new TextCompareFrame($(".difference-info").first(), textA, textB)).performCompare();
+    const comparatorFrame = $("<div>").insertBefore($(".difference-info").first());
+    createApp(TextComparator, { textA, textB }).mount(comparatorFrame.get(0));
 
     $(".difference-table > tbody").contents().each((_, e) => {
       const row = $(e);

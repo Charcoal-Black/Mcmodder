@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { McmodderLogger } from '../../widget/logger/Logger';
+import type { McmodderLogger } from '../../widget/logger/Logger';
 import { McmodderUtils } from '../../Utils';
 
 interface Props {

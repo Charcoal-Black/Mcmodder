@@ -57,16 +57,17 @@
 
 <script setup lang="ts" generic="T extends McmodderTableAcceptable">
 import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { GenericJsonFrameProps, JsonFrameToolData, JsonFrameToolDisplayCondition, JsonFrameToolOnClickCallback, McmodderTableAcceptable } from '../../../types';
 import { McmodderUtils } from '../../../Utils';
 import { McmodderPermission } from '../../../config/ConfigUtils';
 import { IndexedDBRepository } from '../../../jsonframe/repository/IndexedDBRepository';
 import { GMStorageRepository } from '../../../jsonframe/repository/GMStorageRepository';
-import { ItemRepository } from '../../../jsonframe/repository/ItemRepository';
+import type { ItemRepository } from '../../../jsonframe/repository/ItemRepository';
 import { McmodderValues } from '../../../Values';
 import GenericTable from '../table/GenericTable.vue';
+import type { GenericJsonFrameProps } from '../../../types/props';
 
 const props = defineProps<GenericJsonFrameProps<T>>();
+const configs = computed(() => props.parent.configRepository);
 
 const root = useTemplateRef("root");
 const table = useTemplateRef("table");
@@ -77,7 +78,7 @@ const isFixedMenuVisible = ref(false);
 const hasRearranged = ref(false);
 const selectionList = ref<string[]>([]);
 const itemRepository: ItemRepository<T> =
-  props.parent.utils.getConfig("itemRepository") ?
+  props.parent.configRepository.getSettings("itemRepository") ?
   new IndexedDBRepository(props.configName, props.allowedKeys) :
   new GMStorageRepository(props.parent, props.configName);
 const cssMenuWidth = ref("100%");
@@ -294,10 +295,10 @@ async function rename() {
       await itemRepository.deleteFile(name);
       await itemRepository.write(newName, fileData);
 
-      let database: string[] = props.parent.utils.getConfig("jsonDatabase") || [];
+      let database: string[] = configs.value.getSettings("jsonDatabase") || [];
       database = database.filter(e => e != name);
       database.push(newName);
-      props.parent.utils.setConfig("jsonDatabase", database);
+      configs.value.setSettings("jsonDatabase", database);
 
       McmodderUtils.commonMsg("文件重命名成功~");
       activeFileName.value = newName;
@@ -319,8 +320,8 @@ function submitEdit() {
     McmodderUtils.commonMsg("请先登录~", false);
     return;
   }
-  const lv: number = props.parent.utils.getProfile("lv");
-  const permission: McmodderPermission = props.parent.utils.getProfile("permission");
+  const lv: number = configs.value.getProfile("lv");
+  const permission: McmodderPermission = configs.value.getProfile("permission");
   if (lv < 5 && !(permission === McmodderPermission.EDITOR || permission >= McmodderPermission.ADMIN)) {
     McmodderUtils.commonMsg("当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）", false);
     return;
@@ -354,8 +355,8 @@ async function tryDeleteJson(fileName: string) {
 
 async function deleteJson(fileName: string) {
   await itemRepository.deleteFile(activeFileName.value);
-  let linking: string[] = props.parent.utils.getConfig("jsonDatabase") || [];
-  props.parent.utils.setConfig("jsonDatabase", linking.filter(name => name != fileName));
+  let linking: string[] = configs.value.getSettings("jsonDatabase") || [];
+  configs.value.setSettings("jsonDatabase", linking.filter(name => name != fileName));
 }
 
 function reset() {

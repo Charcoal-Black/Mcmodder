@@ -1,4 +1,3 @@
-import { McmodderTableAcceptable, McmodderTableContext, McmodderTableDataMap } from "../../types";
 import { Command } from "./Command";
 
 export class PasteCommand<T extends McmodderTableAcceptable> extends Command<T> {
