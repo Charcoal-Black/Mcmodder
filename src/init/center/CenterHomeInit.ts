@@ -1,8 +1,8 @@
 import { GM_cookie } from "$";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
-import { McmodderPermission } from "../../config/ConfigUtils";
-import { McmodderUtils } from "../../Utils";
-import { McmodderValues } from "../../Values";
+import { Permission } from "../../config/ConfigUtils";
+import { Utils } from "../../Utils";
+import { Values } from "../../Values";
 import { CommentInit } from "../CommentInit";
 import { CenterBaseInit } from "./CenterBaseInit";
 
@@ -46,16 +46,16 @@ export class CenterHomeInit extends CenterBaseInit {
     const userBlacklist = this.configs.getSettingsAsNumberList("userBlacklist") ?? [];
     if (userBlacklist.includes(uid)) {
       this.configs.setSettings("userBlacklist", userBlacklist.filter(e => e != uid).join(","));
-      McmodderUtils.commonMsg(`已将 UID:${ uid } 从用户黑名单中移除~`);
+      Utils.commonMsg(`已将 UID:${ uid } 从用户黑名单中移除~`);
     } else {
       userBlacklist.push(uid);
       this.configs.setSettings("userBlacklist", userBlacklist.join(","));
-      McmodderUtils.commonMsg(`已将 UID:${ uid } 加入用户黑名单~`);
+      Utils.commonMsg(`已将 UID:${ uid } 加入用户黑名单~`);
     }
   }
 
   private addUserFavlist(uid: number) {
-    if (!this.center.pageProfileData) {
+    if (!this.center.pageProfile) {
       throw new Error("当前页面的用户档案数据尚未初始化...");
     }
     const userFavList = this.configs.getSettingsAsNumberList("userFavList") ?? [];
@@ -64,19 +64,19 @@ export class CenterHomeInit extends CenterBaseInit {
       if (!this.configs.getSettings("rememberVisited")) {
         this.configs.deleteAllProfile(this.center.getPageUID());
       }
-      McmodderUtils.commonMsg(`已将 UID:${ uid } 移出我的收藏列表~`);
+      Utils.commonMsg(`已将 UID:${ uid } 移出我的收藏列表~`);
     } else {
       userFavList.push(uid);
       this.configs.setSettings("userFavList", userFavList.join(","));
-      this.configs.setAllProfile(this.center.pageProfileData, this.center.getPageUID())
-      McmodderUtils.commonMsg(`已将 UID:${ uid } 加入我的收藏列表~`);
+      this.configs.setAllProfile(this.center.pageProfile, this.center.getPageUID())
+      Utils.commonMsg(`已将 UID:${ uid } 加入我的收藏列表~`);
     }
   }
 
   private initPageProfileData() {
     const metadata = $("meta[name=keywords]").attr("content").replace(",我的世界,minecraft,我的世界mod", "").split(",");
     const stats = $(".center-total ul").contents();
-    const profile: McmodderProfileData = {
+    const profile: Profile = {
       avatar: $(".user-icon-img img").attr("src"),
       nickname: metadata[0],
       username: metadata[1],
@@ -86,7 +86,7 @@ export class CenterHomeInit extends CenterBaseInit {
       editByte: Number(stats.eq(2).addClass("edit-byte").children().eq(1).text().slice(0, -3).replaceAll(",", "")),
       editNum: Number(stats.eq(1).addClass("edit-num").children().eq(1).text().slice(0, -2).replaceAll(",", "")),
       editAvg: Number($(stats.get(3).textContent).children().eq(1).text().slice(0, -2).replaceAll(",", "")),
-      permission: McmodderPermission.NONE
+      permission: Permission.NONE
     };
 
     // 记录模组区域
@@ -105,24 +105,24 @@ export class CenterHomeInit extends CenterBaseInit {
     });
 
     // 计算权限等级
-    let permission: McmodderPermission;
-    if (McmodderValues.adminIDList.includes(this.parent.currentUID)) permission = McmodderPermission.ADMIN;
-    else if (profile.adminModList) permission = McmodderPermission.MANAGER;
-    else if (profile.devModList) permission = McmodderPermission.DEVELOPER;
-    else if (profile.editorModList) permission = McmodderPermission.EDITOR;
-    else if (["禁止发言", "禁止编辑", "禁止访问"].includes(profile.userGroup)) permission = McmodderPermission.BANNED;
-    else permission = McmodderPermission.NONE;
+    let permission: Permission;
+    if (Values.adminIDList.includes(this.parent.currentUID)) permission = Permission.ADMIN;
+    else if (profile.adminModList) permission = Permission.MANAGER;
+    else if (profile.devModList) permission = Permission.DEVELOPER;
+    else if (profile.editorModList) permission = Permission.EDITOR;
+    else if (["禁止发言", "禁止编辑", "禁止访问"].includes(profile.userGroup)) permission = Permission.BANNED;
+    else permission = Permission.NONE;
     profile.permission = permission;
 
-    this.center.pageProfileData = profile;
+    this.center.pageProfile = profile;
   }
 
   private getMyProfileData() {
-    const profile = this.center.pageProfileData;
+    const profile = this.center.pageProfile;
     if (!profile) {
       throw new Error("当前页面的用户档案数据尚未初始化...");
     }
-    return new Promise<McmodderProfileData>((resolve, reject) => {
+    return new Promise<Profile>((resolve, reject) => {
       GM_cookie.list({ name: "_uuid" }, (cookie, err) => {
         if (err) {
           reject(err);
@@ -139,7 +139,7 @@ export class CenterHomeInit extends CenterBaseInit {
   }
 
   private calculateAge() {
-    const profile = this.center.pageProfileData;
+    const profile = this.center.pageProfile;
     if (!profile) {
       throw new Error("当前页面的用户档案数据尚未初始化...");
     }
@@ -161,8 +161,8 @@ export class CenterHomeInit extends CenterBaseInit {
       } 天</span></li>`).appendTo(centerTotal);
     }
     averageByte.remove();
-    $("#mcmodder-editnum").val(this.center.pageProfileData!.editNum);
-    $("#mcmodder-editbyte").val(this.center.pageProfileData!.editByte);
+    $("#mcmodder-editnum").val(this.center.pageProfile!.editNum);
+    $("#mcmodder-editbyte").val(this.center.pageProfile!.editByte);
     $("#mcmodder-editnum, #mcmodder-editbyte").removeAttr("disabled").removeAttr("placeholder");
 
     const adminList = $(".admin-list");
@@ -205,11 +205,11 @@ export class CenterHomeInit extends CenterBaseInit {
         this.configs.setAllProfile(profile);
       }).catch(err => {
         console.error(err);
-        McmodderUtils.commonMsg("获取用户登录信息失败...");
+        Utils.commonMsg("获取用户登录信息失败...");
       });
     }
     else if (this.configs.doesProfileDataExist(this.center.getPageUID())) {
-      const newProfile = this.center.pageProfileData;
+      const newProfile = this.center.pageProfile;
       if (newProfile) {
         if (this.center.isFavPage()) {
           const oldProfile = this.configs.getAllProfile(this.center.getPageUID());
@@ -226,7 +226,7 @@ export class CenterHomeInit extends CenterBaseInit {
               if (value[0]) {
                 centerTotal.find(`.edit-${ value[1] } .text`).append(`
                 <span class="changed badge-row" data-toggle="tooltip" data-original-title="与 ${
-                  McmodderUtils.getFormattedTime(updateDiff)
+                  Utils.getFormattedTime(updateDiff)
                 } 前所记录的用户数据相比的变化量">
                   <span class="text-${
                     value[0] > 0 ? "success" : "danger"
@@ -279,8 +279,8 @@ export class CenterHomeInit extends CenterBaseInit {
     // 夜间模式支持
     if (this.configs.getSettings("nightMode")) $(".post-block img").bind("load", e => {
       const img = e.currentTarget as HTMLImageElement;
-      if (img.src === McmodderValues.assets.mcmod.imagesNone) {
-        img.src = McmodderValues.assets.nightMode.imagesNone;
+      if (img.src === Values.assets.mcmod.imagesNone) {
+        img.src = Values.assets.nightMode.imagesNone;
       }
     });
 
@@ -324,7 +324,7 @@ export class CenterHomeInit extends CenterBaseInit {
         }
         recentlyVisited.push(this.center.getPageUID());
         this.configs.setSettings("recentlyVisited", recentlyVisited.join(","));
-        this.configs.setAllProfile(this.center.pageProfileData!, this.center.getPageUID());
+        this.configs.setAllProfile(this.center.pageProfile!, this.center.getPageUID());
       }
     }
   }
@@ -366,9 +366,9 @@ export class CenterHomeInit extends CenterBaseInit {
     const editChart = this.parent.echartsUtils.centerEditChart;
     if (this.chartMode === 1) {
       if (!this.optionData || !this.tempData) {
-        McmodderUtils.setButtonLoadingState(target);
+        Utils.setButtonLoadingState(target);
         await this.fetchRemoteByteData();
-        McmodderUtils.cancelButtonLoadingState(target);
+        Utils.cancelButtonLoadingState(target);
         if (!this.optionData || !this.tempData) {
           return;
         }

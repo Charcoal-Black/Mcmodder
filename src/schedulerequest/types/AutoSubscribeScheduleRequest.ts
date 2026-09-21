@@ -1,5 +1,5 @@
 import { GM_openInTab } from "$";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
@@ -39,7 +39,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
             headers: {
               "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
               "Origin": this.parent.hostname,
-              "Referer": McmodderUtils.getItemURL(id)
+              "Referer": Utils.getItemURL(id)
             },
             data: $.param({
               data: {
@@ -56,7 +56,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
               const lt = this.configs.get("latestComment", sid);
               if (!lt) this.configs.set("latestComment", sid, t);
               else if (lt < t) {
-                GM_openInTab(`${ McmodderUtils.getClassURL(id) }#comment-${ t }`, { active: true });
+                GM_openInTab(`${ Utils.getClassURL(id) }#comment-${ t }`, { active: true });
                 this.configs.set("latestComment", sid, t);
               }
             }

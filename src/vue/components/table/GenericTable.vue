@@ -19,8 +19,8 @@
     <table class="mcmodder-table">
       <thead>
         <th
-          v-for="config in headConfigs"
-          v-html="config.name"
+          v-for="option in rowOptions"
+          v-html="option.name"
         />
       </thead>
       <tbody>
@@ -43,7 +43,7 @@
           @pointerenter="rowOnPointerenter(index)"
         >
           <td
-            v-for="key in Object.keys(headConfigs)"
+            v-for="key in Object.keys(rowOptions)"
             :data-key="key"
             :class="{
               'mcmodder-table-pointerover-td': key === hoveringKey,
@@ -57,7 +57,7 @@
               v-if="editingIndex !== index || editingKey !== key" v-html="renderUnit(currentData[index], key)" />
             <div v-else ref="inputContainer" class="mcmodder-table-input" @keydown="onInputKeydown" @focusout="onInputFocusout">
               <NumberInput
-                v-if="inputNodeData?.type === McmodderInputType.NUMBER"
+                v-if="inputNodeData?.type === InputType.NUMBER"
                 ref="input"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value"
@@ -66,7 +66,7 @@
               />
               <TextInput
                 ref="input"
-                v-if="inputNodeData?.type === McmodderInputType.TEXT"
+                v-if="inputNodeData?.type === InputType.TEXT"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value"
                 :onSuccessfulChange="inputNodeData.onSuccessfulChange"
@@ -84,14 +84,14 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends McmodderTableAcceptable">
+<script setup lang="ts" generic="T extends TableAcceptable">
 import { computed, nextTick, onMounted, ref, type ShallowRef, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { McmodderTable } from '../../../table/Table.ts';
-import { McmodderUtils } from '../../../Utils.ts';
+import { TableUtils } from '../../../table/Table.ts';
+import { Utils } from '../../../Utils.ts';
 import ContextMenu from '../ContextMenu.vue';
 import { McmodderEditableTable } from '../../../table/EditableTable.ts';
 import { Command } from '../../../table/command/Command.ts';
-import { McmodderInputType } from '../../../config/ConfigUtils.ts';
+import { InputType } from '../../../config/ConfigUtils.ts';
 import { EditCommand } from '../../../table/command/EditCommand.ts';
 import NumberInput from '../input/NumberInput.vue';
 import TextInput from '../input/TextInput.vue';
@@ -100,15 +100,15 @@ import { PasteCommand } from '../../../table/command/PasteCommand.ts';
 import { DeleteRowCommand } from '../../../table/command/DeleteRowCommand.ts';
 import { DeleteMultipleRowCommand } from '../../../table/command/DeleteMultipleRowCommand.ts';
 import ProgressBar from '../ProgressBar.vue';
-import type { McmodderTableProps } from '../../../types/props';
+import type { TableProps } from '../../../types/props';
 
-const props = defineProps<McmodderTableProps<T>>();
+const props = defineProps<TableProps<T>>();
 
 const isLoading = ref(true);
-const currentData = shallowRef<McmodderTableRowData<T>[]>([]);
-const renderingRows = ref<McmodderTableRowRange>({ l: -1, r: -1 });
+const currentData = shallowRef<TableRowData<T>[]>([]);
+const renderingRows = ref<TableRowRange>({ l: -1, r: -1 });
 const screenContainableRows = ref(1);
-const rowHeight = ref(McmodderTable.ROW_HEIGHT_DEFAULT);
+const rowHeight = ref(TableUtils.ROW_HEIGHT_DEFAULT);
 const root = useTemplateRef("root");
 const loadingProgress = useTemplateRef("progressBar");
 const inputContainer = useTemplateRef("inputContainer");
@@ -124,7 +124,7 @@ const classLoadingOverlayFaded = ref(false);
 const contextMenu = useTemplateRef("contextMenu");
 
 const editable = ref(false);
-const editConfigsInitializer: ShallowRef<EditConfigsInitializer<T> | undefined> = shallowRef(props.editConfigs);
+const editConfigsInitializer: ShallowRef<EditOptionsInitializer<T> | undefined> = shallowRef(props.editConfigs);
 const editConfigs = shallowRef<EditConfigs<T>>();
 const unsaved = ref(false);
 const selectedRowCount = ref(0);
@@ -136,61 +136,61 @@ const editingIndex = ref<number | null>(null);
 const editingKey = ref<keyof T | null>(null);
 const history: Command<T>[] = [];
 let historyStage = 0;
-let clipboard: McmodderTableDataList<T> = [];
+let clipboard: TableDataList<T> = [];
 
 // ====================== //
 
 const renderingRowArray = computed(() => {
   const { l, r } = renderingRows.value;
-  return McmodderUtils.createRange(l, r);
+  return Utils.createRange(l, r);
 });
 
 // head config init
-const headConfigsConstructor: Partial<HeadConfigs<T>> = {};
-Object.entries(props.headConfigs).forEach(([key, value]) => {
-  headConfigsConstructor[key] = McmodderTable.parseHeadConfigInitializer(value);
+const rowOptionsConstructor: Partial<RowOptions<T>> = {};
+Object.entries(props.rowOptions).forEach(([key, value]) => {
+  rowOptionsConstructor[key] = TableUtils.parseRowOptionsInitializer(value);
 });
-const headConfigs = headConfigsConstructor as HeadConfigs<T>;
+const rowOptions = rowOptionsConstructor as RowOptions<T>;
 
 function bindEvents() {
-  window.addEventListener("scroll", McmodderUtils.animationThrottle(() => {
+  window.addEventListener("scroll", Utils.animationThrottle(() => {
     onScroll();
   }));
-  window.addEventListener("resize", McmodderUtils.animationThrottle(() => {
+  window.addEventListener("resize", Utils.animationThrottle(() => {
     updateScreenContainableRows();
   }));
   refreshAll();
 
   $(document.body).keydown(e => {
     // 撤销 Ctrl+Z
-    if (McmodderUtils.isKeyMatch(McmodderEditableTable.undoKey, e) && !e.shiftKey) {
+    if (Utils.isKeyMatch(McmodderEditableTable.undoKey, e) && !e.shiftKey) {
       e.preventDefault();
       undo();
     } 
 
     // 重做 Ctrl+Y (Ctrl+Shift+Z)
     else if (
-      McmodderUtils.isKeyMatch(McmodderEditableTable.redoKey, e) ||
-      McmodderUtils.isKeyMatch(McmodderEditableTable.redoKey2, e)
+      Utils.isKeyMatch(McmodderEditableTable.redoKey, e) ||
+      Utils.isKeyMatch(McmodderEditableTable.redoKey2, e)
     ) {
       e.preventDefault();
       redo();
     }
 
     // 保存 Ctrl+S
-    else if (McmodderUtils.isKeyMatch(McmodderEditableTable.saveKey, e)) {
+    else if (Utils.isKeyMatch(McmodderEditableTable.saveKey, e)) {
       e.preventDefault();
       saveAll();
     }
 
     // 全选 Ctrl+A
-    else if (McmodderUtils.isKeyMatch(McmodderEditableTable.selectAllKey, e)) {
+    else if (Utils.isKeyMatch(McmodderEditableTable.selectAllKey, e)) {
       e.preventDefault();
       selectAll(!e.shiftKey);
     } 
 
     // 复制 Ctrl+C
-    else if (McmodderUtils.isKeyMatch(McmodderEditableTable.copyKey, e)) {
+    else if (Utils.isKeyMatch(McmodderEditableTable.copyKey, e)) {
       e.preventDefault();
       copyRow(getSelection());
     } 
@@ -215,25 +215,25 @@ function gotoHandler(e: Event) {
     const key = target.dataset.gotoKey as keyof T;
     const value = target.dataset.gotoValue;
     const index = searchData(key, value);
-    if (index === -1) McmodderUtils.commonMsg("没有找到该链接所指向的表格行...", false);
+    if (index === -1) Utils.commonMsg("没有找到该链接所指向的表格行...", false);
     else scrollTo(index);
   }
 }
 
 function updateScreenContainableRows() {
-  screenContainableRows.value = Math.ceil(window.innerHeight / rowHeight.value) + McmodderTable.ROW_EXPAND;
+  screenContainableRows.value = Math.ceil(window.innerHeight / rowHeight.value) + TableUtils.ROW_EXPAND;
 }
 
 function getTbody() {
   return $(root.value!).find("tbody").get(0);
 }
 
-function calculateRenderableRows(): McmodderTableRowRange {
+function calculateRenderableRows(): TableRowRange {
   const dataLength = currentData.value.length;
   if (!dataLength) return { l: -1, r: -1 };
 
   const l = Math.floor(getTbody().getBoundingClientRect().top / -rowHeight.value);
-  const r = l + screenContainableRows.value * 2 + McmodderTable.ROW_EXPAND;
+  const r = l + screenContainableRows.value * 2 + TableUtils.ROW_EXPAND;
 
   const L = Math.floor(l / screenContainableRows.value) * screenContainableRows.value;
   const R = Math.ceil(r / screenContainableRows.value) * screenContainableRows.value;
@@ -267,7 +267,7 @@ function searchData(key: keyof T | null, value: any) {
 
 function scrollTo(index: number) {
   $("html").get(0).scrollTo({
-    top: McmodderUtils.getAbsolutePos(getTbody()).y + calculateRowHeightTopOffset(index) - window.screen.height / 2,
+    top: Utils.getAbsolutePos(getTbody()).y + calculateRowHeightTopOffset(index) - window.screen.height / 2,
     behavior: "smooth"
   });
 }
@@ -293,7 +293,7 @@ function onScroll() {
 
   // 保存行高以便实现虚拟列表
   nextTick(() => {
-    const newRowHeight = $(getTbody()).find(`[data-index=${ newRows.l }]`).get(0)?.getBoundingClientRect()?.height ?? McmodderTable.ROW_HEIGHT_DEFAULT;
+    const newRowHeight = $(getTbody()).find(`[data-index=${ newRows.l }]`).get(0)?.getBoundingClientRect()?.height ?? TableUtils.ROW_HEIGHT_DEFAULT;
     if (newRowHeight !== rowHeight.value) {
       rowHeight.value = newRowHeight;
       updateScreenContainableRows();
@@ -303,12 +303,12 @@ function onScroll() {
       renderingRows.value.r = newRows.r;
     }
     nextTick(() => {
-      McmodderUtils.updateAllTooltip();
+      Utils.updateAllTooltip();
     });
   });
 }
 
-function setAllData(data: McmodderTableDataList<T>) {
+function setAllData(data: TableDataList<T>) {
   empty();
   currentData.value = data.map(e => ({ content: e }));
 }
@@ -347,7 +347,7 @@ function appendData(data: T) {
   });
 }
 
-function appendDataList(dataList: McmodderTableDataList<T>) {
+function appendDataList(dataList: TableDataList<T>) {
   dataList.forEach(data => {
     appendData(data);
   });
@@ -392,9 +392,9 @@ function getUnitElement(index: number, key: string) {
   return getRowElement(index).find(`[data-key=${ key }]`);
 }
 
-function renderUnit(data: McmodderTableRowData<T>, key: string) {
+function renderUnit(data: TableRowData<T>, key: string) {
   const rawContent = (data.edited as any)?.[key] ?? (data.content as any)[key];
-  const displayRule = headConfigs[key].displayRule;
+  const displayRule = rowOptions[key].displayRule;
   let content;
   if ((!displayRule || displayRule.length < 2) && (rawContent === undefined || rawContent === null)) {
     content = null;
@@ -468,7 +468,7 @@ watch(
       return;
     }
     editable.value = true;
-    const result: Partial<EditConfigsInitializer<T>> = {};
+    const result: Partial<EditOptionsInitializer<T>> = {};
     (Object.entries(editConfigsInitializer.value)).forEach(([key, value]) => {
       result[key as keyof T] = McmodderEditableTable.parseEditConfigInitializer(value);
     });
@@ -506,7 +506,7 @@ function getEditorData(index: number, key: keyof T) {
 
 function getEditorRowData(index: number) {
   const rowData = getRowData(index);
-  const content = McmodderUtils.simpleDeepCopy(rowData.content);
+  const content = Utils.simpleDeepCopy(rowData.content);
   Object.keys(rowData.edited || {}).forEach(key => {
     (content as any)[key] = rowData.edited![key];
   });
@@ -514,7 +514,7 @@ function getEditorRowData(index: number) {
 }
 
 function getSelection() {
-  let selection: McmodderTableRowSelection = [];
+  let selection: TableRowSelection = [];
   currentData.value.forEach((data, index) => {
     if (data.selected) selection.push(index);
   });
@@ -524,14 +524,14 @@ function getSelection() {
 function copyRow(selection = getSelection()) {
   clipboard = new Array(selection.length);
   selection.forEach((row, index) => {
-    clipboard[index] = McmodderUtils.simpleDeepCopy(currentData.value[row].content);
+    clipboard[index] = Utils.simpleDeepCopy(currentData.value[row].content);
     // delete this.clipboard[index]._selected;
   });
 }
 
 function pasteRow(index: number) {
   insertMultipleRowWithArray(index, clipboard);
-  const dataMap: McmodderTableDataMap<T> = {};
+  const dataMap: TableDataMap<T> = {};
   const length = clipboard.length;
   for (let i = 0; i < length; i++) {
     dataMap[i + index] = clipboard[i];
@@ -539,18 +539,18 @@ function pasteRow(index: number) {
   return dataMap;
 }
 
-function deleteRow(index: number): McmodderTableDataMap<T> {
+function deleteRow(index: number): TableDataMap<T> {
   if (currentData.value[index].selected) selectedRowCount.value--;
-  let deletedData = McmodderUtils.simpleDeepCopy(currentData.value[index].content);
+  let deletedData = Utils.simpleDeepCopy(currentData.value[index].content);
   currentData.value.splice(index, 1);
   refreshAll();
   unsaved.value = true;
   return { [index]: deletedData };
 }
 
-function deleteMultipleRow(selection: McmodderTableRowSelection) {
+function deleteMultipleRow(selection: TableRowSelection) {
   // 循环n次deleteRow，时间复杂度是O(n^2)，这里采用O(n)的优化版方案
-  const deletedData: McmodderTableDataMap<T> = {};
+  const deletedData: TableDataMap<T> = {};
   const tempData: any = currentData;
   selection.forEach(i => {
     if (currentData.value[i].selected) selectedRowCount.value--;
@@ -580,11 +580,11 @@ function editData(index: number, key: keyof T, newValue: any) {
   emit("edit");
 }
 
-function dataMapToSelection(dataMap: McmodderTableDataMap<T>) {
+function dataMapToSelection(dataMap: TableDataMap<T>) {
   return Object.keys(dataMap).map(Number).sort();
 }
 
-function insertRowWithDataMap(dataMap: McmodderTableDataMap<T>) {
+function insertRowWithDataMap(dataMap: TableDataMap<T>) {
   const key = Number(Object.keys(dataMap)[0]);
   insertRow(key, dataMap[key]);
 }
@@ -601,29 +601,29 @@ function createDefaultRowData() {
 function insertRow(index: number, newData?: T) {
   if (!newData) newData = createDefaultRowData();
   if (index < 0 || index > currentData.value.length) return;
-  currentData.value.splice(index, 0, {content: McmodderUtils.simpleDeepCopy(newData)});
+  currentData.value.splice(index, 0, {content: Utils.simpleDeepCopy(newData)});
   refreshAll();
   unsaved.value = true;
 }
 
-function insertMultipleRowWithArray(index: number, dataList: McmodderTableDataList<T>) {
+function insertMultipleRowWithArray(index: number, dataList: TableDataList<T>) {
   const l = currentData.value.slice(0, index);
   const r = currentData.value.slice(index);
-  currentData.value = l.concat(McmodderUtils.simpleDeepCopy(dataList.map(e => ({
-    content: McmodderUtils.simpleDeepCopy(e)
+  currentData.value = l.concat(Utils.simpleDeepCopy(dataList.map(e => ({
+    content: Utils.simpleDeepCopy(e)
   })))).concat(r);
   refreshAll();
   unsaved.value = true;
 }
 
-function insertMultipleRowWithDataMap(dataMap: McmodderTableDataMap<T>) {
+function insertMultipleRowWithDataMap(dataMap: TableDataMap<T>) {
   let i = 0, j = 0;
   let total = currentData.value.length + Object.keys(dataMap).length;
   let newData: any[] = new Array(total).fill(null).map(() => ({}));
   let deletedRowIndex = dataMapToSelection(dataMap);
   for (let k = 0; k < total; k++) {
     if (deletedRowIndex[j] == k) {
-      newData[k].content = McmodderUtils.simpleDeepCopy(dataMap[k]);
+      newData[k].content = Utils.simpleDeepCopy(dataMap[k]);
       j++;
     }
     else newData[k] = currentData.value[i++];
@@ -733,7 +733,7 @@ function onDblclick(index: number, key: keyof T) {
   }
 
   const typedKey = key as keyof EditConfigs<T>;
-  const editConfig = editConfigs.value![typedKey] as McmodderTableInputData;
+  const editConfig = editConfigs.value![typedKey] as TableInputOption;
   const nonNullValue = value ?? editConfig.value;
   computeInputNode(typedKey, nonNullValue, editConfig, info => {
     execute(new EditCommand(ctx, index, key, info.final));
@@ -745,7 +745,7 @@ function onDblclick(index: number, key: keyof T) {
 }
 
 const inputNodeData = shallowRef<{
-  type: McmodderInputType,
+  type: InputType,
   title: string,
   value: any,
   range?: InputValueNumericRange,
@@ -755,11 +755,11 @@ const inputNodeData = shallowRef<{
 function computeInputNode(
   key: keyof EditConfigs<T>,
   value: unknown,
-  inputData: McmodderTableInputData,
+  inputData: TableInputOption,
   onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>
 ) {
-  const displayName = inputData.customName || headConfigs[key].name || String(key);
-  if (inputData.type === McmodderInputType.NUMBER) {
+  const displayName = inputData.customName || rowOptions[key].name || String(key);
+  if (inputData.type === InputType.NUMBER) {
     inputNodeData.value = {
       type: inputData.type,
       title: displayName,
@@ -798,7 +798,7 @@ function onInputFocusout() {
   editingKey.value = null; 
 }
 
-const ctx: McmodderTableContext<T> = {
+const ctx: TableContext<T> = {
   empty,
   showLoading,
   refreshAll,

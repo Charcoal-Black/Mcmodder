@@ -1,5 +1,5 @@
 import type { ConfigRepository } from "../../config/ConfigRepository";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 interface HorizontalDraggableFrameConfig {
   initPos?: number,
@@ -147,7 +147,7 @@ export class HorizontalDraggableFrame {
   }
 
   private setHorizontalPosOnDrag(pos: number) {
-    pos = McmodderUtils.clamp(pos, this.leftDraggableLimit, this.rightDraggableLimit);
+    pos = Utils.clamp(pos, this.leftDraggableLimit, this.rightDraggableLimit);
     this.horizontalPos = pos;
     this.$instance.css("left", pos * 100 + "%");
     if (this.leftBindNode) {
@@ -160,7 +160,7 @@ export class HorizontalDraggableFrame {
       if (this.horizontalPos >= this.rightCollapseThreshold) this.rightBindNode.hide();
       else this.rightBindNode.show();
     }
-    this.$instance.attr("aria-valuenow", Math.round(McmodderUtils.clamp(
+    this.$instance.attr("aria-valuenow", Math.round(Utils.clamp(
       this.horizontalPos, this.leftCollapseThreshold, this.rightCollapseThreshold
     ) * 100));
     return this;

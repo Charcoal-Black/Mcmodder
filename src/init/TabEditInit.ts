@@ -1,23 +1,23 @@
 import { GM_setValue } from "$";
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import { Init } from "./Init";
 import { GeneralEditInit } from "./GeneralEditInit";
-import { McmodderMap } from "../map/Map";
+import { FieldIndex } from "../fieldindex/FieldIndex.ts";
 import { TabEditRecipeDisplay } from "../widget/TabEditRecipeDisplay";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import { createApp } from "vue";
 
-interface CurrentUsedData {
+interface CurrentUsed {
   item: string[];
   oredict: string[];
 }
 
-export class TabEditInit extends McmodderInit {
-  itemMap = new McmodderMap<McmodderItemData>("registerName");
-  tagMap = new McmodderMap<McmodderItemData>("OredictList");
-  guiBoundMap = new McmodderMap<RecipeJsonFrameGuiBound>("guiID");
+export class TabEditInit extends Init {
+  itemFieldIndex = new FieldIndex<Item>("registerName");
+  tagFieldIndex = new FieldIndex<Item>("OredictList");
+  guiBoundFieldIndex = new FieldIndex<RecipeJsonFrameGuiBound>("guiID");
   private isReady = false;
   private guiFrame?: Element;
   private slotFrame?: Element;
@@ -41,14 +41,14 @@ export class TabEditInit extends McmodderInit {
       !this.parent.href.includes(".html");
   }
 
-  private parseRecipeRegisterName(recipe: McmodderRecipeData) {
-    const work = (recipe: McmodderRecipeData, idListName: keyof McmodderRecipeData) => {
-      const idList = recipe[idListName] as Record<string, McmodderRecipeIngredient> | undefined;
+  private parseRecipeRegisterName(recipe: Recipe) {
+    const work = (recipe: Recipe, idListName: keyof Recipe) => {
+      const idList = recipe[idListName] as Record<string, RecipeIngredient> | undefined;
       Object.keys(idList || {}).forEach(key => {
         const data = idList![key];
         if (data instanceof Array) {
           idList![key] = data.map(id => {
-            const res = this.itemMap.get(id);
+            const res = this.itemFieldIndex.get(id);
             if (res instanceof Array) {
               return res[0].id.toString();
             }
@@ -56,40 +56,40 @@ export class TabEditInit extends McmodderInit {
           });
         }
         else {
-          const res = this.itemMap.get(data);
+          const res = this.itemFieldIndex.get(data);
           if (res instanceof Array) {
             idList![key] = res[0].id.toString();
           }
         }
       });
     }
-    const result = McmodderUtils.simpleDeepCopy(recipe);
+    const result = Utils.simpleDeepCopy(recipe);
     work(result, "in_id");
     work(result, "out_id");
     return result;
   }
 
-  private splitRecipe(recipe: McmodderRecipeData /* , targetOutputID: number */) {
-    const result: McmodderSimpleRecipeData[] = [];
+  private splitRecipe(recipe: Recipe /* , targetOutputID: number */) {
+    const result: SimpleRecipe[] = [];
     const inputKeys = Object.keys(recipe.in_id || {});
     const outputKeys = Object.keys(recipe.out_id || {});
     const keys = inputKeys.concat(outputKeys);
     const splitIndex = inputKeys.length;
     // const targetOutputStrID = targetOutputID.toString();
-    const idExcludedRecipe = McmodderUtils.simpleDeepCopy(recipe);
+    const idExcludedRecipe = Utils.simpleDeepCopy(recipe);
     delete idExcludedRecipe.in_id;
     delete idExcludedRecipe.out_id;
     
-    const work = (keyIndex: number, currentRecipe: McmodderRecipeData) => {
+    const work = (keyIndex: number, currentRecipe: Recipe) => {
       // 递归大手子梅开二度
       if (keyIndex >= keys.length) {
-        result.push(Object.assign(currentRecipe, idExcludedRecipe) as McmodderSimpleRecipeData);
+        result.push(Object.assign(currentRecipe, idExcludedRecipe) as SimpleRecipe);
         return;
       }
       const key = keys[keyIndex];
       if (keyIndex < splitIndex) {
         const data = recipe.in_id![key];
-        const newRecipe = McmodderUtils.simpleDeepCopy(currentRecipe);
+        const newRecipe = Utils.simpleDeepCopy(currentRecipe);
         if (data instanceof Array) {
           data.forEach(id => {
             newRecipe.in_id![key] = id;
@@ -103,7 +103,7 @@ export class TabEditInit extends McmodderInit {
       }
       else {
         const data = recipe.out_id![keys[keyIndex]];
-        const newRecipe = McmodderUtils.simpleDeepCopy(currentRecipe);
+        const newRecipe = Utils.simpleDeepCopy(currentRecipe);
         if (data instanceof Array) {
           // if (data.includes(targetOutputStrID)) {
           //   newRecipe.out_id![key] = targetOutputStrID;
@@ -144,14 +144,14 @@ export class TabEditInit extends McmodderInit {
     const recipeContainer = this.recipeFrame.find("#recipe-item");
 
     // 初始化 guiBoundMap
-    let guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || McmodderValues.defaultGuiBound;
-    this.guiBoundMap.add(guiBounds);
+    let guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || Values.defaultGuiBound;
+    this.guiBoundFieldIndex.add(guiBounds);
 
     // 尝试搜索此物品的标签，同时为 ItemDisplay 构造 itemMap 和 tagMap
-    const itemFiles: McmodderJsonStorage<McmodderItemData> = this.configs.getAll("mcmodderJsonStorage") ?? {};
+    const itemFiles: JsonStorage<Item> = this.configs.getAll("mcmodderJsonStorage") ?? {};
     Object.values(itemFiles).forEach(file => {
-      this.itemMap.add(file);
-      this.tagMap.add(file);
+      this.itemFieldIndex.add(file);
+      this.tagFieldIndex.add(file);
       file.forEach(item => {
         if (item.id === Number(nItemID)) {
           this.oredict = item.OredictList?.split(",");
@@ -160,8 +160,8 @@ export class TabEditInit extends McmodderInit {
     });
 
     // 将一个复合配方拆解成若干个简单配方，并显示
-    const matchedRecipes: McmodderSimpleRecipeData[] = [];
-    const recipeFiles: McmodderJsonStorage<McmodderRecipeData> = this.configs.getAll("mcmodderRecipeJsonStorage") ?? {};
+    const matchedRecipes: SimpleRecipe[] = [];
+    const recipeFiles: JsonStorage<Recipe> = this.configs.getAll("mcmodderRecipeJsonStorage") ?? {};
     Object.values(recipeFiles).forEach(file => {
       file.forEach(recipe => {
         if (!recipe.out_id) return;
@@ -255,7 +255,7 @@ export class TabEditInit extends McmodderInit {
   })
 
   private updateCookieByCurrentUsedList() {
-    let data: CurrentUsedData = {
+    let data: CurrentUsed = {
       item: [],
       oredict: []
     };
@@ -325,7 +325,7 @@ export class TabEditInit extends McmodderInit {
       键能够帮助您更快地填充下列数据~
     </span>`).appendTo(this.guiFrame);
 
-    let input = new Array(McmodderValues.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    let input = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -334,7 +334,7 @@ export class TabEditInit extends McmodderInit {
       chanceEditable: false,
       unit: ""
     }));
-    let output = new Array(McmodderValues.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    let output = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -348,7 +348,7 @@ export class TabEditInit extends McmodderInit {
       number: "",
       unit: ""
     };
-    let extra = new Array(McmodderValues.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    let extra = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -601,7 +601,7 @@ export class TabEditInit extends McmodderInit {
       "data-html": true,
       "data-original-title": guiNoteHTMLContent
     });
-    McmodderUtils.updateAllTooltip();
+    Utils.updateAllTooltip();
 
     recipeTbody
     // .on("mouseenter", "input", e => this.onInputMouseenter(e))
@@ -637,7 +637,7 @@ export class TabEditInit extends McmodderInit {
     valueInput.val(v);
     if (c.attr("data-multi-id").indexOf("-item") > -1) {
       if (!isNaN(Number(v))) {
-        valueInput.parent().children().eq(1).css("background-image", McmodderUtils.getImageURLByItemID(v));
+        valueInput.parent().children().eq(1).css("background-image", Utils.getImageURLByItemID(v));
       }
     }
 
@@ -651,7 +651,7 @@ export class TabEditInit extends McmodderInit {
           if (e != nItemID && !isNaN(Number(e))) {
             nItemID = e;
             submitButton.attr("edit-id", e);
-            McmodderUtils.commonMsg(`当前页面已自动换绑至物品 ID:${e} ~`);
+            Utils.commonMsg(`当前页面已自动换绑至物品 ID:${e} ~`);
           }
           flag = true;
         }
@@ -787,7 +787,7 @@ export class TabEditInit extends McmodderInit {
       </div>
     `);
     guiIdDisplay.appendTo($("#item-table-gui-select").parent());
-    McmodderUtils.addClickCopyEvent(guiIdDisplay, "当前合成表 ID ", () => guiIdDisplay.children().text());
+    Utils.addClickCopyEvent(guiIdDisplay, "当前合成表 ID ", () => guiIdDisplay.children().text());
 
     // 快速设置GUI
     const guiLockerContainer = $("<div>").appendTo($("#item-table-gui-select").parent());
@@ -849,7 +849,7 @@ export class TabEditInit extends McmodderInit {
         let note = $("textarea[placeholder='备注..']");
         note.val(note.val().replace(s, ""));
         note.val(`${s}\n${note.val()}`);
-        McmodderUtils.commonMsg("成功将此提示插入备注中~");
+        Utils.commonMsg("成功将此提示插入备注中~");
       });
       this.dependences.concat([2524, 1171, 327]); // GCYL, GTCE, GT5
     }

@@ -1,5 +1,5 @@
 import { GM_openInTab } from "$";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
@@ -14,27 +14,27 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
     list.create(Date.now() + autoVerifyDelay * 60 * 60 * 1000, "autoCheckVerify", this.parent.currentUID);
     const adminModList: string[] = this.configs.getProfile("adminModList")?.split(",") || [];
     if (adminModList.length === 0) {
-      McmodderUtils.commonMsg("脚本尚未记录您的管理模组区域，可能是由于您已经是全域审核员，或是从未访问过自己的个人主页，请访问一次后重试~", false);
+      Utils.commonMsg("脚本尚未记录您的管理模组区域，可能是由于您已经是全域审核员，或是从未访问过自己的个人主页，请访问一次后重试~", false);
       return;
     }
 
     const button = $("#mcmodder-check-verification");
     const inVerifyPage = !!button.length;
     if (inVerifyPage) {
-      McmodderUtils.setButtonLoadingState(button);
+      Utils.setButtonLoadingState(button);
     }
 
     let total = await this.work(adminModList, inVerifyPage);
     
     if (total === 0) {
       if (!inVerifyPage) {
-        McmodderUtils.commonMsg("自动检查待审项已执行~ 当前暂无待审项~");
+        Utils.commonMsg("自动检查待审项已执行~ 当前暂无待审项~");
       }
     }
     else if (total > 0) {
       if (window.location.href.includes("admin.mcmod.cn")) {
         if (!inVerifyPage) {
-          McmodderUtils.commonMsg(`当前所管理的模组共有 ${ total } 个待审项，请尽快处理~`, false);
+          Utils.commonMsg(`当前所管理的模组共有 ${ total } 个待审项，请尽快处理~`, false);
           $("[data-page=pageVerifyMod]").click();
         }
       } else {
@@ -54,7 +54,7 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
     }
 
     if (inVerifyPage) {
-      McmodderUtils.cancelButtonLoadingState(button);
+      Utils.cancelButtonLoadingState(button);
       button.text(`一键查询待审项 (${ total }个)`);
     }
   }

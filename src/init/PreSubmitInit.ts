@@ -1,8 +1,8 @@
 import { createApp } from "vue";
 import PreSubmitFrame from "../vue/components/PreSubmitFrame.vue";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class PreSubmitInit extends McmodderInit {
+export class PreSubmitInit extends Init {
   scheduleRequestUtils: any;
   canRun() {
     return false;

@@ -1,20 +1,20 @@
 import { TabEditInit } from "../init/TabEditInit";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 import { RecipeDisplay } from "./RecipeDisplay";
 
 export class TabEditRecipeDisplay extends RecipeDisplay {
-  protected readonly parsedRecipe: McmodderSimpleRecipeData;
+  protected readonly parsedRecipe: SimpleRecipe;
   // protected readonly warningMessages: string[] = [];
   protected warningNode?: JQuery;
 
-  constructor(tab: TabEditInit, recipe: McmodderSimpleRecipeData, parsedRecipe: McmodderSimpleRecipeData) {
+  constructor(tab: TabEditInit, recipe: SimpleRecipe, parsedRecipe: SimpleRecipe) {
     super(tab, recipe);
     this.parsedRecipe = parsedRecipe;
 
     const outputs = this.parsedRecipe.out_id || {};
     Object.keys(outputs).forEach(key => {
       if (tab.isOutputMatches(outputs[key])) {
-        McmodderUtils.highlight(this.outputs[key].instance);
+        Utils.highlight(this.outputs[key].instance);
       }
     });
 

@@ -1,7 +1,7 @@
 import type { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
 
-export class McmodderBackupManager<BackupData> {
+export class BackupManager<BackupData> {
   configs: ConfigRepository;
   id: string;
   constructor(parent: Mcmodder, id: string) {

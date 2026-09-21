@@ -7,20 +7,20 @@
       <span v-if="data.alias" class="item-ename">{{ data.alias }}</span>
     </a>
     <span v-if="index < 10" class="item-shortcut"
-      v-html="McmodderUtils.keyToHTML({ altKey: true, key: index.toString() })" />
+      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
-import { McmodderUtils } from '../../../Utils';
-import { McmodderValues } from '../../../Values';
+import { Utils } from '../../../Utils';
+import { Values } from '../../../Values';
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkAuthorEntry>>();
 
 const data = entry.data;
-const typeData = McmodderValues.nonItemTypeList[data.isTeam ? "authors" : "author"];
+const typeData = Values.nonItemTypeList[data.isTeam ? "authors" : "author"];
 const dataId = data.id;
 const fullName = data.name + (data.alias ? " - " + data.alias : "");
 const dataTextHalf = data.name;

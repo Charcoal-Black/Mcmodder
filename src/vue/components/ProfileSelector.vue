@@ -39,7 +39,7 @@
 import { computed, ref } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import ProfileAbstract from './ProfileAbstract.vue';
-import { McmodderUtils } from '../../Utils.ts';
+import { Utils } from '../../Utils.ts';
 
 interface Props {
   parent: Mcmodder
@@ -51,16 +51,16 @@ const configs = computed(() => parent.configRepository);
 const myUID = configs.value.getSettingsWritableRefAsNumberList("myProfiles");
 const myProfiles = computed(() => {
   return myUID.value.filter(Boolean)
-  .map(uid => [uid, configs.value.getAllProfile(uid)] as [number, McmodderProfileData]);
+  .map(uid => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
 });
 const uuid = ref<string>();
-McmodderUtils.getUuidCookie().then(result => uuid.value = result);
+Utils.getUuidCookie().then(result => uuid.value = result);
 
-function getSubtitle(profile: McmodderProfileData) {
+function getSubtitle(profile: Profile) {
   return profile.username + (profile.nickname ? ` (${profile.nickname})` : "");
 }
 
-function onClick(e: Event, uid: number, profile: McmodderProfileData) {
+function onClick(e: Event, uid: number, profile: Profile) {
   const target = e.target as HTMLElement;
   if (target.className === "delete" || target.parentElement?.className === "delete") {
     configs.value.delete("userProfile", uid.toString());

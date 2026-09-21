@@ -1,7 +1,7 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
-export class EditHistoryPageInit extends McmodderInit {
+export class EditHistoryPageInit extends Init {
 
   private stopExpand = false;
   private startTime = "";
@@ -19,12 +19,12 @@ export class EditHistoryPageInit extends McmodderInit {
     })
     .then(resp => {
       if (!resp.responseXML) {
-        McmodderUtils.commonMsg("加载历史编辑记录失败...", false);
+        Utils.commonMsg("加载历史编辑记录失败...", false);
         return;
       };
       let d = $(resp.responseXML);
       d.find(".history-list-frame ul").children().appendTo(".history-list-frame ul");
-      McmodderUtils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
+      Utils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
       if (id < maxPage && !this.stopExpand) setTimeout(() => this.getHistoryPage(++id, maxPage), 1e3);
       else {
         $('<input id="mcmodder-history-search" class="form-control" placeholder="输入编辑记录内容以筛选...">')
@@ -60,11 +60,11 @@ export class EditHistoryPageInit extends McmodderInit {
       this.startTime = param.get("starttime") || "";
       this.endTime = param.get("endtime") || "";
       if (!maxPage) return;
-      McmodderUtils.commonMsg(`准备自动展开，可随时按 ${
-        McmodderUtils.keyToString(abortKey)
+      Utils.commonMsg(`准备自动展开，可随时按 ${
+        Utils.keyToString(abortKey)
       } 取消~`);
       $("html").bind("keydown", e => {
-        if (McmodderUtils.isKeyMatch(abortKey, e)) this.stopExpand = true;
+        if (Utils.isKeyMatch(abortKey, e)) this.stopExpand = true;
       })
       this.getHistoryPage(2, maxPage);
       $(".pagination").remove();

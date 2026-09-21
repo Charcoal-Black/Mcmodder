@@ -1,6 +1,6 @@
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class SandboxInit extends McmodderInit {
+export class SandboxInit extends Init {
   canRun() {
     return this.parent.href.includes("/sandbox/");
   }

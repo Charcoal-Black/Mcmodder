@@ -9,31 +9,31 @@
       <span v-if="itemEnglishName" class="item-ename">{{ itemEnglishName }}</span>
     </a>
     <span v-if="index < 10" class="item-shortcut"
-      v-html="McmodderUtils.keyToHTML({ altKey: true, key: index.toString() })" />
+      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
-import { McmodderUtils } from '../../../Utils';
-import { McmodderValues } from '../../../Values';
+import { Utils } from '../../../Utils';
+import { Values } from '../../../Values';
 
 const { parent, entry } = defineProps<AutoLinkOptionProps<AutoLinkItemEntry>>();
 
 const item = entry.data;
 
-const fullName = McmodderUtils.getItemFullName(item.name, item.englishName);
+const fullName = Utils.getItemFullName(item.name, item.englishName);
 
 const classID = item.classID;
 let classFullName = parent.utils.getClassNameByClassID(classID);
-let {className, classEname, classAbbr} = McmodderUtils.parseClassFullName(classFullName);
+let {className, classEname, classAbbr} = Utils.parseClassFullName(classFullName);
 
 if (!classFullName) {
   className ||= item.className || "";
   classEname ||= item.classEname || "";
   classAbbr ||= item.classAbbr || "";
-  classFullName = McmodderUtils.getClassFullName(className, classEname, classAbbr);
+  classFullName = Utils.getClassFullName(className, classEname, classAbbr);
 }
 
 const dataId = item.id;
@@ -43,8 +43,8 @@ const matchedType = parent.utils.getItemTypeData(item.classID, item.itemType);
 const typename = matchedType?.text ? matchedType.text + " - " : "";
 const dataOriginalTitle = `${ typename }ID:${ item.id } ${ fullName } - ${ classFullName }`;
 
-const itemImgSrc = item.smallIcon || McmodderUtils.getImageURLByItemID(item.id);
-const itemImgErrorSrc = McmodderValues.assets.mcmod.emptyItemIcon32x;
+const itemImgSrc = item.smallIcon || Utils.getImageURLByItemID(item.id);
+const itemImgErrorSrc = Values.assets.mcmod.emptyItemIcon32x;
 
 const itemTypeHTML = parent.utils.getItemTypeHTML(matchedType).get(0).outerHTML;
 const itemAbbr = classAbbr || classEname || className;

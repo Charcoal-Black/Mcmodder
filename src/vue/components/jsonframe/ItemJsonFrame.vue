@@ -5,7 +5,7 @@
     :parent="parent"
     :config-name="configName"
     :allowed-keys="allowedKeys"
-    :head-configs="headConfigs"
+    :rowOptions="rowOptions"
     :edit-configs="editConfigs"
     :attr="{
       class: 'table jsonframe-table'
@@ -46,7 +46,7 @@
       <GenericTable
         ref="fileTable"
         :parent="parent"
-        :head-configs="jsonApplicationHeadConfigs"
+        :rowOptions="jsonApplicationRowOptions"
       />
       <Pagination :parent="parent" :current-page="1" :max-page="maxPage" :callback="page => onPaginationCallback(page)" />
     </div>
@@ -92,17 +92,17 @@
 
 <script setup lang="ts">
 import { computed, type ComputedRef, onMounted, ref, useTemplateRef } from 'vue';
-import { McmodderInputType } from '../../../config/ConfigUtils.ts';
-import { McmodderTable } from '../../../table/Table.ts';
-import { McmodderUtils } from '../../../Utils.ts';
+import { InputType } from '../../../config/ConfigUtils.ts';
+import { TableUtils } from '../../../table/Table.ts';
+import { Utils } from '../../../Utils.ts';
 import Logger from '../logger.vue';
 import JsonFrame from './JsonFrame.vue';
 import { InputListController } from '../../../widget/InputListController.ts';
 import Button from '../Button.vue';
-import { McmodderInferItemListRequestQueue } from '../../../requestqueue/InferRequestQueue.ts';
-import { McmodderDetailedItemListRequestQueue } from '../../../requestqueue/DetailedItemRequestQueue.ts';
+import { InferItemListRequestQueue } from '../../../requestqueue/InferRequestQueue.ts';
+import { DetailedItemListRequestQueue } from '../../../requestqueue/DetailedItemRequestQueue.ts';
 import { GM_openInTab } from '$';
-import { McmodderValues } from '../../../Values.ts';
+import { Values } from '../../../Values.ts';
 import { Mcmodder } from '../../../Mcmodder.ts';
 import { BatchCommand } from '../../../table/command/BatchCommand.ts';
 import { EditRowCommand } from '../../../table/command/EditRowCommand.ts';
@@ -126,13 +126,13 @@ const configName = "mcmodderJsonStorage";
 const allowedKeys = ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName", 
   "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum", 
   "OredictList", "harvestTools", "maxStackSize", "maxDurability"];
-const headConfigs = {
+const rowOptions = {
   itemType: ["类型", (type, item) => {
     return props.parent.utils.getItemTypeHTML(item.classID, type).prop("outerHTML");
   }],
-  smallIcon: ["小", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
-  largeIcon: ["大", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
-  id: ["资料 ID", McmodderTable.DISPLAYRULE_LINK_ITEM],
+  smallIcon: ["小", TableUtils.DISPLAYRULE_IMAGE_BASE64],
+  largeIcon: ["大", TableUtils.DISPLAYRULE_IMAGE_BASE64],
+  id: ["资料 ID", TableUtils.DISPLAYRULE_LINK_ITEM],
   branch: "分支",
   relation: ["关联", (_, data) => {
     if (data.generalParent) return `<span class="mcmodder-general"><strong>综合父资料</strong></span> <span class="text-muted">(${ data.generalNum })</span>`;
@@ -140,62 +140,62 @@ const headConfigs = {
     if (data.jumpTo) return `<span class="mcmodder-jump">合并</span>至 <a href="javascript:void(0)" class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.jumpTo }">${ data.jumpTo }</a>`
     return null;
   }],
-  name: ["主要名称", McmodderUtils.getFormattedCodeDecoratedHTML],
-  englishName: ["次要名称", McmodderUtils.getFormattedCodeDecoratedHTML],
+  name: ["主要名称", Utils.getFormattedCodeDecoratedHTML],
+  englishName: ["次要名称", Utils.getFormattedCodeDecoratedHTML],
   creativeTabName: "分类",
   type: "种类",
-  registerName: ["注册名", McmodderTable.DISPLAYRULE_MONOSPACE],
-  metadata: ["元数据", McmodderTable.DISPLAYRULE_NUMBER],
+  registerName: ["注册名", TableUtils.DISPLAYRULE_MONOSPACE],
+  metadata: ["元数据", TableUtils.DISPLAYRULE_NUMBER],
   OredictList: ["矿物词典/物品标签", data => {
     if (!data || data.charAt(0) != "[") return data;
     let res = "";
     const entries = data.slice(1, -1).split(",") as string[];
     entries.forEach(entry => {
       entry = entry.trim();
-      res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ McmodderUtils.getOredictURL(entry) }">${ entry }</a>`;
+      res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${ Utils.getOredictURL(entry) }">${ entry }</a>`;
     });
     return res;
   }],
-  maxStackSize: ["最大堆叠", McmodderTable.DISPLAYRULE_NUMBER],
-  maxDurability: ["最大耐久", McmodderTable.DISPLAYRULE_NUMBER],
-} satisfies HeadConfigsInitializer<McmodderItemData>;
+  maxStackSize: ["最大堆叠", TableUtils.DISPLAYRULE_NUMBER],
+  maxDurability: ["最大耐久", TableUtils.DISPLAYRULE_NUMBER],
+} satisfies RowOptionsInitializer<Item>;
 const editConfigs = {
-  id: McmodderInputType.NUMBER,
+  id: InputType.NUMBER,
   itemType: {
-    type: McmodderInputType.NUMBER,
+    type: InputType.NUMBER,
     value: 1
   },
-  classID: McmodderInputType.NUMBER,
+  classID: InputType.NUMBER,
   classAbbr: null,
   className: null,
   classEname: null,
   registerName: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
   metadata: {
-    type: McmodderInputType.NUMBER,
+    type: InputType.NUMBER,
     optional: true
   },
   smallIcon: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
   largeIcon: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
-  name: McmodderInputType.TEXT,
+  name: InputType.TEXT,
   englishName: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
   creativeTabName: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
   branch: {
-    type: McmodderInputType.TEXT,
+    type: InputType.TEXT,
     optional: true
   },
   type: null,
@@ -206,23 +206,23 @@ const editConfigs = {
   generalNum: null,
   OredictList: null,
   harvestTools: null,
-  maxStackSize: McmodderInputType.NUMBER,
-  maxDurability: McmodderInputType.NUMBER,
+  maxStackSize: InputType.NUMBER,
+  maxDurability: InputType.NUMBER,
   content: null
-} satisfies EditConfigsInitializer<McmodderItemData>;
+} satisfies EditOptionsInitializer<Item>;
 
-const jsonApplicationHeadConfigs = {
-  user: ["发表者", McmodderTable.DISPLAYRULE_LINK_CENTER_WITH_NAME],
+const jsonApplicationRowOptions = {
+  user: ["发表者", TableUtils.DISPLAYRULE_LINK_CENTER_WITH_NAME],
   pid: ["所属楼层编号", (data, _row) => {
     return `<a target="_blank" href="https://bbs.mcmod.cn/forum.php?mod=redirect&goto=findpost&ptid=1281&pid=${ data }">${ data }</da>`
   }],
   name: "文件名",
   size: "文件大小",
-  info: ["额外信息", McmodderTable.DISPLAYRULE_HOVER],
+  info: ["额外信息", TableUtils.DISPLAYRULE_HOVER],
   op: ["操作", (data, _row) => {
     return `<a tabindex="-1" class="jsonframe-bbs-filedl" data-url="${ data }">下载并导入</a>`
   }]
-} satisfies HeadConfigsInitializer<ItemJsonFrameApplication>;
+} satisfies RowOptionsInitializer<ItemJsonFrameApplication>;
 
 const jsonFrame = useTemplateRef("jsonFrame");
 const logger = useTemplateRef("logger");
@@ -234,16 +234,16 @@ const fileTable = useTemplateRef("fileTable");
 const maxPage = ref(1);
 const linking = props.parent.configRepository.getSettingsWritableRef("jsonDatabase");
 
-let inferRequestQueue: McmodderInferItemListRequestQueue | undefined;
-let detailedRequestQueue: McmodderDetailedItemListRequestQueue | undefined;
+let inferRequestQueue: InferItemListRequestQueue | undefined;
+let detailedRequestQueue: DetailedItemListRequestQueue | undefined;
 
 // 与另一个RequestQueue区分开，这个专用于处理用户手动发起的数据同步请求，只适用于小规模数据
-const manualRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "manualRequestQueue");
+const manualRequestQueue = new DetailedItemListRequestQueue(props.parent, "manualRequestQueue");
 
 onMounted(() => {
   logger.value!.key("就绪。");
-  inferRequestQueue = new McmodderInferItemListRequestQueue(props.parent, "inferRequestQueue", 1000, logger.value!);
-  detailedRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "detailedRequestQueue", 6, 750, logger.value!);
+  inferRequestQueue = new InferItemListRequestQueue(props.parent, "inferRequestQueue", 1000, logger.value!);
+  detailedRequestQueue = new DetailedItemListRequestQueue(props.parent, "detailedRequestQueue", 6, 750, logger.value!);
 
   InputListController.instance.add(typeInput.value!, {
     suggestionManager: {
@@ -254,22 +254,22 @@ onMounted(() => {
         props.parent.itemTypeList?.forEach(entry => {
           if (entry.classID === 0 || entry.classID === classID) {
             if (entry.classID === 0) {
-              typeHTML = McmodderUtils.escapeHTML(entry.icon);
+              typeHTML = Utils.escapeHTML(entry.icon);
             } else {
               typeHTML = `<i class="fas ${
-                McmodderUtils.escapeHTML(entry.icon)
+                Utils.escapeHTML(entry.icon)
               }"></i>`;
             }
             
             result.push({
               html: `<span style="color: ${
-                McmodderUtils.escapeHTML(entry.color)
+                Utils.escapeHTML(entry.color)
               };"><span class="iconfont icon">${
                 typeHTML
               }</span> ${
-                McmodderUtils.escapeHTML(entry.typeID)
+                Utils.escapeHTML(entry.typeID)
               } - ${
-                McmodderUtils.escapeHTML(entry.text)
+                Utils.escapeHTML(entry.text)
               }</span>`,
               value: entry.typeID.toString(),
               noEscape: true
@@ -341,13 +341,13 @@ async function onSubmitButtonClick() {
   const classID = Number(idInput.value!.value.trim());
   const typeID = Number(typeInput.value!.value.trim());
   if (isNaN(classID)) {
-    McmodderUtils.commonMsg("请输入一个合法的模组 ID ~", false);
+    Utils.commonMsg("请输入一个合法的模组 ID ~", false);
     idInput.value?.focus();
     return;
   }
   if (isNaN(typeID)) {
     typeInput.value?.focus();
-    McmodderUtils.commonMsg("请输入一个合法的资料类型 ID ~", false);
+    Utils.commonMsg("请输入一个合法的资料类型 ID ~", false);
     return;
   }
   
@@ -363,7 +363,7 @@ async function onSubmitButtonClick() {
     console.error(e);
   } finally {
     const endTime = Date.now();
-    logger.value!.key(`任务已结束，耗时 ${ McmodderUtils.getFormattedTime(endTime - startTime) }。`);
+    logger.value!.key(`任务已结束，耗时 ${ Utils.getFormattedTime(endTime - startTime) }。`);
   }
 }
 
@@ -382,13 +382,13 @@ async function openClassSearchFrame() {
 
 // @override
 function parseText(text: string) {
-  let success = 0, fail = 0, save: McmodderItemData[] = [];
+  let success = 0, fail = 0, save: Item[] = [];
   const entries = text.split('\n');
   entries.forEach(item => {
     item = item.trim();
     if (!item) return;
     try {
-      const data = JSON.parse(item) as McmodderUnpurifiedItemData;
+      const data = JSON.parse(item) as UnpurifiedItem;
       if (data.hasOwnProperty("maxStacksSize")) {
         data.maxStackSize = data.maxStacksSize;
         delete data.maxStacksSize;
@@ -397,8 +397,8 @@ function parseText(text: string) {
         data.creativeTabName = data.CreativeTabName;
         delete data.CreativeTabName;
       }
-      data.smallIcon = McmodderUtils.appendBase64ImgPrefix(data.smallIcon);
-      data.largeIcon = McmodderUtils.appendBase64ImgPrefix(data.largeIcon);
+      data.smallIcon = Utils.appendBase64ImgPrefix(data.smallIcon);
+      data.largeIcon = Utils.appendBase64ImgPrefix(data.largeIcon);
       success++;
       save.push(data);
     } catch (err) {
@@ -415,7 +415,7 @@ function parseText(text: string) {
   };
 }
 
-async function getImageBlobByItemList(itemList: McmodderItemList, width: 32 | 128, maxConcurrent = 6) { // 大力出奇迹
+async function getImageBlobByItemList(itemList: ItemList, width: 32 | 128, maxConcurrent = 6) { // 大力出奇迹
   const results = new Array(itemList.length);
   const running = new Set;
   let i = 0;
@@ -426,7 +426,7 @@ async function getImageBlobByItemList(itemList: McmodderItemList, width: 32 | 12
     }
     if (running.size < maxConcurrent) {
       const index = i;
-      const promise = fetch(McmodderUtils.getImageURLByItemID(itemList[index].id, width), { redirect: "manual" })
+      const promise = fetch(Utils.getImageURLByItemID(itemList[index].id, width), { redirect: "manual" })
         .then(resp => resp.blob())
         .then(blob => {
           if (blob.size) {
@@ -458,7 +458,7 @@ async function getImageBlobByItemList(itemList: McmodderItemList, width: 32 | 12
   return results;
 }
 
-async function inferItemList(itemList: McmodderItemList, config: ItemJsonFrameConfig) {
+async function inferItemList(itemList: ItemList, config: ItemJsonFrameConfig) {
 
   let check = async (id: number) => {
     const data = config.getall ? await props.parent.utils.getDetailedItemByID(id) : await props.parent.utils.getItemByID(id);
@@ -472,7 +472,7 @@ async function inferItemList(itemList: McmodderItemList, config: ItemJsonFrameCo
         return false;
       }
       itemList.push(data);
-      logger.value!.success(`[${ data.id }] ${ McmodderUtils.getItemFullName(data.name, data.englishName) }`);
+      logger.value!.success(`[${ data.id }] ${ Utils.getItemFullName(data.name, data.englishName) }`);
       return true;
     }
     logger.value!.log(`${ id } 不属于目标模组，而是属于 ${ data.classID }`);
@@ -492,7 +492,7 @@ async function inferItemList(itemList: McmodderItemList, config: ItemJsonFrameCo
       continue;
     }
     r = i - 1;
-    logger.value!.log(`连续区间 [${ ids[l] }, ${ ids[r] }] - ${ McmodderUtils.getPrecisionFormatter().format((i - 1) / idsLength * 100) }% 已完成`);
+    logger.value!.log(`连续区间 [${ ids[l] }, ${ ids[r] }] - ${ Utils.getPrecisionFormatter().format((i - 1) / idsLength * 100) }% 已完成`);
     for (let j = ids[l] - 1; j > (l === 0 ? 0 : ids[l - 1]); j--) {
       if (!await check(j)) break;
     }
@@ -506,17 +506,17 @@ async function inferItemList(itemList: McmodderItemList, config: ItemJsonFrameCo
   logger.value!.log("搜索潜在资料 完成");
 }
 
-async function appendImageDataToItemList(itemList: McmodderItemList) {
+async function appendImageDataToItemList(itemList: ItemList) {
   const blobs32x = await getImageBlobByItemList(itemList, 32);
   const blobs128x = await getImageBlobByItemList(itemList, 128);
   for (const i in itemList) {
-    if (blobs32x[i]) itemList[i].smallIcon = await McmodderUtils.blob2Base64(blobs32x[i]);
-    if (blobs128x[i]) itemList[i].largeIcon = await McmodderUtils.blob2Base64(blobs128x[i]);
+    if (blobs32x[i]) itemList[i].smallIcon = await Utils.blob2Base64(blobs32x[i]);
+    if (blobs128x[i]) itemList[i].largeIcon = await Utils.blob2Base64(blobs128x[i]);
   }
   return itemList;
 }
 
-async function getItemListFromPage(url: string, itemList: McmodderItemList, branchName: string, config: ItemJsonFrameConfig) {
+async function getItemListFromPage(url: string, itemList: ItemList, branchName: string, config: ItemJsonFrameConfig) {
   let jumpList = [], generalList = [], repeatedData;
   let resp = await props.parent.utils.createRequest({
     url: url,
@@ -528,7 +528,7 @@ async function getItemListFromPage(url: string, itemList: McmodderItemList, bran
   let s;
   for (let _c of table.find(".item-list-type-right li").toArray()) {
     let c = $(_c);
-    const itemID = McmodderUtils.abstractIDFromURL(c.find("a").last().attr("href"), "item");
+    const itemID = Utils.abstractIDFromURL(c.find("a").last().attr("href"), "item");
 
     // 递归处理超大分类的情况
     if (c.find(".more").length) {
@@ -548,7 +548,7 @@ async function getItemListFromPage(url: string, itemList: McmodderItemList, bran
     c = c.find("a").last();
     const categoryArray = c.parents(".item-list-type-right").prev().toArray().reverse().map(a => a.textContent);
 
-    const itemData: McmodderItemData = {
+    const item: Item = {
       id: itemID,
       classID: config.classID,
       smallIcon: "",
@@ -558,23 +558,23 @@ async function getItemListFromPage(url: string, itemList: McmodderItemList, bran
       creativeTabName: categoryArray.length ? categoryArray.join(":") : "",
       branch: branchName,
     };
-    itemData.itemType = config.typeID;
-    logger.value!.success(`[${ itemData.id }] ${ McmodderUtils.getItemFullName(itemData.name, itemData.englishName) }`);
+    item.itemType = config.typeID;
+    logger.value!.success(`[${ item.id }] ${ Utils.getItemFullName(item.name, item.englishName) }`);
 
     // 处理合并资料
     s = c.parents(".skip");
-    // console.log(itemData);
+    // console.log(item);
     if (s.length) {
-      itemData.jumpTo = McmodderUtils.abstractIDFromURL(s.prev().find("a").last().attr("href"), "item");
-      jumpList.push(itemData.jumpTo);
+      item.jumpTo = Utils.abstractIDFromURL(s.prev().find("a").last().attr("href"), "item");
+      jumpList.push(item.jumpTo);
     }
 
     // 处理综合资料
     s = c.attr("data-loop");
     if (s) {
-      generalList.push(itemData.id);
+      generalList.push(item.id);
       resp = await props.parent.utils.createRequest({
-        url: McmodderUtils.getItemURL(itemData.id),
+        url: Utils.getItemURL(item.id),
         method: "GET",
         anonymous: true
       });
@@ -582,34 +582,34 @@ async function getItemListFromPage(url: string, itemList: McmodderItemList, bran
       const doc = $(resp.responseXML);
 
       // 展开综合父资料
-      logger.value!.log(`${ itemData.id } 是综合父资料，展开此物品页`);
-      itemData.generalNum = Number(doc.find(".item-skip-list legend").text().split("共有 ")[1].split(" 个")[0]);
-      if (itemData.generalNum === 100) {
+      logger.value!.log(`${ item.id } 是综合父资料，展开此物品页`);
+      item.generalNum = Number(doc.find(".item-skip-list legend").text().split("共有 ")[1].split(" 个")[0]);
+      if (item.generalNum === 100) {
         logger.value!.warn("综合子资料达到上限 (100) ，可能无法访问部分子资料");
       }
       for (let _b of doc.find(".item-skip-list ul a").toArray()) {
         const b = $(_b);
         const s = doc.find(`.name[data-id=${b.attr("data-for")}]`);
-        const childID = McmodderUtils.abstractIDFromURL(s.next().find("a").first().attr("href"), "item");
-        const generalData: McmodderItemData = {
+        const childID = Utils.abstractIDFromURL(s.next().find("a").first().attr("href"), "item");
+        const generalData: Item = {
           id: childID,
           itemType: config.typeID,
           smallIcon: "",
           largeIcon: "",
           name: b.text(),
           englishName: s.text().split(b.text() + " (")[1]?.split(")")[0],
-          creativeTabName: itemData.creativeTabName,
-          generalTo: itemData.id,
+          creativeTabName: item.creativeTabName,
+          generalTo: item.id,
           branch: branchName,
           classID: config.classID
         };
         itemList.push(generalData);
-        logger.value!.success(`[${ generalData.id }] ${ McmodderUtils.getItemFullName(generalData.name, generalData.englishName) }`);
+        logger.value!.success(`[${ generalData.id }] ${ Utils.getItemFullName(generalData.name, generalData.englishName) }`);
       }
-      logger.value!.log(`展开物品 ${ itemData.id } 完成`);
+      logger.value!.log(`展开物品 ${ item.id } 完成`);
     }
 
-    itemList.push(itemData);
+    itemList.push(item);
   }
 
   // 根据已记录的所有合并/综合子资料数据来标记合并/综合父资料
@@ -622,7 +622,7 @@ async function getItemListFromPage(url: string, itemList: McmodderItemList, bran
 }
 
 async function getItemListByClassID(config: ItemJsonFrameConfig) {
-  let itemList: McmodderItemList = [];
+  let itemList: ItemList = [];
   const classID = config.classID;
   const typeID = config.typeID;
   /* let hiddenCategoryList = []; */
@@ -678,7 +678,7 @@ async function performClassSearch(classID: number, typeID: number) {
   // STEP 0: 前置数据收集
   logger.value!.log(`打开模组页 ${ classID }`);
   const resp = await props.parent.utils.createRequest({
-    url: McmodderUtils.getClassURL(classID),
+    url: Utils.getClassURL(classID),
     method: "GET",
     anonymous: true
   });
@@ -688,7 +688,7 @@ async function performClassSearch(classID: number, typeID: number) {
   }
   logger.value!.log(`打开模组页 ${ classID } 完成`);
   const doc = $(resp.responseXML);
-  const { classData } = McmodderUtils.parseClassDocument(doc);
+  const { classData } = Utils.parseClassDocument(doc);
   const className = classData.name;
   const classEname = classData.englishName;
   const maxNumber = parseInt(doc.find(".mold.mold-1 .count").text()?.split("(")[1]?.split("条)")[0]) || 0;
@@ -709,7 +709,7 @@ async function performClassSearch(classID: number, typeID: number) {
   });
   const config = configTemp as ItemJsonFrameConfig;
   
-  let itemList: McmodderItemList = [];
+  let itemList: ItemList = [];
 
   const inferBackup = inferRequestQueue!.backupManager.hasBackup();
   const detailedBackup = detailedRequestQueue!.backupManager.hasBackup();
@@ -733,13 +733,13 @@ async function performClassSearch(classID: number, typeID: number) {
 
   // STEP 4: 保存结果，任务结束
   const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
-  const fileName = McmodderUtils.regulateFileName(rawName);
+  const fileName = Utils.regulateFileName(rawName);
   logger.value!.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
   await jsonFrame.value!.itemRepository.write(fileName, itemList);
   await jsonFrame.value!.updateSelection();
 }
 
-async function getJSONFromURL(url: string, ctx: McmodderTableContext<ItemJsonFrameApplication>) {
+async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplication>) {
   ctx.empty();
   ctx.showLoading();
   let resp = await props.parent.utils.createRequest({ url: url, method: "GET" });
@@ -763,7 +763,7 @@ async function getJSONFromURL(url: string, ctx: McmodderTableContext<ItemJsonFra
     const pid = Number(infoFrame.attr("id")?.slice(12)); // postmessage_xxxxx
     if (isNaN(pid)) return;
     ctx.appendData({
-      user: `${ McmodderUtils.abstractLastFromURL(avatar.attr("href"), "center") },${ avatar.children().attr("alt") }`,
+      user: `${ Utils.abstractLastFromURL(avatar.attr("href"), "center") },${ avatar.children().attr("alt") }`,
       pid: pid,
       name: json.find("a").text(),
       size: json.find("em").text().slice(1).split(", ")[0],
@@ -772,7 +772,7 @@ async function getJSONFromURL(url: string, ctx: McmodderTableContext<ItemJsonFra
     });
   });
   ctx.refreshAll();
-  McmodderUtils.updateAllTooltip();
+  Utils.updateAllTooltip();
 
   // 读取尾页页码
   const newMaxPage = Number(doc.find(".last").first().text().slice(4));
@@ -801,11 +801,11 @@ async function preSyncRow(selection: number | number[]) {
   }
 }
 
-async function syncRow(selection: McmodderTableRowSelection) {
+async function syncRow(selection: TableRowSelection) {
   const length = selection.length;
-  const itemList: McmodderItemData[] = new Array(length);
+  const itemList: Item[] = new Array(length);
   for (const i in selection) {
-    itemList[i] = McmodderUtils.simpleDeepCopy(jsonFrame.value!.table!.getEditorRowData(selection[i]));
+    itemList[i] = Utils.simpleDeepCopy(jsonFrame.value!.table!.getEditorRowData(selection[i]));
   }
   await manualRequestQueue.run(itemList);
   const ctx = jsonFrame.value!.table!.ctx;
@@ -834,7 +834,7 @@ async function preManualSubmitRow(index: number) {
     preConfirm: () => {
       const input = Number($("#jsonframe-submit-classid").val());
       if (isNaN(input) || !input) {
-        McmodderUtils.commonMsg("请输入一个合法的数值~", true);
+        Utils.commonMsg("请输入一个合法的数值~", true);
         return false;
       }
       modID = input;
@@ -857,13 +857,13 @@ async function submitRow(selection: number | number[]) {
   const length = selection.length;
   const itemList = new Array(length);
   for (const i in selection) {
-    itemList[i] = McmodderUtils.simpleDeepCopy(jsonFrame.value!.table!.getData(selection[i]));
+    itemList[i] = Utils.simpleDeepCopy(jsonFrame.value!.table!.getData(selection[i]));
   }
   // await this.manualSubmitQueue.run(itemList);
-  McmodderUtils.commonMsg("所有改动均已提交~");
+  Utils.commonMsg("所有改动均已提交~");
 }
 
-async function getJSONByPage(page: number, table: McmodderTableContext<ItemJsonFrameApplication>) {
+async function getJSONByPage(page: number, table: TableContext<ItemJsonFrameApplication>) {
   await getJSONFromURL(`${ Mcmodder.URL_JSON_POST }&extra=&page=${ page }`, table);
 }
 
@@ -872,7 +872,7 @@ async function downloadAndImportFile(url: string) {
   let resp = await props.parent.utils.createRequest({ url: url });
   let headers = resp.responseHeaders;
   if (!headers.includes("content-type: application/octet-stream")) {
-    McmodderUtils.commonMsg("下载失败...", false);
+    Utils.commonMsg("下载失败...", false);
     console.error("Error downloading JSON file: " + resp);
     return;
   }
@@ -883,7 +883,7 @@ async function downloadAndImportFile(url: string) {
 
 async function searchOnlineFiles() {
   if (!props.parent.currentUID) {
-    McmodderUtils.commonMsg("请先登录~", false);
+    Utils.commonMsg("请先登录~", false);
   }
 
   swal.fire({
@@ -917,9 +917,9 @@ function onDownloadClick(e: Event) {
   }
 }
 
-function convertToImportableFormat(data: Partial<McmodderItemData>) {
+function convertToImportableFormat(data: Partial<Item>) {
   const entry: Record<string, any> = {};
-  for (const key of McmodderValues.importableKeys) {
+  for (const key of Values.importableKeys) {
     let value = (data as any)[key];
     if (value === undefined || value === null || (typeof value === "number" && isNaN(value))) value = "";
     switch (key) {
@@ -927,12 +927,12 @@ function convertToImportableFormat(data: Partial<McmodderItemData>) {
         entry[key] = value.replaceAll(",", ", ");
         break;
       case "smallIcon": case "largeIcon":
-        entry[key] = McmodderUtils.removeBase64ImgPrefix(value);
+        entry[key] = Utils.removeBase64ImgPrefix(value);
         break;
       default: entry[key] = value;
     }
   }
-  return entry as McmodderItemData;
+  return entry as Item;
 }
 
 function exportJson(fileName: string) {
@@ -952,7 +952,7 @@ function onCommonExportClick() {
   jsonFrame.value!.table!.getAllData().forEach(e => {
     content += JSON.stringify(convertToImportableFormat(e)) + "\r\n";
   });
-  McmodderUtils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, content);
   swal.close();
 }
 
@@ -961,7 +961,7 @@ function onFullExportClick() {
   jsonFrame.value!.table!.getAllData().forEach(entry => {
     content += JSON.stringify(entry) + "\r\n";
   });
-  McmodderUtils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, content);
   swal.close();
 }
 

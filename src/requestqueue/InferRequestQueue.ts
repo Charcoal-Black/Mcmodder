@@ -1,11 +1,11 @@
 import type { GmResponseEvent } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
-import { McmodderDynamicRequestQueue } from "./DynamicRequestQueue";
-import type { McmodderLogger } from "../widget/logger/Logger";
+import { Utils } from "../Utils";
+import { DynamicRequestQueue } from "./DynamicRequestQueue";
+import type { Logger } from "../widget/logger/Logger";
 
-export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQueue {
-  constructor(parent: Mcmodder, id: string, minInterval = 1000, logger: McmodderLogger) {
+export class InferItemListRequestQueue extends DynamicRequestQueue {
+  constructor(parent: Mcmodder, id: string, minInterval = 1000, logger: Logger) {
     super(parent, id, minInterval, logger);
   }
 
@@ -15,7 +15,7 @@ export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQue
       return null;
     }
     const doc = $(resp.responseXML);
-    const data = this.execution!.config.getall ? McmodderUtils.parseItemEditorDocument(doc) : McmodderUtils.parseItemDocument(doc);
+    const data = this.execution!.config.getall ? Utils.parseItemEditorDocument(doc) : Utils.parseItemDocument(doc);
     if (data.classID != this.execution!.config.classID) {
       this.logger.log(`${ data.id } 不属于目标模组，而是属于 ${ data.classID }`);
       return null;
@@ -24,11 +24,11 @@ export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQue
       this.logger.log(`${ data.id } 属于目标模组，但资料类型编号是 ${ data.itemType || 1 } 而不是 ${ this.execution!.config.typeID }`);
       return null;
     }
-    this.logger.success(`[${ data.id }] ${ McmodderUtils.getItemFullName(data.name, data.englishName) }`);
+    this.logger.success(`[${ data.id }] ${ Utils.getItemFullName(data.name, data.englishName) }`);
     return data;
   }
 
-  async run(itemList: McmodderItemList, config: ItemJsonFrameConfig) { // 其实就是 STEP 2
+  async run(itemList: ItemList, config: ItemJsonFrameConfig) { // 其实就是 STEP 2
     if (this.backupManager.hasBackup()) {
       await this.executeBackup();
     } else {
@@ -79,7 +79,7 @@ export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQue
     return this.execution!.itemList;
   }
 
-  getNextRequest(result?: RequestResult): RequestData | null {
+  getNextRequest(result?: RequestResult): AppRequest | null {
     const execution = this.execution || this.preExecution;
     if (!execution) return null;
     const rangeLength = execution.idRanges.length;
@@ -103,7 +103,7 @@ export class McmodderInferItemListRequestQueue extends McmodderDynamicRequestQue
         const range = execution.idRanges[execution.rangeIndex];
         execution.checkedRangeLength += range.r - range.l + 1;
         this.logger.log(`连续区间 [${ range.l }, ${ range.r }] - ${
-          McmodderUtils.getPrecisionFormatter().format(execution.checkedRangeLength / execution.idsLength * 100)
+          Utils.getPrecisionFormatter().format(execution.checkedRangeLength / execution.idsLength * 100)
         }% 已完成`);
         execution.dir = -1;
         nextID = range.l + execution.dir;

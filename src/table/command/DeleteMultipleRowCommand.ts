@@ -1,10 +1,10 @@
 import { Command } from "./Command";
 
 export class DeleteMultipleRowCommand<T extends Object> extends Command<T> {
-  selection: McmodderTableRowSelection;
-  deletedData?: McmodderTableDataMap<T>;
+  selection: TableRowSelection;
+  deletedData?: TableDataMap<T>;
 
-  constructor(self: McmodderTableContext<T>, selection: McmodderTableRowSelection) {
+  constructor(self: TableContext<T>, selection: TableRowSelection) {
     super(self);
     this.selection = selection;
     this.deletedData = new Array(this.selection.length);

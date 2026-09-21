@@ -1,8 +1,8 @@
 <template>
   <Teleport to="head">
-    <link type="text/css" :href="McmodderValues.assets.mcmod.css.item" rel="stylesheet">
-    <link type="text/css" :href="McmodderValues.assets.mcmod.css.structureBrowser" rel="stylesheet">
-    <link type="text/css" :href="McmodderValues.assets.mcmod.css.bootstrapSelect" rel="stylesheet">
+    <link type="text/css" :href="Values.assets.mcmod.css.item" rel="stylesheet">
+    <link type="text/css" :href="Values.assets.mcmod.css.structureBrowser" rel="stylesheet">
+    <link type="text/css" :href="Values.assets.mcmod.css.bootstrapSelect" rel="stylesheet">
   </Teleport>
   <div id="structure-container" />
   <div>
@@ -33,7 +33,7 @@
       ref="blockListTable"
       :parent="parent"
       :attr="{ id: 'block-selector' }"
-      :head-configs="blockListHeadConfigs"
+      :rowOptions="blockListRowOptions"
     />
   </div>
 </template>
@@ -41,10 +41,10 @@
 <script setup lang="ts">
 import { onMounted, ref, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { McmodderTable } from '../../table/Table.ts';
-import { McmodderUtils } from '../../Utils.ts';
+import { TableUtils } from '../../table/Table.ts';
+import { Utils } from '../../Utils.ts';
 import GenericTable from './table/GenericTable.vue';
-import { McmodderValues } from '../../Values.ts';
+import { Values } from '../../Values.ts';
 
 interface Props {
   parent: Mcmodder
@@ -57,7 +57,7 @@ let blocktype = -1;
 
 const blockListTable = useTemplateRef("blockListTable");
 
-const blockListHeadConfigs = {
+const blockListRowOptions = {
   op: ["操作", (_, row) => {
     const id = row.id;
     if (id === undefined) {
@@ -76,8 +76,8 @@ const blockListHeadConfigs = {
     data.forEach((face: string) => res += `<img src="${ face }" width="24">`);
     return res;
   }],
-  itemID: ["对应资料ID", McmodderTable.DISPLAYRULE_LINK_ITEM]
-} as HeadConfigsInitializer<StructureEditorBlocktype>;
+  itemID: ["对应资料ID", TableUtils.DISPLAYRULE_LINK_ITEM]
+} as RowOptionsInitializer<StructureEditorBlocktype>;
 
 function onInputChange(e: Event) {
   const target = e.composedPath()[0];
@@ -92,15 +92,15 @@ function onStructureSelectorChange(e: Event) {
 }
 
 async function loadScripts() {
-  await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.bootstrap);
-  await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.bootstrapSelect);
-  await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.three);
-  await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.threeOrbitControls);
-  await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.threeTween);
-  McmodderUtils.loadScript(document.head, 'import{EXGridHelper}from"/static/public/plug/three/three.ex-grid-helper.js";window.structure_enchanted_grid_helper=function(r,e,t,i,d){return new EXGridHelper(r,e,t,i,d)}', null, "module");
-  McmodderUtils.loadScript(document.body, `comment_container = ${ parent.configRepository.getSettings("structureSelected") || "36016" };`);
-  await McmodderUtils.loadScript(document.body, null, McmodderValues.assets.mcmod.js.structureBrowser);
-  await McmodderUtils.loadScript(document.body, null, McmodderValues.assets.mcmod.js.item);
+  await Utils.loadScript(document.head, null, Values.assets.mcmod.js.bootstrap);
+  await Utils.loadScript(document.head, null, Values.assets.mcmod.js.bootstrapSelect);
+  await Utils.loadScript(document.head, null, Values.assets.mcmod.js.three);
+  await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeOrbitControls);
+  await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeTween);
+  Utils.loadScript(document.head, 'import{EXGridHelper}from"/static/public/plug/three/three.ex-grid-helper.js";window.structure_enchanted_grid_helper=function(r,e,t,i,d){return new EXGridHelper(r,e,t,i,d)}', null, "module");
+  Utils.loadScript(document.body, `comment_container = ${ parent.configRepository.getSettings("structureSelected") || "36016" };`);
+  await Utils.loadScript(document.body, null, Values.assets.mcmod.js.structureBrowser);
+  await Utils.loadScript(document.body, null, Values.assets.mcmod.js.item);
 }
 
 onMounted(async () => {
@@ -140,7 +140,7 @@ onMounted(async () => {
         let n = u[0].face.normal, x = u[0].object.data.position[0] + n.x, z = u[0].object.data.position[1] + n.z, y = u[0].object.data.layer + n.y;
         const blockData = structure_browser.blocktype_list[blocktype];
         if (!blockData) {
-          McmodderUtils.commonMsg("请先在下方表格选取目标方块种类~", false);
+          Utils.commonMsg("请先在下方表格选取目标方块种类~", false);
           return;
         }
         if (structure_browser.cube_list.filter((e: any) => (x === e.data.position[0] && y === e.data.layer && z === e.data.position[1])).length) return;
@@ -161,7 +161,7 @@ onMounted(async () => {
     }
   }
 
-  await McmodderUtils.sleep(3e3);
+  await Utils.sleep(3e3);
 
   $("#structure-close").hide();
   structure_browser.get_block_type();

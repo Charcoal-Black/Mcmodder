@@ -46,7 +46,7 @@
         ref="table"
         :parent="parent"
         :attr="attr"
-        :head-configs="headConfigs"
+        :rowOptions="rowOptions"
         :edit-configs="editConfigs"
         @edit="onEdit"
         @refresh="onRefresh"
@@ -55,14 +55,14 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends McmodderTableAcceptable">
+<script setup lang="ts" generic="T extends TableAcceptable">
 import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { McmodderUtils } from '../../../Utils';
-import { McmodderPermission } from '../../../config/ConfigUtils';
+import { Utils } from '../../../Utils';
+import { Permission } from '../../../config/ConfigUtils';
 import { IndexedDBRepository } from '../../../jsonframe/repository/IndexedDBRepository';
 import { GMStorageRepository } from '../../../jsonframe/repository/GMStorageRepository';
 import type { ItemRepository } from '../../../jsonframe/repository/ItemRepository';
-import { McmodderValues } from '../../../Values';
+import { Values } from '../../../Values';
 import GenericTable from '../table/GenericTable.vue';
 import type { GenericJsonFrameProps } from '../../../types/props';
 
@@ -72,7 +72,7 @@ const configs = computed(() => props.parent.configRepository);
 const root = useTemplateRef("root");
 const table = useTemplateRef("table");
 
-const tools = shallowRef<JsonFrameToolData[]>([]);
+const tools = shallowRef<JsonFrameTool[]>([]);
 const activeFileName = ref("");
 const isFixedMenuVisible = ref(false);
 const hasRearranged = ref(false);
@@ -102,11 +102,11 @@ onMounted(() => {
   });
   addTool("more", "更多...", () => typeof props.opts?.more === "function", () => props.opts!.more!());
 
-  window.addEventListener("scroll", McmodderUtils.animationThrottle(() => {
+  window.addEventListener("scroll", Utils.animationThrottle(() => {
     const frameRect = root.value!.getBoundingClientRect();
     const isFrameVisible = 
-      frameRect.top < McmodderValues.headerContainerHeight &&
-      frameRect.bottom >= McmodderValues.headerContainerHeight;
+      frameRect.top < Values.headerContainerHeight &&
+      frameRect.bottom >= Values.headerContainerHeight;
     
     if (isFrameVisible && !isFixedMenuVisible.value) {
       isFixedMenuVisible.value = true;
@@ -116,7 +116,7 @@ onMounted(() => {
       isFixedMenuVisible.value = false;
     }
   }));
-  window.addEventListener("resize", McmodderUtils.animationThrottle(() => {
+  window.addEventListener("resize", Utils.animationThrottle(() => {
     updateFixedMenu();
   }));
 
@@ -167,11 +167,11 @@ function parseText(text: string) {
 
 function onCaughtParseException(err: unknown) {
   console.error("Error phasing raw JSON data: " + err);
-  McmodderUtils.commonMsg(String(err), false, "解析错误");
+  Utils.commonMsg(String(err), false, "解析错误");
 }
 
 function getUniqueRegulatedFileName(name: string) {
-  let regulated = McmodderUtils.regulateFileName(name);
+  let regulated = Utils.regulateFileName(name);
   if (selectionList.value.includes(regulated)) {
     let i = 2, dot = regulated.lastIndexOf("."), main = regulated.slice(0, dot), extension = regulated.slice(dot + 1);
     let newName;
@@ -188,7 +188,7 @@ async function importFromText(text: string, saveAs: string) {
     const purified = result!.map(e => purifyData(e));
     await itemRepository.write(saveAs, purified);
     await updateSelection();
-    McmodderUtils.commonMsg(`已读取并保存为 ${ saveAs }，其中 ${ success } 条解析成功，${ fail } 条解析失败。`);
+    Utils.commonMsg(`已读取并保存为 ${ saveAs }，其中 ${ success } 条解析成功，${ fail } 条解析失败。`);
   }
 }
 
@@ -220,7 +220,7 @@ watch(
 
 function updateFixedMenu() {
   cssMenuWidth.value = root.value!.getBoundingClientRect().width + "px";
-  cssMenuTopOffset.value = McmodderValues.headerContainerHeight + "px";
+  cssMenuTopOffset.value = Values.headerContainerHeight + "px";
 }
 
 async function updateSelection() {
@@ -267,17 +267,17 @@ async function newUnnamedJson() {
   const regulated = getUniqueRegulatedFileName("Unnamed.json");
   await itemRepository.createFile(regulated);
   await updateSelection();
-  McmodderUtils.commonMsg(`创建了新的文件 ${ regulated } ~`);
+  Utils.commonMsg(`创建了新的文件 ${ regulated } ~`);
 }
 
 async function saveEdit() {
   if (!(table.value!.unsaved)) {
-    McmodderUtils.commonMsg("当前暂无需要保存的改动...", false);
+    Utils.commonMsg("当前暂无需要保存的改动...", false);
     return;
   }
   table.value!.saveAll();
   await itemRepository.write(activeFileName.value, table.value!.getAllData());
-  McmodderUtils.commonMsg("所有改动均已保存~");
+  Utils.commonMsg("所有改动均已保存~");
 }
 
 async function rename() {
@@ -300,7 +300,7 @@ async function rename() {
       database.push(newName);
       configs.value.setSettings("jsonDatabase", database);
 
-      McmodderUtils.commonMsg("文件重命名成功~");
+      Utils.commonMsg("文件重命名成功~");
       activeFileName.value = newName;
       updateSelection();
     }
@@ -308,7 +308,7 @@ async function rename() {
   const input = $("#jsonframe-rename-input").val(name).change(e => {
     const target = e.currentTarget as HTMLInputElement;
     let newName = target.value.trim();
-    target.value = McmodderUtils.regulateFileName(newName);
+    target.value = Utils.regulateFileName(newName);
   });
   /*.keydown(e => {
     if (e.keyCode === 13) Swal.clickConfirm();
@@ -317,16 +317,16 @@ async function rename() {
 
 function submitEdit() {
   if (!props.parent.currentUID) {
-    McmodderUtils.commonMsg("请先登录~", false);
+    Utils.commonMsg("请先登录~", false);
     return;
   }
   const lv: number = configs.value.getProfile("lv");
-  const permission: McmodderPermission = configs.value.getProfile("permission");
-  if (lv < 5 && !(permission === McmodderPermission.EDITOR || permission >= McmodderPermission.ADMIN)) {
-    McmodderUtils.commonMsg("当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）", false);
+  const permission: Permission = configs.value.getProfile("permission");
+  if (lv < 5 && !(permission === Permission.EDITOR || permission >= Permission.ADMIN)) {
+    Utils.commonMsg("当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）", false);
     return;
   }
-  McmodderUtils.commonMsg("此功能尚未完工，敬请期待~");
+  Utils.commonMsg("此功能尚未完工，敬请期待~");
 }
 
 function fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState> {
@@ -346,7 +346,7 @@ async function tryDeleteJson(fileName: string) {
   const { value: isConfirm } = await fileDeleteInquire(fileName);
   if (isConfirm) {
     await deleteJson(fileName);
-    McmodderUtils.commonMsg(`成功删除 ${fileName} ~`);
+    Utils.commonMsg(`成功删除 ${fileName} ~`);
     updateSelection();
     return true;
   }

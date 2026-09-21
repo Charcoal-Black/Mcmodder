@@ -1,5 +1,5 @@
-import { McmodderUtils } from "../../Utils";
-import { McmodderValues } from "../../Values";
+import { Utils } from "../../Utils";
+import { Values } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
@@ -11,7 +11,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       return;
     }
     list.create(Date.now() + preSubmitCheckInterval * 60 * 60 * 1000, "autoHandlePreSubmit", this.parent.currentUID);
-    const preSubmitList: (PreSubmitData | null)[] = (this.configs.getProfile("preSubmitList") as PreSubmitData[]).filter(e => !e.errState);
+    const preSubmitList: (PreSubmission | null)[] = (this.configs.getProfile("preSubmitList") as PreSubmission[]).filter(e => !e.errState);
     let f = true;
     if (!preSubmitList.length) return;
     for (let i in preSubmitList) {
@@ -28,21 +28,21 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       resp = await this.parent.utils.createRequest(e.config);
       console.log(resp);
       if (resp.status != 200) {
-        McmodderUtils.commonMsg(`${resp.status} ${resp.statusText}`, false);
+        Utils.commonMsg(`${resp.status} ${resp.statusText}`, false);
         continue;
       }
       const state = JSON.parse(resp.responseText).state as number;
       if (!state) {
-        McmodderUtils.commonMsg(`预编辑项 ${e.url} 已正式提交~`);
+        Utils.commonMsg(`预编辑项 ${e.url} 已正式提交~`);
         $(`.presubmit-frame tr[data-id="${e.id}"]`).remove();
         if (!$(".presubmit-frame tr").length) $(".presubmit-frame").remove();
         preSubmitList[i] = null;
       } else {
-        McmodderUtils.commonMsg(`预编辑项 ${e.url} 提交失败：${McmodderValues.errorMessage[state]}`, false);
+        Utils.commonMsg(`预编辑项 ${e.url} 提交失败：${Values.errorMessage[state]}`, false);
         e.errState = state;
       }
     }
-    if (f) McmodderUtils.commonMsg("自动检查预编辑项已执行~ 当前暂无可正式提交的项目~");
-    else this.configs.setProfile("preSubmitList", preSubmitList.filter(Boolean) as PreSubmitData[]);
+    if (f) Utils.commonMsg("自动检查预编辑项已执行~ 当前暂无可正式提交的项目~");
+    else this.configs.setProfile("preSubmitList", preSubmitList.filter(Boolean) as PreSubmission[]);
   }
 }

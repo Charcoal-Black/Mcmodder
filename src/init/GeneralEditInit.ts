@@ -1,8 +1,8 @@
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 import { InputListController } from "../widget/InputListController";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class GeneralEditInit extends McmodderInit {
+export class GeneralEditInit extends Init {
   canRun() {
     return false;
   }
@@ -19,8 +19,8 @@ export class GeneralEditInit extends McmodderInit {
     } */
     let leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
-    .replace("Alt + X", McmodderUtils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
-    .replace("Ctrl + Enter", McmodderUtils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
+    .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+    .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
     // Bug修复：快速存档时当前菜单自动关闭
     if (this.configs.getSettings("autoSaveFix")) {
@@ -36,11 +36,11 @@ export class GeneralEditInit extends McmodderInit {
           $('#edit-submit-button').click();
           if (this.configs.getSettings("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行
         }
-        if ((!e.shiftKey) && McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
+        if ((!e.shiftKey) && Utils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
           e.preventDefault();
           $('.edit-tools .save a').click();
         }
-        if (McmodderUtils.isKeyMatch({ ctrlKey: true, shiftKey: true, keyCode: 83 }, e)) {
+        if (Utils.isKeyMatch({ ctrlKey: true, shiftKey: true, keyCode: 83 }, e)) {
           e.preventDefault();
           $('.edit-tools .new a').click();
         }

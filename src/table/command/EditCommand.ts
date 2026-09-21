@@ -1,12 +1,12 @@
 import { Command } from "./Command";
 
-export class EditCommand<T extends McmodderTableAcceptable> extends Command<T> {
+export class EditCommand<T extends TableAcceptable> extends Command<T> {
   index: number;
   key: keyof T;
   newValue: any;
   originalValue: any;
 
-  constructor(self: McmodderTableContext<T>, index: number, 
+  constructor(self: TableContext<T>, index: number, 
       key: keyof T, newValue: any) {
     super(self);
     this.index = index;

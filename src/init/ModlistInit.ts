@@ -1,6 +1,6 @@
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class ModlistInit extends McmodderInit {
+export class ModlistInit extends Init {
   canRun() {
     return this.parent.href.includes("/modlist.html");
   }

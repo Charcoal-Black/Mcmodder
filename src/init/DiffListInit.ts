@@ -1,7 +1,7 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
-export class DiffListInit extends McmodderInit {
+export class DiffListInit extends Init {
   canRun() {
     return !!(
       this.parent.href.includes("/diff/") &&
@@ -21,10 +21,10 @@ export class DiffListInit extends McmodderInit {
       const begin = selected[0];
       const end = selected[1];
       if (selected.length < 2) {
-        McmodderUtils.commonMsg(PublicLangData.difference_list.warning.empty, false);
+        Utils.commonMsg(PublicLangData.difference_list.warning.empty, false);
         return;
       } else if (selected.length > 2) {
-        McmodderUtils.commonMsg(PublicLangData.difference_list.warning.limit, false);
+        Utils.commonMsg(PublicLangData.difference_list.warning.limit, false);
         return;
       }
       for (let i = begin; i < end; i++) {

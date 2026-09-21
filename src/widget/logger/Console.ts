@@ -1,6 +1,6 @@
-import type { McmodderLogger } from "./Logger";
+import type { Logger } from "./Logger";
 
-export class McmodderConsole implements McmodderLogger {
+export class McmodderConsole implements Logger {
   log(message: string) {
     console.log(message);
   }

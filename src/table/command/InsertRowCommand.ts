@@ -1,8 +1,8 @@
 import { Command } from "./Command";
 
-export class InsertRowCommand<T extends McmodderTableAcceptable> extends Command<T> {
+export class InsertRowCommand<T extends TableAcceptable> extends Command<T> {
   index: number;
-  constructor(self: McmodderTableContext<T>, index: number) {
+  constructor(self: TableContext<T>, index: number) {
     super(self);
     this.index = index;
   }

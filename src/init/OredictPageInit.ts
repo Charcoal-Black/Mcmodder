@@ -1,8 +1,8 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 import { ItemTabInit } from "./ItemTabInit";
 
-export class OredictPageInit extends McmodderInit{
+export class OredictPageInit extends Init{
   canRun() {
     return !!(
       this.parent.href.includes("/oredict/") &&
@@ -18,7 +18,7 @@ export class OredictPageInit extends McmodderInit{
     $(".oredict-item-list li").each((_, _li) => {
       const li = $(_li);
       const modName = li.find("div.sub.class a").text();
-      const modID = McmodderUtils.abstractLastFromURL(li.find("div.sub.class a").first().prop("href"), "class");
+      const modID = Utils.abstractLastFromURL(li.find("div.sub.class a").first().prop("href"), "class");
       if (!sortContainer.find(`fieldset[data-modid=${ modID }]`).length)
         $(`<fieldset data-modid="${ modID }" data-modname="${ modName }">
           <legend>
@@ -40,7 +40,7 @@ export class OredictPageInit extends McmodderInit{
       list.css("grid-template-columns", `repeat(min(${ count }, var(--mcmodder-oredict-column)), 1fr)`);
     });
 
-    $(window).resize(McmodderUtils.animationThrottle((_e: JQueryEventObject) => {
+    $(window).resize(Utils.animationThrottle((_e: JQueryEventObject) => {
       const width = sortContainer.get(0).getBoundingClientRect().width;
       const column = Math.floor(width / 300);
       document.documentElement.style.setProperty("--mcmodder-oredict-column", column.toString());

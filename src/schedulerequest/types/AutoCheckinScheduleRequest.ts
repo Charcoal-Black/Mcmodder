@@ -1,6 +1,6 @@
 import { GM_openInTab } from "$";
-import { McmodderUtils } from "../../Utils";
-import { McmodderValues } from "../../Values";
+import { Utils } from "../../Utils";
+import { Values } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
@@ -35,7 +35,7 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
   ] as const;
 
   async run(list: ScheduleRequestUtils) {
-    list.create(McmodderUtils.getStartTime(new Date), "autoCheckin", this.parent.currentUID);
+    list.create(Utils.getStartTime(new Date), "autoCheckin", this.parent.currentUID);
     const resp = await this.parent.utils.createRequest({
       url: "https://center.mcmod.cn/action/doUserCheckIn/",
       method: "POST",
@@ -57,8 +57,8 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
     if (!data.state && data.amount) message = `获得知识碎片 ${ data.amount } 个~`;
     else if (data.state === 182) message = "但是似乎早就签到过啦~";
     else if (data.state === 109) message = "但是似乎被别的百科页面抢先一步了~";
-    else message = `自动签到已执行！但是遇到了预料之外的错误，请反馈给脚本作者... (${ McmodderValues.errorMessage[data.state] })`;
-    if (this.parent.isV4) McmodderUtils.commonMsg(`自动签到已执行！${ message }`, !data.state);
+    else message = `自动签到已执行！但是遇到了预料之外的错误，请反馈给脚本作者... (${ Values.errorMessage[data.state] })`;
+    if (this.parent.isV4) Utils.commonMsg(`自动签到已执行！${ message }`, !data.state);
     else (swal as any)({
       type: (!data.state && data.amount) ? "success" : "error",
       title: "自动签到已执行",

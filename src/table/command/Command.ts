@@ -1,7 +1,7 @@
 
-export abstract class Command<T extends McmodderTableAcceptable> {
-  self: McmodderTableContext<T>;
-  constructor(self: McmodderTableContext<T>) {
+export abstract class Command<T extends TableAcceptable> {
+  self: TableContext<T>;
+  constructor(self: TableContext<T>) {
     this.self = self;
   }
 

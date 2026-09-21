@@ -8,21 +8,21 @@
       <span v-if="data.englishName" class="item-ename">{{ data.englishName }}</span>
     </a>
     <span v-if="index < 10" class="item-shortcut"
-      v-html="McmodderUtils.keyToHTML({ altKey: true, key: index.toString() })" />
+      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
-import { McmodderUtils } from '../../../Utils';
-import { McmodderValues } from '../../../Values';
+import { Utils } from '../../../Utils';
+import { Values } from '../../../Values';
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkClassEntry>>();
 
 const data = entry.data;
-const typeData = McmodderValues.nonItemTypeList[entry.type];
-const fullName = McmodderUtils.getClassFullName(data.name, data.englishName, data.abbr);
+const typeData = Values.nonItemTypeList[entry.type];
+const fullName = Utils.getClassFullName(data.name, data.englishName, data.abbr);
 const dataId = data.id;
 const dataTextFull = fullName;
 const dataTextHalf = data.name;

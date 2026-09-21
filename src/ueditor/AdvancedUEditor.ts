@@ -1,8 +1,8 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderTemplate } from "../Template";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderUEditor } from "./UEditor"
+import { TemplateFrame } from "../TemplateFrame.ts";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import { UEditor as UEditor } from "./UEditor"
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
 import html_beautify from "js-beautify";
@@ -13,7 +13,7 @@ import TextComparator from "../vue/components/TextComparator.vue";
 
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
 
-export class McmodderAdvancedUEditor extends McmodderUEditor {
+export class AdvancedUEditor extends UEditor {
 
   editToolsBar?: JQuery;
   optionBar?: JQuery;
@@ -41,7 +41,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   protected autoUpdateEditorStatsThreshold: number;
   autoLinkFrame?: JQuery;
   autoLink?: InstanceType<typeof AutoLink>;
-  template = new McmodderTemplate(this);
+  template = new TemplateFrame(this);
   private contentLock = false;
   private pending = true;
   private isFrameReady = false;
@@ -57,7 +57,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     }
   });
 
-  constructor(editor: McmodderUEditor, parent: Mcmodder) {
+  constructor(editor: UEditor, parent: Mcmodder) {
     super(editor, parent);
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
     this.autoUpdateEditorStatsThreshold = this.configs.getSettings("editorStats") ?? 1e4;
@@ -145,7 +145,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
     this.addTool("mcmodder-tool-spacing", "中英间添加空格", () => this.performSpacingPage());
 
-    let itemSourceList: McmodderItemList = [];
+    let itemSourceList: ItemList = [];
     this.configs.getSettings("jsonDatabase")?.forEach(fileName => {
       itemSourceList = itemSourceList.concat(this.configs.get("mcmodderJsonStorage", fileName) ?? []);
     });
@@ -166,11 +166,11 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       ["save", "快速存档", { ctrlKey: true, key: "S" }],
       ["new", "存档", { ctrlKey: true, shiftKey: true, key: "S" }],
       ["load", "读取", { ctrlKey: true, key: "O" }]
-    ] : []) as [string, string, McmodderKeyData][]).forEach(data => {
+    ] : []) as [string, string, Key][]).forEach(data => {
       const editToolButton = editTools.find(`.${ data[0] } a`);
       if (editToolButton.length) {
         (editToolButton.get(0).lastChild as Text).data = data[1];
-        editToolButton.append(` ${ McmodderUtils.keyToHTML(data[2]) }`);
+        editToolButton.append(` ${ Utils.keyToHTML(data[2]) }`);
       }
     });
 
@@ -225,7 +225,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     // 全屏背景不再透明
     this.$outerFrame.find(".edui-for-fullscreen").children().click(() => {
       if (this.isEditorFullScreen())
-        McmodderUtils.addStyle("#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-color-background);}", "mcmodder-fullscreen-style");
+        Utils.addStyle("#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-color-background);}", "mcmodder-fullscreen-style");
       else
         $("#mcmodder-fullscreen-style").remove();
     });
@@ -338,18 +338,18 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     const c = this.mdEditorOption![1].getValue();
     if (c) {
       // await McmodderUtils.loadScript(editorDoc.head, null, "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js", null, "mcmodder-script-markdownit");
-      await McmodderUtils.loadScript(this.head, null, McmodderValues.assets.js.markdownit, null, "mcmodder-script-markdownit");
+      await Utils.loadScript(this.head, null, Values.assets.js.markdownit, null, "mcmodder-script-markdownit");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirror, null, "mcmodder-script-codemirror");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.markdown, null, "mcmodder-script-codemirror-mod-markdown");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.htmlEmbedded, null, "mcmodder-script-codemirror-mod-htmlembedded");
-      await McmodderUtils.loadStyle(document.head, null, McmodderValues.assets.css.codemirror, null, "mcmodder-style-codemirror");
+      await Utils.loadStyle(document.head, null, Values.assets.css.codemirror, null, "mcmodder-style-codemirror");
       
       if (!this.mdEditor) {
         this.mdEditor = CodeMirror(this.mdEditorContainer.get(0), {
           mode: "markdown",
           theme: "mcmodder"
         });
-        this.mdEditor.on("change", McmodderUtils.throttle(() => {
+        this.mdEditor.on("change", Utils.throttle(() => {
           this.heightAutoResize();
         }, 300));
         this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
@@ -391,16 +391,16 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     if (!this.htmlEditorContainer || !this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
-      await McmodderUtils.loadStyle(document.head, null, McmodderValues.assets.css.codemirror, null, "mcmodder-style-codemirror");
+      await Utils.loadStyle(document.head, null, Values.assets.css.codemirror, null, "mcmodder-style-codemirror");
       if (!this.htmlEditor) {
         this.htmlEditor = CodeMirror(this.htmlEditorContainer.get(0), {
           mode: "xml",
           theme: "mcmodder"
         });
-        this.htmlEditor.on("change", McmodderUtils.throttle(() => {
+        this.htmlEditor.on("change", Utils.throttle(() => {
           this.heightAutoResize();
         }, 300));
-        this.htmlEditor.on("change", McmodderUtils.throttle((instance: CodeMirror.Editor) => {
+        this.htmlEditor.on("change", Utils.throttle((instance: CodeMirror.Editor) => {
           if (!this.contentLock) {
             this.contentLock = true;
             this.editor?.setContent(instance.getValue());
@@ -468,14 +468,14 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
     // 后期检测
     this.$document.find("code").css("border", "3px solid red").each(() => {
-      McmodderUtils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~")
+      Utils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~")
     });
     this.$document.find("pre").each((_, c) => {
       $(c).html($(c).text());
-      if (!c.classList.length) McmodderUtils.commonMsg("转换结果中出现代码块 (pre)，记得设置相应语言~")
+      if (!c.classList.length) Utils.commonMsg("转换结果中出现代码块 (pre)，记得设置相应语言~")
     });
     this.$document.find("blockquote").css("border", "3px solid red").each(() =>
-      McmodderUtils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false)
+      Utils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false)
     );
 
     // 列表统一标准
@@ -519,7 +519,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     });
     const count = ps.length;
     if (!count) {
-      McmodderUtils.commonMsg(`未发现 br 换行问题~`);
+      Utils.commonMsg(`未发现 br 换行问题~`);
       return;
     }
     ps.forEach(p => {
@@ -533,7 +533,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       });
       p.remove();
     });
-    McmodderUtils.commonMsg(`${ count } 处 br 换行问题已被修复~`);
+    Utils.commonMsg(`${ count } 处 br 换行问题已被修复~`);
   }
 
   performLinkFix() {
@@ -551,15 +551,15 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       }
     });
     if (!count) {
-      McmodderUtils.commonMsg("未发现异常链接~");
+      Utils.commonMsg("未发现异常链接~");
     } else {
-      McmodderUtils.commonMsg(`${ count } 处异常链接已被修复~`);
+      Utils.commonMsg(`${ count } 处异常链接已被修复~`);
     }
   }
 
   async performSpacingPage() {
     if (!this.window || !this.head || !this.body || !this.$body) return;
-    await McmodderUtils.loadScript(this.head, null, McmodderValues.assets.js.pangu, null, "mcmodder-script-pangu");
+    await Utils.loadScript(this.head, null, Values.assets.js.pangu, null, "mcmodder-script-pangu");
     const isEditable = this.body.contentEditable;
     this.body.contentEditable = "false";
 
@@ -660,7 +660,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     let colorpicker = $(".edui-colorpicker tbody");
 
     // 格式化代码颜色
-    let l = McmodderValues.formatColors.length;
+    let l = Values.formatColors.length;
     let s = `<tr style="border-bottom: 1px solid #ddd;font-size: 13px;line-height: 25px;color:#39C;" class="edui-default">
       <td colspan="10" class="edui-default" id="mcmodder-format-column">
         <a target="_blank" href="https://zh.minecraft.wiki/w/%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%BB%A3%E7%A0%81#%E9%A2%9C%E8%89%B2%E4%BB%A3%E7%A0%81">格式化代码颜色</a>
@@ -669,7 +669,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     for (let i = 0; i < l; i += 10) {
       s += '<tr class="edui-default">';
       for (let j = i; j < Math.min(i + 10, l); j++)
-        s += `<td style="padding: ${j < 10 ? "6px 2px 0 2px" : "0 2px"};" class="edui-default"><a hidefocus="" title="§${j.toString(16)} - ${McmodderValues.formatColors[j]}" onclick="return false;" href="javascript:" unselectable="on" class="edui-box edui-colorpicker-colorcell edui-default" data-color="#${McmodderValues.formatColors[j]}" style="background-color:#${McmodderValues.formatColors[j]};border:solid #ccc;border-width:1px;"></a></td>`
+        s += `<td style="padding: ${j < 10 ? "6px 2px 0 2px" : "0 2px"};" class="edui-default"><a hidefocus="" title="§${j.toString(16)} - ${Values.formatColors[j]}" onclick="return false;" href="javascript:" unselectable="on" class="edui-box edui-colorpicker-colorcell edui-default" data-color="#${Values.formatColors[j]}" style="background-color:#${Values.formatColors[j]};border:solid #ccc;border-width:1px;"></a></td>`
       s += '</tr>';
     }
     $(s).appendTo(colorpicker);
@@ -712,7 +712,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
 
     // 根据先前的正文数据计算字节变化量
     const commonNav = $(".common-nav > ul");
-    this.changedTextNode.html(`<img src="${McmodderValues.assets.mcmod.loading}"></img>`);
+    this.changedTextNode.html(`<img src="${Values.assets.mcmod.loading}"></img>`);
     const url = commonNav.children().eq(commonNav.children().length - 3).children().first().attr("href");
     const resp = await this.parent.utils.createRequest({
       url: url,
@@ -730,10 +730,10 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     this.originalTextLength = 0;
     t1.each((_, e) => {
       ta += e.textContent + "\n";
-      this.originalTextLength += McmodderUtils.getContextLength(e.textContent);
+      this.originalTextLength += Utils.getContextLength(e.textContent);
     });
     t2.each((_, e) => {
-      let t = McmodderUtils.clearContextFormatter(e.textContent);
+      let t = Utils.clearContextFormatter(e.textContent);
       if (t) tb += t + "\n";
     });
     this.updateTextLengthDisplay();
@@ -754,7 +754,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
   override updateEditorStats() {
     if (!this.isEditorFullScreen()) this.heightAutoResize();
     if (this.currentTextLength <= this.autoUpdateEditorStatsThreshold) {
-      McmodderUtils.throttle(() => {
+      Utils.throttle(() => {
         this.calculateBytes();
         this.syncHtml();
       }, 300)();
@@ -783,7 +783,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
     if (this.body) $(this.body).contents()
       .filter((_i, c) => c.tagName != "PRE")
       .each((_i, c) => {
-        contextLength += McmodderUtils.getContextLength(c.textContent);
+        contextLength += Utils.getContextLength(c.textContent);
       });
     this.updateCurrentTextLength(contextLength);
   }
@@ -803,12 +803,12 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       let b, a = editor.selection.getRange();
       return a.select(), (b = editor.selection.getText()) ?
         (editor.execCommand("insertHtml", `<span class="uknowtoomuch">${b}</span>`, true), void 0) :
-        (McmodderUtils.commonMsg(PublicLangData['warning']['inform'][164], false), void 0);
+        (Utils.commonMsg(PublicLangData['warning']['inform'][164], false), void 0);
     }
   }
 
   showAutoLinkList() {
-    McmodderUtils.createModal({ // 初始化
+    Utils.createModal({ // 初始化
       title: PublicLangData.editor.autolink.title,
       html: `<div class="mcmodder-autolink-outerframe" />`,
       showConfirmButton: false,
@@ -826,7 +826,7 @@ export class McmodderAdvancedUEditor extends McmodderUEditor {
       e.preventDefault();
       this.showAutoLinkList();
     };
-    if ($(".common-menu-area").length > 0 && (McmodderUtils.isKeyMatch({ keyCode: 33 }, e) || McmodderUtils.isKeyMatch({ keyCode: 34 }, e))) {
+    if ($(".common-menu-area").length > 0 && (Utils.isKeyMatch({ keyCode: 33 }, e) || Utils.isKeyMatch({ keyCode: 34 }, e))) {
       $(".common-menu-area").hide();
       setTimeout(() => {
         $(".common-menu-area").show();

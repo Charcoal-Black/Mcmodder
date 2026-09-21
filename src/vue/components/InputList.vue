@@ -77,19 +77,19 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { McmodderUtils } from '../../Utils';
-import { McmodderValues } from '../../Values';
+import { Utils } from '../../Utils';
+import { Values } from '../../Values';
 import type { ConfigRepository } from '../../config/ConfigRepository';
 
 const intlCollator = new Intl.Collator("zh");
 const loadSuggestionFromConfig = <
-  T extends KeysOfType<Required<McmodderStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
+  T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
   K extends string = string
->(configs: ConfigRepository, key: K, defaultValue = McmodderValues.defaultInputSuggestion[key] ?? [], item: T = "inputList" as T) => () => {
+>(configs: ConfigRepository, key: K, defaultValue = Values.defaultInputSuggestion[key] ?? [], item: T = "inputList" as T) => () => {
   return configs.get(item, key) ?? defaultValue;
 };
 const saveSuggestionToConfig = <
-  T extends KeysOfType<Required<McmodderStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
+  T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
   K extends string = string
 >(configs: ConfigRepository, key: K, item: T = "inputList" as T) => (list: InputSuggestion[]) => {
   const simplified = list.map(e => typeof e === "string" ? e : { value: e.value, alias: e.alias });
@@ -206,7 +206,7 @@ const expandUpward = computed(() => {
   if (!rect) {
     return false;
   }
-  const topSpace = rect.top - McmodderValues.headerContainerHeight;
+  const topSpace = rect.top - Values.headerContainerHeight;
   const bottomSpace = innerHeight - rect.bottom;
   if (bottomSpace < listHeight.value && topSpace >= listHeight.value) {
     return true;
@@ -225,7 +225,7 @@ const cssPos = computed(() => {
     };
   }
 
-  const { x: absPosX, y: absPosY } = McmodderUtils.getAbsolutePos(anchorElement.value);
+  const { x: absPosX, y: absPosY } = Utils.getAbsolutePos(anchorElement.value);
   
   const rect = rectRef.value!;
   const left = absPosX;
@@ -236,7 +236,7 @@ const cssPos = computed(() => {
   const minWidth = rect.width;
   const maxWidth = innerWidth - rect.left - 16;
   const maxHeight = expandUpward.value ?
-    rect.top - McmodderValues.headerContainerHeight - 16 :
+    rect.top - Values.headerContainerHeight - 16 :
     innerHeight - rect.bottom - 16;
 
   return {
@@ -367,15 +367,15 @@ const inputEvents = {
 function onNewOptionClick() {
   const value = selectionValue.value;
   if (suggestionList.value.filter(e => e.value === value).length) {
-    McmodderUtils.commonMsg("当前输入的内容已经存在于候选列表~", false);
+    Utils.commonMsg("当前输入的内容已经存在于候选列表~", false);
     return;
   }
   suggestionList.value.push({ value });
   suggestionList.value.sort((a, b) => intlCollator.compare(a.value, b.value));
   if (onModifySuggestion.value!(suggestionList.value)) {
-    McmodderUtils.commonMsg("已将当前输入的内容保存于候选列表~");
+    Utils.commonMsg("已将当前输入的内容保存于候选列表~");
   } else {
-    McmodderUtils.commonMsg("保存失败...", false);
+    Utils.commonMsg("保存失败...", false);
   }
   triggerRef(suggestionList);
 }
@@ -388,9 +388,9 @@ function onOptionClick(val: string) {
 function onDeleteClick(e: PointerEvent, val: string) {
   suggestionList.value = suggestionList.value.filter(e => e.value != val);
   if (onModifySuggestion.value!(suggestionList.value)) {
-    McmodderUtils.commonMsg("成功从候选列表中移除选中项~");
+    Utils.commonMsg("成功从候选列表中移除选中项~");
   } else {
-    McmodderUtils.commonMsg("移除失败...", false);
+    Utils.commonMsg("移除失败...", false);
   }
   e.stopPropagation();
 }
@@ -400,13 +400,13 @@ function onEditAliasClick(e: PointerEvent, val: string) {
     console.warn("候选按钮无对应值。");
     return;
   }
-  const entry = suggestionList.value.filter(e => McmodderUtils.escapeHTML(e.value) === val)[0];
+  const entry = suggestionList.value.filter(e => Utils.escapeHTML(e.value) === val)[0];
   const alias = entry.alias ? entry.alias.join("; ") : "";
-  McmodderUtils.createModal({
+  Utils.createModal({
     html: `
       <p>在此处修改选中项的内容与快捷名称...（使用 ';' 分隔多个快捷名称）</p>
-      <input class="form-control" id="mcmodder-input-newtext" value="${ McmodderUtils.escapeHTML(val) }"/>
-      <input class="form-control" id="mcmodder-input-alias" value="${ McmodderUtils.escapeHTML(alias) }"/>
+      <input class="form-control" id="mcmodder-input-newtext" value="${ Utils.escapeHTML(val) }"/>
+      <input class="form-control" id="mcmodder-input-alias" value="${ Utils.escapeHTML(alias) }"/>
     `,
     showCancelButton: true,
     confirmButtonText: "保存",
@@ -422,9 +422,9 @@ function onEditAliasClick(e: PointerEvent, val: string) {
       }
       triggerRef(suggestionList);
       if (onModifySuggestion.value!(suggestionList.value)) {
-        McmodderUtils.commonMsg("成功更新选中项的快捷名称~");
+        Utils.commonMsg("成功更新选中项的快捷名称~");
       } else {
-        McmodderUtils.commonMsg("更新失败...", false);
+        Utils.commonMsg("更新失败...", false);
       }
     }
   }, {

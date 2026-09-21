@@ -1,6 +1,6 @@
 import { GM_getValue, GM_openInTab, GM_setValue } from "$";
 import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils";
-import { McmodderConfigUtils } from "./config/ConfigUtils";
+import { ConfigUtils } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
 import { AdvancementLoader } from "./loader/AdvancementLoader";
 import { ConfigLoader } from "./loader/ConfigLoader";
@@ -10,17 +10,17 @@ import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
-import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
-import { McmodderUEditor } from "./ueditor/UEditor";
-import { McmodderUtils, type ThemeColorData } from "./Utils";
-import { McmodderValues } from "./Values";
-import { McmodderInit } from "./init/Init";
+import { AdvancedUEditor } from "./ueditor/AdvancedUEditor";
+import { UEditor } from "./ueditor/UEditor";
+import { Utils, type ThemeColorSet } from "./Utils";
+import { Values } from "./Values";
+import { Init } from "./init/Init";
 import { InitLoader } from "./loader/InitLoader";
 import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
-import { McmodderSwiper } from "./widget/Swiper";
+import { Swiper } from "./widget/Swiper";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
-import { Mcmodder3DSplash } from "./widget/Splash3D";
+import { Splash3D } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
 import { createApp } from "vue";
 import FavUser from "./vue/components/FavUser.vue";
@@ -34,25 +34,25 @@ interface ScreenAttachedFrameData {
 }
 
 export class Mcmodder {
-  utils: McmodderUtils;
+  utils: Utils;
   configRepository: ConfigRepository;
   currentUID: number;
   currentUsername: string;
   advutils: AdvancementUtils;
   scheduleRequestUtils: ScheduleRequestUtils;
   storageBuffer: StorageBuffer;
-  initList: McmodderInit[] = [];
+  initList: Init[] = [];
   readonly isV4: boolean;
   readonly isMac: boolean;
   readonly isMobileClient: boolean;
   href: string;
-  ueditorFrame: McmodderUEditor[];
+  ueditorFrame: UEditor[];
   screenAttachedFrame: ScreenAttachedFrameData[];
-  cfgutils: McmodderConfigUtils;
+  cfgutils: ConfigUtils;
   supabaseUtils: SupabaseUtils;
   echartsUtils: EchartsUtils;
-  styleColors: ThemeColorData;
-  splash3D?: Mcmodder3DSplash;
+  styleColors: ThemeColorSet;
+  splash3D?: Splash3D;
   preferredWiderScreen = false;
   isNightMode = false;
   title = "";
@@ -67,8 +67,8 @@ export class Mcmodder {
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
-    this.isMac = McmodderUtils.isMac();
-    this.isMobileClient = McmodderUtils.isMobileClient();
+    this.isMac = Utils.isMac();
+    this.isMobileClient = Utils.isMobileClient();
     const headerUserName = $(".header-user-name a, .name.top-username a, .profilebox").first();
     this.currentUsername = headerUserName.text() || "";
     const win = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
@@ -78,21 +78,21 @@ export class Mcmodder {
     this.href = window.location.href;
     MemuCommandLoader.run();
     this.title = this.titleNode.html().replace(" - MC百科|最大的Minecraft中文MOD百科", "");
-    this.hostname = McmodderValues.hostname;
+    this.hostname = Values.hostname;
 
     this.screenAttachedFrame = [];
     
     this.storageBuffer = new StorageBuffer(this);
     StorageBufferLoader.run(this.storageBuffer);
 
-    this.utils = new McmodderUtils(this);
+    this.utils = new Utils(this);
     this.configRepository = this.utils.configs;
 
     this.echartsUtils = new EchartsUtils(this);
 
-    this.cfgutils = new McmodderConfigUtils(this);
+    this.cfgutils = new ConfigUtils(this);
     ConfigLoader.run(this.cfgutils);
-    this.styleColors = McmodderUtils.getThemeColors(this.configRepository);
+    this.styleColors = Utils.getThemeColors(this.configRepository);
 
     this.advutils = new AdvancementUtils(this);
     AdvancementLoader.run(this.advutils);
@@ -111,9 +111,9 @@ export class Mcmodder {
 
   private callEditor() {
     if ($(".edit-tools").length || /\/sandbox\/[0-9]+.html/.test(this.href)) {
-      setTimeout(() => new McmodderAdvancedUEditor(editor, this), 3e2);
+      setTimeout(() => new AdvancedUEditor(editor, this), 3e2);
     } else {
-      setTimeout(() => new McmodderUEditor(editor, this), 3e2);
+      setTimeout(() => new UEditor(editor, this), 3e2);
     }
   }
 
@@ -163,7 +163,7 @@ export class Mcmodder {
         if (!(target instanceof HTMLAnchorElement && target.classList.contains("mcmodder-item-link"))) {
           return;
         }
-        await McmodderUtils.sleep(250);
+        await Utils.sleep(250);
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${ sourceUrl }"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
@@ -176,7 +176,7 @@ export class Mcmodder {
           previewFrame.children().html(storagedContent);
         }
         previewFrame.attr("data-status", "pending");
-        await McmodderUtils.sleep(750);
+        await Utils.sleep(750);
         const resp = await this.utils.createRequest({
           url: target.href,
           method: "GET",
@@ -238,7 +238,7 @@ export class Mcmodder {
         previewFrame.attr("data-status", "fulfilled");
       });
     }
-    McmodderUtils.updateAllTooltip();
+    Utils.updateAllTooltip();
   }
 
   notifyUnreadMessage(count: number) {
@@ -301,7 +301,7 @@ export class Mcmodder {
     this.screenAttachedFrame = this.screenAttachedFrame.filter(e => e.node != node);
     this.screenAttachedFrame.push({
       node: node,
-      parentPosY: McmodderUtils.getAbsolutePos(parent).y,
+      parentPosY: Utils.getAbsolutePos(parent).y,
       parentHeight: parent.getBoundingClientRect().height
     });
     // this.screenAttachedFrame = $(".mcmodder-screenattached");
@@ -317,10 +317,10 @@ export class Mcmodder {
   async switchProfile(uid: number): Promise<boolean> {
     const profile = uid ? this.configRepository.getAllProfile(uid) : undefined;
     const success = profile ?
-      await McmodderUtils.setUuidCookie(profile.uuid, profile.expirationDate) :
-      await McmodderUtils.deleteUuidCookie();
+      await Utils.setUuidCookie(profile.uuid, profile.expirationDate) :
+      await Utils.deleteUuidCookie();
     if (!success) {
-      McmodderUtils.commonMsg(
+      Utils.commonMsg(
         "切换账号失败：无法改写 `_uuid` cookie。该 cookie 为 HttpOnly cookie，需要油猴测试版 (Tampermonkey beta) 并在设置中允许脚本访问 HttpOnly cookie ~",
         false
       );
@@ -370,16 +370,16 @@ export class Mcmodder {
   applyCustomFont(font: number) {
     switch (font) {
       case 1: {
-        McmodderUtils.addStyle(`* {font-family: ${ McmodderValues.assets.font.fontFamily[font] };}`);
+        Utils.addStyle(`* {font-family: ${ Values.assets.font.fontFamily[font] };}`);
         break;
       }
       case 2: case 3: {
         $(`
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="${ McmodderValues.assets.font.link[font] }" rel="stylesheet">
+          <link href="${ Values.assets.font.link[font] }" rel="stylesheet">
         `).appendTo("head");
-        McmodderUtils.addStyle(`* {font-family: ${ McmodderValues.assets.font.fontFamily[font] };}`);
+        Utils.addStyle(`* {font-family: ${ Values.assets.font.fontFamily[font] };}`);
         break;
       }
     }
@@ -414,8 +414,8 @@ export class Mcmodder {
     if (!flag) splashes.push(`${Date.now()},${splashText},1`);
     else splashes[index] = splashes[index].slice(0, splashes[index].lastIndexOf(",") + 1) + flag;
     GM_setValue("mcmodderSplashList_v2", splashes.join("\n"));
-    if (flag) McmodderUtils.commonMsg(`该标语在本地累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
-    else McmodderUtils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
+    if (flag) Utils.commonMsg(`该标语在本地累计已出现 ${flag.toLocaleString()} 次~ 内容为: ${splashText}`);
+    else Utils.commonMsg(`成功记录新的闪烁标语~ 内容为: ${splashText}`);
 
     if (this.configRepository.getSettings("supabaseSplash")) {
       if (!this.supabaseUtils.hasClient() || !this.currentUID) return;
@@ -425,7 +425,7 @@ export class Mcmodder {
           splash_text: splashText
         }
       }, errorMsg => {
-        if (this.isV4) McmodderUtils.commonMsg(errorMsg, false);
+        if (this.isV4) Utils.commonMsg(errorMsg, false);
         else (swal as any)({
           type: "error",
           title: "遇到问题",
@@ -443,14 +443,14 @@ export class Mcmodder {
         if (resp.last_visited_user_id) {
           const last = Date.parse(resp.last_visited_at);
           const time = Date.now() - last;
-          const formattedTime = McmodderUtils.getFormattedTime(time);
+          const formattedTime = Utils.getFormattedTime(time);
           const username = resp.last_visited_user_name;
           const userID = resp.last_visited_user_id ? `用户 ${ username } (UID:${ resp.last_visited_user_id }) ` : "未登录用户";
           msg += `，上一次由${ userID }于 ${ formattedTime } 前记录`
         }
         msg += "~";
       }
-      if (this.isV4) McmodderUtils.commonMsg(msg);
+      if (this.isV4) Utils.commonMsg(msg);
       else (swal as any)({
         type: "success",
         title: "标语已上传",
@@ -468,15 +468,15 @@ export class Mcmodder {
     $("table [valign]").each((_, c) => {
       $(c).css("vertical-align", $(c).attr("valign"));
     }).removeAttr("valign");
-    McmodderUtils.addStyle("th {text-align: center;}");
+    Utils.addStyle("th {text-align: center;}");
   }
 
   updateNightMode() {
     const icon = $("#mcmodder-night-switch i");
     if (this.configRepository.getSettings("nightMode")) {
       icon.removeClass("on");
-      if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.mcmod.imagesNone) {
-        $("#item-cover-preview-img").attr("src", McmodderValues.assets.nightMode.imagesNone);
+      if ($("#item-cover-preview-img").first().attr("src") === Values.assets.mcmod.imagesNone) {
+        $("#item-cover-preview-img").attr("src", Values.assets.nightMode.imagesNone);
       }
       this.echartsUtils.enableNightStyle();
       $("html").addClass("dark");
@@ -490,8 +490,8 @@ export class Mcmodder {
     }
     else {
       icon.addClass("on");
-      if ($("#item-cover-preview-img").first().attr("src") === McmodderValues.assets.nightMode.imagesNone) {
-        $("#item-cover-preview-img").attr("src", McmodderValues.assets.mcmod.imagesNone);
+      if ($("#item-cover-preview-img").first().attr("src") === Values.assets.nightMode.imagesNone) {
+        $("#item-cover-preview-img").attr("src", Values.assets.mcmod.imagesNone);
       }
       this.echartsUtils.disableNightStyle();
       $("html").removeClass("dark");
@@ -508,7 +508,7 @@ export class Mcmodder {
     const icon = $("#mcmodder-pagewidth-switch i");
     if (this.configRepository.getSettings("preferredWiderScreen")) {
       this.preferredWiderScreen = true;
-      McmodderUtils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: calc(6 * var(--mcmodder-width-padding-1));}`, "mcmodder-pagewidth-controller");
+      Utils.addStyle(`.col-lg-12.mcmodder-class-page, .col-lg-12.common-center {width: 100%; margin: 0; margin-top: calc(6 * var(--mcmodder-width-padding-1));}`, "mcmodder-pagewidth-controller");
       icon.attr("class", "fa fa-compress");
     } else {
       this.preferredWiderScreen = false;
@@ -527,8 +527,8 @@ export class Mcmodder {
   }
 
   copyright() {
-    $(".copyleft").last().append(`<br>☆ MCMODDER v${McmodderValues.mcmodderVersion} ☆ ——MC百科编审辅助工具`);
-    $(".sidebar-plan .space").last().append(`<br>mcmodder-v${McmodderValues.mcmodderVersion}`);
+    $(".copyleft").last().append(`<br>☆ MCMODDER v${Values.mcmodderVersion} ☆ ——MC百科编审辅助工具`);
+    $(".sidebar-plan .space").last().append(`<br>mcmodder-v${Values.mcmodderVersion}`);
   }
 
   main() {
@@ -550,7 +550,7 @@ export class Mcmodder {
 
     // 关闭主页&整合包区广告
     $("span")
-    .filter((_, e) => $(e).attr("style") === McmodderValues.adTitleCss)
+    .filter((_, e) => $(e).attr("style") === Values.adTitleCss)
     .html('<a>× 广告</a>').find("a").click(e => {
       $(e.currentTarget).parent().parent().hide();
     });
@@ -558,10 +558,10 @@ export class Mcmodder {
     // 自定义物品类型
     this.itemTypeList = this.configRepository.getSettings("itemCustomTypeList") ?? [];
     if (typeof this.itemTypeList === "string") {
-      this.configRepository.setSettings("itemCustomTypeList", McmodderValues.itemCustomTypeList);
-      this.itemTypeList = McmodderValues.itemCustomTypeList;
+      this.configRepository.setSettings("itemCustomTypeList", Values.itemCustomTypeList);
+      this.itemTypeList = Values.itemCustomTypeList;
     }
-    this.itemTypeList = this.itemTypeList!.concat(McmodderValues.itemDefaultTypeList);
+    this.itemTypeList = this.itemTypeList!.concat(Values.itemDefaultTypeList);
 
     // 闪烁标语追踪系统升级
     if (GM_getValue("mcmodderSplashList")) {
@@ -587,7 +587,7 @@ export class Mcmodder {
     if (this.configRepository.getSettings("splashStyle") === 1 &&
       (this.href === `${ this.hostname }/` ||
         this.href === `${ this.hostname }/v4/`)) {
-      this.splash3D = new Mcmodder3DSplash(this);
+      this.splash3D = new Splash3D(this);
       this.splash3D.init();
     }
     // 冻结进度
@@ -625,7 +625,7 @@ export class Mcmodder {
         }
       });
     }
-    else McmodderUtils.addStyle('.common-text .figure {align-items: center;}');
+    else Utils.addStyle('.common-text .figure {align-items: center;}');
     $(".mold, .progress-list, .class-item-type li, .post-block, .tag li, .mcver li a, .tools-list li a, .edit-tools span, .comment-row, .comment-channel-list li a, .class-relation-list .relation li, .btn, .mcmodder-gui-alert, .edit-tools > span, .center-sub-menu a, .center-content.admin-list a, .center-card-block.badges, .center-card-border, .modlist-block, .common-center .maintext .item-give, .common-center .post-row .postname .tool li a").addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
@@ -640,7 +640,7 @@ export class Mcmodder {
     if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       const insertPos = $(".header-user .header-layer-block:first-child()");
       if (insertPos.length) {
-        const myProfile = this.configRepository.getAllProfile() as Partial<McmodderProfileData>;
+        const myProfile = this.configRepository.getAllProfile() as Partial<Profile>;
         const avatar = myProfile.avatar ?
           `<a href="//center.mcmod.cn/${ this.currentUID }/" target="_blank">
             <img alt="${ myProfile.nickname }" src="${ myProfile.avatar }">
@@ -668,7 +668,7 @@ export class Mcmodder {
           ` href="${
             c.prop("href")
           }" target="_blank"`}><i class="${
-            (McmodderValues.iconMap as any)[text]
+            (Values.iconMap as any)[text]
           }"/><span>${
             text
           }</span><i class="fa fa-chevron-right" /></a>`);
@@ -687,7 +687,7 @@ export class Mcmodder {
       // Swiper 调整
       $(".swiper-container").each((_, _container) => {
         const container = $(_container);
-        new McmodderSwiper(container);
+        new Swiper(container);
       });
     }
 
@@ -697,10 +697,10 @@ export class Mcmodder {
         const e = _e as HTMLElement;
         const css = (e as HTMLElement).style.getPropertyValue("color");
         if (css) {
-          const color = McmodderUtils.parseRGB(css);
+          const color = Utils.parseRGB(css);
           if (!color) return;
-          const colorStr = McmodderUtils.RGBToColor(color);
-          const nightColorStr = McmodderUtils.reverseColorBrightness(color);
+          const colorStr = Utils.RGBToColor(color);
+          const nightColorStr = Utils.reverseColorBrightness(color);
           this.elementColorDictionary.set(e, colorStr);
           this.elementColorCache.set(colorStr, nightColorStr);
         }
@@ -730,11 +730,11 @@ export class Mcmodder {
     </button>`)
       .appendTo(".header-container .header-search")
       .click(async e => {
-        if (McmodderUtils.isKeyMatch({ shiftKey: true }, e)) { // 按住 Shift 以快捷切换至上一个状态
+        if (Utils.isKeyMatch({ shiftKey: true }, e)) { // 按住 Shift 以快捷切换至上一个状态
           const currentUID = this.currentUID;
           const lastUID = this.configRepository.getSettings("lastUid") ?? 0;
           if (!await this.switchProfile(lastUID)) return;
-          McmodderUtils.commonMsg("已快捷切换至" + (lastUID ? ` UID:${ lastUID } ` : "未登录状态") + " ~");
+          Utils.commonMsg("已快捷切换至" + (lastUID ? ` UID:${ lastUID } ` : "未登录状态") + " ~");
           this.configRepository.setSettings("lastUid", currentUID);
           return;
         }
@@ -772,10 +772,10 @@ export class Mcmodder {
     // TODO: 取消锁定导航栏
 
     if (this.isV4 /* && this.configRepository.getSettings("mcmodderUI") */) {
-      $(window).resize(McmodderUtils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
+      $(window).resize(Utils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
         const header = $(".header-user").get(0).getBoundingClientRect();
         const menuWidth = 400;
-        if (header.x + header.width / 2 + menuWidth / 2 >= window.innerWidth - McmodderValues.headerContainerHeight) {
+        if (header.x + header.width / 2 + menuWidth / 2 >= window.innerWidth - Values.headerContainerHeight) {
           $(".header-panel").addClass("mcmodder-header-panel-fixed");
         } else {
           $(".header-panel").removeClass("mcmodder-header-panel-fixed");
@@ -789,7 +789,7 @@ export class Mcmodder {
         completed.split(",")?.forEach(sid => {
           const id = Number(sid);
           let data = this.advutils.getData(id);
-          McmodderUtils.showTaskTip(data.image || "",
+          Utils.showTaskTip(data.image || "",
             PublicLangData.center.task.list[data.lang].title,
             PublicLangData.center.task.list[data.lang].content,
             "", data.range, ""
@@ -881,9 +881,9 @@ export class Mcmodder {
     $(".common-background").remove();
     $("#key").css("color", "var(--mcmodder-color-text)");
 
-    window.addEventListener("scroll", McmodderUtils.throttle(() => {
+    window.addEventListener("scroll", Utils.throttle(() => {
       this.screenAttachedFrame.forEach(e => {
-        e.node.style.top = Math.max(0, window.scrollY - e.parentPosY + McmodderValues.headerContainerHeight) + "px";
+        e.node.style.top = Math.max(0, window.scrollY - e.parentPosY + Values.headerContainerHeight) + "px";
       });
     }, 16));
 

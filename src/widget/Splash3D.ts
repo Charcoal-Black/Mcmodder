@@ -1,6 +1,6 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 
 function getFontFromIndexedDB(url: string): Promise<ArrayBuffer | null> {
   return new Promise((resolve) => {
@@ -199,7 +199,7 @@ async function ensureThreeLoaded() {
 
         const response = await fetch(targetUrl);
         if (!response.ok) {
-          McmodderUtils.commonMsg(`无法从设置的链接 (${targetUrl}) 获取字体数据...`, false);
+          Utils.commonMsg(`无法从设置的链接 (${targetUrl}) 获取字体数据...`, false);
           throw new Error("Failed to fetch font");
         }
         const buffer = await response.arrayBuffer();
@@ -353,7 +353,7 @@ async function ensureThreeLoaded() {
   };
 }
 
-export class Mcmodder3DSplash {
+export class Splash3D {
   private parent: Mcmodder;
   private configs: ConfigRepository;
   private container: HTMLDivElement | null = null;

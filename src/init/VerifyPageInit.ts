@@ -1,11 +1,11 @@
 import { createApp } from "vue";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import { Init } from "./Init";
 import { PreSubmitInit } from "./PreSubmitInit";
 import VerifyRowList from "../vue/components/VerifyRowList.vue";
 
-export class VerifyPageInit extends McmodderInit {
+export class VerifyPageInit extends Init {
   canRun() {
     return false;
   }
@@ -29,7 +29,7 @@ export class VerifyPageInit extends McmodderInit {
 
     // 紧凑式待审列表
     if (this.configs.getSettings("compactedVerifylist")) {
-      McmodderUtils.addStyle(".table-bordered thead td, .table-bordered thead th {text-align: center; min-width: 3em;} .btn-group-sm > .btn, .btn-sm {padding: .0rem .5rem} .table > tbody > tr > td:nth-child(4) > p {display: inline;} td {text-overflow: ellipsis; overflow: hidden; white-space: nowrap;} .verify-list-list td:nth-child(4) i {width: unset; margin: unset;}");
+      Utils.addStyle(".table-bordered thead td, .table-bordered thead th {text-align: center; min-width: 3em;} .btn-group-sm > .btn, .btn-sm {padding: .0rem .5rem} .table > tbody > tr > td:nth-child(4) > p {display: inline;} td {text-overflow: ellipsis; overflow: hidden; white-space: nowrap;} .verify-list-list td:nth-child(4) i {width: unset; margin: unset;}");
       const verifyTable = $(".table");
       const stateLang = Object.entries(PublicLangData.verify_list.state.list);
       const stateIcon = ["", "fa fa-pulse fa-spinner", "fa fa-check", "fa fa-close", "fa fa-mail-reply"];
@@ -71,11 +71,11 @@ export class VerifyPageInit extends McmodderInit {
       });
 
       // 筛选索引
-      const counter = new Array(McmodderValues.searchOption.length).fill(null).map(() => [0, 0, 0, 0, 0]);
+      const counter = new Array(Values.searchOption.length).fill(null).map(() => [0, 0, 0, 0, 0]);
       $(".verify-list-list-table tbody tr").each((_, e) => {
         const tr = $(e);
         let d = tr.find("td:nth-child(2)").text();
-        McmodderValues.searchOption.forEach((item, index) => {
+        Values.searchOption.forEach((item, index) => {
           if (item.reg.test(d) && ((!item.exclude) || !d.includes(item.exclude)) && ((!item.exclude2) || !d.includes(item.exclude2))) {
             tr.attr("edit-type", index.toString());
             counter[index][0]++;
@@ -96,7 +96,7 @@ export class VerifyPageInit extends McmodderInit {
         }
         let l = e.find("td:nth-child(2) a").filter((_, c) => (c as HTMLAnchorElement).href.includes("/" + t + "/"));
         if (l.length && !e.find(".verify-withdraw-btn").length) {
-          e.find("td").last().prev().append(`<a class="btn btn-outline-dark btn-sm mcmodder-content-block" href="/${t}/edit/${McmodderUtils.abstractLastFromURL(l.attr("href"), t)}/" target="_blank">查看改动</a>`);
+          e.find("td").last().prev().append(`<a class="btn btn-outline-dark btn-sm mcmodder-content-block" href="/${t}/edit/${Utils.abstractLastFromURL(l.attr("href"), t)}/" target="_blank">查看改动</a>`);
         }
       });
 
@@ -108,7 +108,7 @@ export class VerifyPageInit extends McmodderInit {
 
       // 筛选待审项
       let searchFrame = $('<div class="verify-list-search-area">');
-      McmodderValues.searchOption.forEach((item, index) => {
+      Values.searchOption.forEach((item, index) => {
         const data = counter[index];
         const text = data.map(e => e.toLocaleString());
         if (!data[0]) return;

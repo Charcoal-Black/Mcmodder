@@ -1,7 +1,7 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 
-export abstract class McmodderInit {
+export abstract class Init {
   parent: Mcmodder;
   configs: ConfigRepository;
   constructor(parent: Mcmodder) {

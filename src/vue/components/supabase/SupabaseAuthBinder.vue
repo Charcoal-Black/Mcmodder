@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../../Mcmodder.ts';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import Button from '../Button.vue';
 
 interface Props {
@@ -49,7 +49,7 @@ async function updateAuthData() {
     return;
   }
   // `_uuid` 为 HttpOnly cookie，document.cookie 不包含它，需要通过油猴接口单独取出
-  const uuid = await McmodderUtils.getUuidCookie();
+  const uuid = await Utils.getUuidCookie();
   const resp = await parent.supabaseUtils.invoke<SupabaseAuthenticatorResponse>("authenticator", {
     body: { cookie: [uuid && `_uuid=${ uuid }`, document.cookie].filter(Boolean).join("; ") }
   });

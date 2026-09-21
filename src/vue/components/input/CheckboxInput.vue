@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import { useInputBase } from '../../composables/useInputBase.ts';
 import type { InputProps } from '../../../types/props';
 
@@ -24,7 +24,7 @@ interface Props extends InputProps<boolean> {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  id: McmodderUtils.randStr(8),
+  id: Utils.randStr(8),
   withLabel: false
 });
 

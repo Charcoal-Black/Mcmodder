@@ -4,9 +4,9 @@ import type { ItemRepository } from "./ItemRepository";
 
 export class GMStorageRepository<T extends object> implements ItemRepository<T> {
   private readonly configs: ConfigRepository;
-  private readonly configName: KeysOfType<Required<McmodderStorage>, Record<string, object[]>>;
+  private readonly configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>;
 
-  constructor(parent: Mcmodder, configName: KeysOfType<Required<McmodderStorage>, Record<string, object[]>>) {
+  constructor(parent: Mcmodder, configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>) {
     this.configs = parent.configRepository;
     this.configName = configName;
   }

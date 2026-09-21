@@ -1,4 +1,4 @@
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 type PlatformMap = Record<string, Set<string>>;
 type NodeMap = WeakMap<Set<string>, Record<string, HTMLElement>>;
@@ -53,7 +53,7 @@ export class PlatformCompareFrame {
             className.forEach(e => {
               node.classList.add(e);
             });
-            if (!McmodderUtils.validateVersionForLoaderName(version, loaderName)) {
+            if (!Utils.validateVersionForLoaderName(version, loaderName)) {
               node.classList.add("mcmodder-compare-invalidversion");
             }
           }

@@ -1,14 +1,14 @@
 import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, type GmResponseEvent, type GmXmlhttpRequestOption } from "$";
 import { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
-import { McmodderValues } from "./Values";
+import { Values } from "./Values";
 
-export interface ThemeColorData {
+export interface ThemeColorSet {
   tc1: string,
   tc2: string
 }
 
-export class McmodderUtils {
+export class Utils {
   private readonly parent: Mcmodder;
   readonly configs: ConfigRepository;
 
@@ -32,7 +32,7 @@ export class McmodderUtils {
 
   static toQzoneLogin() {
     window.open(
-      `${ McmodderValues.hostname }/plugs/loginConnect/qqConnect/oauth/index.php`,
+      `${ Values.hostname }/plugs/loginConnect/qqConnect/oauth/index.php`,
       'TencentLogin',
       'width=755,height=515,menubar=0,scrollbars=0,resizable=0,status=1,titlebar=0,toolbar=0,location=1'
     );
@@ -99,7 +99,7 @@ export class McmodderUtils {
 
   /** 读取 `_uuid` cookie 的值，未登录或无权访问时返回空字符串 */
   static getUuidCookie(): Promise<string> {
-    if (!McmodderUtils.supportCookieAPI()) return Promise.resolve($.cookie("_uuid") || "");
+    if (!Utils.supportCookieAPI()) return Promise.resolve($.cookie("_uuid") || "");
     return new Promise(resolve => {
       GM_cookie.list({ name: "_uuid" }, (cookies, err) => {
         if (err) console.warn("读取 `_uuid` cookie 失败，回退至 document.cookie：", err);
@@ -114,7 +114,7 @@ export class McmodderUtils {
       console.warn("待写入的 `_uuid` cookie 为空，请先访问一次该账号的个人主页以记录登录信息。");
       return Promise.resolve(false);
     }
-    if (!McmodderUtils.supportCookieAPI()) {
+    if (!Utils.supportCookieAPI()) {
       console.warn("当前脚本管理器不支持 `GM_cookie`，无法写入 HttpOnly cookie `_uuid`。");
       return Promise.resolve(false);
     }
@@ -141,7 +141,7 @@ export class McmodderUtils {
 
   /** 删除 `_uuid` cookie（退出登录），返回是否删除成功 */
   static deleteUuidCookie(): Promise<boolean> {
-    if (!McmodderUtils.supportCookieAPI()) {
+    if (!Utils.supportCookieAPI()) {
       console.warn("当前脚本管理器不支持 `GM_cookie`，无法删除 HttpOnly cookie `_uuid`。");
       return Promise.resolve(false);
     }
@@ -161,7 +161,7 @@ export class McmodderUtils {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
-  static getThemeColors = (configs: ConfigRepository): ThemeColorData => {
+  static getThemeColors = (configs: ConfigRepository): ThemeColorSet => {
     return {
       tc1: configs.getSettings("themeColor1")!,
       tc2: configs.getSettings("themeColor2")!
@@ -187,7 +187,7 @@ export class McmodderUtils {
   }
 
   static validateVersionForLoaderID(version: string, loaderID: string) {
-    const list = (McmodderValues.loaderSupportVersions as any)[loaderID] as string[];
+    const list = (Values.loaderSupportVersions as any)[loaderID] as string[];
     return !list || (
       list.includes(version) || (
         list[0].includes(">=") && 
@@ -197,7 +197,7 @@ export class McmodderUtils {
   }
 
   static validateVersionForLoaderName(version: string, loaderName: string) {
-    return this.validateVersionForLoaderID(version, (McmodderValues.loaderID as any)[loaderName]);
+    return this.validateVersionForLoaderID(version, (Values.loaderID as any)[loaderName]);
   }
 
   static simpleDeepCopy<T>(obj: T): T {
@@ -206,7 +206,7 @@ export class McmodderUtils {
 
   static complexDeepCopy<T>(obj: T) {
     // TODO ...
-    return McmodderUtils.simpleDeepCopy(obj);
+    return Utils.simpleDeepCopy(obj);
   }
 
   static deleteEmptyProperties(obj: any) {
@@ -230,7 +230,7 @@ export class McmodderUtils {
     return Array.from({ length: (r - l) / step }, (_, i) => i * step + l);
   }
 
-  getProfileAbstract(target: number | McmodderProfileData, showLv = false, plainText = false) {
+  getProfileAbstract(target: number | Profile, showLv = false, plainText = false) {
     const profile = typeof target === "number" ? this.configs.getAllProfile(target) : target;
     if (!Object.keys(profile).length) {
       const text = "用户信息获取失败...";
@@ -264,12 +264,12 @@ export class McmodderUtils {
   }
 
   setInteract(value: any) {
-    const id = McmodderUtils.randStr(8);
+    const id = Utils.randStr(8);
     this.configs.set("mcmodderInteracts", id, value);
     return id;
   }
 
-  static playsound(url = McmodderValues.assets.mcmod.level.levelup) {
+  static playsound(url = Values.assets.mcmod.level.levelup) {
     let task_audio = document.createElement("audio");
     task_audio.setAttribute("muted", "muted");
     task_audio.setAttribute("src", url);
@@ -324,8 +324,8 @@ export class McmodderUtils {
   }
 
   static getClassFullName(name: string, ename: string, abbr: string): string;
-  static getClassFullName(data: McmodderClassData): string | undefined;
-  static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: McmodderClassData]) {
+  static getClassFullName(data: Class): string | undefined;
+  static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: Class]) {
     const name = (args.length === 1 ? args[0].name : args[0]).trim();
     const ename = (args.length === 1 ? args[0].englishName : args[1]).trim();
     const abbr = (args.length === 1 ? args[0].abbr : args[2]).trim();
@@ -337,7 +337,7 @@ export class McmodderUtils {
     return res;
   }
 
-  static parseClassFullName(fullName: string): ClassNameData {
+  static parseClassFullName(fullName: string): ClassName {
     let abbr = "", name = "", ename = "", indexOf: number;
     if (fullName) {
       fullName = fullName.trim();
@@ -382,7 +382,7 @@ export class McmodderUtils {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      return McmodderUtils.blob2Base64(blob);
+      return Utils.blob2Base64(blob);
     }
     catch (error) {
       console.error('Error converting image to Base64: ', error);
@@ -467,7 +467,7 @@ export class McmodderUtils {
   }
 
   static abstractIDFromURL(url: string, typeList: string | string[]) {
-    return Number(McmodderUtils.abstractLastFromURL(url, typeList));
+    return Number(Utils.abstractLastFromURL(url, typeList));
   }
 
   static getImageURLByItemID(id: number, width = 32, ver = 0) {
@@ -481,19 +481,19 @@ export class McmodderUtils {
   }
 
   static getItemURL(id: number) {
-    return `${ McmodderValues.hostname }/item/${ id }.html`;
+    return `${ Values.hostname }/item/${ id }.html`;
   }
 
   static getItemTypeURL(classID: number, typeID: number) {
-    return `${ McmodderValues.hostname }/item/list/${ classID }-${ typeID }.html`;
+    return `${ Values.hostname }/item/list/${ classID }-${ typeID }.html`;
   }
 
   static getClassURL(id: number) {
-    return `${ McmodderValues.hostname }/class/${ id }.html`;
+    return `${ Values.hostname }/class/${ id }.html`;
   }
 
   static getOredictURL(oredict: string) {
-    return `${ McmodderValues.hostname }/oredict/${ oredict }-1.html`;
+    return `${ Values.hostname }/oredict/${ oredict }-1.html`;
   }
 
   static getCenterURL(id: number) {
@@ -655,7 +655,7 @@ export class McmodderUtils {
   }
 
   static adjustColorBrightness = (color: string | RGB, ratio: number) => {
-    const hsl = McmodderUtils.colorToHSL(color);
+    const hsl = Utils.colorToHSL(color);
     let lightness = hsl.l;
     if (ratio < 1) lightness *= ratio;
     else lightness += (100 - lightness) * (ratio - 1);
@@ -667,7 +667,7 @@ export class McmodderUtils {
   }
 
   static reverseColorBrightness = (color: string | RGB) => {
-    const hsl = McmodderUtils.colorToHSL(color);
+    const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
@@ -676,7 +676,7 @@ export class McmodderUtils {
   }
 
   static setColorBrightness = (color: string | RGB, lightness: number) => {
-    const hsl = McmodderUtils.colorToHSL(color);
+    const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
@@ -694,7 +694,7 @@ export class McmodderUtils {
     } as RGBA);
   }
 
-  static getXplatCtrlCombinationKey(keyCode: number | string | McmodderKeyData): McmodderKeyData {
+  static getXplatCtrlCombinationKey(keyCode: number | string | Key): Key {
     if (typeof keyCode === "string") {
       keyCode = keyCode.toUpperCase().charCodeAt(0);
     }
@@ -709,14 +709,14 @@ export class McmodderUtils {
     return keyCode;
   }
 
-  static keyToRawList(e: McmodderKeyData) {
+  static keyToRawList(e: Key) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
     if (!e.key && !e.keyCode) return [];
     let k = [], c;
-    if (e.ctrlKey) k.push(McmodderUtils.isMac() ? "Control" : "Ctrl");
+    if (e.ctrlKey) k.push(Utils.isMac() ? "Control" : "Ctrl");
     if (e.shiftKey) k.push("Shift");
-    if (e.altKey) k.push(McmodderUtils.isMac() ? "Option" : "Alt");
-    if (e.metaKey) k.push(McmodderUtils.isMac() ? "Command" : "Meta");
+    if (e.altKey) k.push(Utils.isMac() ? "Option" : "Alt");
+    if (e.metaKey) k.push(Utils.isMac() ? "Command" : "Meta");
     if (!e.key || !["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
       if (e.keyCode) {
         if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 98 && e.keyCode <= 123)) c = String.fromCharCode(e.keyCode).toUpperCase();
@@ -729,15 +729,15 @@ export class McmodderUtils {
     return k;
   }
 
-  static keyToString(e: McmodderKeyData) {
-    const list = McmodderUtils.keyToRawList(e);
+  static keyToString(e: Key) {
+    const list = Utils.keyToRawList(e);
     if (!list.length) return "未指定";
     return list.join(" + ");
   }
 
-  static keyToHTML(e: McmodderKeyData) {
-    const list = McmodderUtils.keyToRawList(e);
-    const isMac = McmodderUtils.isMac();
+  static keyToHTML(e: Key) {
+    const list = Utils.keyToRawList(e);
+    const isMac = Utils.isMac();
     const HTMLList = list.map(data => {
       if (isMac) {
         switch (data) {
@@ -752,7 +752,7 @@ export class McmodderUtils {
     return HTMLList.join("");
   }
 
-  static isKeyMatch(a: McmodderKeyData, b: McmodderKeyData) { // b需要匹配a
+  static isKeyMatch(a: Key, b: Key) { // b需要匹配a
     if (!Object.keys(a).length) return false;
     if ((a.ctrlKey && !b.ctrlKey)) return false;
     if (a.shiftKey && !b.shiftKey) return false;
@@ -768,12 +768,12 @@ export class McmodderUtils {
     return true;
   }
 
-  isKeyMatchConfig(a: KeysOfType<McmodderSettings, McmodderKeyData>, b: McmodderKeyData) {
+  isKeyMatchConfig(a: KeysOfType<Settings, Key>, b: Key) {
     const config = this.configs.getSettings(a);
     if (config === undefined) {
       return false;
     }
-    return McmodderUtils.isKeyMatch(config, b);
+    return Utils.isKeyMatch(config, b);
   }
 
   static randStr(l = 32) {
@@ -792,7 +792,7 @@ export class McmodderUtils {
     "'": '&#039;'
   };
   static escapeHTML(str: string | number) {
-    return str.toString().replace(/[&<>"']/g, char => (McmodderUtils.escapeHTMLMap as any)[char]);
+    return str.toString().replace(/[&<>"']/g, char => (Utils.escapeHTMLMap as any)[char]);
   }
 
   static getAbsolutePos(node: Element) {
@@ -917,7 +917,7 @@ export class McmodderUtils {
 
   static getFormattedSize = (size: number | string) => {
     size = Number(size) || 0;
-    const f = (e: number) => McmodderUtils.getPrecisionFormatter().format(e);
+    const f = (e: number) => Utils.getPrecisionFormatter().format(e);
     if (size < 1024) return f(size) + " B";
     else if (size < 1048576) return f(size / 1024) + " KiB";
     else if (size < 1073741824) return f(size / 1048576) + " MiB";
@@ -991,7 +991,7 @@ export class McmodderUtils {
     let minimumRequestInterval = Math.max(this.configs.getSettings("minimumRequestInterval")!, 500);
     let now = (new Date()).getTime();
     let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
-    if (lastRequestTime > now + minimumRequestInterval * McmodderValues.MAX_REQUEST_COUNT) {
+    if (lastRequestTime > now + minimumRequestInterval * Values.MAX_REQUEST_COUNT) {
       console.warn("Scheduled requests have exceeded the maximum limit. New request is ignored.");
       return -1;
     }
@@ -1033,7 +1033,7 @@ export class McmodderUtils {
           }
         }
         const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
-        if (logs.length >= McmodderValues.MAX_REQUEST_COUNT / 10) logs.shift();
+        if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
         let content = `A${lastRequestTime}:${config.url}`;
         if (config.data) content += `(${config.data})`;
         logs.push(content);
@@ -1067,7 +1067,7 @@ export class McmodderUtils {
 
   static clearContextFormatter(e: string) {
     e = " " + e;
-    const r = McmodderValues.ignoredContextFormatters;
+    const r = Values.ignoredContextFormatters;
     let m = true;
     while (m) {
       m = false;
@@ -1091,7 +1091,7 @@ export class McmodderUtils {
 
   static getContextLength(e: string) {
     const encoder = new TextEncoder();
-    let r = McmodderUtils.clearContextFormatter(e);
+    let r = Utils.clearContextFormatter(e);
     return encoder.encode(r).length;
   }
 
@@ -1116,7 +1116,7 @@ export class McmodderUtils {
     node.addClass("mcmodder-copyable").click(e => {
       const text = typeof copyData === "function" ? copyData() : (copyData || e.currentTarget.textContent);
       navigator.clipboard.writeText(text.toString());
-      McmodderUtils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
+      Utils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
     });
   }
 
@@ -1147,7 +1147,7 @@ export class McmodderUtils {
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }
 
-  getItemTypeHTML(...args: [classID: number | undefined, itemType: number | undefined] | [itemType: ItemTypeData | undefined]) {
+  getItemTypeHTML(...args: [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]) {
     let itemType;
     if (args.length === 1) {
       itemType = args[0];
@@ -1182,7 +1182,7 @@ export class McmodderUtils {
       return;
     }
     const doc = $(resp.responseXML);
-    return McmodderUtils.parseItemDocument(doc);
+    return Utils.parseItemDocument(doc);
   }
 
   async getDetailedItemByID(id: string | number) {
@@ -1197,7 +1197,7 @@ export class McmodderUtils {
       return;
     }
     const doc = $(resp.responseXML);
-    return McmodderUtils.parseItemEditorDocument(doc);
+    return Utils.parseItemEditorDocument(doc);
   }
 
   static parseItemDocument($doc: JQuery = $(document)) {
@@ -1206,10 +1206,10 @@ export class McmodderUtils {
     const command = itemRow.find(".item-give")?.attr("data-command")?.slice(9)?.split(" ");
     const righttable = itemRow.find(".righttable tbody > tr");
     const nav = $doc.find(".common-nav li");
-    const classID = McmodderUtils.abstractIDFromURL(nav.eq(4).find("a").attr("href"), "class");
+    const classID = Utils.abstractIDFromURL(nav.eq(4).find("a").attr("href"), "class");
     const itemType = Number(nav.eq(6).find("a").attr("href").split(`/item/list/${ classID }-`)[1].slice(0, -5));
-    const res: McmodderItemData = {
-      id: McmodderUtils.abstractIDFromURL(itemRow.find(".tool a").first().prop("href"), "item/edit"),
+    const res: Item = {
+      id: Utils.abstractIDFromURL(itemRow.find(".tool a").first().prop("href"), "item/edit"),
       classID: classID,
       name: keywords[0],
       englishName: keywords[1],
@@ -1224,7 +1224,7 @@ export class McmodderUtils {
       res.maxStackSize = Number(command[1]) || 1;
       if (command.length > 2) res.metadata = Number(command[2]) || 0;
     }
-    McmodderUtils.deleteEmptyProperties(res);
+    Utils.deleteEmptyProperties(res);
     return res;
   }
 
@@ -1241,11 +1241,11 @@ export class McmodderUtils {
         englishName: ename.text(),
         abbr: abbr.text().slice(1, -1),
         cover: $doc.find(".class-cover-image img").attr("src")
-      } as McmodderClassData
+      } as Class
     }
   }
 
-  static async itemDataToEditorData(item: McmodderItemData): Promise<McmodItemEditorData> {
+  static async itemToEditorData(item: Item): Promise<McmodItemEditorData> {
     let res: any = {"item-data": {} };
     let data: McmodItemEditorInnerData = res["item-data"];
     if (item.id) {
@@ -1261,8 +1261,8 @@ export class McmodderUtils {
     if (item.englishName) data["ename"] = item.englishName;
     data["category"] = { 0: 1 };
     data["type"] = item.creativeTabName;
-    data["icon-32x-data"] = item.smallIcon || McmodderUtils.appendBase64ImgPrefix(McmodderUtils.getImageURLByItemID(item.id, 32)) || "";
-    data["icon-128x-data"] = item.largeIcon || McmodderUtils.appendBase64ImgPrefix(McmodderUtils.getImageURLByItemID(item.id, 128)) || "";
+    data["icon-32x-data"] = item.smallIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 32)) || "";
+    data["icon-128x-data"] = item.largeIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 128)) || "";
     data["is-general-node"] = "0";
     data["is-general-parents"] = "0";
     if (item.OredictList && item.OredictList.length <= 2) data["oredict"] = item.OredictList.slice(1, -1).replaceAll(", ", ",");
@@ -1277,12 +1277,12 @@ export class McmodderUtils {
     const bodyScript = $doc.find("body > script").last().html();
     const inputs = $doc.find(".input-group");
     const nav = $doc.find(".common-nav li");
-    const res: McmodderItemData = {
-      id: McmodderUtils.abstractIDFromURL(nav.eq(8).find("a").attr("href"), "item"),
+    const res: Item = {
+      id: Utils.abstractIDFromURL(nav.eq(8).find("a").attr("href"), "item"),
       classID: Number(headScript[2].slice(16, -1)), // var nClassID = '1'
       creativeTabName: headScript[3].slice(23, -1), // var strItemTypeName = 'foo'
-      smallIcon: McmodderUtils.appendBase64ImgPrefix(headScript[5]?.slice(7, -1)),
-      largeIcon: McmodderUtils.appendBase64ImgPrefix(headScript[7]?.slice(7, -1)),
+      smallIcon: Utils.appendBase64ImgPrefix(headScript[5]?.slice(7, -1)),
+      largeIcon: Utils.appendBase64ImgPrefix(headScript[7]?.slice(7, -1)),
       name: inputs.find("[data-multi-id=name]").val(),
       englishName: inputs.find("[data-multi-id=ename]").val(),
       harvestTools: `[${ bodyScript.split(");addItemTools(").slice(1).map(parseInt).join(",") }]`,
@@ -1292,9 +1292,9 @@ export class McmodderUtils {
       registerName: inputs.find("[data-multi-id=regname]").val(),
       metadata: inputs.find("[data-multi-id=metadata]").val()
     }
-    McmodderUtils.deleteEmptyProperties(res);
+    Utils.deleteEmptyProperties(res);
     const generalAlert = $(".edit-user-alert.isgeneral");
-    if (generalAlert.length) res.generalTo = McmodderUtils.abstractIDFromURL(generalAlert.find("a").attr("href"), "item");
+    if (generalAlert.length) res.generalTo = Utils.abstractIDFromURL(generalAlert.find("a").attr("href"), "item");
     return res;
   }
 

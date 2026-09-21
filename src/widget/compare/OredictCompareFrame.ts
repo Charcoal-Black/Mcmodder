@@ -1,4 +1,4 @@
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 type OredictSet = Set<string>;
 type NodeMap = Record<string, HTMLElement>;
@@ -16,7 +16,7 @@ export class OredictCompareFrame {
       const newElement = $("<p>");
       oredictList.forEach((oredict, index) => {
         oredictSet.add(oredict);
-        const anchor = McmodderUtils.URLToAnchor(McmodderUtils.getOredictURL(oredict), oredict);
+        const anchor = Utils.URLToAnchor(Utils.getOredictURL(oredict), oredict);
         if (index > 0) {
           const slash = document.createTextNode(" / ");
           newElement.append(slash);

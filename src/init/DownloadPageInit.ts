@@ -1,7 +1,7 @@
 import { AdvancementID } from "../advancement/AdvancementUtils";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class DownloadPageInit extends McmodderInit {
+export class DownloadPageInit extends Init {
   canRun() {
     return this.parent.href.includes("/download/");
   }

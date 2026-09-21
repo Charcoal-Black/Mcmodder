@@ -1,6 +1,6 @@
 // import { Mcmodder } from "../Mcmodder";
 
-export class McmodderSwiper {
+export class Swiper {
   // private readonly parent: Mcmodder;
   private readonly instance: JQuery;
   private readonly ul: JQuery;

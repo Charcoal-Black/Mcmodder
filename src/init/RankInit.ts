@@ -1,5 +1,5 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
 interface UserRankData {
   value: number,
@@ -11,7 +11,7 @@ export interface UserRankRecordData {
   user: number
 }
 
-export class RankInit extends McmodderInit {
+export class RankInit extends Init {
   canRun() {
     return !!(
       this.parent.href.includes("/rank.html") && 
@@ -29,7 +29,7 @@ export class RankInit extends McmodderInit {
       const i = Number(_i);
       const e = contentList.eq(i);
       const href = e.find("a").first().prop("href");
-      const uid = McmodderUtils.abstractIDFromURL(href, "center.mcmod.cn");
+      const uid = Utils.abstractIDFromURL(href, "center.mcmod.cn");
       let li = $(`<li data-uid="${ uid }">`).appendTo(ranklist), rank = null;
 
       let quantity = e.attr("data-content");
@@ -98,8 +98,8 @@ export class RankInit extends McmodderInit {
     // 保存贡献数据
     if (this.configs.getSettings("byteChart")) {
       let param = new URLSearchParams(window.location.search);
-      let startTime = McmodderUtils.getStartTime(Math.floor(Number(param.get("starttime")) * 1e3), 0) / 1e3;
-      let endTime = McmodderUtils.getStartTime(Math.floor(Number(param.get("endtime")) * 1e3), 0) / 1e3;
+      let startTime = Utils.getStartTime(Math.floor(Number(param.get("starttime")) * 1e3), 0) / 1e3;
+      let endTime = Utils.getStartTime(Math.floor(Number(param.get("endtime")) * 1e3), 0) / 1e3;
       let minimumRequestInterval = this.configs.getSettings("minimumRequestInterval") || 750;
       if (!(startTime && endTime)) return;
       let getRankData = (t: number) => {
@@ -120,7 +120,7 @@ export class RankInit extends McmodderInit {
           });
           let data = JSON.stringify(rawData);
           this.configs.set("rankData", (t - 24 * 60 * 60).toString(), data);
-          McmodderUtils.commonMsg(`成功保存${ McmodderUtils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ McmodderUtils.getFormattedSize(data.length) })`);
+          Utils.commonMsg(`成功保存${ Utils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ Utils.getFormattedSize(data.length) })`);
         });
         if (t <= Math.min(endTime, Date.now() / 1e3 - 24 * 60 * 60)) setTimeout(() => getRankData(t + 24 * 60 * 60), minimumRequestInterval);
       }

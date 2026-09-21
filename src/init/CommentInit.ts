@@ -1,10 +1,10 @@
 import { createApp } from "vue";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 import Timer from "../vue/components/Timer.vue";
-import { McmodderTimer } from "../widget/Timer";
-import { McmodderInit } from "./Init";
+import { TimerUtils } from "../widget/Timer";
+import { Init } from "./Init";
 
-export class CommentInit extends McmodderInit {
+export class CommentInit extends Init {
   canRun() {
     return !!$(".common-comment-block.lazy").length;
   }
@@ -16,7 +16,7 @@ export class CommentInit extends McmodderInit {
       createApp(Timer, {
         parent: this.parent,
         dataGetter: published,
-        dataFormatter: McmodderTimer.DATAFORMATTER_ZH
+        dataFormatter: TimerUtils.DATAFORMATTER_ZH
       }).mount(container) as InstanceType<typeof Timer>;
       container.insertAdjacentText("beforebegin", " (");
       container.insertAdjacentText("afterend", ")");
@@ -155,9 +155,9 @@ export class CommentInit extends McmodderInit {
       t1.className = commentClassName;
       t1.style = "";
       const t = messageCenter.appendChild(t1);
-      McmodderUtils.addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
+      Utils.addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
       $(t).append('<div><ul class="comment-floor"></ul></div>');
-      McmodderUtils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(\".comment-editor-area .editor-frame\").length>0&&0==isUEReady)var ueObj=$.ajax({url:\"${ this.parent.hostname }/static/ueditor/\",async:!0,type:\"post\",data:{type:\"comment\"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(\".comment-editor-area .editor-frame .load\").html(ueObj.responseText),isUEReady=1}});`);
+      Utils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(\".comment-editor-area .editor-frame\").length>0&&0==isUEReady)var ueObj=$.ajax({url:\"${ this.parent.hostname }/static/ueditor/\",async:!0,type:\"post\",data:{type:\"comment\"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(\".comment-editor-area .editor-frame .load\").html(ueObj.responseText),isUEReady=1}});`);
       if ($(".comment-close").length && $(".comment-dl-tips").length) {
         // messageCenter.insertBefore($(".common-comment-block.lazy", messageCenter).get(0), $(".comment-dl-tips", messageCenter).get(0));
         $(".comment-close").remove();
@@ -205,7 +205,7 @@ export class CommentInit extends McmodderInit {
   run() {
     if (this.configs.getSettings("commentExpandHeight")) {
       let commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
-      McmodderUtils.addStyle(`.comment-row-text {max-height: ${ commentHeight }px;}`);
+      Utils.addStyle(`.comment-row-text {max-height: ${ commentHeight }px;}`);
     }
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {
       this.unlockComment();

@@ -1,11 +1,11 @@
 import type { GmResponseEvent } from "$";
-import { McmodderBackupManager } from "../BackupManager";
+import { BackupManager } from "../BackupManager";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
-import type { McmodderLogger } from "../widget/logger/Logger";
+import { Utils } from "../Utils";
+import type { Logger } from "../widget/logger/Logger";
 import { McmodderConsole } from "../widget/logger/Console";
 
-export abstract class McmodderRequestQueue {
+export abstract class RequestQueue {
 
   static BACKUP_FREQUENCY = 50;
 
@@ -13,23 +13,23 @@ export abstract class McmodderRequestQueue {
   id: string;
   maxConcurrent: number;
   minInterval: number;
-  logger: McmodderLogger;
-  queue: RequestQueue = [];
+  logger: Logger;
+  queue: RequestList = [];
   isPaused = false;
   isIdle = true;
-  backupManager: McmodderBackupManager<RequestQueueBackupData>;
+  backupManager: BackupManager<RequestQueueBackup>;
   execution?: RequestQueueExecution;
   preExecution?: RequestQueuePreExecution;
   running?: Set<Promise<RequestResult>>;
   results?: RequestResult[];
 
-  constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: McmodderLogger = new McmodderConsole) {
+  constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: Logger = new McmodderConsole) {
     this.parent = parent;
     this.id = id;
     this.maxConcurrent = maxConcurrent;
     this.minInterval = minInterval;
     this.logger = logger;
-    this.backupManager = new McmodderBackupManager(parent, `${ id }_backup`);
+    this.backupManager = new BackupManager(parent, `${ id }_backup`);
   }
 
   protected async executeBackup() {
@@ -50,7 +50,7 @@ export abstract class McmodderRequestQueue {
     this.backupManager.clear();
   }
 
-  protected abstract onCallback(resp: GmResponseEvent<"text", any>, index: number, queue: RequestQueue): any;
+  protected abstract onCallback(resp: GmResponseEvent<"text", any>, index: number, queue: RequestList): any;
 
   protected pausing() {
     // return new Promise<boolean>(resolve => {
@@ -67,7 +67,7 @@ export abstract class McmodderRequestQueue {
 
   protected async create(index: number, interval: number, baseInterval = interval) {
     while (this.isPaused) {
-      await McmodderUtils.sleep(1e3);
+      await Utils.sleep(1e3);
     }
     const request = this.execution!.queue[index];
     const result: RequestResult = {
@@ -127,7 +127,7 @@ export abstract class McmodderRequestQueue {
   }
 
   protected backup() {
-    const data = McmodderUtils.simpleDeepCopy(this.execution) as any;
+    const data = Utils.simpleDeepCopy(this.execution) as any;
     data.runningIndex = Array.from(this.execution!.runningIndex!);
     this.backupManager.backup(data);
   }
@@ -172,7 +172,7 @@ export abstract class McmodderRequestQueue {
           this.create(index, this.minInterval);
         };
         this.execution.progress++;
-        if (this.execution.progress % McmodderRequestQueue.BACKUP_FREQUENCY === 0) {
+        if (this.execution.progress % RequestQueue.BACKUP_FREQUENCY === 0) {
           this.tryBackup();
         }
       }
@@ -185,7 +185,7 @@ export abstract class McmodderRequestQueue {
     this.isIdle = true;
   }
 
-  setQueue(queue: RequestData[]) {
+  setQueue(queue: AppRequest[]) {
     if (!this.isIdle) this.logger.error("该队列正在运行中，禁止中途修改队列");
     else this.queue = queue;
     return this;

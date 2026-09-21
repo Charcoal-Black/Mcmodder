@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import NumberInput from './NumberInput.vue';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import type { InputProps } from '../../../types/props';
 
 interface Props extends InputProps<number> {
@@ -110,7 +110,7 @@ function onBarPointermove(e: PointerEvent) {
   if (!dragging) return;
   e.preventDefault();
   const dragPos = e.clientX + dragOffset - getBarLeftPos();
-  const rate = McmodderUtils.clamp(dragPos / getBarWidth());
+  const rate = Utils.clamp(dragPos / getBarWidth());
   const rawValue = props.range[0] + (props.range[1] - props.range[0]) * rate;
   const value = Math.round(rawValue / precision) * precision;
   setDisplayValue(value);
@@ -134,7 +134,7 @@ function onBarPointercancel(e: PointerEvent) {
 }
 
 const cssRate = computed(() => {
-  return McmodderUtils.clamp((
+  return Utils.clamp((
     valueRef.value - props.range[0]
   ) / (
     props.range[1] - props.range[0]

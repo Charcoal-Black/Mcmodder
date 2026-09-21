@@ -1,8 +1,8 @@
-import { McmodderAdvancedUEditor } from "../ueditor/AdvancedUEditor";
+import { AdvancedUEditor } from "../ueditor/AdvancedUEditor";
 import { GeneralEditInit } from "./GeneralEditInit";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class VersionEditInit extends McmodderInit {
+export class VersionEditInit extends Init {
   canRun() {
     return this.parent.href.includes("/version/add") || 
       this.parent.href.includes("/version/edit")
@@ -61,7 +61,7 @@ export class VersionEditInit extends McmodderInit {
         if (source === 1) {
           editor.setContent(data);
         } else if (source === 2) {
-          const ueditor = this.parent.ueditorFrame[0] as McmodderAdvancedUEditor;
+          const ueditor = this.parent.ueditorFrame[0] as AdvancedUEditor;
           ueditor.mdEditor?.setValue(data);
         }
         let w = ($("#ueditor_0").get(0) as HTMLIFrameElement).contentDocument?.body, f = false;

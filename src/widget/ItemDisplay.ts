@@ -1,15 +1,15 @@
-import { McmodderMap } from "../map/Map";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { FieldIndex } from "../fieldindex/FieldIndex";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 export class ItemDisplay {
-  private itemMap?: McmodderMap<McmodderItemData>;
-  private tagMap?: McmodderMap<McmodderItemData>;
+  private itemFieldIndex?: FieldIndex<Item>;
+  private tagFieldIndex?: FieldIndex<Item>;
   private count = 1;
   private chance = 100;
   private id?: string | string[];
-  private matchList: Record<string, McmodderItemList | undefined> = {};
-  private flattenedList: McmodderItemList = [];
+  private matchList: Record<string, ItemList | undefined> = {};
+  private flattenedList: ItemList = [];
   private HTMLSuffix = "";
   private displaying = 0;
   readonly instance = $(`<div class="mcmodder-item-display">`);
@@ -18,10 +18,10 @@ export class ItemDisplay {
   readonly chanceNode = $(`<span class="chance">`).appendTo(this.instance);
 
   private isEmptyItem() {
-    return !this.itemMap || !this.tagMap || !this.id;
+    return !this.itemFieldIndex || !this.tagFieldIndex || !this.id;
   }
 
-  private setTooltip(data?: McmodderItemData) {
+  private setTooltip(data?: Item) {
     let title;
     if (data) {
       title = `<span class="mcmodder-slim-dark">${ data.id }</span> <span>${ data.name }</span>`;
@@ -55,9 +55,9 @@ export class ItemDisplay {
     const item = this.flattenedList[this.displaying];
     let url;
     if (item != null) {
-      url = item.smallIcon || McmodderUtils.getImageURLByItemID(item.id);
+      url = item.smallIcon || Utils.getImageURLByItemID(item.id);
     } else {
-      url = McmodderValues.assets.mcmod.emptyItemIcon32x;
+      url = Values.assets.mcmod.emptyItemIcon32x;
     }
     this.instance.css("background-image", `url(${ url })`);
     this.setTooltip(item);
@@ -76,8 +76,8 @@ export class ItemDisplay {
     const nid = Number(id);
     if (isNaN(nid)) {
       const singleMatchList = id.charAt(0) === "#" ?
-        this.tagMap!.get(id.slice(1)) :
-        this.itemMap!.get(id);
+        this.tagFieldIndex!.get(id.slice(1)) :
+        this.itemFieldIndex!.get(id);
       this.matchList[id] = singleMatchList;
       if (singleMatchList) {
         this.flattenedList = this.flattenedList.concat(singleMatchList);
@@ -142,7 +142,7 @@ export class ItemDisplay {
     }
     else {
       this.countNode.removeClass("no-consumption");
-      if (this.count != 1) res = McmodderUtils.getFormattedNumber(this.count);
+      if (this.count != 1) res = Utils.getFormattedNumber(this.count);
       if (this.count >= 1e3) this.countNode.addClass("small");
       else this.countNode.removeClass("small");
     }
@@ -168,7 +168,7 @@ export class ItemDisplay {
     let res = "";
     if (this.chance < 100) {
       this.chanceNode.addClass("small");
-      res = McmodderUtils.getPrecisionFormatter().format(this.chance) + "%";
+      res = Utils.getPrecisionFormatter().format(this.chance) + "%";
     }
     this.chanceNode.text(res);
   }
@@ -180,9 +180,9 @@ export class ItemDisplay {
     this.refreshChance();
   }
 
-  constructor(itemMap?: McmodderMap<McmodderItemData>, tagMap?: McmodderMap<McmodderItemData>, id?: string | string[], count = 1, chance = 100) {
-    this.itemMap = itemMap;
-    this.tagMap = tagMap;
+  constructor(itemMap?: FieldIndex<Item>, tagMap?: FieldIndex<Item>, id?: string | string[], count = 1, chance = 100) {
+    this.itemFieldIndex = itemMap;
+    this.tagFieldIndex = tagMap;
     this.id = id;
     this.count = count;
     this.chance = chance;

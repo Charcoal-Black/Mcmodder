@@ -1,4 +1,4 @@
-import { McmodderValues } from "../../Values";
+import { Values } from "../../Values";
 import { CenterBaseInit } from "./CenterBaseInit";
 import { createApp } from "vue";
 import CenterSettings from "../../vue/components/CenterSettings.vue";
@@ -33,7 +33,7 @@ export class CenterSettingInit extends CenterBaseInit {
 
     // 相关链接预览图尺寸调整
     $("#setting-link-style-preview").attr("data-content", `<img alt="link style" src="${
-      McmodderValues.assets.mcmod.iconStyleSample
+      Values.assets.mcmod.iconStyleSample
     }" width="220" ></a>`);
     // 脚本设置
     let menuArea = $("div.center-main.setting.menuarea").get(0);

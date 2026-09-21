@@ -1,7 +1,7 @@
 <template>
   <div class="center-block-head">
     <span class="title">Mcmodder设置</span>
-    <span class="text">版本 v{{ McmodderValues.mcmodderVersion }} ~ ☆</span>
+    <span class="text">版本 v{{ Values.mcmodderVersion }} ~ ☆</span>
   </div>
 
   <div class="center-content">
@@ -13,7 +13,7 @@
             class="btn"
             @click="() => parent.scheduleRequestUtils.run('autoCheckUpdate')"
           >立即检查更新</button>
-          <Timer :parent="parent" :data-getter="McmodderTimer.DATAGETTER_SCHEDULE(
+          <Timer :parent="parent" :data-getter="TimerUtils.DATAGETTER_SCHEDULE(
             'autoCheckUpdate',
             null,
             parent.scheduleRequestUtils
@@ -69,15 +69,15 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { McmodderValues } from '../../Values';
-import { McmodderInputType } from '../../config/ConfigUtils';
-import { McmodderTable } from '../../table/Table.ts';
+import { Values } from '../../Values';
+import { InputType } from '../../config/ConfigUtils';
+import { TableUtils } from '../../table/Table.ts';
 import ConfigInteractor from './config/ConfigInteractor.vue';
 import Timer from './Timer.vue';
-import { McmodderTimer } from '../../widget/Timer.ts';
+import { TimerUtils } from '../../widget/Timer.ts';
 import SupabaseConfigLoader from './supabase/SupabaseConfigLoader.vue';
 import ConfigResourceInteractor from './config/ConfigResourceInteractor.vue';
-import { McmodderUtils } from '../../Utils.ts';
+import { Utils } from '../../Utils.ts';
 import ConfigResourceFileListInteractor from './config/ConfigResourceFileListInteractor.vue';
 import SupabaseAuthBinder from './supabase/SupabaseAuthBinder.vue';
 import Button from './Button.vue';
@@ -90,14 +90,14 @@ interface Props {
 const props = defineProps<Props>();
 const configs = computed(() => props.parent.configRepository);
 const cfgutils = props.parent.cfgutils;
-const configData = shallowRef(cfgutils.data);
+const configOption = shallowRef(cfgutils.data);
 const permission = props.parent.configRepository.getProfile("permission");
 const visibleConfigData = computed(() => {
-  const result: (keyof McmodderSettings)[] = [];
-  (Object.entries(configData.value) as [keyof McmodderSettings, McmodderConfigData][]).forEach(([key, value]) => {
+  const result: (keyof Settings)[] = [];
+  (Object.entries(configOption.value) as [keyof Settings, ConfigOption][]).forEach(([key, value]) => {
     const data = value;
     if (data.permission && permission < data.permission) return;
-    if (data.type === McmodderInputType.KEYBIND && 
+    if (data.type === InputType.KEYBIND && 
       props.parent.isMobileClient) return;
     // const entry = new McmodderConfigInteractor(key, cfgutils);
     // entry.$instance.appendTo(content);
@@ -112,10 +112,10 @@ const configResourceInteractorProps = [
     parent: props.parent,
     id: "mcmodderSplashList_v2",
     name: "已记录的闪烁标语",
-    headConfigs: {
+    rowOptions: {
       time: ["时间", (data: number) => data ? (new Date(data)).toLocaleString() : "未知"],
       content: "记录内容",
-      num: ["次数", McmodderTable.DISPLAYRULE_NUMBER]
+      num: ["次数", TableUtils.DISPLAYRULE_NUMBER]
     },
     configParser: config => config?.split("\n") || [], // 最后一项是空，不考虑
     dataParser: (_, data) => {
@@ -124,51 +124,51 @@ const configResourceInteractorProps = [
         time: Number(list[0]),
         content: list[1],
         num: Number(list[2])
-      } as McmodderSplashData;
+      } as Splash;
     }
-  } satisfies ConfigResourceInteractorProps<"mcmodderSplashList_v2", string[], McmodderSplashData>,
+  } satisfies ConfigResourceInteractorProps<"mcmodderSplashList_v2", string[], Splash>,
   {
     parent: props.parent,
     id: "modDependences_v2",
     name: "已记录的模组前置信息",
-    headConfigs: {
-      id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CLASS],
-      children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY]
+    rowOptions: {
+      id: ["模组编号", TableUtils.DISPLAYRULE_LINK_CLASS],
+      children: ["记录内容", TableUtils.DISPLAYRULE_LINK_CLASS_ARRAY]
     },
     dataParser: (key, item) => ({
       id: Number(key),
       children: item as number[]
     } as any) // ???
-  } satisfies ConfigResourceInteractorProps<"modDependences_v2", Record<string, number[]>, McmodderClassRelationData>,
+  } satisfies ConfigResourceInteractorProps<"modDependences_v2", Record<string, number[]>, ClassRelation>,
   {
     parent: props.parent,
     id: "modExpansions_v2",
     name: "已记录的模组拓展信息",
-    headConfigs: {
-      id: ["模组编号", McmodderTable.DISPLAYRULE_LINK_CENTER],
-      children: ["记录内容", McmodderTable.DISPLAYRULE_LINK_CLASS_ARRAY],
+    rowOptions: {
+      id: ["模组编号", TableUtils.DISPLAYRULE_LINK_CENTER],
+      children: ["记录内容", TableUtils.DISPLAYRULE_LINK_CLASS_ARRAY],
     },
     dataParser: (key, item) => ({
       id: Number(key),
       children: item as number[]
     })
-  } satisfies ConfigResourceInteractorProps<"modExpansions_v2", Record<string, number[]>, McmodderClassRelationData>,
+  } satisfies ConfigResourceInteractorProps<"modExpansions_v2", Record<string, number[]>, ClassRelation>,
   {
     parent: props.parent,
     id: "rankData",
     name: "已保存的贡献榜数据",
-    headConfigs: {
-      date: ["日期", McmodderTable.DISPLAYRULE_DATE_SEC_ZH],
+    rowOptions: {
+      date: ["日期", TableUtils.DISPLAYRULE_DATE_SEC_ZH],
       byteTop1: ["字数榜首", (rawData: string) => {
         const data = rawData.split(",") as unknown as [number, number, number]; // [userID, bytes, ratio]
-        return `<a target="_blank" href="${ McmodderUtils.getCenterURL(data[0]) }">${ data[0] }</a> 
+        return `<a target="_blank" href="${ Utils.getCenterURL(data[0]) }">${ data[0] }</a> 
           (${ data[1].toLocaleString() } 字节, ${ (data[2] * 100).toFixed(1) }%)`;
       }],
       totalEdited: ["前 60 名总编辑字数", (data: number) => `${data.toLocaleString()} 字节`],
-      size: ["数据大小", McmodderTable.DISPLAYRULE_SIZE]
+      size: ["数据大小", TableUtils.DISPLAYRULE_SIZE]
     }, 
     dataParser: (key, item) => {
-      let list = JSON.parse(item as string) as McmodderRankStorageData, sum = 0;
+      let list = JSON.parse(item as string) as RankStorage, sum = 0;
       list.forEach(user => sum += user.value);
       return {
         date: Number(key),
@@ -177,7 +177,7 @@ const configResourceInteractorProps = [
         size: (item as string).length
       };
     }
-  } satisfies ConfigResourceInteractorProps<"rankData", Record<string, string>, McmodderRankDisplayData>,  
+  } satisfies ConfigResourceInteractorProps<"rankData", Record<string, string>, RankDisplay>,  
 ] as const;
 
 const configResourceFileListInteractorProps = [
@@ -197,9 +197,9 @@ function emptyScheduleRequest() {
   const list = props.parent.scheduleRequestUtils.get();
   if (list.length) {
     props.parent.scheduleRequestUtils.empty();
-    McmodderUtils.commonMsg(`${ list.length.toLocaleString() } 项计划任务已被清除~`);
+    Utils.commonMsg(`${ list.length.toLocaleString() } 项计划任务已被清除~`);
   } else {
-    McmodderUtils.commonMsg("当前没有计划任务~");
+    Utils.commonMsg("当前没有计划任务~");
   }
 }
 
@@ -208,25 +208,25 @@ async function submitSplash() {
   const content = splashInput.value.trim();
 
   if (!content) {
-    McmodderUtils.commonMsg("标语内容不能为空！", false);
+    Utils.commonMsg("标语内容不能为空！", false);
     return;
   }
 
   if (!props.parent.currentUID) {
-    McmodderUtils.commonMsg("请先登录 MC百科 账号后再发起投稿！", false);
+    Utils.commonMsg("请先登录 MC百科 账号后再发起投稿！", false);
     return;
   }
 
   const authKey = configs.value.getProfile("auth_key");
   if (!authKey) {
-    McmodderUtils.commonMsg("未获取到登录校验 Key，请重新登录！", false);
+    Utils.commonMsg("未获取到登录校验 Key，请重新登录！", false);
     return;
   }
 
   const res = await props.parent.supabaseUtils.uploadCustomSplash(content, authKey);
 
   if (res && res.message) {
-    McmodderUtils.commonMsg(res.message);
+    Utils.commonMsg(res.message);
     splashInput.value = "";
   }
 }

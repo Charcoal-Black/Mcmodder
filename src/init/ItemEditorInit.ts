@@ -1,8 +1,8 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import { Init } from "./Init";
 
-export class ItemEditorInit extends McmodderInit {
+export class ItemEditorInit extends Init {
   canRun() {
     return this.parent.href.includes("/item/edit/") || 
       this.parent.href.includes("/item/add/")
@@ -33,7 +33,7 @@ export class ItemEditorInit extends McmodderInit {
       if (!fileList || fileList.length < 1) return;
       const file = fileList[0];
       if (!file.type.includes("image/")) {
-        McmodderUtils.commonMsg(McmodderValues.errorMessage[120], false);
+        Utils.commonMsg(Values.errorMessage[120], false);
         return;
       }
       const reader = new FileReader;
@@ -58,7 +58,7 @@ export class ItemEditorInit extends McmodderInit {
     $("#icon-32x, #icon-128x").bind("change", e => {
       const target = $(e.currentTarget);
       const id = target.attr("id");
-      target.val(McmodderUtils.appendBase64ImgPrefix(target.val().trim()) || "");
+      target.val(Utils.appendBase64ImgPrefix(target.val().trim()) || "");
       $(`#item-${ id }-preview-img`).attr("src", target.val().trim());
       $(`#${ id }-editor`).val(target.val().trim());
     });
@@ -82,11 +82,11 @@ export class ItemEditorInit extends McmodderInit {
     const jsonUploader = $('<input id="mcmodder-json-upload" class="mcmodder-monospace form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">')
     .insertBefore($(".tab-ul").first())
     .change(_ => {
-      let data: McmodderItemData & {maxStacksSize?: number};
+      let data: Item & {maxStacksSize?: number};
       try {
         data = JSON.parse(jsonUploader.val());
       } catch (e) {
-        if (e instanceof SyntaxError) McmodderUtils.commonMsg("请检查提交的 JSON 语法是否正确~", false, "解析错误");
+        if (e instanceof SyntaxError) Utils.commonMsg("请检查提交的 JSON 语法是否正确~", false, "解析错误");
         return;
       }
       try {
@@ -108,7 +108,7 @@ export class ItemEditorInit extends McmodderInit {
         $("#item-regname").val(regName);
         if (data.metadata) $("#item-metadata").val(data.metadata);
       } catch (e) {
-        if (e instanceof TypeError) McmodderUtils.commonMsg(e.toString(), false);
+        if (e instanceof TypeError) Utils.commonMsg(e.toString(), false);
       }
     });
 

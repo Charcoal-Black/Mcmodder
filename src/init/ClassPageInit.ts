@@ -1,6 +1,6 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import { Init } from "./Init";
 import svgPlarformForge from "../assets/platform/forge.svg";
 import svgPlatformFabric from "../assets/platform/fabric.svg";
 import svgPlatformNeoForge from "../assets/platform/neoforge.svg";
@@ -10,9 +10,9 @@ import svgPlatformLiteLoader from "../assets/platform/liteloader.svg";
 import svgPlatformNilLoader from "../assets/platform/nilloader.svg";
 import svgPlatformJavaAgent from "../assets/platform/javaagent.svg";
 import svgPlatformDefault from "../assets/platform/default.svg";
-import { McmodderMainText } from "../widget/MainText";
+import { MainText } from "../widget/MainText";
 
-export class ClassPageInit extends McmodderInit {
+export class ClassPageInit extends Init {
 
   static readonly maxRecentlyVisitedLength = 50;
   static classPageRegExp = /class\/[0-9]*\.html/;
@@ -28,18 +28,18 @@ export class ClassPageInit extends McmodderInit {
   }
 
   private async syncSubscribeList(modID: number) {
-    await McmodderUtils.sleep(1e3);
+    await Utils.sleep(1e3);
     let hasSubscribed = $(".subscribe i.fas").length;
     let subscribeModlist = this.configs.getProfile("subscribeModlist") ?? [];
     if (!hasSubscribed && subscribeModlist.includes(modID)) {
       subscribeModlist = subscribeModlist.filter(e => e != modID);
       this.configs.setProfile("subscribeModlist", subscribeModlist);
       this.configs.set("latestEditTime", modID.toString(), 0);
-      McmodderUtils.commonMsg("成功同步关注状态~");
+      Utils.commonMsg("成功同步关注状态~");
     } else if (hasSubscribed && !subscribeModlist.includes(modID)) {
       subscribeModlist.push(modID);
       this.configs.setProfile("subscribeModlist", subscribeModlist);
-      McmodderUtils.commonMsg("成功同步关注状态~");
+      Utils.commonMsg("成功同步关注状态~");
     }
   }
 
@@ -49,19 +49,19 @@ export class ClassPageInit extends McmodderInit {
     this.pageTypeName = this.isClassPage ? "模组" : "整合包";
 
     // 自动记忆前置Mod
-    const classID = McmodderUtils.abstractLastFromURL(window.location.href, ["class", "modpack"]);
+    const classID = Utils.abstractLastFromURL(window.location.href, ["class", "modpack"]);
     const nClassID = Number(classID);
-    const {nameNode, enameNode, abbrNode, classData}  = McmodderUtils.parseClassDocument($(document));
+    const {nameNode, enameNode, abbrNode, classData}  = Utils.parseClassDocument($(document));
     const className = classData.name;
     const classEname = classData.englishName;
     const classAbbr = classData.abbr;
-    const modFullName = McmodderUtils.getClassFullName(className, classEname, classAbbr) || "";
+    const modFullName = Utils.getClassFullName(className, classEname, classAbbr) || "";
     this.parent.utils.updateClassNameIDMap(modFullName, classID);
 
     if (this.configs.getSettings("fastCopyName")) {
-      McmodderUtils.addClickCopyEvent(nameNode, this.pageTypeName + "主要名称", className);
-      McmodderUtils.addClickCopyEvent(enameNode, this.pageTypeName + "次要名称", classEname);
-      McmodderUtils.addClickCopyEvent(abbrNode, this.pageTypeName + "缩写名称", classAbbr);
+      Utils.addClickCopyEvent(nameNode, this.pageTypeName + "主要名称", className);
+      Utils.addClickCopyEvent(enameNode, this.pageTypeName + "次要名称", classEname);
+      Utils.addClickCopyEvent(abbrNode, this.pageTypeName + "缩写名称", classAbbr);
     }
 
     if (this.configs.getSettings("rememberModRelation") && this.isClassPage) {
@@ -73,27 +73,27 @@ export class ClassPageInit extends McmodderInit {
         let target = $(e);
         target.find("a[data-toggle=tooltip]").each((_, a) => {
           const href = (a as HTMLAnchorElement).href;
-          let id = McmodderUtils.abstractLastFromURL(href, "class");
+          let id = Utils.abstractLastFromURL(href, "class");
           let name = a.textContent;
           if (id && name) this.parent.utils.updateClassNameIDMap(name, id);
 
           let title = target.find("span[data-toggle=tooltip]:first-child()").text();
           if (title.includes("前置Mod")) {
-            newDependences.push(McmodderUtils.abstractIDFromURL(href, "class"));
+            newDependences.push(Utils.abstractIDFromURL(href, "class"));
           }
           else if (title.includes("依赖")) {
-            newExpansions.push(McmodderUtils.abstractIDFromURL(href, "class"));
+            newExpansions.push(Utils.abstractIDFromURL(href, "class"));
           }
         })
       });
 
       if (JSON.stringify(modDependences) != JSON.stringify(newDependences)) {
         this.configs.set("modDependences_v2", classID, newDependences);
-        McmodderUtils.commonMsg("成功更新此模组前置列表~");
+        Utils.commonMsg("成功更新此模组前置列表~");
       }
       if (JSON.stringify(modExpansions) != JSON.stringify(newExpansions)) {
         this.configs.set("modExpansions_v2", classID, newExpansions);
-        McmodderUtils.commonMsg("成功更新此模组拓展列表~");
+        Utils.commonMsg("成功更新此模组拓展列表~");
       }
     }
 
@@ -104,17 +104,17 @@ export class ClassPageInit extends McmodderInit {
     // 自动同步自定义资料类型
     let itemCustomTypeList: ItemCustomTypeList = this.configs.getSettings("itemCustomTypeList") ?? [];
     if (typeof itemCustomTypeList === "string") {
-      this.configs.setSettings("itemCustomTypeList", McmodderValues.itemCustomTypeList);
-      itemCustomTypeList = McmodderValues.itemCustomTypeList;
+      this.configs.setSettings("itemCustomTypeList", Values.itemCustomTypeList);
+      itemCustomTypeList = Values.itemCustomTypeList;
     }
     $(".class-item-type li").filter((_, e) => !e.className.includes("mold-")).each((_, e) => {
       let t = $(e).find(".text .title").text(), p = $(e).find(".iconfont i");
-      const data: ItemTypeData = {
+      const data: ItemType = {
         classID: nClassID,
         typeID: Number($(e).find("a").attr("href").split(classID + "-")[1]?.split(".html")[0]),
         text: t,
         icon: p.attr("class").slice(4),
-        color: McmodderUtils.rgbToHex(p.css("color"))
+        color: Utils.rgbToHex(p.css("color"))
       };
       if (!(itemCustomTypeList.filter(entry => (
         entry.classID === data.classID &&
@@ -125,7 +125,7 @@ export class ClassPageInit extends McmodderInit {
       )).length)) {
         itemCustomTypeList.push(data);
         this.configs.setSettings("itemCustomTypeList", itemCustomTypeList);
-        McmodderUtils.commonMsg(`成功同步自定义资料类型数据~ (${t})`);
+        Utils.commonMsg(`成功同步自定义资料类型数据~ (${t})`);
       }
     });
 
@@ -145,7 +145,7 @@ export class ClassPageInit extends McmodderInit {
         if (i.innerHTML === langList.wiki) i.innerHTML = "Kiwi";
         if (i.innerHTML === langList.curseforge) i.innerHTML = forgeAliasList[Math.floor(Math.random() * 4)];
       }
-      $("div.frame span.avatar[title='MCreator - MCr'] img").attr("src", McmodderValues.assets.mcmod.aprilFools.mcr);
+      $("div.frame span.avatar[title='MCreator - MCr'] img").attr("src", Values.assets.mcmod.aprilFools.mcr);
       $(".class-card .text-block span").each((_, e) => {
         e.innerHTML = e.innerHTML
         .replace(PublicLangData.class.card.red, "猛票")
@@ -160,7 +160,7 @@ export class ClassPageInit extends McmodderInit {
 
     // 禁用模组页排版
     if (/* this.configs.get("mcmodderUI") && */ !this.configs.getSettings("disableClassDataTypesetting")) {
-      McmodderUtils.addStyle('.common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {width: 90%; margin: 0 5%; margin-top: 6em;}');
+      Utils.addStyle('.common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {width: 90%; margin: 0 5%; margin-top: 6em;}');
       $("<div>").attr("class", "mcmodder-info-right").insertAfter(".class-info-left .col-lg-12:first-child()");
       $(".class-info-right").children().clone().appendTo(".mcmodder-info-right");
       const src = $(".class-info-left").attr("class", "class-info-left mcmodder-class-source-info");
@@ -219,7 +219,7 @@ export class ClassPageInit extends McmodderInit {
             }
             tooltipHTML += `<a class="mcmodder-modloader">${ icon }${ text }</a>`;
           });
-          d[1] = `<div class="mcmodder-modloader-container" data-toggle="tooltip" data-html="true" data-original-title="${ McmodderUtils.escapeHTML(tooltipHTML) }">${ innerHTML }</div>`;
+          d[1] = `<div class="mcmodder-modloader-container" data-toggle="tooltip" data-html="true" data-original-title="${ Utils.escapeHTML(tooltipHTML) }">${ innerHTML }</div>`;
         }
         if (d[0] === "运行环境") {
           const a = d[1].split(", ");
@@ -274,12 +274,12 @@ export class ClassPageInit extends McmodderInit {
         })
       }
     } else {
-      McmodderUtils.addStyle('.common-center .right .class-text-top {padding-right: 250px;}');
+      Utils.addStyle('.common-center .right .class-text-top {padding-right: 250px;}');
       $(".class-info-right, .class-excount").addClass("mcmodder-disable-modern");
     }
 
     // maintext
-    new McmodderMainText(this.parent, $(".text-area.common-text"));
+    new MainText(this.parent, $(".text-area.common-text"));
 
     // if (this.configs.get("mcmodderUI")) {
       $(".class-item-type .mold:not(.mold-0)").each((_, c) => {
@@ -313,8 +313,8 @@ export class ClassPageInit extends McmodderInit {
           if (!resp.responseXML) return;
           const doc = $(resp.responseXML);
           if (doc.find(".edit-unlogining").length) {
-            if (doc.find(".edit-unlogining").text().includes("登录")) McmodderUtils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
-            else McmodderUtils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
+            if (doc.find(".edit-unlogining").text().includes("登录")) Utils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
+            else Utils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
             button.removeClass("disabled");
             button.find("span").text("展开高级信息");
             button.find("i").attr("class", "fas fa-chevron-down");
@@ -324,9 +324,9 @@ export class ClassPageInit extends McmodderInit {
           const infoCFID = doc.find("#class-cfprojectid").val();
           const infoMRID = doc.find("#class-mrprojectid").val();
           const lastElement = $(".col-lg-6").last();
-          if (infoModID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
-          if (infoCFID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
-          if (infoMRID) McmodderUtils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
+          if (infoModID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
+          if (infoCFID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
+          if (infoMRID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
           button.remove();
         });
       }).insertAfter($(".col-lg-6").last());
@@ -355,7 +355,7 @@ export class ClassPageInit extends McmodderInit {
           const patch = ver[2];
           patchIndex = 0;
           // 根据版本格式获取对应的版本列表
-          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
+          const list = major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
           const series = minor;
 
           if (list) {
@@ -394,14 +394,14 @@ export class ClassPageInit extends McmodderInit {
           const patchOld = versionRange[0]![2];
           const patchNew = versionRange[1]![2];
           
-          const list = major === 1 ? McmodderValues.allVersionList[minor] : McmodderValues.newVersionList[major - 26]?.[minor];
+          const list = major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
 
           if (list && list.length > 1 && patchOld === list[0] && patchNew === list[list.length - 1]) {
             rangeContent = major === 1 ? `1.${minor}.x` : `${major}.${minor}.x`;
           } else if (patchOld === patchNew) {
-            rangeContent = McmodderUtils.versionArrayToString(versionRange[0]!);
+            rangeContent = Utils.versionArrayToString(versionRange[0]!);
           } else {
-            rangeContent = `${McmodderUtils.versionArrayToString(versionRange[1]!)}-${McmodderUtils.versionArrayToString(versionRange[0]!)}`;
+            rangeContent = `${Utils.versionArrayToString(versionRange[1]!)}-${Utils.versionArrayToString(versionRange[0]!)}`;
           }
 
           $versionListNode.append(`<li class="text-danger mcmodder-compactedmcver"><a target="_blank" class="mcmodder-content-block">${rangeContent}</a></li>`);
@@ -445,7 +445,7 @@ export class ClassPageInit extends McmodderInit {
       this.configs.setSettings("recentlyVisitedMods", recentlyVisitedMods);
       
       // 记录模组数据
-      this.configs.setAllClass(McmodderUtils.parseClassDocument().classData, nClassID);
+      this.configs.setAllClass(Utils.parseClassDocument().classData, nClassID);
     }
 
     // 样式修复

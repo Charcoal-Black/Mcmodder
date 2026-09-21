@@ -1,9 +1,9 @@
-import { McmodderConfigUtils, McmodderPermission } from "../config/ConfigUtils";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { ConfigUtils, Permission } from "../config/ConfigUtils";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 export class ConfigLoader {
-  static run(cfgutils: McmodderConfigUtils) {
+  static run(cfgutils: ConfigUtils) {
     cfgutils
     .addColorpickerConfig("themeColor1", "主题样式主配色", "主题样式主配色。", "#86c155")
     .addColorpickerConfig("themeColor2", "主题样式副配色", "主题样式副配色。", "#58b6d8")
@@ -41,9 +41,9 @@ export class ConfigLoader {
     .addCheckboxConfig("enableAprilFools", "愚人节特性", "允许百科愚人节彩蛋在任意日期触发。")
     .addCheckboxConfig("autoCheckin", "自动签到", "每日首次访问百科，或是本机时间为 00:00:00 时，自动执行签到操作。")
     .addTextConfig("defaultBackground", "默认背景", "输入一个图片链接 URL。若当前页面没有设置背景，则自动使用此背景。图像加载可能会拖慢页面载入时间，可输入 <code>none</code> 以禁用此特性。",
-      McmodderValues.assets.bg)
+      Values.assets.bg)
     .addTextConfig("defaultNightBackground", "默认夜间背景", "输入一个图片链接 URL，在夜间模式下此背景会覆盖默认背景。输入 <code>none</code> 以禁用此特性。",
-      McmodderValues.assets.nightMode.bg)
+      Values.assets.nightMode.bg)
     .addSliderConfig("backgroundAlpha", "背景透明度", "控制背景透明度，数值越小透明度越高。", 
       204, [128, 255])
     .addSliderConfig("textShadowAlpha", "文字阴影透明度", "控制夜间模式下的文字阴影透明度，数值越小透明度越高。", 
@@ -105,17 +105,17 @@ export class ConfigLoader {
       300, [0, null])
     .addTextConfig("userBlacklist", "用户黑名单", "自动屏蔽所选定用户发布的短评和回复。输入要屏蔽的用户 UID，多个 UID 间用半角逗号隔开。")
     .addNumberConfig("autoVerifyDelay", "自动查询待审项", "当打开百科页面时，自动查询所管理模组的待审项，并弹出提示消息。设置相邻两次自动查询待审项之间的最短冷却时间，单位为小时，设置为小于 0.01 以禁用。",
-      0, [0, null], McmodderPermission.MANAGER)
+      0, [0, null], Permission.MANAGER)
     .addCheckboxConfig("splitScreenOnVerify", "审核页面分屏", "在后台查看一个待审项时，其内容只会占据右半区域，左半部分依旧可预览列表中的其他待审项。（为保证排版正常，此配置在移动端无效）",
-      false, McmodderPermission.EDITOR)
+      false, Permission.EDITOR)
     .addCheckboxConfig("itemListStylePreview", "样式管理预览", "编辑模组资料列表样式时，实时显示当前样式预览。",
-      false, McmodderPermission.MANAGER)
+      false, Permission.MANAGER)
     .addCheckboxConfig("itemListStyleFix", "样式管理修复", "修复百科本体 Bug：原始字符串未转义导致当前样式无法显示。",
-      false, McmodderPermission.MANAGER)
+      false, Permission.MANAGER)
     .addNumberConfig("alwaysNotify", "实时通讯", "设置短评动态提醒自动刷新间隔，单位为分钟，设置为小于 0.1 以禁用。",
       0, [0, null])
     .addNumberConfig("alwaysNotifyVerification", "实时更新审核项", "设置后台待审列表自动刷新间隔，单位为分钟，设置为小于 0.1 以禁用。",
-      0, [0, null], McmodderPermission.EDITOR)
+      0, [0, null], Permission.EDITOR)
     .addNumberConfig("preSubmitCheckInterval", "预编辑检测间隔", "设置相邻两次自动检测预编辑资料是否具备可正式提交条件之间的最短冷却时间，单位为小时，设置为小于 0.1 以禁用所有预编辑相关特性。",
       0, [0, null])
     .addCheckboxConfig("fastUrge", "快速催审", "在待审列表中显示“一键催审”按钮。")
@@ -126,17 +126,17 @@ export class ConfigLoader {
     .addNumberConfig("minimumRequestInterval", "最短发包间隔", "设置脚本全局发送请求的最短间隔，单位为 ms。",
       750, [500, null])
     .addCheckboxConfig("lieqi", "猎奇仙人", "猎奇猎奇猎奇！！！")
-    .addKeybindConfig("keybindFastLink", "自动链接", `在此可修改打开本脚本所提供“自动链接”功能的快捷键。百科原生自带的“自动链接”（通过 ${ McmodderUtils.keyToString({ altKey: true, keyCode: 88 }) } 打开）已终止支持，其入口会在将来的版本中移除。`,
+    .addKeybindConfig("keybindFastLink", "自动链接", `在此可修改打开本脚本所提供“自动链接”功能的快捷键。百科原生自带的“自动链接”（通过 ${ Utils.keyToString({ altKey: true, keyCode: 88 }) } 打开）已终止支持，其入口会在将来的版本中移除。`,
       { altKey: true, key: "C", keyCode: 67 })
-    .addKeybindConfig("keybindFastSubmit", "快速提交", `在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 ${ McmodderUtils.keyToString({ ctrlKey: true, keyCode: 13, key: "Enter" }) }，则其不会生效。）`,
+    .addKeybindConfig("keybindFastSubmit", "快速提交", `在此可修改百科“快速提交”的快捷键。（受技术限制，百科本体的“快速提交”快捷键无法被禁用。为避免冲突，若此项配置包含 ${ Utils.keyToString({ ctrlKey: true, keyCode: 13, key: "Enter" }) }，则其不会生效。）`,
       { ctrlKey: true, key: "Enter", keyCode: 13 })
     .addKeybindConfig("keybindVerifyPass", "通过编辑", "在此可修改审核通过/助理建议通过的快捷键。",
-      McmodderUtils.getXplatCtrlCombinationKey({ key: "Enter", keyCode: 13 }), McmodderPermission.EDITOR)
+      Utils.getXplatCtrlCombinationKey({ key: "Enter", keyCode: 13 }), Permission.EDITOR)
     .addKeybindConfig("keybindVerifyRefund", "退回编辑", "在此可修改审核退回/助理建议退回的快捷键。",
-      { shiftKey: true, key: "Enter", keyCode: 13 }, McmodderPermission.EDITOR)
+      { shiftKey: true, key: "Enter", keyCode: 13 }, Permission.EDITOR)
     .addKeybindConfig("keybindVerifyCheck", "需要检查", "在此可修改助理需要检查的快捷键（仅审核助理可用）。",
-      McmodderUtils.getXplatCtrlCombinationKey({ shiftKey: true, key: "Enter", keyCode: 13 }), McmodderPermission.EDITOR)
+      Utils.getXplatCtrlCombinationKey({ shiftKey: true, key: "Enter", keyCode: 13 }), Permission.EDITOR)
     .addKeybindConfig("keybindVerifyReason", "附言聚焦", "在此可修改聚焦到通过附言/退回原因输入框的快捷键。",
-      { key: "Tab", keyCode: 9 }, McmodderPermission.EDITOR);
+      { key: "Tab", keyCode: 9 }, Permission.EDITOR);
   }
 }

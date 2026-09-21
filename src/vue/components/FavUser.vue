@@ -85,7 +85,7 @@ const userList = computed(() => {
 })
 
 const profiles = computed(() => {
-  return userList.value.map(uid => [uid, configs.value.getAllProfile(uid)] as [number, McmodderProfileData]);
+  return userList.value.map(uid => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
 })
 
 const deleteMode = ref(false);

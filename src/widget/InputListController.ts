@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import InputList from "../vue/components/InputList.vue";
-import { McmodderUtils } from "../Utils.ts";
+import { Utils } from "../Utils.ts";
 
 export class InputListController {
   private static m_instance: InputListController | undefined;
@@ -31,7 +31,7 @@ export class InputListController {
       }
     }, this.opt);
 
-    window.addEventListener("scroll", McmodderUtils.animationThrottle(() => {
+    window.addEventListener("scroll", Utils.animationThrottle(() => {
       this.app.updatePos();
     }), {
       passive: true,

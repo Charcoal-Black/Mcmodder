@@ -14,7 +14,7 @@
 import { GM_getValue, GM_setValue } from '$';
 import { computed } from 'vue';
 import { Mcmodder } from '../../../Mcmodder';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import Button from '../Button.vue';
 
 interface Props {
@@ -46,7 +46,7 @@ async function onUpload() {
     }
   });
   if (resp) {
-    McmodderUtils.commonMsg("已将本地配置保存至云端~");
+    Utils.commonMsg("已将本地配置保存至云端~");
   }
 }
 
@@ -76,7 +76,7 @@ async function onDownload() {
         success++;
       }
       catch (e) {
-        McmodderUtils.commonMsg(String(e), false);
+        Utils.commonMsg(String(e), false);
       }
     }
     if (resp.user_profile) {
@@ -87,7 +87,7 @@ async function onDownload() {
         success++;
       }
       catch (e) {
-        McmodderUtils.commonMsg(String(e), false);
+        Utils.commonMsg(String(e), false);
       }
     }
     if (resp.template_list) {
@@ -96,14 +96,14 @@ async function onDownload() {
     }
     if (success > 0) {
       const interval = Date.now() - Date.parse(resp.last_modified);
-      const formatted = McmodderUtils.getFormattedTime(interval);
-      McmodderUtils.commonMsg(`已将 ${
+      const formatted = Utils.getFormattedTime(interval);
+      Utils.commonMsg(`已将 ${
         formatted
       } 前保存在云端的 ${
         success
       } 项配置同步到本地，刷新标签页以查看同步后的配置~`);
     } else {
-      McmodderUtils.commonMsg(`本地配置未发生变化...`);
+      Utils.commonMsg(`本地配置未发生变化...`);
     }
   }
 }

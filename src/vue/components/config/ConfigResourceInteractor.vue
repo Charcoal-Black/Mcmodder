@@ -2,25 +2,25 @@
   <Collapsible :on-click="onClick">
     <template #header>
       <span class="name" v-html="name" />
-      <span class="size" v-html="McmodderUtils.getFormattedSize(GM_getValue(id)?.length)" />
+      <span class="size" v-html="Utils.getFormattedSize(GM_getValue(id)?.length)" />
     </template>
     <template #content>
       <GenericTable
         ref="table"
         :id="`mcmodder-config-table-${ id }`"
         :parent="parent"
-        :head-configs="headConfigs"
+        :rowOptions="rowOptions"
       />
       <slot />
     </template>
   </Collapsible>
 </template>
 
-<script setup lang="ts" generic="K extends keyof McmodderStorage, TConfig extends object = Extract<McmodderStorage[K], object>, TData extends McmodderTableAcceptable = Extract<TConfig, McmodderTableAcceptable>">
+<script setup lang="ts" generic="K extends keyof AppStorage, TConfig extends object = Extract<AppStorage[K], object>, TData extends TableAcceptable = Extract<TConfig, TableAcceptable>">
 import { useTemplateRef } from 'vue';
 import Collapsible from '../Collapsible.vue';
 import { GM_getValue } from '$';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import GenericTable from '../table/GenericTable.vue';
 import type { ConfigResourceInteractorProps } from '../../../types/props.d.ts';
 

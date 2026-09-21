@@ -1,10 +1,10 @@
 import { Command } from "./Command";
 
-export class PasteCommand<T extends McmodderTableAcceptable> extends Command<T> {
+export class PasteCommand<T extends TableAcceptable> extends Command<T> {
   index: number;
-  pastedData?: McmodderTableDataMap<T>;
+  pastedData?: TableDataMap<T>;
 
-  constructor(self: McmodderTableContext<T>, index: number) {
+  constructor(self: TableContext<T>, index: number) {
     super(self);
     this.self = self;
     this.index = index;

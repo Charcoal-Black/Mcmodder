@@ -1,8 +1,8 @@
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 import StructureEditor from "../vue/components/StructureEditor.vue";
 import { createApp } from "vue";
 
-export class StructureEditorInit extends McmodderInit {
+export class StructureEditorInit extends Init {
   canRun() {
     return !!(
       this.parent.href === `${ this.parent.hostname }/mcmodder/structureeditor/` && 

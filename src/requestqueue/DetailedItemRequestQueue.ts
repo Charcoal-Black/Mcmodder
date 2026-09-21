@@ -1,32 +1,32 @@
 import type { GmResponseEvent } from "$";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
-import { McmodderRequestQueue } from "./RequestQueue";
+import { Utils } from "../Utils";
+import { RequestQueue } from "./RequestQueue";
 import { McmodderConsole } from "../widget/logger/Console";
-import type { McmodderLogger } from "../widget/logger/Logger";
+import type { Logger } from "../widget/logger/Logger";
 
-export class McmodderDetailedItemListRequestQueue extends McmodderRequestQueue {
-  constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: McmodderLogger = new McmodderConsole) {
+export class DetailedItemListRequestQueue extends RequestQueue {
+  constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: Logger = new McmodderConsole) {
     super(parent, id, maxConcurrent, minInterval, logger);
   }
 
-  protected override onCallback(resp: GmResponseEvent<"text", any>, index: number, requestQueue: RequestQueue) {
+  protected override onCallback(resp: GmResponseEvent<"text", any>, index: number, requestQueue: RequestList) {
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
-    const data = McmodderUtils.parseItemEditorDocument(doc);
+    const data = Utils.parseItemEditorDocument(doc);
     // console.log(data);
     this.logger.log(`${ data.id } 信息读取完成`);
 
     const completed = index + 1;
     if (completed % 50 === 0) {
       const total = requestQueue.length;
-      this.logger.success(`${ completed.toLocaleString() }/${ total.toLocaleString() } 已完成 (${ McmodderUtils.getPrecisionFormatter().format(completed / total * 100) }%)`);
+      this.logger.success(`${ completed.toLocaleString() }/${ total.toLocaleString() } 已完成 (${ Utils.getPrecisionFormatter().format(completed / total * 100) }%)`);
     }
 
     return data;
   }
 
-  async run(itemList: McmodderItemList) { // 其实就是 STEP 3
+  async run(itemList: ItemList) { // 其实就是 STEP 3
     if (this.backupManager.hasBackup()) {
       await this.executeBackup();
     } else {

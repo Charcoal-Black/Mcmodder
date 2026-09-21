@@ -7,7 +7,7 @@ export class ConfigRepository {
   private readonly parent: Mcmodder;
   private readonly buffer: StorageBuffer;
 
-  private getConfigData(id: keyof McmodderSettings) {
+  private getConfigData(id: keyof Settings) {
     return this.parent.cfgutils.data[id];
   }
 
@@ -17,7 +17,7 @@ export class ConfigRepository {
   }
 
   getStorageRef<
-    T extends keyof McmodderStorage
+    T extends keyof AppStorage
   >(item: T) {
     const isCacheable = this.parent.storageBuffer.isCacheable(item);
     if (!isCacheable) {
@@ -27,25 +27,25 @@ export class ConfigRepository {
   }
 
   triggerRef<
-    T extends keyof McmodderStorage
+    T extends keyof AppStorage
   >(item: T) {
     triggerRef(this.getStorageRef(item));
   }
 
   getAll<
-    T extends keyof McmodderStorage
+    T extends keyof AppStorage
   >(item: T) {
     // item ??= "mcmodderSettings" as T;
     const isCacheable = this.buffer.isCacheable(item);
-    let data: McmodderStorage[T] | undefined;
+    let data: AppStorage[T] | undefined;
     if (isCacheable) data = this.buffer.storageRef[item]!.value;
     else {
       let raw = GM_getValue(item) as string | undefined;
       if (raw === undefined) return undefined;
-      data = JSON.parse(raw) as McmodderStorage[T];
+      data = JSON.parse(raw) as AppStorage[T];
     }
     if (data === undefined) return undefined;
-    return data as Required<McmodderStorage>[T]; 
+    return data as Required<AppStorage>[T]; 
   }
 
   getAllSettings() {
@@ -53,8 +53,8 @@ export class ConfigRepository {
   }
 
   get<
-    T extends keyof McmodderStorage,
-    K extends keyof Required<McmodderStorage>[T]
+    T extends keyof AppStorage,
+    K extends keyof Required<AppStorage>[T]
   >(item: T, key: K) {
     // mcmodderUI 被修复后请移除下一行
     // if (key === "mcmodderUI" && item === "mcmodderSettings") return true;
@@ -62,32 +62,32 @@ export class ConfigRepository {
     const data = this.getAll(item);
     if (data === undefined) return undefined;
     let entry = data[key];
-    return entry as Required<McmodderStorage>[T][K];
+    return entry as Required<AppStorage>[T][K];
   }
 
   getSettings<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
     return this.get("mcmodderSettings", key);
   }
 
   getRef<
-    T extends keyof McmodderStorage,
-    K extends keyof McmodderStorage[T]
+    T extends keyof AppStorage,
+    K extends keyof AppStorage[T]
   >(item: T, key: K) {
     const ref = this.getStorageRef(item);
     return computed(() => (ref.value)?.[key]);
   }
 
   getSettingsRef<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
     return this.getRef("mcmodderSettings", key);
   }
 
   getAsNumberList<
-    T extends keyof McmodderStorage,
-    K extends keyof Required<McmodderStorage>[T]
+    T extends keyof AppStorage,
+    K extends keyof Required<AppStorage>[T]
   >(item: T, key: K) {
     let config = this.get(item, key);
     if (config === undefined) return undefined;
@@ -98,14 +98,14 @@ export class ConfigRepository {
   }
 
   getSettingsAsNumberList<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
     return this.getAsNumberList("mcmodderSettings", key);
   }
 
   getRefAsNumberList<
-    T extends keyof McmodderStorage,
-    K extends keyof NonNullable<McmodderStorage[T]>
+    T extends keyof AppStorage,
+    K extends keyof NonNullable<AppStorage[T]>
   >(item: T, key: K) {
     const ref = this.getStorageRef(item);
     return computed(() => {
@@ -118,60 +118,60 @@ export class ConfigRepository {
   }
 
   getSettingsRefAsNumberList<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
     return this.getRefAsNumberList("mcmodderSettings", key) ?? [];
   }
 
   set<
-    T extends KeysOfType<Required<McmodderStorage>, Record<string, any>>,
-    K extends keyof Required<McmodderStorage>[T]
-  >(item: T, key: K, value: /* Required<McmodderStorage>[T][K] */ unknown) {
-    let obj = JSON.parse(GM_getValue(item) ?? "{}"); // as Required<McmodderStorage>[T];
+    T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
+    K extends keyof Required<AppStorage>[T]
+  >(item: T, key: K, value: /* Required<AppStorage>[T][K] */ unknown) {
+    let obj = JSON.parse(GM_getValue(item) ?? "{}"); // as Required<AppStorage>[T];
     obj[key] = value;
     GM_setValue(item, JSON.stringify(obj));
     if (this.parent.storageBuffer.isCacheable(item)) {
-      (this.getStorageRef(item).value as Required<McmodderStorage>[T])[key] = value as Required<McmodderStorage>[T][K];
+      (this.getStorageRef(item).value as Required<AppStorage>[T])[key] = value as Required<AppStorage>[T][K];
       this.triggerRef(item);
     }
   }
 
   setSettings<
-    K extends keyof McmodderSettings
-  >(key: K, value: /* Required<McmodderStorage>[T][K] */ unknown) {
+    K extends keyof Settings
+  >(key: K, value: /* Required<AppStorage>[T][K] */ unknown) {
     this.set("mcmodderSettings", key, value);
   }
 
   setSettingsAsNumberList<
-    K extends KeysOfType<McmodderSettings, string>
+    K extends KeysOfType<Settings, string>
   >(key: K, value: number[]) {
     return this.setAsNumberList("mcmodderSettings", key, value);
   }
 
   getWritableRef<
-    T extends KeysOfType<Required<McmodderStorage>, Record<string, any>>,
-    K extends keyof Required<McmodderStorage>[T], V = undefined
+    T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
+    K extends keyof Required<AppStorage>[T], V = undefined
   >(item: T, key: K, defaultValue: V = undefined as V) {
-    const ref = this.getRef(key as any, item) as ComputedRef<Required<McmodderStorage>[T][K] | undefined>;
-    return computed<Required<McmodderStorage>[T][K] | V>({
+    const ref = this.getRef(key as any, item) as ComputedRef<Required<AppStorage>[T][K] | undefined>;
+    return computed<Required<AppStorage>[T][K] | V>({
       get: () => ref.value ?? defaultValue,
       set: value => this.set(item, key, value ?? defaultValue)
     })
   }
 
   getSettingsWritableRef<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
-    const ref = this.getRef("mcmodderSettings", key) as ComputedRef<McmodderSettings[K] | undefined>;
-    return computed<McmodderSettings[K]>({
+    const ref = this.getRef("mcmodderSettings", key) as ComputedRef<Settings[K] | undefined>;
+    return computed<Settings[K]>({
       get: () => ref.value ?? this.getConfigData(key).value,
       set: value => this.set("mcmodderSettings", key, value)
     })
   }
 
   getWritableRefAsNumberList<
-    T extends KeysOfType<Required<McmodderStorage>, Record<string, any>>,
-    K extends keyof Required<McmodderStorage>[T],
+    T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
+    K extends keyof Required<AppStorage>[T],
   >(item: T, key: K, defaultValue: number[] = []) {
     const ref = this.getRefAsNumberList(item, key as /* 这是一场豪赌 */ any);
     return computed({
@@ -181,7 +181,7 @@ export class ConfigRepository {
   }
 
   getSettingsWritableRefAsNumberList<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K, onGetValue: (value: number[]) => number[] = value => value) {
     const ref = this.getRefAsNumberList("mcmodderSettings", key);
     return computed({
@@ -191,30 +191,30 @@ export class ConfigRepository {
   }
 
   setAsNumberList<
-    T extends KeysOfType<Required<McmodderStorage>, object>,
-    K extends KeysOfType<Required<McmodderStorage>[T], string>
+    T extends KeysOfType<Required<AppStorage>, object>,
+    K extends KeysOfType<Required<AppStorage>[T], string>
   >(item: T, key: K, value: number[]) {
     return this.set(item, key, value.join(","));
   }
 
   delete<
-    T extends KeysOfType<Required<McmodderStorage>, Record<string, any>>,
-    K extends keyof NonNullable<McmodderStorage[T]>
+    T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
+    K extends keyof NonNullable<AppStorage[T]>
   >(item: T, key: K) {
-    let obj = JSON.parse(GM_getValue(item) ?? "{}") // as NonNullable<McmodderStorage[T]>;
+    let obj = JSON.parse(GM_getValue(item) ?? "{}") // as NonNullable<AppStorage[T]>;
     delete obj[key];
     GM_setValue(item, JSON.stringify(obj));
   }
 
   deleteSettings<
-    K extends keyof McmodderSettings
+    K extends keyof Settings
   >(key: K) {
     this.delete("mcmodderSettings", key);
   }
 
   setAll<
-    T extends keyof McmodderStorage = "mcmodderSettings",
-  >(item: T, value: McmodderStorage[T]) {
+    T extends keyof AppStorage = "mcmodderSettings",
+  >(item: T, value: AppStorage[T]) {
     if (!item) return;
     GM_setValue(item, JSON.stringify(value));
     if (this.parent.storageBuffer.isCacheable(item)) {
@@ -225,13 +225,13 @@ export class ConfigRepository {
   doesProfileDataExist(uid = this.parent.currentUID) {
     const rawData = GM_getValue("userProfile");
     if (!rawData) return false;
-    const profiles: Record<string, McmodderProfileData> = JSON.parse(rawData);
+    const profiles: Record<string, Profile> = JSON.parse(rawData);
     return profiles.hasOwnProperty(uid);
   }
 
   private getAllRecord<
-    T extends McmodderProfileData | McmodderClassData,
-    K extends KeysOfType<Required<McmodderStorage>, Record<string, string>>
+    T extends Profile | Class,
+    K extends KeysOfType<Required<AppStorage>, Record<string, string>>
   >(storageKey: K, id: number) {
     let raw = GM_getValue(storageKey) as string | undefined;
     if (!raw) {
@@ -244,8 +244,8 @@ export class ConfigRepository {
   }
 
   private getRecord<
-    T extends McmodderProfileData | McmodderClassData,
-    K extends KeysOfType<Required<McmodderStorage>, Record<string, string>>,
+    T extends Profile | Class,
+    K extends KeysOfType<Required<AppStorage>, Record<string, string>>,
     P extends keyof T
   >(storageKey: K, key: P, id: number) {
     const data = this.getAllRecord<T, K>(storageKey, id);
@@ -253,8 +253,8 @@ export class ConfigRepository {
   }
 
   private setRecord<
-    T extends McmodderProfileData | McmodderClassData,
-    K extends KeysOfType<Required<McmodderStorage>, Record<string, string>>,
+    T extends Profile | Class,
+    K extends KeysOfType<Required<AppStorage>, Record<string, string>>,
     P extends keyof T
   >(storageKey: K, key: P, value: T[P], id: number) {
     const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
@@ -265,8 +265,8 @@ export class ConfigRepository {
   }
 
   private setAllRecord<
-    T extends McmodderProfileData | McmodderClassData,
-    K extends KeysOfType<Required<McmodderStorage>, Record<string, string>>,
+    T extends Profile | Class,
+    K extends KeysOfType<Required<AppStorage>, Record<string, string>>,
   >(storageKey: K, content: T, id: number) {
     const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
     let profile = JSON.parse(profiles[id] || "{}");
@@ -277,42 +277,42 @@ export class ConfigRepository {
   }
 
   private deleteAllRecord<
-    K extends KeysOfType<Required<McmodderStorage>, Record<string, string>>,
+    K extends KeysOfType<Required<AppStorage>, Record<string, string>>,
   >(storageKey: K, id: number) {
     const profiles = JSON.parse(GM_getValue(storageKey) || "{}") as Record<string, string>;
     delete profiles[id];
     GM_setValue(storageKey, JSON.stringify(profiles));
   }
 
-  getProfile<P extends keyof McmodderProfileData>(key: P, uid = this.parent.currentUID) {
-    return this.getRecord<McmodderProfileData, "userProfile", P>("userProfile", key, uid);
+  getProfile<P extends keyof Profile>(key: P, uid = this.parent.currentUID) {
+    return this.getRecord<Profile, "userProfile", P>("userProfile", key, uid);
   }
   getAllProfile(uid = this.parent.currentUID) {
-    return this.getAllRecord<McmodderProfileData, "userProfile">("userProfile", uid);
+    return this.getAllRecord<Profile, "userProfile">("userProfile", uid);
   }
-  setProfile<P extends keyof McmodderProfileData>(key: P, value: McmodderProfileData[P], uid = this.parent.currentUID) {
-    this.setRecord<McmodderProfileData, "userProfile", P>("userProfile", key, value, uid);
+  setProfile<P extends keyof Profile>(key: P, value: Profile[P], uid = this.parent.currentUID) {
+    this.setRecord<Profile, "userProfile", P>("userProfile", key, value, uid);
   }
   // setProfiles(obj: Partial<McmodderProfileData>, uid = this.parent.currentUID) {
   //   Object.entries(obj).forEach(([key, value]) => (this.setProfile as any)(key, value, uid));
   // }
-  setAllProfile(content: McmodderProfileData, uid = this.parent.currentUID) {
+  setAllProfile(content: Profile, uid = this.parent.currentUID) {
     this.setAllRecord("userProfile", content, uid);
   }
   deleteAllProfile(uid = this.parent.currentUID) {
     this.deleteAllRecord("userProfile", uid);
   }
 
-  getClass<P extends keyof McmodderClassData>(key: P, classID: number) {
-    return this.getRecord<McmodderClassData, "classData", P>("classData", key, classID);
+  getClass<P extends keyof Class>(key: P, classID: number) {
+    return this.getRecord<Class, "classData", P>("classData", key, classID);
   }
   getAllClass(classID: number) {
-    return this.getAllRecord<McmodderClassData, "classData">("classData", classID);
+    return this.getAllRecord<Class, "classData">("classData", classID);
   }
-  setClass<P extends keyof McmodderClassData>(key: P, value: McmodderClassData[P], classID: number) {
-    this.setRecord<McmodderClassData, "classData", P>("classData", key, value, classID);
+  setClass<P extends keyof Class>(key: P, value: Class[P], classID: number) {
+    this.setRecord<Class, "classData", P>("classData", key, value, classID);
   }
-  setAllClass(content: McmodderClassData, classID: number) {
+  setAllClass(content: Class, classID: number) {
     this.setAllRecord("classData", content, classID);
   }
   deleteAllClass(classID: number) {

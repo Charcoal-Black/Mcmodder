@@ -13,10 +13,10 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, useTemplateRef } from 'vue';
 import { useInputBase } from '../../composables/useInputBase';
-import { McmodderUtils } from '../../../Utils';
+import { Utils } from '../../../Utils';
 import type { InputProps } from '../../../types/props';
 
-const props = defineProps<InputProps<McmodderKeyData>>();
+const props = defineProps<InputProps<Key>>();
 
 const inputRef = useTemplateRef("inputRef");
 const valueRef = shallowRef(props.value);
@@ -60,7 +60,7 @@ function onKeydown(e: KeyboardEvent) {
 function onKeyup(e: KeyboardEvent) {
   e.preventDefault();
   if (--keyQueue.value) return;
-  const d: McmodderKeyData = {}, r = valueRef.value;
+  const d: Key = {}, r = valueRef.value;
   if (!r) return;
   if (r.ctrlKey) d.ctrlKey = true;
   if (r.shiftKey) d.shiftKey = true;
@@ -86,17 +86,17 @@ const content = computed(() => {
   if (!keyFinished.value && keyQueue.value === 0) {
     return "";
   }
-  return McmodderUtils.keyToString(valueRef.value);
+  return Utils.keyToString(valueRef.value);
 })
 
-function validate(newValue: McmodderKeyData) {
+function validate(newValue: Key) {
   return {
     isok: true,
     final: newValue
   };
 }
 
-defineExpose<InputControlRef<McmodderKeyData>>({
+defineExpose<InputControlRef<Key>>({
   getInstance,
   getValue,
   setCurrentValue,

@@ -1,11 +1,11 @@
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { McmodderTimer } from "../widget/Timer";
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { TimerUtils } from "../widget/Timer";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
 import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
-import { McmodderMainText } from "../widget/MainText";
+import { MainText } from "../widget/MainText";
 import { InputListController } from "../widget/InputListController";
 import { createApp } from "vue";
 import Timer from "../vue/components/Timer.vue";
@@ -13,7 +13,7 @@ import TextComparator from "../vue/components/TextComparator.vue";
 
 type ParsedOpinion = [number, number, number, number];
 
-export class AdminInit extends McmodderInit {
+export class AdminInit extends Init {
   private triggered: Set<string> = new Set;
 
   private verifyContainer?: JQuery;
@@ -56,7 +56,7 @@ export class AdminInit extends McmodderInit {
           const text = $("<span>").appendTo(title).get(0);
           createApp(Timer, {
             parent: this.parent,
-            dataGetter: McmodderTimer.DATAGETTER_SCHEDULE("autoCheckVerify", this.parent.currentUID, this.parent.scheduleRequestUtils)
+            dataGetter: TimerUtils.DATAGETTER_SCHEDULE("autoCheckVerify", this.parent.currentUID, this.parent.scheduleRequestUtils)
           }).mount(text);
         }
 
@@ -76,7 +76,7 @@ export class AdminInit extends McmodderInit {
 
           if (!this.triggered.has("模组区内容审核")) {
             const verifyWindowElement = this.verifyWindow.get(0);
-            $(window).scroll(McmodderUtils.animationThrottle(() => {
+            $(window).scroll(Utils.animationThrottle(() => {
               const top = document.scrollingElement?.scrollTop;
               const bottom = this.verifyContainer!.prop("scrollHeight") as number;
               if (top != undefined) {
@@ -97,14 +97,14 @@ export class AdminInit extends McmodderInit {
             }));
             $(document).on("click", ".mcmodder-verify-locate", _e => {
               if (verifyID === undefined) {
-                McmodderUtils.commonMsg("待审项 ID 获取失败...", false);
+                Utils.commonMsg("待审项 ID 获取失败...", false);
                 return;
               }
               const tr = this.getEntry(verifyID);
               if (tr.length) {
-                McmodderUtils.highlight(tr, "gold", 2e3, true);
+                Utils.highlight(tr, "gold", 2e3, true);
               } else {
-                McmodderUtils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
+                Utils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
               }
             });
           }
@@ -196,12 +196,12 @@ export class AdminInit extends McmodderInit {
                 verifyID = this.verifyFrame!.find("#verify-pass-btn, #assistant-pass-btn").data("data").verifyID;
                 const p = $(`<p>本待审项 ID = </p>`).prependTo(this.verifyFrame!);
                 const id = $(`<span class="mcmodder-slim-dark">${ verifyID }</span>`).appendTo(p);
-                McmodderUtils.addClickCopyEvent(id, "本待审项 ID ", verifyID);
+                Utils.addClickCopyEvent(id, "本待审项 ID ", verifyID);
                 if (splitScreenOnVerify) {
                   p.append(`<a class="mcmodder-verify-locate" title="在待审列表定位本待审项"><i class="fa fa-crosshairs"></i></a>`);
                 }
               } catch (e) {
-                McmodderUtils.commonMsg("读取待审项 ID 失败: " + String(e), false);
+                Utils.commonMsg("读取待审项 ID 失败: " + String(e), false);
               }
 
               // 解析基本信息
@@ -223,7 +223,7 @@ export class AdminInit extends McmodderInit {
                   const link = document.createElement("a");
                   link.innerText = value;
                   link.target = "_blank";
-                  link.href = McmodderUtils.getCenterURL(uid);
+                  link.href = Utils.getCenterURL(uid);
                   mid.replaceWith(link);
                 }
                 currentPos += text.length + 1;
@@ -242,11 +242,11 @@ export class AdminInit extends McmodderInit {
               reasonInput = this.verifyFrame!.find(reasonInputSelector);
 
               if (!this.parent.isMobileClient) {
-                passButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyPass")!));
-                refundButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyRefund")!));
-                checkButton.append(" " + McmodderUtils.keyToHTML(this.configs.getSettings("keybindVerifyCheck")!));
+                passButton.append(" " + Utils.keyToHTML(this.configs.getSettings("keybindVerifyPass")!));
+                refundButton.append(" " + Utils.keyToHTML(this.configs.getSettings("keybindVerifyRefund")!));
+                checkButton.append(" " + Utils.keyToHTML(this.configs.getSettings("keybindVerifyCheck")!));
                 reasonInput.attr("placeholder", `填写附言或退回理由.... (按下 ${
-                  McmodderUtils.keyToString(this.configs.getSettings("keybindVerifyReason")!)
+                  Utils.keyToString(this.configs.getSettings("keybindVerifyReason")!)
                 } 以快速聚焦)`);
               }
 
@@ -285,8 +285,8 @@ export class AdminInit extends McmodderInit {
                     const comparatorFrame = $("<div>").insertBefore(insertPos);
                     createApp(TextComparator, { textA, textB }).mount(comparatorFrame.get(0));
                   }
-                  new McmodderMainText(this.parent, textA);
-                  new McmodderMainText(this.parent, textB);
+                  new MainText(this.parent, textA);
+                  new MainText(this.parent, textB);
                 }
                 else if (rowText === "模组关系") {
                   const prev = row.children("td:nth-child(3)").find(".verify-copy-text");
@@ -337,7 +337,7 @@ export class AdminInit extends McmodderInit {
                     return;
                   }
                   const modLink = row.children("td:nth-child(2)").children("a").attr("href");
-                  verifyClassID = McmodderUtils.abstractIDFromURL(modLink, "class");
+                  verifyClassID = Utils.abstractIDFromURL(modLink, "class");
                 }
                 else if (rowText === "资料类型") {
                   row.children().each((i, e) => {
@@ -346,7 +346,7 @@ export class AdminInit extends McmodderInit {
                     const data = this.parent.utils.getItemTypeData(verifyClassID, text);
                     if (data && verifyClassID) {
                       e.innerHTML = `<a target="_blank" href="${
-                        McmodderUtils.getItemTypeURL(verifyClassID, data.typeID)
+                        Utils.getItemTypeURL(verifyClassID, data.typeID)
                       }">${ text }</a>`;
                     }
                   });
@@ -430,7 +430,7 @@ export class AdminInit extends McmodderInit {
           for (let mutation of mutationList) {
             if (!(mutation.addedNodes.length > 7 || mutation.removedNodes.length > 7) || $(".item-list-table").length) return;
             // const preview = $('<table class="table table-bordered item-list-table item-list-table-1"><thead><tr><th colspan="3"><span class="title"><a target="_blank" href="//www.mcmod.cn/class/8.html">[M3]更多喵呜机 (More Meowing Machinery)</a> 的 物品/方块 资料 (预览)</span></th></tr></thead><tbody><tr><th class="item-list-type-left" style="padding: 0px">一级分类</th><th class="item-list-type-left" style="padding: 0px">二级分类</th><td class="item-list-type-right" style="padding: 0px"><ul><li><span><a href="/item/5281.html" target="_blank"><img class="icon" alt="锡矿石" src="//i.mcmod.cn/item/icon/32x32/0/5281.png?v=3" width="15" height="15"></a><a href="/item/5281.html" target="_blank" >锡矿石</a></span></li><li><span><a href="//www.mcmod.cn/item/40226.html" target="_blank"><img class="icon" alt="锇矿石" src="//i.mcmod.cn/item/icon/32x32/4/40226.png?v=5" width="15" height="15"></a><a href="//www.mcmod.cn/item/40226.html" target="_blank" >锇矿石</a></span></li><li><span><a href="/item/40227.html" target="_blank"><img class="icon" alt="铜矿石" src="//i.mcmod.cn/item/icon/32x32/4/40227.png?v=3" width="15" height="15"></a><a href="//www.mcmod.cn/item/40227.html" target="_blank" >铜矿石</a></span></li><li><span><a href="/item/40337.html" target="_blank"><img class="icon alt="盐块" src="//i.mcmod.cn/item/icon/32x32/4/40337.png?v=2" width="15" height="15"></a><a href="//www.mcmod.cn/item/40337.html" target="_blank" >盐块</a></span></li></ul></td></tr></tbody></table>').insertBefore($(".table-condensed").get(1));
-            McmodderUtils.addStyle('', "mcmodder-style-preview");
+            Utils.addStyle('', "mcmodder-style-preview");
 
             if (this.configs.getSettings("itemListStyleFix")) {
               const h = $("#connect-frame-sub script").html() + "//end";
@@ -512,7 +512,7 @@ export class AdminInit extends McmodderInit {
     });
     const state = JSON.parse(resp.responseText)?.state;
     if (state === undefined || state > 0) {
-      McmodderUtils.commonMsg("待审列表自动更新失败，请检查登录状态和网络环境，或是检查控制台报错...", false);
+      Utils.commonMsg("待审列表自动更新失败，请检查登录状态和网络环境，或是检查控制台报错...", false);
       console.error("返回状态异常: ", resp);
       return;
     }
@@ -667,7 +667,7 @@ export class AdminInit extends McmodderInit {
   
   private initAssistantViewed() {
     const keys = Object.keys(this.assistantViewed).map(Number);
-    const time = McmodderUtils.getStartTime(Date.now(), 0);
+    const time = Utils.getStartTime(Date.now(), 0);
     keys.forEach(date => {
       if (time - date > 30 * 24 * 60 * 60 * 1e3) {
         delete this.assistantViewed[date];
@@ -680,7 +680,7 @@ export class AdminInit extends McmodderInit {
   }
 
   private markEntryAsViewed(id: number) {
-    const date = McmodderUtils.getStartTime(Date.now(), 0);
+    const date = Utils.getStartTime(Date.now(), 0);
     if (this.assistantViewed[date] === undefined) {
       this.assistantViewed[date] = [id];
     } else {
@@ -709,7 +709,7 @@ export class AdminInit extends McmodderInit {
   private addUserLink(elem: JQuery | Node) {
     const userFilter = $(elem).find(".user-online-state");
     const uid = this.getEditor(elem);
-    const link = McmodderUtils.getCenterURL(uid);
+    const link = Utils.getCenterURL(uid);
     $(`
       <span class="ignore-parent" style="display:inline-block;">
         <a href="${ link }" target="_blank">

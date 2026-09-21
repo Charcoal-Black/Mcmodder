@@ -1,7 +1,7 @@
-import { McmodderUEditor } from "../ueditor/UEditor";
-import { McmodderUtils } from "../Utils";
+import { UEditor } from "../ueditor/UEditor";
+import { Utils } from "../Utils";
 import { InputListController } from "../widget/InputListController";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
 abstract class EditorAlertLink {
   static replaceText = (c: HTMLElement, target: string) => {
@@ -23,7 +23,7 @@ abstract class EditorAlertLink {
     search(c);
   }
   static appendButton = (c: HTMLElement) => c.innerHTML += `<a>定位</a>`;
-  protected readonly editor: McmodderUEditor[];
+  protected readonly editor: UEditor[];
   private text: string[] = [];
   readonly modifier: EditorAlertHTMLModifier;
   abstract run(): boolean;
@@ -34,7 +34,7 @@ abstract class EditorAlertLink {
   check(text: string) {
     return this.text.includes(text);
   }
-  constructor(editor: McmodderUEditor[], text: string | string[], modifier: EditorAlertHTMLModifier) {
+  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier) {
     this.editor = editor;
     this.setText(text);
     this.modifier = modifier;
@@ -88,7 +88,7 @@ class EditorAlertTextLink extends EditorAlertContextLink {
     });
     return flag;
   }
-  constructor(editor: McmodderUEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: string | string[]) {
+  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: string | string[]) {
     super(editor, text, modifier);
     if (target instanceof Array) this.target = target;
     else this.target = [target];
@@ -108,7 +108,7 @@ class EditorAlertRegLink extends EditorAlertContextLink {
     }
     return false;
   }
-  constructor(editor: McmodderUEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: RegExp) {
+  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: RegExp) {
     super(editor, text, modifier);
     this.regExp = target;
   }
@@ -120,18 +120,18 @@ class EditorAlertFormLink extends EditorAlertLink {
     swal.close();
     const target = this.getForm().first();
     if (target.length) {
-      McmodderUtils.highlight(target, "gold", 2e3, true);
+      Utils.highlight(target, "gold", 2e3, true);
       return true;
     }
     return false;
   }
-  constructor(editor: McmodderUEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, getForm: EditorAlertForm) {
+  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, getForm: EditorAlertForm) {
     super(editor, text, modifier);
     this.getForm = getForm;
   }
 }
 
-export class EditorInit extends McmodderInit {
+export class EditorInit extends Init {
   modName = "";
   itemName = "";
   links: EditorAlertLink[] = [];
@@ -221,7 +221,7 @@ export class EditorInit extends McmodderInit {
       if (st === PublicLangData.editor.success.title) {
         if (this.configs.getSettings("autoCloseSwal")) {
           swal.close();
-          McmodderUtils.commonMsg("提交成功，请等待管理员审核~");
+          Utils.commonMsg("提交成功，请等待管理员审核~");
         }
         else {
           $(".swal2-success-circular-line-left, .swal2-success-circular-line-right, .swal2-success-fix").css("background-color", "transparent");
@@ -251,7 +251,7 @@ export class EditorInit extends McmodderInit {
         });
 
         if (this.configs.getSettings("noSubmitWarningDelay") && $(".edit-dataverify-frame .warning li").length) {
-          McmodderUtils.commonMsg("您已启用“取消提交警告延时”，请检查编辑内容无误后再提交！", false, "警告");
+          Utils.commonMsg("您已启用“取消提交警告延时”，请检查编辑内容无误后再提交！", false, "警告");
           $(".swal2-confirm").removeAttr("disabled");
         }
       }
@@ -259,7 +259,7 @@ export class EditorInit extends McmodderInit {
   });
 
   run() {
-    // new McmodderAdvancedUEditor(document.getElementsByTagName("IFRAME").item(0));
+    // new AdvancedUEditor(document.getElementsByTagName("IFRAME").item(0));
 
     this.init();
     let commonNav = $(".common-nav > ul");
@@ -268,7 +268,7 @@ export class EditorInit extends McmodderInit {
       this.modName = commonNav.children().eq(4).text().replace("]", "] ");
       if (commonNav.children().eq(8).length) this.itemName = commonNav.children().eq(8).text();
     }
-    McmodderUtils.addStyle(".swal2-show {animation: unset; -webkit-animation: unset;}");
+    Utils.addStyle(".swal2-show {animation: unset; -webkit-animation: unset;}");
 
     if ($(".edit-tools").length) {
 
@@ -319,7 +319,7 @@ export class EditorInit extends McmodderInit {
             popup.find(".swal2-confirm").click(() => {
               // if (error.length > 0) return;
               const editorData = getEditorData(false);
-              editorData["edit-id"] ||= McmodderUtils.abstractLastFromURL(window.location.href, "edit");
+              editorData["edit-id"] ||= Utils.abstractLastFromURL(window.location.href, "edit");
               editorData["redo-id"] ||= 0;
               const remark = $("#mcmodder-presubmit-remark").val().trim();
               const reason = $("#mcmodder-presubmit-reason").val().trim();
@@ -341,11 +341,11 @@ export class EditorInit extends McmodderInit {
               };
               const timeStr = $(".locked").text().match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/);
               if (!timeStr) {
-                McmodderUtils.commonMsg("待审项提交时间获取失败...", false);
+                Utils.commonMsg("待审项提交时间获取失败...", false);
                 return;
               }
-              let preSubmitEntry: PreSubmitData | null = {
-                id: McmodderUtils.randStr(8),
+              let preSubmitEntry: PreSubmission | null = {
+                id: Utils.randStr(8),
                 title: this.parent.title,
                 lastSubmitTime: (new Date(timeStr[0])).getTime(),
                 createTime: Date.now(),
@@ -362,14 +362,14 @@ export class EditorInit extends McmodderInit {
               }
               if (preSubmitEntry) preSubmitList.push(preSubmitEntry);
               this.configs.setProfile("preSubmitList", preSubmitList);
-              McmodderUtils.commonMsg(`预编辑内容${ preSubmitEntry ? "保存" : "替换" }成功，将会在正式提交时提醒~`);
+              Utils.commonMsg(`预编辑内容${ preSubmitEntry ? "保存" : "替换" }成功，将会在正式提交时提醒~`);
               swal.close();
             })
           });
         }
       }
 
-      // 其他一堆并进 McmodderAdvancedUEditor 的小玩意儿
+      // 其他一堆并进 AdvancedUEditor 的小玩意儿
 
       // LaTeX 编辑器
       // if (this.configs.get("latexEditor")) {

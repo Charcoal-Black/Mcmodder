@@ -1,14 +1,14 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderRequestQueue } from "./RequestQueue";
-import type { McmodderLogger } from "../widget/logger/Logger";
+import { RequestQueue } from "./RequestQueue";
+import type { Logger } from "../widget/logger/Logger";
 
 /** 
- * 传统的 `McmodderRequestQueue` 只能对付静态队列。
+ * 传统的 `RequestQueue` 只能对付静态队列。
  * 
  * 如果队列中每个任务的信息都由前一个任务动态决定，那么无脑用这个！
  */
-export abstract class McmodderDynamicRequestQueue extends McmodderRequestQueue {
-  constructor(parent: Mcmodder, id: string, minInterval = 750, logger: McmodderLogger) {
+export abstract class DynamicRequestQueue extends RequestQueue {
+  constructor(parent: Mcmodder, id: string, minInterval = 750, logger: Logger) {
     super(parent, id, 1, minInterval, logger);
   }
 
@@ -30,11 +30,11 @@ export abstract class McmodderDynamicRequestQueue extends McmodderRequestQueue {
       this.backupManager.clear();
     }
     if (canRestore) {
-      if (this.execution.results.length % McmodderRequestQueue.BACKUP_FREQUENCY === 0) {
+      if (this.execution.results.length % RequestQueue.BACKUP_FREQUENCY === 0) {
         this.tryBackup();
       }
     }
   }
 
-  abstract getNextRequest(_result: RequestResult): RequestData | null;
+  abstract getNextRequest(_result: RequestResult): AppRequest | null;
 }

@@ -1,7 +1,7 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
-export class ClassEditorInit extends McmodderInit {
+export class ClassEditorInit extends Init {
 
   private originalModRelationList: Record<string, {
     id: number;
@@ -32,7 +32,7 @@ export class ClassEditorInit extends McmodderInit {
           展开仅 Legacy Fabric/Babric/Ornithe 等低版本移植加载器支持的版本
         </a>`)
         .insertAfter($("#class-data-mcversion-2-29").parent()).click(() => {
-          if (McmodderUtils.isNodeHidden(h)) {
+          if (Utils.isNodeHidden(h)) {
             h.show();
             c.html('<i class="fas fa-chevron-up" style="margin-right: 5px;"></i>折叠仅 Legacy Fabric/Babric/Ornithe 支持的版本');
           }
@@ -46,7 +46,7 @@ export class ClassEditorInit extends McmodderInit {
       e.find(".checkbox").each((_, _f) => {
         const f = $(_f);
         const version = f.find("label").text();
-        if (!McmodderUtils.validateVersionForLoaderID(version, loaderID)) {
+        if (!Utils.validateVersionForLoaderID(version, loaderID)) {
           if (loaderID != "2") {
             f.show();
             if (f.find("input").prop("checked")) {
@@ -68,7 +68,7 @@ export class ClassEditorInit extends McmodderInit {
       });
       if (flag2) c.click();
     });
-    if (flag) McmodderUtils.commonMsg("支持的 MC 版本存疑，请检查~", false);
+    if (flag) Utils.commonMsg("支持的 MC 版本存疑，请检查~", false);
     this.parent.updateItemTooltip();
   }
 
@@ -101,7 +101,7 @@ export class ClassEditorInit extends McmodderInit {
     relationGroup.children().filter("[data-id]").appendTo(temp);
     const list = this.originalModRelationList[name];
     if (!list) {
-      McmodderUtils.commonMsg("列表恢复失败，可能是因为关系组名称已经发生变化？", false);
+      Utils.commonMsg("列表恢复失败，可能是因为关系组名称已经发生变化？", false);
       return;
     }
     list.forEach(data => {

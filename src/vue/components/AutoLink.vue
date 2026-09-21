@@ -87,8 +87,8 @@
 import { computed, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
 import CheckboxInput from './input/CheckboxInput.vue';
-import { McmodderUtils } from '../../Utils.ts';
-import { McmodderValues } from '../../Values.ts';
+import { Utils } from '../../Utils.ts';
+import { Values } from '../../Values.ts';
 import AutoLinkItemOption from './autolink/AutoLinkItemOption.vue';
 import AutoLinkAuthorOption from './autolink/AutoLinkAuthorOption.vue';
 import AutoLinkOredictOption from './autolink/AutoLinkOredictOption.vue';
@@ -104,7 +104,7 @@ const styles = [
 
 interface Props {
   editor: any,
-  itemSourceList: McmodderItemList
+  itemSourceList: ItemList
 }
 
 const { editor, itemSourceList } = defineProps<Props>();
@@ -154,7 +154,7 @@ const pageClassFullName = $(".common-nav li").eq(4).text().trim();
 const {
   className: pageClassName,
   classEname: pageClassEname
-} = McmodderUtils.parseClassFullName(pageClassFullName);
+} = Utils.parseClassFullName(pageClassFullName);
 
 watch(
   () => editor,
@@ -230,7 +230,7 @@ function onKeydown(e: KeyboardEvent) {
   if (num < 0 || num > 9) return;
   e.preventDefault();
   const target = $(resultFrame.value!).find(`[data-shortcut-num=${ num }]`);
-  McmodderUtils.highlight(target, "greenyellow");
+  Utils.highlight(target, "greenyellow");
   shortcutPending = true;
   setTimeout(() => {
     target.click()
@@ -246,7 +246,7 @@ function onSearch() {
   searchText.value = keyInput.value!.value.trim();
   searchKeywords.value = searchText.value.split(/\s+/).slice(0, AUTOLINK_KEYWORD_MAXLENGTH).filter(e => e); // 原生最大长度为4
   performSearch().catch(e => {
-    McmodderUtils.commonMsg(e, false);
+    Utils.commonMsg(e, false);
   })
   .finally(() => {
     isPending.value = false;
@@ -273,7 +273,7 @@ async function performOnlineSearch() {
   });
   let data = JSON.parse(resp.responseText);
   if (data.state) {
-    McmodderUtils.commonMsg(McmodderValues.errorMessage[data.state], false);
+    Utils.commonMsg(Values.errorMessage[data.state], false);
     return;
   }
   return parseOnlineSearchResult(data.html);
@@ -321,7 +321,7 @@ function parseOnlineSearchItemResult(index: number, element: Element): AutoLinkI
     typeID = matchedTypeList[0].typeID;
   }
 
-  const itemData: McmodderItemData = {
+  const item: Item = {
     id: id,
     itemType: typeID,
     name: name,
@@ -333,14 +333,14 @@ function parseOnlineSearchItemResult(index: number, element: Element): AutoLinkI
     creativeTabName: creativeTabName
   };
 
-  return evaluateItemMatchRate(itemData, searchKeywords.value, (30 - index) / 6);
+  return evaluateItemMatchRate(item, searchKeywords.value, (30 - index) / 6);
 }
 
 function parseOnlineSearchClassResult(index: number, link: HTMLAnchorElement, type: "class" | "modpack"): AutoLinkClassEntry {
   const text = link.dataset.textFull;
   const classID = Number(link.dataset.id);
-  const {className, classEname, classAbbr} = McmodderUtils.parseClassFullName(text || "");
-  const classData: McmodderClassData = {
+  const {className, classEname, classAbbr} = Utils.parseClassFullName(text || "");
+  const classData: Class = {
     id: classID,
     name: className,
     englishName: classEname,
@@ -366,7 +366,7 @@ function parseOnlineSearchAuthorResult(index: number, link: HTMLAnchorElement, t
   if (text.startsWith("个人作者")) isTeam = false;
   else if (text.startsWith("开发团队")) isTeam = true;
   else return;
-  const authorData: McmodderAuthorData = {
+  const author: Author = {
     id: id,
     name: textHalf,
     alias: alias,
@@ -374,7 +374,7 @@ function parseOnlineSearchAuthorResult(index: number, link: HTMLAnchorElement, t
   };
   return {
     type: type,
-    data: authorData,
+    data: author,
     searchTag: {
       matchScore: (30 - index) / 3
     }
@@ -468,7 +468,7 @@ async function performSearch() {
   });
 }
 
-function evaluateItemMatchRate(item: McmodderItemData, keywords: string[], baseMatchScore = 0): AutoLinkItemEntry {
+function evaluateItemMatchRate(item: Item, keywords: string[], baseMatchScore = 0): AutoLinkItemEntry {
   let totalScore = 0;
   const tag: AutoLinkSearchTag = {
     matchScore: /* item.searchTag?.matchScore || */ baseMatchScore,

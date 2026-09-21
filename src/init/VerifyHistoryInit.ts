@@ -1,8 +1,8 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 import { VerifyPageInit } from "./VerifyPageInit";
 
-export class VerifyHistoryInit extends McmodderInit {
+export class VerifyHistoryInit extends Init {
 
   private stopExpand = false;
   canRun() {
@@ -27,14 +27,14 @@ export class VerifyHistoryInit extends McmodderInit {
           if (!resp.responseXML) return;
           let d = $(resp.responseXML);
           d.find(".verify-list-list-table tbody").children().appendTo(".verify-list-list-table tbody");
-          McmodderUtils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
+          Utils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
           if (id < maxPage && !this.stopExpand) setTimeout(() => getHistoryPage(++id), 1e3);
           else new VerifyPageInit(this.parent).run();
         })
       }
-      McmodderUtils.commonMsg("准备自动展开，可随时按 Ctrl + C 取消~");
+      Utils.commonMsg("准备自动展开，可随时按 Ctrl + C 取消~");
       $("html").bind("keydown", e => {
-        if (McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 67 }, e)) this.stopExpand = true;
+        if (Utils.isKeyMatch({ ctrlKey: true, keyCode: 67 }, e)) this.stopExpand = true;
       })
       getHistoryPage(2);
       $(".pagination").remove();

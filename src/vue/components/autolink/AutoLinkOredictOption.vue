@@ -5,14 +5,14 @@
       #{{ item.id }}
     </a>
     <span v-if="index < 10" class="item-shortcut"
-      v-html="McmodderUtils.keyToHTML({ altKey: true, key: index.toString() })" />
+      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
-import { McmodderUtils } from '../../../Utils';
+import { Utils } from '../../../Utils';
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkOredictEntry>>();
 

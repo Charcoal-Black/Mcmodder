@@ -1,4 +1,4 @@
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 import { GTCEu, GTCEuEnergyRecipe, GTVTier } from "./GTCEu";
 
 export class GTCEuEnergyFrame {
@@ -55,18 +55,18 @@ export class GTCEuEnergyFrame {
         按住Shift以无损超频显示`
     }).on({
       "click": e => {
-        const isPerfect = McmodderUtils.isKeyMatch({ shiftKey: true }, e);
+        const isPerfect = Utils.isKeyMatch({ shiftKey: true }, e);
         const tier = Math.min(this.usage.tier + 1, GTVTier.MAX);
         this.update(tier, isPerfect);
       },
       "contextmenu": e => {
         e.preventDefault();
-        const isPerfect = McmodderUtils.isKeyMatch({ shiftKey: true }, e);
+        const isPerfect = Utils.isKeyMatch({ shiftKey: true }, e);
         const tier = Math.max(this.usage.tier - 1, this.recipe.tier);
         this.update(tier, isPerfect);
       }
     })
-    McmodderUtils.updateAllTooltip();
+    Utils.updateAllTooltip();
 
     this.update();
   }

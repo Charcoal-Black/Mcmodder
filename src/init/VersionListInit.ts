@@ -1,8 +1,8 @@
 import { createApp } from "vue";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 import VersionHelper from "../vue/components/VersionHelper.vue";
 
-export class VersionListInit extends McmodderInit {
+export class VersionListInit extends Init {
   canRun() {
     return !(this.parent.href.includes("/version/add") || 
       this.parent.href.includes("/version/edit")) && 

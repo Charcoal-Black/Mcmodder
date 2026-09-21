@@ -1,10 +1,10 @@
 import { GM_setValue } from "$";
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 import { createApp } from "vue";
-import Almanacs from "../vue/components/Almanacs.vue";
+import AlmanacsFrame from "../vue/components/AlmanacsFrame.vue";
 
-export class HomePageInit extends McmodderInit {
+export class HomePageInit extends Init {
   canRun() {
     return this.parent.href === `${ this.parent.hostname }/` ||
       this.parent.href === `${ this.parent.hostname }/v4/`;
@@ -15,7 +15,7 @@ export class HomePageInit extends McmodderInit {
       <img alt="QQ登录" src="${ this.parent.hostname }/plugs/loginConnect/qqConnect/img/Connect_logo_7.png">
     </a>`)
     .appendTo(".login")
-    .click(() => McmodderUtils.toQzoneLogin());
+    .click(() => Utils.toQzoneLogin());
 
     // 函数覆写以兼容夜间模式
     if (typeof SearchOn != "undefined") SearchOn = () => {
@@ -38,7 +38,7 @@ export class HomePageInit extends McmodderInit {
       }
 
       const container = $(`<div class="news_block mcmodder-almanacs">`).insertAfter($(".news_block").first());
-      createApp(Almanacs, { parent: this.parent }).mount(container.get(0));
+      createApp(AlmanacsFrame, { parent: this.parent }).mount(container.get(0));
     }
 
     if (this.configs.getSettings("rememberVisitedMods")) {
@@ -106,7 +106,7 @@ export class HomePageInit extends McmodderInit {
     });
   }
 
-  private renderRecentlyVisitedMods(content: JQuery, list: RecentlyVisitedData[], page: number) {
+  private renderRecentlyVisitedMods(content: JQuery, list: RecentlyVisited[], page: number) {
     content.empty();
     const v4 = this.parent.isV4;
     const length = list.length;
@@ -114,7 +114,7 @@ export class HomePageInit extends McmodderInit {
     for (let i = page * 10; i < maxItem; i++) {
       const { id, time } = list[i];
       const data = this.configs.getAllClass(id);
-      const link = McmodderUtils.getClassURL(id);
+      const link = Utils.getClassURL(id);
       const card = $(v4 ? '<div class="recent-item">' : '<div class="block">').appendTo(content);
       const block = v4 ? $('<div class="recent-card">').appendTo(card) : card;
       if (v4 && id === 1) {
@@ -138,10 +138,10 @@ export class HomePageInit extends McmodderInit {
           </${ v4 ? "span" : "div" }>
           <${ v4 ? "span" : "div" } class="${ v4 ? "secondary" : "info" }">
             <${ v4 ? "span" : "div" } title="最近浏览时间: ${
-              McmodderUtils.getFormattedDateTime(new Date(time))
+              Utils.getFormattedDateTime(new Date(time))
             }" class="time">
               <i${ v4 ? ' class="fa fa-clock-o"' : "" }></i>
-              ${ McmodderUtils.getFormattedChineseTime(time - now) }
+              ${ Utils.getFormattedChineseTime(time - now) }
             </${ v4 ? "span" : "div" }>
           </${ v4 ? "span" : "div" }>
         </div>  

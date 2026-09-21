@@ -1,20 +1,20 @@
 import { createApp } from "vue";
-import { McmodderAdvancedUEditor } from "./ueditor/AdvancedUEditor";
-import { McmodderUEditor } from "./ueditor/UEditor";
-import { McmodderUtils } from "./Utils";
-import { McmodderValues } from "./Values";
+import { AdvancedUEditor } from "./ueditor/AdvancedUEditor.ts";
+import { UEditor } from "./ueditor/UEditor.ts";
+import { Utils } from "./Utils.ts";
+import { Values } from "./Values.ts";
 import ContextMenu from "./vue/components/ContextMenu.vue";
 import type { ConfigRepository } from "./config/ConfigRepository.ts";
 
-export class McmodderTemplate {
+export class TemplateFrame {
   private configs: ConfigRepository;
-  private editor: McmodderUEditor;
-  private list: McmodderTemplateData[];
+  private editor: UEditor;
+  private list: Template[];
   private newTitle: JQuery;
   private newDescription: JQuery;
   private currentContextMenu?: InstanceType<typeof ContextMenu>;
 
-  constructor(editor: McmodderAdvancedUEditor) {
+  constructor(editor: AdvancedUEditor) {
     this.editor = editor;
     this.configs = this.editor.configs;
 
@@ -33,7 +33,7 @@ export class McmodderTemplate {
 
     // 初始化模板配置
     if (!this.configs.getAll("templateList")?.length) {
-      this.configs.setAll("templateList", McmodderValues.defaultTemplateList);
+      this.configs.setAll("templateList", Values.defaultTemplateList);
     }
 
     this.list = this.configs.getAll("templateList") ?? [];
@@ -132,7 +132,7 @@ export class McmodderTemplate {
   private add() {
     if (this.newTitle.val()) {
       this.list.push({
-        id: McmodderUtils.randStr(),
+        id: Utils.randStr(),
         title: this.newTitle.val(),
         description: this.newDescription.val(),
         content: this.editor.editor.getContent()
@@ -197,7 +197,7 @@ export class McmodderTemplate {
     const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
     data.content = this.editor.editor.getContent();
     this.configs.setAll("templateList", this.list);
-    McmodderUtils.commonMsg(`${ data.title } 内容已更新~`);
+    Utils.commonMsg(`${ data.title } 内容已更新~`);
   }
 
   private delete(id: string | null) {

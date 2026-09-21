@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { McmodderUtils } from '../../Utils';
+import { Utils } from '../../Utils';
 
 
 interface Props {
@@ -25,7 +25,7 @@ interface Props {
 const { data } = defineProps<Props>();
 
 const range = computed(() => {
-  return McmodderUtils.createRange(0, data.length, 2);
+  return Utils.createRange(0, data.length, 2);
 })
 
 </script>

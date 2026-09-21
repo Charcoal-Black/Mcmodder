@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 import ProgressBar from "../../vue/components/ProgressBar.vue";
 import { CenterBaseInit } from "./CenterBaseInit";
 
@@ -43,7 +43,7 @@ export class CenterTaskInit extends CenterBaseInit {
           "data-original-title": "该成就必须手动触发检测！轻触以开始检测该成就的完成进度，检测期间请勿关闭当前页面。<br>检测完成后当前页面会自动刷新，您将能够获知完成进度。<br>审核项提交时间以最后修改时间而非创建时间为准，无论结果是否通过均计入进度。"
         })
         .click(() => this.checkIfAllYourFault());
-        McmodderUtils.updateAllTooltip();
+        Utils.updateAllTooltip();
       }
     });
   }
@@ -51,7 +51,7 @@ export class CenterTaskInit extends CenterBaseInit {
   private async checkIfAllYourFault() {
     const regTime = this.configs.getProfile("regTime");
     if (!regTime) {
-      McmodderUtils.commonMsg("尚未获取到我的账号注册时间，触发失败... 请访问一次自己的个人中心主页再试试~", false);
+      Utils.commonMsg("尚未获取到我的账号注册时间，触发失败... 请访问一次自己的个人中心主页再试试~", false);
       return;
     }
     swal.fire({
@@ -61,8 +61,8 @@ export class CenterTaskInit extends CenterBaseInit {
       allowEscapeKey: false,
       showConfirmButton: false
     });
-    const now = McmodderUtils.getStartTime(new Date(), 0);
-    let startTime = McmodderUtils.getStartTime(regTime, 0), endTime, resp, total = 0, verifyList: Element[] = [], maxPage, title, lastEdit, lastVerify;
+    const now = Utils.getStartTime(new Date(), 0);
+    let startTime = Utils.getStartTime(regTime, 0), endTime, resp, total = 0, verifyList: Element[] = [], maxPage, title, lastEdit, lastVerify;
     const progressBar = createApp(ProgressBar, {
       val: regTime,
       min: regTime,
@@ -70,7 +70,7 @@ export class CenterTaskInit extends CenterBaseInit {
       displayRule: ProgressBar.DISPLAYRULE_PERCENT
     }).mount($(".progress-container").get(0)) as InstanceType<typeof ProgressBar>;
     do {
-      endTime = Math.min(now, McmodderUtils.getStartTime(startTime, 29));
+      endTime = Math.min(now, Utils.getStartTime(startTime, 29));
       resp = await this.utils.createRequest({
         url: `${ this.parent.hostname }/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
         method: "GET"
@@ -92,7 +92,7 @@ export class CenterTaskInit extends CenterBaseInit {
           verifyList.push(c);
         });
       }
-      startTime = McmodderUtils.getStartTime(endTime);
+      startTime = Utils.getStartTime(endTime);
       progressBar.setProgress(startTime);
     } while (endTime < now);
     verifyList.forEach(e => {

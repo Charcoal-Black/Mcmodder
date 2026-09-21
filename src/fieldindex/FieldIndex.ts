@@ -1,10 +1,10 @@
 
-export class McmodderMap<T extends object> {
+export class FieldIndex<T extends object> {
   private readonly map = new Map<any, T[]>();
   private readonly key: keyof T;
-  private readonly keyHandler?: McmodderMapKeyHandler;
+  private readonly keyHandler?: MapKeyHandler;
 
-  constructor(key: keyof T, keyHandler?: McmodderMapKeyHandler) {
+  constructor(key: keyof T, keyHandler?: MapKeyHandler) {
     this.key = key;
     this.keyHandler = keyHandler;
   }
@@ -51,3 +51,4 @@ export class McmodderMap<T extends object> {
     this.map.clear();
   }
 }
+

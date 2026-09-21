@@ -30,7 +30,7 @@
             <a v-html="item.text"></a>
             <span class="item-shortcut-left"
               v-if="item.shortcut"
-              v-html="McmodderUtils.keyToHTML(item.shortcut)"
+              v-html="Utils.keyToHTML(item.shortcut)"
             ></span>
           </li>
         </template>
@@ -41,7 +41,7 @@
 <script setup lang="ts">
 
 import { onMounted, ref, useTemplateRef } from "vue";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 let contextmenuEvent: PointerEvent | undefined;
 let activeState = false;
@@ -121,7 +121,7 @@ function updateMenu(e: PointerEvent) {
 
 function onContextmenu(e: PointerEvent) {
   e.preventDefault();
-  const absolutePos = McmodderUtils.getAbsolutePos(container!);
+  const absolutePos = Utils.getAbsolutePos(container!);
   if (!activeState) {
     contextmenuEvent = e;
     updateMenu(e);
@@ -155,23 +155,23 @@ function onMenuKeydown(e: KeyboardEvent) {
   }
   for (let i = 0; i < activeIndexLength.value; i++) {
     const shortcut = items.value[activeIndexList[i]].shortcut;
-    if (shortcut && McmodderUtils.isKeyMatch(shortcut, e)) {
+    if (shortcut && Utils.isKeyMatch(shortcut, e)) {
       selected.value = i;
       onItemClick(i);
       return;
     }
   }
-  if (McmodderUtils.isKeyMatch({ keyCode: 13 }, e)) {
+  if (Utils.isKeyMatch({ keyCode: 13 }, e)) {
     if (selected.value !== -1) {
       onItemClick(selected.value);
     }
   }
-  else if (McmodderUtils.isKeyMatch({ keyCode: 27 }, e)) {
+  else if (Utils.isKeyMatch({ keyCode: 27 }, e)) {
     e.preventDefault();
     root.value!.blur();
     hide();
   }
-  else if (McmodderUtils.isKeyMatch({ keyCode: 40 }, e)) {
+  else if (Utils.isKeyMatch({ keyCode: 40 }, e)) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;
@@ -182,7 +182,7 @@ function onMenuKeydown(e: KeyboardEvent) {
       selected.value = Math.min(selected.value + 1, activeIndexLength.value - 1);
     }
   }
-  else if (McmodderUtils.isKeyMatch({ keyCode: 38 }, e)) {
+  else if (Utils.isKeyMatch({ keyCode: 38 }, e)) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;

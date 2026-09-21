@@ -1,7 +1,7 @@
 import { GTCEuEnergyFrame } from "../integration/GTCEuEnergyFrame";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class ItemTabInit extends McmodderInit {
+export class ItemTabInit extends Init {
   canRun() {
     return false;
   }
@@ -15,7 +15,7 @@ export class ItemTabInit extends McmodderInit {
 
     // 紧凑合成表
     /* if (!this.configs.get("compactedTablist")) return;
-    McmodderUtils.addStyle(`
+    Utils.addStyle(`
       .item-table-block p {
         display: inline; margin: 2px;
       }
@@ -72,7 +72,7 @@ export class ItemTabInit extends McmodderInit {
       $('<a class="mcmodder-gui-control">轻触展开 GUI</a>').appendTo(e).click(f => {
         const target = $(f.currentTarget);
         const gui = target.parent().find(".TableBlock");
-        if (McmodderUtils.isNodeHidden(gui)) {
+        if (Utils.isNodeHidden(gui)) {
           target.html("轻触收起 GUI");
           gui.show();
         } else {
@@ -84,7 +84,7 @@ export class ItemTabInit extends McmodderInit {
     $("div.item-table-frame > table.item-table-block td.text.item-table-count a[data-toggle=tooltip]").each((_, e) => {
       const href = (e as HTMLAnchorElement).href;
       if (e.parentNode?.textContent?.includes("[使用:")) {
-        $(e).attr("mcmodder-gui-id", McmodderUtils.abstractLastFromURL(href, "item"));
+        $(e).attr("mcmodder-gui-id", Utils.abstractLastFromURL(href, "item"));
         return;
       }
       let itemID;
@@ -97,11 +97,11 @@ export class ItemTabInit extends McmodderInit {
             break;
           }
       }
-      else itemID = Number(McmodderUtils.abstractLastFromURL(href, "item"));
-      if (itemID) e.innerHTML = `<span class="mcmodder-tab-item-name">${e.textContent}</span><span class="mcmodder-tab-item-icon" style="background-image: url(${McmodderUtils.getImageURLByItemID(itemID)}); width: 32px; height: 32px; display: inline-block; position: relative; background-size: cover;"></span>`;
+      else itemID = Number(Utils.abstractLastFromURL(href, "item"));
+      if (itemID) e.innerHTML = `<span class="mcmodder-tab-item-name">${e.textContent}</span><span class="mcmodder-tab-item-icon" style="background-image: url(${Utils.getImageURLByItemID(itemID)}); width: 32px; height: 32px; display: inline-block; position: relative; background-size: cover;"></span>`;
       let itemCount = parseInt((e.parentNode as HTMLElement)?.innerHTML?.replace(",", "").split("* ")[1]);
       if (itemCount > 1) {
-        const displayCount = McmodderUtils.getFormattedNumber(itemCount);
+        const displayCount = Utils.getFormattedNumber(itemCount);
         const fontSize = (itemCount < 1e3 ? 16 : 12);
         $(e).find("span.mcmodder-tab-item-icon").append('<span style="font-family: Unifont; text-shadow: 1px 1px 0 #000; color: white; position: absolute; right: 1px; bottom: 1px; line-height: ' + fontSize + 'px; font-size: ' + fontSize + 'px;">' + displayCount + '</span>');
       }

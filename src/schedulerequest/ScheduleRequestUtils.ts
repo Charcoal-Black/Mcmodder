@@ -1,6 +1,6 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 import { ScheduleRequestType } from "./ScheduleRequestType";
 
 export const enum ScheduleRequestTriggerType {
@@ -11,7 +11,7 @@ export const enum ScheduleRequestTriggerType {
 export class ScheduleRequestUtils {
   readonly parent: Mcmodder;
   private readonly configs: ConfigRepository;
-  private readonly requestData: ScheduleRequestData;
+  private readonly requestData: ScheduleRequestOption;
 
   constructor(parent: Mcmodder) {
     this.parent = parent;
@@ -19,12 +19,12 @@ export class ScheduleRequestUtils {
     this.requestData = {};
   }
 
-  addRequestType(key: keyof ScheduleRequestTypes, request: ScheduleRequestType, trigger: ScheduleRequestTriggerType, ...param: [KeysOfType<McmodderSettings, number | boolean>, number, boolean]) {
+  addRequestType(key: keyof ScheduleRequestTypes, request: ScheduleRequestType, trigger: ScheduleRequestTriggerType, ...param: [KeysOfType<Settings, number | boolean>, number, boolean]) {
     this.requestData[key] = request;
     this.init(key, trigger, param);
   }
 
-  init(key: keyof ScheduleRequestTypes, trigger: ScheduleRequestTriggerType, param: [KeysOfType<McmodderSettings, number | boolean>, number, boolean]) {
+  init(key: keyof ScheduleRequestTypes, trigger: ScheduleRequestTriggerType, param: [KeysOfType<Settings, number | boolean>, number, boolean]) {
     switch (trigger) {
       case ScheduleRequestTriggerType.CONFIG: {
         let configID = param[0], minimum = param[1] ?? 0, hasUserLimit = param[2];
@@ -78,7 +78,7 @@ export class ScheduleRequestUtils {
       todo: todo,
       userID: userID,
       priority: priority ?? this.requestData[todo]?.priority ?? Number.MAX_SAFE_INTEGER,
-      id: McmodderUtils.randStr(8)
+      id: Utils.randStr(8)
     });
     this.set(scheduleRequestList);
   }

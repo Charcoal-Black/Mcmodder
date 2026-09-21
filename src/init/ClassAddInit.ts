@@ -1,7 +1,7 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
-export class ClassAddInit extends McmodderInit {
+export class ClassAddInit extends Init {
   canRun() {
     return this.parent.href.includes("/class/add/");
   }
@@ -21,7 +21,7 @@ export class ClassAddInit extends McmodderInit {
     const doc = $(resp.responseXML);
     $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(doc.find("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html());
     $("#mcmodder-crash-protector").html("[刷新]");
-    McmodderUtils.commonMsg("刷新成功！");
+    Utils.commonMsg("刷新成功！");
     this.refreshCrashList();
   }
 

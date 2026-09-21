@@ -1,5 +1,5 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 export class GTCEuEnergyRecipe {
   EUt: number;
@@ -53,12 +53,12 @@ export class GTCEu {
 
   static getHTMLByVoltage(voltage: GTVTier) {
     let tier = this.getTierByVoltage(voltage);
-    return `<span style="color: #${McmodderValues.formatColors[this.voltageColor[tier]]};${this.isVoltageBold(tier) ? " font-weight: bold;" : ""}">${this.voltageName[tier]}</span>`;
+    return `<span style="color: #${Values.formatColors[this.voltageColor[tier]]};${this.isVoltageBold(tier) ? " font-weight: bold;" : ""}">${this.voltageName[tier]}</span>`;
   }
 
   static getHTMLWithPercentageByVoltage(voltage: number) {
     let tier = this.getTierByVoltage(voltage);
-    let percentage = McmodderUtils.getPrecisionFormatter().format(voltage / this.getMaxVoltageByTier(tier));
+    let percentage = Utils.getPrecisionFormatter().format(voltage / this.getMaxVoltageByTier(tier));
     return `${percentage}A${this.getHTMLByVoltage(voltage)}`;
   }
 

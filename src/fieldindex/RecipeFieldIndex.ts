@@ -1,6 +1,6 @@
-import { McmodderMap } from "./Map";
+import { FieldIndex } from "./FieldIndex";
 
-export class McmodderRecipeMap extends McmodderMap<McmodderRecipeData> {
+export class RecipeFieldIndex extends FieldIndex<Recipe> {
   constructor() {
     super("out_id", (outputs: Record<string, string>) => {
       return Object.values(outputs);

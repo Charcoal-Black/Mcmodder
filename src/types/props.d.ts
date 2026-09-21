@@ -4,25 +4,25 @@ export interface AutoLinkOptionProps<T extends AutoLinkBaseEntry> {
   index: number
 }
 
-export interface McmodderTableProps<T extends McmodderTableAcceptable> {
+export interface TableProps<T extends TableAcceptable> {
   parent: import("../Mcmodder").Mcmodder,
   attr?: object,
-  headConfigs: HeadConfigsInitializer<T>,
-  editConfigs?: EditConfigsInitializer<T>
+  rowOptions: RowOptionsInitializer<T>,
+  editConfigs?: EditOptionsInitializer<T>
 }
 
-export interface ConfigResourceFileListInteractorProps<K extends keyof McmodderStorage> {
+export interface ConfigResourceFileListInteractorProps<K extends keyof AppStorage> {
   parent: import("../Mcmodder").Mcmodder,
   id: K,
   name: string
 }
 
 export interface ConfigResourceInteractorProps<
-  K extends keyof McmodderStorage,
-  TConfig extends object = Extract<McmodderStorage[K], object>,
-  TData extends McmodderTableAcceptable = Extract<TConfig, McmodderTableAcceptable>
+  K extends keyof AppStorage,
+  TConfig extends object = Extract<AppStorage[K], object>,
+  TData extends TableAcceptable = Extract<TConfig, TableAcceptable>
 > extends ConfigResourceFileListInteractorProps<K> {
-  headConfigs: HeadConfigsInitializer<TData>,
+  rowOptions: RowOptionsInitializer<TData>,
   configParser?: ConfigParser<TConfig>,
   dataParser?: DataParser<TData>
 }
@@ -32,8 +32,8 @@ export interface JsonFrameProps {
   parent: import("../Mcmodder").Mcmodder
 }
 
-export interface GenericJsonFrameProps<T extends McmodderTableAcceptable> extends JsonFrameProps, McmodderTableProps<T> {
-  configName: KeysOfType<Required<McmodderStorage>, Record<string, object[]>>,
+export interface GenericJsonFrameProps<T extends TableAcceptable> extends JsonFrameProps, TableProps<T> {
+  configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>,
   allowedKeys: string[],
   opts?: {
     parseText?: (text: string) => {

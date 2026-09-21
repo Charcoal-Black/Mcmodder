@@ -14,7 +14,7 @@
         ref="table"
         :parent="parent"
         :attr="{ id: 'mcmodder-version-menu' }"
-        :head-configs="headConfigs"
+        :rowOptions="rowOptions"
       />
     </fieldset>
   </div>
@@ -23,8 +23,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { McmodderTable } from '../../table/Table.ts';
-import { McmodderUtils } from '../../Utils.ts';
+import { TableUtils } from '../../table/Table.ts';
+import { Utils } from '../../Utils.ts';
 import GenericTable from './table/GenericTable.vue';
 import { GM_openInTab } from '$';
 
@@ -34,7 +34,7 @@ interface Props {
 
 const { parent } = defineProps<Props>();
 
-const headConfigs = {
+const rowOptions = {
   fileID: "文件ID",
   releaseType: ["发布状态", data => {
     const state = (data as string).toLowerCase();
@@ -42,7 +42,7 @@ const headConfigs = {
   }],
   displayName: "文件名称",
   gameVersions: "支持 MC 版本",
-  releaseTime: ["更新日期", McmodderTable.DISPLAYRULE_DATE_MILLISEC_EN],
+  releaseTime: ["更新日期", TableUtils.DISPLAYRULE_DATE_MILLISEC_EN],
   mcmodVer: "对应日志版本号",
   mcmodMcver: "对应日志支持版本",
   mcmodDate: ["对应日志收录日期", (data: Date | null | undefined, row) => {
@@ -56,10 +56,10 @@ const headConfigs = {
   }],
   options: ["操作", (_, data) => {
     if (data.mcmodDate || !data.displayName || !data.releaseTime) return null;
-    if (data.platform === 1) return `<a href="/class/version/add/${ McmodderUtils.abstractLastFromURL(window.location.href, "version") }/?cfid=${data.cfid}&fileid=${data.fileID}&ver=${parseCFFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
-    if (data.platform === 2) return `<a href="/class/version/add/${ McmodderUtils.abstractLastFromURL(window.location.href, "version") }/?mrid=${data.mrid}&fileid=${data.fileID}&ver=${parseMRFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
+    if (data.platform === 1) return `<a href="/class/version/add/${ Utils.abstractLastFromURL(window.location.href, "version") }/?cfid=${data.cfid}&fileid=${data.fileID}&ver=${parseCFFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
+    if (data.platform === 2) return `<a href="/class/version/add/${ Utils.abstractLastFromURL(window.location.href, "version") }/?mrid=${data.mrid}&fileid=${data.fileID}&ver=${parseMRFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
   }]
-} satisfies HeadConfigsInitializer<VersionCompareData>;
+} satisfies RowOptionsInitializer<GameVersionCompareEntry>;
 const captchaAttemptMaxLimit = 2;
 const captchaAttemptInterval = 5000;
 
@@ -70,7 +70,7 @@ let versionList = getVersionList();
 let fetched = false;
 
 function getVersionList() {
-  let versionList: VersionData[] = [];
+  let versionList: GameVersion[] = [];
   $(".version-content-block").each((i, e) => {
     e.id = "mcmodder-log-" + i;
     const mcRowVer = $(e).parent().attr("data-frame");
@@ -120,7 +120,7 @@ async function autoFillFetchID() { // 自动获取 CFID / MRID
     method: "GET"
   });
   if (!resp.responseXML) {
-    McmodderUtils.commonMsg("CFID/MRID 获取失败...", false);
+    Utils.commonMsg("CFID/MRID 获取失败...", false);
     return;
   }
   let w = $(resp.responseXML);
@@ -140,7 +140,7 @@ function getCurseForgeFileList(cfid: string) {
   table.value!.show();
   table.value!.showLoading();
   // this.tbody.html(`<img src="${McmodderValues.assets.mcmod.loading}"></img>`);
-  let fileList: CFVersionData[] = [];
+  let fileList: CFGameVersion[] = [];
   let captchaAttempt = 0;
   let work = (index: number) => {
     parent.utils.createRequest({
@@ -151,8 +151,8 @@ function getCurseForgeFileList(cfid: string) {
       if (resp.responseXML?.title === "Just a moment...") {
         if (captchaAttempt < captchaAttemptMaxLimit) {
           captchaAttempt++;
-          McmodderUtils.commonMsg(`正在等待人机验证，将于 ${
-            McmodderUtils.getFormattedTime(captchaAttemptInterval)
+          Utils.commonMsg(`正在等待人机验证，将于 ${
+            Utils.getFormattedTime(captchaAttemptInterval)
           } 后自动重试... (${ captchaAttempt }/${ captchaAttemptMaxLimit })`);
           setTimeout(() => {
             work(0);
@@ -229,7 +229,7 @@ function getModrinthFileList(mrid: string) {
   table.value!.show();
   table.value!.showLoading();
   // this.tbody.html(`<img src="${McmodderValues.assets.mcmod.loading}"></img>`);
-  let fileList: MRVersionData[] = [];
+  let fileList: MRGameVersion[] = [];
   let work = () => {
     parent.utils.createRequest({
       url: `https://api.modrinth.com/v2/project/${mrid}/version`,

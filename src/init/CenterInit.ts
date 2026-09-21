@@ -1,16 +1,16 @@
-import { McmodderValues } from "../Values";
+import { Values } from "../Values";
 import { CenterCardInit } from "./center/CenterCardInit";
 import { CenterHomeInit } from "./center/CenterHomeInit";
 import { CenterRankInit } from "./center/CenterRankInit";
 import { CenterSettingInit } from "./center/CenterSettingInit";
 import { CenterTaskInit } from "./center/CenterTaskInit";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class CenterInit extends McmodderInit {
+export class CenterInit extends Init {
 
   protected pageUID = -1;
   totalExp?: number;
-  pageProfileData?: McmodderProfileData;
+  pageProfile?: Profile;
 
   canRun() {
     return this.parent.href.includes("center.mcmod.cn");
@@ -91,7 +91,7 @@ export class CenterInit extends McmodderInit {
     const bgImg = window.getComputedStyle(document.body).backgroundImage.replace('url("', "").replace('")', "");
     const suffix = bgImg.split(".").pop()?.toLowerCase();
     if (bgImg !== this.configs.getSettings("defaultBackground") && 
-        suffix && McmodderValues.supportedImageSuffix.includes(suffix)) 
+        suffix && Values.supportedImageSuffix.includes(suffix)) 
       $("div.bbs-link").append(`<p align="right"><a href="${ bgImg }" target="_blank">查看个人中心背景图片</a></p>`);
 
     // 近期编辑记录

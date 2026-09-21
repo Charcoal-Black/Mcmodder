@@ -1,6 +1,6 @@
 import { createClient, type FunctionInvokeOptions, type SupabaseClient } from '@supabase/supabase-js';
 import { Mcmodder } from '../Mcmodder';
-import { McmodderUtils } from '../Utils';
+import { Utils } from '../Utils';
 import type { ConfigRepository } from '../config/ConfigRepository';
 
 export class SupabaseUtils {
@@ -59,7 +59,7 @@ export class SupabaseUtils {
       if (onErrorCallback) {
         onErrorCallback(errorMsg);
       } else {
-        McmodderUtils.commonMsg(errorMsg, false);
+        Utils.commonMsg(errorMsg, false);
       }
       return;
     }

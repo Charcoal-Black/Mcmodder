@@ -2,9 +2,9 @@ import { Command } from "./Command";
 
 export class DeleteRowCommand<T extends Object> extends Command<T> {
   index: number;
-  deletedData?: McmodderTableDataMap<T>;
+  deletedData?: TableDataMap<T>;
 
-  constructor(self: McmodderTableContext<T>, index: number) {
+  constructor(self: TableContext<T>, index: number) {
     super(self);
     this.index = index;
   }

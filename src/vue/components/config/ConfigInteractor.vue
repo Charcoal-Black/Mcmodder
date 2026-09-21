@@ -1,11 +1,11 @@
 <template>
   <div class="center-setting-block">
     <div class="setting-item">
-      <span v-if="type !== McmodderInputType.CHECKBOX">
-        {{ configData.title }}:
+      <span v-if="type !== InputType.CHECKBOX">
+        {{ configOption.title }}:
       </span>
       <CheckboxInput
-        v-if="type === McmodderInputType.CHECKBOX"
+        v-if="type === InputType.CHECKBOX"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
@@ -13,40 +13,40 @@
         :with-label="true"
       />
       <TextInput
-        v-else-if="type === McmodderInputType.TEXT"
+        v-else-if="type === InputType.TEXT"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
       />
       <ColorpickerInput
-        v-else-if="type === McmodderInputType.COLORPICKER"
+        v-else-if="type === InputType.COLORPICKER"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
       />
       <NumberInput
-        v-else-if="type === McmodderInputType.NUMBER"
+        v-else-if="type === InputType.NUMBER"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
         :range="range"
       />
       <SliderInput
-        v-else-if="type === McmodderInputType.SLIDER"
+        v-else-if="type === InputType.SLIDER"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
         :range="finiteRange!"
       />
       <DropdownMenuInput
-        v-else-if="type === McmodderInputType.DROPDOWN_MENU"
+        v-else-if="type === InputType.DROPDOWN_MENU"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
         :range="valueSet!"
       />
       <DropdownTextInput
-        v-else-if="type === McmodderInputType.DROPDOWN_TEXT_MENU"
+        v-else-if="type === InputType.DROPDOWN_TEXT_MENU"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
@@ -55,7 +55,7 @@
         }"
       />
       <KeybindInput
-        v-else-if="type === McmodderInputType.KEYBIND"
+        v-else-if="type === InputType.KEYBIND"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
@@ -69,8 +69,8 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, type WritableComputedRef } from 'vue';
-import { McmodderConfigUtils, McmodderInputType } from '../../../config/ConfigUtils';
-import { McmodderUtils } from '../../../Utils';
+import { ConfigUtils, InputType } from '../../../config/ConfigUtils';
+import { Utils } from '../../../Utils';
 import CheckboxInput from '../input/CheckboxInput.vue';
 import TextInput from '../input/TextInput.vue';
 import ColorpickerInput from '../input/ColorpickerInput.vue';
@@ -82,33 +82,33 @@ import KeybindInput from '../input/KeybindInput.vue';
 import type { ConfigRepository } from '../../../config/ConfigRepository.ts';
 
 interface Props {
-  id: keyof McmodderSettings,
-  cfgutils: McmodderConfigUtils,
+  id: keyof Settings,
+  cfgutils: ConfigUtils,
   configs: ConfigRepository
 }
 
 const { id, cfgutils, configs } = defineProps<Props>();
-const configData = shallowRef(cfgutils.data[id]);
-const type = ref<Readonly<McmodderInputType>>(configData.value.type);
-const title = computed(() => configData.value.title);
+const configOption = shallowRef(cfgutils.data[id]);
+const type = ref<Readonly<InputType>>(configOption.value.type);
+const title = computed(() => configOption.value.title);
 const value = configs.getSettingsWritableRef(id) as WritableComputedRef<any>;
-// computed(() => configs.getSettings(id) ?? configData.value.value);
+// computed(() => configs.getSettings(id) ?? configOption.value.value);
 
 const opt = computed(() => {
-  const data = configData.value;
+  const data = configOption.value;
   const type = data.type;
   switch (type) {
-    case McmodderInputType.CHECKBOX: return {} ;
-    case McmodderInputType.TEXT: return {};
-    case McmodderInputType.COLORPICKER: return {};
-    case McmodderInputType.NUMBER: return { range: data.range as InputValueNumericRange };
-    case McmodderInputType.SLIDER: return { finiteRange: data.range as InputValueFiniteNumericRange };
-    case McmodderInputType.DROPDOWN_MENU: {
+    case InputType.CHECKBOX: return {} ;
+    case InputType.TEXT: return {};
+    case InputType.COLORPICKER: return {};
+    case InputType.NUMBER: return { range: data.range as InputValueNumericRange };
+    case InputType.SLIDER: return { finiteRange: data.range as InputValueFiniteNumericRange };
+    case InputType.DROPDOWN_MENU: {
       const valueSet = data.range as InputValueSet;
       valueSet[data.value] += " (默认)";
       return { valueSet };
     }
-    case McmodderInputType.DROPDOWN_TEXT_MENU: {
+    case InputType.DROPDOWN_TEXT_MENU: {
       const suggestion = data.suggestion!;
       suggestion.map(e => {
         if (typeof e === "string" && e === data.value) {
@@ -124,7 +124,7 @@ const opt = computed(() => {
       })
       return { suggestion };
     }
-    case McmodderInputType.KEYBIND: return {};
+    case InputType.KEYBIND: return {};
   }
   throw new Error("这 InputType 有力气");
 })
@@ -134,23 +134,23 @@ const valueSet = computed(() => opt.value.valueSet);
 const suggestion = computed(() => opt.value.suggestion);
 
 function onConfigSuccessfulChange(resp: InputValidInfo<any>) {
-  McmodderUtils.commonMsg(PublicLangData.center.setting.complete);
+  Utils.commonMsg(PublicLangData.center.setting.complete);
   value.value = resp.final;
   // configs.setSettings(id, resp.final);
 }
 
 const description = computed(() => {
-  if (configData.value.type === McmodderInputType.DROPDOWN_MENU) {
-    return configData.value.description;
+  if (configOption.value.type === InputType.DROPDOWN_MENU) {
+    return configOption.value.description;
   }
   let list = [];
-  let val = configData.value.value;
+  let val = configOption.value.value;
   if (val != null) list.push(`默认：${
     typeof val === "boolean" ? (val ? "开启" : "关闭") :
     typeof val === "number" ? val.toLocaleString() :
-    typeof val === "object" ? McmodderUtils.keyToString(val) : val
+    typeof val === "object" ? Utils.keyToString(val) : val
   }`);
-  const range = (configData.value.range || [null, null]) as InputValueNumericRange;
+  const range = (configOption.value.range || [null, null]) as InputValueNumericRange;
   let l = range[0], r = range[1];
   let tl = l?.toLocaleString(), tr = r?.toLocaleString();
   if (l !== null && r !== null) 
@@ -160,7 +160,7 @@ const description = computed(() => {
   else if (r !== null)
     list.push(`最大值：${ tr }`);
   let appendix = list.length ? `（${list.join("；")}）` : ``;
-  return `${ configData.value.description }${ appendix }`;
+  return `${ configOption.value.description }${ appendix }`;
 })
 
 </script>

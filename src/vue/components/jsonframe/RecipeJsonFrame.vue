@@ -5,7 +5,7 @@
     :parent="parent"
     :config-name="configName"
     :allowed-keys="allowedKeys"
-    :head-configs="headConfigs"
+    :rowOptions="rowOptions"
     :edit-configs="editConfigs"
     :attr="{
       class: 'table jsonframe-table'
@@ -18,7 +18,7 @@
       <GenericTable
         ref="guiBoundTable"
         :parent="parent"
-        :head-configs="guiBoundHeadConfigs"
+        :rowOptions="guiBoundRowOptions"
         :edit-configs="guiBoundEditConfigs"
         @edit="onEditGuiBound"
       />
@@ -28,26 +28,26 @@
 
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import { McmodderInputType } from '../../../config/ConfigUtils.ts';
-import { McmodderMap } from '../../../map/Map.ts';
-import { McmodderTable } from '../../../table/Table.ts';
+import { InputType } from '../../../config/ConfigUtils.ts';
+import { FieldIndex } from '../../../fieldindex/FieldIndex.ts';
+import { TableUtils } from '../../../table/Table.ts';
 import { ItemDisplay } from '../../../widget/ItemDisplay.ts';
 import Collapsible from '../Collapsible.vue';
 import GenericTable from '../table/GenericTable.vue';
 import JsonFrame from './JsonFrame.vue';
-import { McmodderValues } from '../../../Values.ts';
+import { Values } from '../../../Values.ts';
 import type { JsonFrameProps } from '../../../types/props';
 
 const props = defineProps<JsonFrameProps>();
 
 const configName = "mcmodderRecipeJsonStorage";
 const allowedKeys = ["in_id", "out_id", "in_num", "out_num", "in_chance", "out_chance", "power_num", "gui_id"];
-const headConfigs = {
+const rowOptions = {
   gui_id: "GUI",
   input: ["输入", itemInputDisplay],
   output: ["输出", itemOutputDisplay],
-  power_text: ["额外数据", McmodderTable.DISPLAYRULE_ARRAY]
-} satisfies HeadConfigsInitializer<McmodderRecipeData>;
+  power_text: ["额外数据", TableUtils.DISPLAYRULE_ARRAY]
+} satisfies RowOptionsInitializer<Recipe>;
 const editConfigs = {
   in_id: null,
   out_id: null,
@@ -56,30 +56,30 @@ const editConfigs = {
   in_chance: null,
   out_chance: null,
   power_num: null,
-  gui_id: McmodderInputType.TEXT
-} satisfies EditConfigsInitializer<McmodderRecipeData>;
+  gui_id: InputType.TEXT
+} satisfies EditOptionsInitializer<Recipe>;
 
 const jsonFrame = useTemplateRef("jsonFrame");
 const guiBoundTable = useTemplateRef("guiBoundTable");
 
-const guiBoundHeadConfigs = {
-  guiID: ["GUI 注册名", McmodderTable.DISPLAYRULE_MONOSPACE],
+const guiBoundRowOptions = {
+  guiID: ["GUI 注册名", TableUtils.DISPLAYRULE_MONOSPACE],
   mcmodID: "对应百科 ID",
   img: ["GUI 图片", (_, data) => {
     return data.mcmodID ? `<img src="//i.mcmod.cn/gui/bg/${ data.mcmodID }.gif"><img>` : "-";
   }]
-} satisfies HeadConfigsInitializer<RecipeJsonFrameGuiBound>;
+} satisfies RowOptionsInitializer<RecipeJsonFrameGuiBound>;
 const guiBoundEditConfigs = {
   guiID: null,
-  mcmodID: McmodderInputType.NUMBER
-} satisfies EditConfigsInitializer<RecipeJsonFrameGuiBound>;
+  mcmodID: InputType.NUMBER
+} satisfies EditOptionsInitializer<RecipeJsonFrameGuiBound>;
 
-const itemMap = new McmodderMap<McmodderItemData>("registerName");
-const tagMap = new McmodderMap<McmodderItemData>("OredictList");
-const guiMap = new McmodderMap<RecipeJsonFrameGuiBound>("guiID");
+const itemMap = new FieldIndex<Item>("registerName");
+const tagMap = new FieldIndex<Item>("OredictList");
+const guiMap = new FieldIndex<RecipeJsonFrameGuiBound>("guiID");
 let guiBound: RecipeJsonFrameGuiBound[] | undefined;
 
-const selection: McmodderJsonStorage<McmodderItemData> = props.parent.configRepository.getAll("mcmodderJsonStorage") ?? {};
+const selection: JsonStorage<Item> = props.parent.configRepository.getAll("mcmodderJsonStorage") ?? {};
 Object.values(selection).forEach(content => {
   itemMap.add(content);
   tagMap.add(content);
@@ -90,7 +90,7 @@ onMounted(() => {
 })
 
 function itemListDisplay(
-  ids?: Record<string, McmodderRecipeIngredient>,
+  ids?: Record<string, RecipeIngredient>,
   counts?: Record<string, number>,
   chances?: Record<string, number>
 ) {
@@ -104,11 +104,11 @@ function itemListDisplay(
   return res;
 }
 
-function itemInputDisplay(_: any, row: Partial<McmodderRecipeData>) {
+function itemInputDisplay(_: any, row: Partial<Recipe>) {
   return itemListDisplay(row.in_id, row.in_num, row.in_chance);
 }
 
-function itemOutputDisplay(_: any, row: Partial<McmodderRecipeData>) {
+function itemOutputDisplay(_: any, row: Partial<Recipe>) {
   return itemListDisplay(row.out_id, row.out_num, row.out_chance);
 }
 
@@ -118,7 +118,7 @@ function onRefresh() {
 
 function updateGuiBound() {
   guiMap.clear();
-  guiBound = props.parent.configRepository.getAll("guiBound") ?? McmodderValues.defaultGuiBound;
+  guiBound = props.parent.configRepository.getAll("guiBound") ?? Values.defaultGuiBound;
   guiMap.add(guiBound!);
 }
 

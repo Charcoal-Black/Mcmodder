@@ -26,7 +26,7 @@ import Timer from './Timer.vue';
 
 interface Props {
   parent: Mcmodder,
-  target: number | McmodderProfileData,
+  target: number | Profile,
   showLv?: boolean
 }
 

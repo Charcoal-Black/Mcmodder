@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import { Mcmodder } from '../../Mcmodder';
-import { McmodderUtils } from '../../Utils';
+import { Utils } from '../../Utils';
 import NumberInput from './input/NumberInput.vue';
 
 interface Props {
@@ -54,14 +54,14 @@ const page = ref(props.currentPage);
 const RENDER_RANGE = 4;
 const regulatedPage = computed(() => {
   if (!Number.isFinite(page.value)) return 1;
-  const result = McmodderUtils.clamp(Math.floor(page.value), 1, props.maxPage);
+  const result = Utils.clamp(Math.floor(page.value), 1, props.maxPage);
   inputRef.value?.setDisplayValue(result);
   return result;
 })
 const pageRange = computed(() => {
   const l = Math.max(regulatedPage.value - RENDER_RANGE, 1);
   const r = Math.min(regulatedPage.value + RENDER_RANGE, Math.max(props.maxPage, 1));
-  return McmodderUtils.createRange(l, r);
+  return Utils.createRange(l, r);
 })
 
 function setPage(newPage: number) {

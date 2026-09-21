@@ -1,6 +1,6 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 
 type LinkMarkReplaceRule = {
   regExp: RegExp,
@@ -8,7 +8,7 @@ type LinkMarkReplaceRule = {
   parser: (link: string) => string;
 }
 
-export class McmodderMainText {
+export class MainText {
   private readonly configs: ConfigRepository;
   private readonly container: JQuery;
 
@@ -51,31 +51,31 @@ export class McmodderMainText {
         fandomFlag = true;
       }
     });
-    if (clashFlag) McmodderUtils.commonMsg("发现疑似的链接冲突问题，请检查~", false);
-    if (fandomFlag) McmodderUtils.commonMsg("发现 Minecraft Wiki Fandom 链接，请将其及时更新至 zh.minecraft.wiki ~", false);
+    if (clashFlag) Utils.commonMsg("发现疑似的链接冲突问题，请检查~", false);
+    if (fandomFlag) Utils.commonMsg("发现 Minecraft Wiki Fandom 链接，请将其及时更新至 zh.minecraft.wiki ~", false);
   }
 
   private static readonly linkMarkReplaceRules: LinkMarkReplaceRule[] = [
     {
       regExp: /^\/item\/\d+\.html$/,
       icon: "cube",
-      parser: link => McmodderUtils.abstractIDFromURL(link, "item").toString()
+      parser: link => Utils.abstractIDFromURL(link, "item").toString()
     }, {
       regExp: /^\/item\/tab\/\d+\.html$/,
       icon: "table",
-      parser: link => McmodderUtils.abstractIDFromURL(link, "item/tab").toString()
+      parser: link => Utils.abstractIDFromURL(link, "item/tab").toString()
     }, {
       regExp: /^\/class\/\d+\.html$/,
       icon: "cubes",
-      parser: link => McmodderUtils.abstractIDFromURL(link, "class").toString()
+      parser: link => Utils.abstractIDFromURL(link, "class").toString()
     }, {
       regExp: /^\/modpack\/\d+\.html$/,
       icon: "file-zip-o",
-      parser: link => McmodderUtils.abstractIDFromURL(link, "modpack").toString()
+      parser: link => Utils.abstractIDFromURL(link, "modpack").toString()
     }, {
       regExp: /^\/author\/\d+\.html$/,
       icon: "author",
-      parser: link => McmodderUtils.abstractIDFromURL(link, "author").toString()
+      parser: link => Utils.abstractIDFromURL(link, "author").toString()
     }, {
       regExp: /^\/oredict\/[0-9A-Za-z:_\/]+-1.html$/,
       icon: "tag",
@@ -85,14 +85,14 @@ export class McmodderMainText {
 
   private generateLinkMark(link: string) {
     const container = $('<span class="mcmodder-link-check">');
-    for (const { regExp, icon, parser } of McmodderMainText.linkMarkReplaceRules) {
+    for (const { regExp, icon, parser } of MainText.linkMarkReplaceRules) {
       if (regExp.test(link)) {
-        const escaped = McmodderUtils.escapeHTML(parser(link));
+        const escaped = Utils.escapeHTML(parser(link));
         container.html(`<i class="mcmodder-link-icon fa fa-${ icon }"></i>${ escaped }`);
         return container;
       }
     }
-    const escaped = McmodderUtils.escapeHTML(link);
+    const escaped = Utils.escapeHTML(link);
     return container.html(escaped);
   }
 
@@ -119,7 +119,7 @@ export class McmodderMainText {
       if (isLocalized)
         return;
       if (size > 1024000) container // editor.options.fileMaxSize
-        .append(`<span class="badge badge-warning mcmodder-localize-check>该图片尚未本地化，但是体积 (${ McmodderUtils.getFormattedSize(size) }) 超过了本地图床最大体积限制</span>`)
+        .append(`<span class="badge badge-warning mcmodder-localize-check>该图片尚未本地化，但是体积 (${ Utils.getFormattedSize(size) }) 超过了本地图床最大体积限制</span>`)
         .css("border", "10px solid var(--mcmodder-color-warning)");
       else if (!["image/png", "image/jpg", "image/jpeg", "image/gif"].includes(contentType)) container // editor.options.fileAllowFiles ?
         .append(`<span class="badge badge-warning mcmodder-localize-check">该图片尚未本地化，但是使用了本地图床不支持的文件格式 (${ contentType })</span>`)

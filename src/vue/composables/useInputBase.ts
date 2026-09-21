@@ -1,5 +1,5 @@
 import { onMounted, shallowRef, type ShallowRef } from "vue";
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 export function useInputBase<T>(opts: {
   inputRef: Readonly<ShallowRef<HTMLElement | null>>,
@@ -31,7 +31,7 @@ export function useInputBase<T>(opts: {
     }
     else {
       if (resp.msg) {
-        McmodderUtils.commonMsg(resp.msg, false);
+        Utils.commonMsg(resp.msg, false);
       }
       opts.setDOMValue?.(valueRef.value);
     }

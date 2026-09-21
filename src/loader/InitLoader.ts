@@ -9,7 +9,7 @@ import { DiffPageInit } from "../init/DiffPageInit";
 import { DownloadPageInit } from "../init/DownloadPageInit";
 import { EditHistoryPageInit } from "../init/EditHistoryPageInit";
 import { HomePageInit } from "../init/HomePageInit";
-import { McmodderInit } from "../init/Init";
+import { Init } from "../init/Init";
 import { ItemEditorInit } from "../init/ItemEditorInit";
 import { ItemListInit } from "../init/ItemListInit";
 import { ItemPageInit } from "../init/ItemPageInit";
@@ -29,7 +29,7 @@ import { VersionListInit } from "../init/VersionListInit";
 import { Mcmodder } from "../Mcmodder";
 
 export class InitLoader {
-  static run(parent: Mcmodder, list: McmodderInit[]) {
+  static run(parent: Mcmodder, list: Init[]) {
     list.push(
       new HomePageInit(parent),
       new TabEditInit(parent),

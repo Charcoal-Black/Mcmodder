@@ -1,8 +1,8 @@
 import { Mcmodder } from "../../Mcmodder";
-import { McmodderUtils } from "../../Utils";
-import type { McmodderLogger } from "./Logger";
+import { Utils } from "../../Utils";
+import type { Logger } from "./Logger";
 
-export class McmodderLoggerFrame implements McmodderLogger {
+export class LoggerFrame implements Logger {
 
   parent: Mcmodder;
   $instance: JQuery;
@@ -27,7 +27,7 @@ export class McmodderLoggerFrame implements McmodderLogger {
   }
 
   private write(className: string, prefix: string, message: string) {
-    this.$instance.append(`<p class="${ className }">&lt;${ McmodderUtils.getFormatted24hTime() }&gt; ${ prefix }${ message }</span>`);
+    this.$instance.append(`<p class="${ className }">&lt;${ Utils.getFormatted24hTime() }&gt; ${ prefix }${ message }</span>`);
     if (this.getScrollTopMax() - this.instance.scrollTop < 100) {
       this.scrollToBottom();
     }

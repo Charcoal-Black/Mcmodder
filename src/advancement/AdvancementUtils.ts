@@ -47,7 +47,7 @@ export class AdvancementUtils {
 
   // parent: Mcmodder;
   private readonly configs: ConfigRepository;
-  private readonly list: AdvancementData[];
+  private readonly list: Advancement[];
 
   constructor(parent: Mcmodder) {
     this.configs = parent.configRepository;
@@ -98,7 +98,7 @@ export class AdvancementUtils {
   }
 
   getAll() {
-    return JSON.parse(this.configs.getProfile("advancements") ?? "[]") as AdvancementProgressionData[];
+    return JSON.parse(this.configs.getProfile("advancements") ?? "[]") as AdvancementProgression[];
   }
 
   getSingleProgress(id: AdvancementID) {

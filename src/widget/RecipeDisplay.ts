@@ -1,35 +1,35 @@
 import { TabEditInit } from "../init/TabEditInit";
-import { McmodderMap } from "../map/Map";
+import { FieldIndex } from "../fieldindex/FieldIndex";
 import { ItemDisplay } from "./ItemDisplay";
 
 export class RecipeDisplay {
   protected readonly tab: TabEditInit;
-  protected readonly recipe: McmodderSimpleRecipeData;
+  protected readonly recipe: SimpleRecipe;
   protected readonly instance: JQuery;
-  protected readonly itemMap: McmodderMap<McmodderItemData>;
-  protected readonly tagMap: McmodderMap<McmodderItemData>;
-  protected readonly guiBoundMap: McmodderMap<RecipeJsonFrameGuiBound>;
+  protected readonly itemFieldIndex: FieldIndex<Item>;
+  protected readonly tagFieldIndex: FieldIndex<Item>;
+  protected readonly guiBoundFieldIndex: FieldIndex<RecipeJsonFrameGuiBound>;
   protected readonly guiID: number;
 
   protected readonly inputs: Record<string, ItemDisplay> = {};
   protected readonly outputs: Record<string, ItemDisplay> = {};
   protected arrow?: JQuery;
 
-  constructor(tab: TabEditInit, recipe: McmodderSimpleRecipeData) {
+  constructor(tab: TabEditInit, recipe: SimpleRecipe) {
     this.tab = tab;
     this.recipe = recipe;
-    this.itemMap = this.tab.itemMap;
-    this.tagMap = this.tab.tagMap;
-    this.guiBoundMap = this.tab.guiBoundMap;
+    this.itemFieldIndex = this.tab.itemFieldIndex;
+    this.tagFieldIndex = this.tab.tagFieldIndex;
+    this.guiBoundFieldIndex = this.tab.guiBoundFieldIndex;
     this.instance = $(`<div class="mcmodder-recipe-display"></div>`);
-    this.guiID = this.guiBoundMap.getKeyOrDefault(this.recipe.gui_id, "mcmodID", -1);
+    this.guiID = this.guiBoundFieldIndex.getKeyOrDefault(this.recipe.gui_id, "mcmodID", -1);
 
     if (recipe.in_id) {
       Object.keys(recipe.in_id).forEach(key => {
         const id = recipe.in_id![key];
         const count = recipe.in_num ? recipe.in_num[key] : undefined;
         const chance = recipe.in_chance ? recipe.in_chance[key] : undefined;
-        const itemDisplay = new ItemDisplay(this.itemMap, this.tagMap, id, count, chance)
+        const itemDisplay = new ItemDisplay(this.itemFieldIndex, this.tagFieldIndex, id, count, chance)
         itemDisplay.instance.appendTo(this.instance);
         this.inputs[key] = itemDisplay;
       });
@@ -44,7 +44,7 @@ export class RecipeDisplay {
         const id = recipe.out_id![key];
         const count = recipe.out_num ? recipe.out_num[key] : undefined;
         const chance = recipe.out_chance ? recipe.out_chance[key] : undefined;
-        const itemDisplay = new ItemDisplay(this.itemMap, this.tagMap, id, count, chance);
+        const itemDisplay = new ItemDisplay(this.itemFieldIndex, this.tagFieldIndex, id, count, chance);
         itemDisplay.instance.appendTo(this.instance);
         this.outputs[key] = itemDisplay;
       });

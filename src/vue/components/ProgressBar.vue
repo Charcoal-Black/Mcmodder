@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { McmodderUtils } from '../../Utils';
+import { Utils } from '../../Utils';
 
 interface Props {
   value?: number,
@@ -33,7 +33,7 @@ const props = withDefaults(
   }
 )
 
-const DISPLAYRULE_PERCENT: ProgressBarDisplayRule = (val, min, max) => `${ McmodderUtils.getPrecisionFormatter(0, 0).format((val - min) / (max - min) * 100) }%`;
+const DISPLAYRULE_PERCENT: ProgressBarDisplayRule = (val, min, max) => `${ Utils.getPrecisionFormatter(0, 0).format((val - min) / (max - min) * 100) }%`;
 const DISPLAYRULE_FRACTION: ProgressBarDisplayRule = (val, _min, max) => `${ val.toLocaleString() } / ${ max.toLocaleString() }`;
 
 const displayRule = computed(() => 

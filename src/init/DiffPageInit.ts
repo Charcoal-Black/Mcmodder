@@ -2,10 +2,10 @@ import { createApp } from "vue";
 import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
 import { PlatformCompareFrame } from "../widget/compare/PlatformCompareFrame";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 import TextComparator from "../vue/components/TextComparator.vue";
 
-export class DiffPageInit extends McmodderInit {
+export class DiffPageInit extends Init {
   canRun() {
     return this.parent.href.includes("/diff/") &&
       !this.parent.href.includes("/list/");

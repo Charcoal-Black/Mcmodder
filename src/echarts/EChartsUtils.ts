@@ -1,6 +1,6 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderValues } from "../Values";
+import { Values } from "../Values";
 
 export class EchartsUtils {
   private readonly configs: ConfigRepository;
@@ -88,7 +88,7 @@ export class EchartsUtils {
     if (!this.font) return;
     let o = chart?.getOption();
     if (o) {
-      const fontFamily = McmodderValues.assets.font.fontFamily[this.font];
+      const fontFamily = Values.assets.font.fontFamily[this.font];
       const newOption: any = {
         textStyle: { fontFamily }
       };

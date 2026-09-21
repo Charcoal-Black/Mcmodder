@@ -3,7 +3,7 @@ import { Command } from "./Command";
 export class BatchCommand<T extends Object> extends Command<T> {
   commandList: Command<T>[];
 
-  constructor(self: McmodderTableContext<T>) {
+  constructor(self: TableContext<T>) {
     super(self);
     this.commandList = new Array;
   }

@@ -24,7 +24,7 @@ interface HSLA extends HSL {
   readonly a: number;
 }
 
-type McmodderPalette = Record<string, string>;
+type Palette = Record<string, string>;
 
 type PaletteConverter = (color: string, tier?: number) => string;
 
@@ -37,22 +37,22 @@ type PaletteModifierStep = Record<string, PaletteModifier>;
 
 type PaletteModifierSchedule = PaletteModifierStep[];
 
-type McmodderTemplateData = {
+type Template = {
   id: string;
   title: string;
   description: string;
   content: string;
 }
 
-interface McmodderStorage {
-  mcmodderSettings: McmodderSettings,
+interface AppStorage {
+  mcmodderSettings: Settings,
   userProfile?: Record<string, string>,
   mcmodderSplashList_v2?: string,
-  templateList?: McmodderTemplateData[],
-  almanacsList?: AlmanacsData[],
+  templateList?: Template[],
+  almanacsList?: Almanacs[],
   mcmodderLogger?: string,
-  mcmodderJsonStorage?: Record<string, McmodderItemList>,
-  mcmodderRecipeJsonStorage?: Record<string, McmodderRecipeList>,
+  mcmodderJsonStorage?: Record<string, ItemList>,
+  mcmodderRecipeJsonStorage?: Record<string, RecipeList>,
   latestEditTime?: Record<string, number>,
   latestComment?: Record<string, number>,
   classNameIDMap?: Record<string, string>,
@@ -69,7 +69,7 @@ interface McmodderStorage {
   assistantViewed?: Record<string, number[]>,
 }
 
-interface McmodderSettings {
+interface Settings {
   themeColor1: string,
   themeColor2: string,
   autoCheckUpdate: boolean,
@@ -164,22 +164,22 @@ interface McmodderSettings {
   itemRepository: 0 | 1,
   minimumRequestInterval: number,
   lieqi: boolean,
-  keybindFastLink: McmodderKeyData,
-  keybindFastSubmit: McmodderKeyData,
-  keybindVerifyPass: McmodderKeyData,
-  keybindVerifyRefund: McmodderKeyData,
-  keybindVerifyCheck: McmodderKeyData,
-  keybindVerifyReason: McmodderKeyData,
+  keybindFastLink: Key,
+  keybindFastSubmit: Key,
+  keybindVerifyPass: Key,
+  keybindVerifyRefund: Key,
+  keybindVerifyCheck: Key,
+  keybindVerifyReason: Key,
 
   // 以下不显示在设置界面
   nightMode: boolean,
   preferredWiderScreen: boolean,
   lastUid: number,
   lastRequestTime: number,
-  itemCustomTypeList: ItemTypeData[],
+  itemCustomTypeList: ItemType[],
   userFavList: string,
   recentlyVisited: string,
-  recentlyVisitedMods: RecentlyVisitedData[],
+  recentlyVisitedMods: RecentlyVisited[],
   myProfiles: string,
   guiLocker: number,
   shapelessLocker: boolean,
@@ -196,12 +196,12 @@ interface McmodderSettings {
   preferredDragPos: Record<string, number>,
 
   // 以下为旧版遗留
-  templateList?: McmodderTemplateData[],
+  templateList?: Template[],
   useNotoSans?: boolean,
-  almanacsList?: AlmanacsData[]
+  almanacsList?: Almanacs[]
 }
 
-interface McmodderItemData {
+interface Item {
   /**
    * 该物品的百科资料 ID，
    * 未绑定百科资料时为 `0`
@@ -299,16 +299,16 @@ interface McmodderItemData {
   /** 正文内容 */
   content?: string;
 }
-type McmodderItemList = McmodderItemData[];
+type ItemList = Item[];
 
-interface McmodderUnpurifiedItemData extends McmodderItemData {
+interface UnpurifiedItem extends Item {
   /** 对应原 maxStackSize */
   maxStacksSize?: number;
   /** 对应原 creativeTabName */
   CreativeTabName?: string;
 }
 
-interface McmodderClassData {
+interface Class {
   id: number;
   name: string;
   englishName: string;
@@ -316,14 +316,14 @@ interface McmodderClassData {
   cover?: string;
 }
 
-interface McmodderAuthorData {
+interface Author {
   id: number;
   name: string;
   alias: string;
   isTeam: boolean;
 }
 
-interface McmodderOredictData {
+interface Oredict {
   id: string;
 }
 
@@ -347,19 +347,19 @@ interface AutoLinkBaseEntry {
   type: AutoLinkEntryType;
 }
 interface AutoLinkItemEntry extends AutoLinkBaseEntry {
-  data: McmodderItemData;
+  data: Item;
   type: "item";
 }
 interface AutoLinkClassEntry extends AutoLinkBaseEntry {
-  data: McmodderClassData;
+  data: Class;
   type: "class" | "modpack";
 }
 interface AutoLinkAuthorEntry extends AutoLinkBaseEntry {
-  data: McmodderAuthorData;
+  data: Author;
   type: "author";
 }
 interface AutoLinkOredictEntry extends AutoLinkBaseEntry {
-  data: McmodderOredictData;
+  data: Oredict;
   type: "oredict";
 }
 type AutoLinkEntry =
@@ -369,13 +369,13 @@ type AutoLinkEntry =
   AutoLinkOredictEntry;
 type AutoLinkEntries = AutoLinkEntry[];
 
-type AlmanacsData = {
+type Almanacs = {
   date: number,
   good: string[],
   bad: string[]
 }
 type AlmanacsPage = {
-  almanacs: AlmanacsData,
+  almanacs: Almanacs,
   prevDate: number,
   nextDate: number
 }
@@ -387,10 +387,10 @@ interface ChangedStorage {
   key: string
 }
 
-type McmodderRecipeIngredient = string | string[];
-interface McmodderRecipeData {
-  in_id?: Record<string, McmodderRecipeIngredient>;
-  out_id?: Record<string, McmodderRecipeIngredient>;
+type RecipeIngredient = string | string[];
+interface Recipe {
+  in_id?: Record<string, RecipeIngredient>;
+  out_id?: Record<string, RecipeIngredient>;
   in_num?: Record<string, number>;
   out_num?: Record<string, number>;
   in_chance?: Record<string, number>;
@@ -398,14 +398,14 @@ interface McmodderRecipeData {
   power_num?: Record<string, string>;
   gui_id: string;
 }
-interface McmodderSimpleRecipeData extends McmodderRecipeData {
+interface SimpleRecipe extends Recipe {
   in_id?: Record<string, string>;
   out_id?: Record<string, string>;
 }
-type McmodderRecipeList = McmodderRecipeData[];
+type RecipeList = Recipe[];
 
 /** 一个表达自定义资料类型的数据 */
-interface ItemTypeData {
+interface ItemType {
   /** 所属模组 ID */
   classID: number;
   /** 资料类型的数字 ID */
@@ -418,7 +418,7 @@ interface ItemTypeData {
   color: string;
 }
 
-interface McmodderProfileData {
+interface Profile {
   /**
    * 存储在浏览器 Cookie 中的验证用户身份的 UUID
    * 
@@ -497,7 +497,7 @@ interface McmodderProfileData {
   /** 开发者区域的模组 ID 列表，以单个逗号 `,` 分隔 */
   devModList?: string,
   /** 权限等级 */
-  permission: import("../config/ConfigUtils").McmodderPermission,
+  permission: import("../config/ConfigUtils").Permission,
   /** 该数据上次更新的时间戳 */
   lastUpdated?: number,
 
@@ -519,7 +519,7 @@ interface McmodderProfileData {
   /**
    * 预编辑列表
    */
-  preSubmitList?: PreSubmitData[],
+  preSubmitList?: PreSubmission[],
 
   /**
    * 最近一次周年庆祝时，账号自注册至今所过去的年份数
@@ -527,7 +527,7 @@ interface McmodderProfileData {
   annualCelebration?: number
 }
 
-interface AdvancementData {
+interface Advancement {
   lang: string,
   category: import("../advancement/AdvancementUtils").AdvancementType,
   id: import("../advancement/AdvancementUtils").AdvancementID,
@@ -537,72 +537,72 @@ interface AdvancementData {
   reward?: number | null,
   tier?: number,
   isCustom: boolean,
-  prev?: AdvancementData,
-  next?: AdvancementData,
+  prev?: Advancement,
+  next?: Advancement,
   level?: number
 }
 
-interface AdvancementProgressionData {
+interface AdvancementProgression {
   id: import("../advancement/AdvancementUtils").AdvancementID,
   progress: number
 }
 
-type McmodderTableAcceptable = Record<string, any>;
-interface HeadConfig<T> {
+type TableAcceptable = Record<string, any>;
+interface RowOption<T> {
   readonly name: string;
-  readonly displayRule?: McmodderTableDisplayRule<T>;
+  readonly displayRule?: TableDisplayRule<T>;
 }
-type HeadConfigs<T> = Record<string, HeadConfig<T>>;
-type HeadConfigInitializer<T> = string | [string, McmodderTableDisplayRule<T>];
-type HeadConfigsInitializer<T> = Record<string, HeadConfigInitializer<T>>;
+type RowOptions<T> = Record<string, RowOption<T>>;
+type RowOptionInitializer<T> = string | [string, TableDisplayRule<T>];
+type RowOptionsInitializer<T> = Record<string, RowOptionInitializer<T>>;
 
 type EditConfigs<T> = {
-  [P in keyof T as T[P] extends undefined ? P : never]: McmodderTableInputData & { optional: true };
+  [P in keyof T as T[P] extends undefined ? P : never]: TableInputOption & { optional: true };
 } & {
-  [P in keyof T as T[P] extends undefined ? never : P]: McmodderTableInputData;
-};  // Record<keyof T, McmodderInputData>;
-type EditConfigInitializer = null | undefined | import("../config/ConfigUtils").McmodderInputType | McmodderInputLimit | McmodderInputData | McmodderTableInputData | {readonly: true};
-type EditConfigsInitializer<T> = Record<keyof T, EditConfigInitializer>;
+  [P in keyof T as T[P] extends undefined ? never : P]: TableInputOption;
+};  // Record<keyof T, InputOption>;
+type EditOptionInitializer = null | undefined | import("../config/ConfigUtils").InputType | InputLimit | InputOption | TableInputOption | {readonly: true};
+type EditOptionsInitializer<T> = Record<keyof T, EditOptionInitializer>;
 
-interface McmodderTableRowData<T> {
+interface TableRowData<T> {
   content: T;
   selected?: boolean;
   edited?: Partial<T>;
 }
 
-type McmodderTableDataMap<T extends McmodderTableAcceptable> = Record<number, T>;
-type McmodderTableRowSelection = number[];
-type McmodderTableDataList<T extends McmodderTableAcceptable> = T[];
+type TableDataMap<T extends TableAcceptable> = Record<number, T>;
+type TableRowSelection = number[];
+type TableDataList<T extends TableAcceptable> = T[];
 
-interface McmodderTableRowRange {
+interface TableRowRange {
   l: number;
   r: number;
 }
 
-type McmodderTableDisplayRule<T> = (unit: any, row: Partial<T>) =>
+type TableDisplayRule<T> = (unit: any, row: Partial<T>) =>
   JQuery | string | number | null | undefined;
 
-interface McmodderTableContext<T extends McmodderTableAcceptable> {
+interface TableContext<T extends TableAcceptable> {
   empty: () => void,
   showLoading: () => void,
   refreshAll: () => void,
   getData: (index: number) => T,
-  getRowData: (index: number) => McmodderTableRowData<T>,
+  getRowData: (index: number) => TableRowData<T>,
   editData: (index: number, key: keyof T, value: any) => void,
   appendData: (data: T) => void,
-  appendDataList: (dataList: McmodderTableDataList<T>) => void,
+  appendDataList: (dataList: TableDataList<T>) => void,
   insertRow: (index: number, newData?: T) => void,
-  insertRowWithDataMap: (dataMap: McmodderTableDataMap<T>) => void,
-  insertMultipleRowWithDataMap: (dataMap: McmodderTableDataMap<T>) => void,
-  deleteRow: (index: number) => McmodderTableDataMap<T>,
-  deleteMultipleRow: (selection: McmodderTableRowSelection) => McmodderTableDataMap<T>,
-  copyRow: (selection: McmodderTableRowSelection) => void,
-  pasteRow: (index: number) => McmodderTableDataMap<T>,
-  dataMapToSelection: (dataMap: McmodderTableDataMap<T>) => number[]
+  insertRowWithDataMap: (dataMap: TableDataMap<T>) => void,
+  insertMultipleRowWithDataMap: (dataMap: TableDataMap<T>) => void,
+  deleteRow: (index: number) => TableDataMap<T>,
+  deleteMultipleRow: (selection: TableRowSelection) => TableDataMap<T>,
+  copyRow: (selection: TableRowSelection) => void,
+  pasteRow: (index: number) => TableDataMap<T>,
+  dataMapToSelection: (dataMap: TableDataMap<T>) => number[]
 }
 
 type ConfigParser<TConfig extends object> = (config: string) => TConfig;
-type DataParser<TData extends McmodderTableAcceptable> = (key: string, value: unknown) => TData;
+type DataParser<TData extends TableAcceptable> = (key: string, value: unknown) => TData;
 
 type TimerDataGetter = () => number;
 type TimerDataFormatter = (t: number) => string;
@@ -645,13 +645,13 @@ interface McmodItemEditorData {
   "item-data": McmodItemEditorInnerData
 }
 
-interface ClassNameData {
+interface ClassName {
   className: string,
   classEname: string,
   classAbbr: string
 }
 
-interface McmodderKeyData {
+interface Key {
   ctrlKey?: boolean,
   shiftKey?: boolean,
   altKey?: boolean,
@@ -666,7 +666,7 @@ type ContextMenuCallback = (e: PointerEvent) => void;
 type ContextMenuItem = {
   key: string;
   text: string;
-  shortcut?: McmodderKeyData;
+  shortcut?: Key;
   displayRule: ContextMenuDisplayRule;
   callback: ContextMenuCallback;
 }
@@ -675,14 +675,14 @@ type ContextMenuItems = ContextMenuItem[];
 type ContextMenuItemOption = {
   key: string,
   text: string,
-  shortcut?: McmodderKeyData,
+  shortcut?: Key,
   displayRule: ContextMenuDisplayRule,
   callback: ContextMenuCallback
 }
 
 type ProgressBarDisplayRule = (val: number, min: number, max: number) => string;
 
-type ItemCustomTypeList = ItemTypeData[];
+type ItemCustomTypeList = ItemType[];
 
 type InputValueNumericRange = [number | null, number | null];
 type InputValueFiniteNumericRange = [number, number];
@@ -710,16 +710,16 @@ interface InputControlRef<T> {
   setDisplayValue(newValue: T): void
 }
 
-interface McmodderInputLimit {
-  readonly type: import("../config/ConfigUtils").McmodderInputType;
+interface InputLimit {
+  readonly type: import("../config/ConfigUtils").InputType;
   readonly range?: InputValueRange;
 }
 
-interface McmodderInputData extends McmodderInputLimit {
+interface InputOption extends InputLimit {
   readonly value: any;
 }
 
-interface McmodderTableInputData extends McmodderInputData {
+interface TableInputOption extends InputOption {
   readonly customName?: string;
   readonly readonly?: boolean;
   readonly optional?: boolean;
@@ -731,14 +731,14 @@ interface InputValidInfo<T> {
   readonly final?: T;
 }
 
-interface McmodderConfigData extends McmodderInputData {
+interface ConfigOption extends InputOption {
   readonly title: string;
   readonly description: string;
-  readonly permission: import("../config/ConfigUtils").McmodderPermission;
+  readonly permission: import("../config/ConfigUtils").Permission;
   readonly suggestion?: InputSimplifiedSuggestion[];
 }
 
-interface PreSubmitData {
+interface PreSubmission {
   id: string;
   createTime: number;
   lastSubmitTime: number;
@@ -749,27 +749,27 @@ interface PreSubmitData {
   errState?: number;
 }
 
-interface VersionData {
+interface GameVersion {
   date: Date,
   name: string,
   mcver: string[],
   logid: number
 }
-interface CFVersionData {
+interface CFGameVersion {
   id: number,
   releaseType: number,
   fileName: string,
   gameVersions: string[],
   dateCreated: number
 }
-interface MRVersionData {
+interface MRGameVersion {
   id: number,
   version_type: string,
   version_number: string,
   game_versions: string[],
   date_published: number
 }
-interface VersionCompareData {
+interface GameVersionCompareEntry {
   platform: 1 | 2;
   cfid?: string;
   mrid?: string;
@@ -784,7 +784,7 @@ interface VersionCompareData {
   options: string;
 }
 
-interface RecentlyVisitedData {
+interface RecentlyVisited {
   id: number;
   time: number;
 }
@@ -808,7 +808,7 @@ interface ScheduleRequest {
   id: string
 }
 
-type ScheduleRequestData = Partial<Record<keyof ScheduleRequestTypes, import("../schedulerequest/ScheduleRequestType").ScheduleRequestType>>;
+type ScheduleRequestOption = Partial<Record<keyof ScheduleRequestTypes, import("../schedulerequest/ScheduleRequestType").ScheduleRequestType>>;
 type ScheduleRequestList = ScheduleRequest[];
 
 type TextCompareMode = "diffLines" | "diffWords" | "diffChars";
@@ -821,31 +821,31 @@ type JsDiffResult = {
 
 type JsDiffResultList = JsDiffResult[];
 
-interface McmodderSplashData {
+interface Splash {
   time: number;
   content: string;
   num: number;
 }
 
-interface McmodderClassRelationData {
+interface ClassRelation {
   id: number;
   children: number[];
 }
 
-interface McmodderRankUserStorageData {
+interface RankUserStorage {
   user: number;
   value: number;
 }
-type McmodderRankStorageData = McmodderRankUserStorageData[];
+type RankStorage = RankUserStorage[];
 
-interface McmodderRankDisplayData {
+interface RankDisplay {
   date: number;
   byteTop1: string;
   totalEdited: number;
   size: number;
 }
 
-interface McmodderFileDisplayData {
+interface FileDisplay {
   fileName: string;
   size: number;
 }
@@ -853,7 +853,7 @@ interface McmodderFileDisplayData {
 type JsonFrameToolOnClickCallback = (ev: Event) => any;
 type JsonFrameToolDisplayCondition = () => boolean;
 
-interface JsonFrameToolData {
+interface JsonFrameTool {
   id: string,
   text: string,
   displayCondition: import("vue").ComputedRef<boolean>,
@@ -884,12 +884,12 @@ interface RecipeJsonFrameGuiBound {
   mcmodID: number;
 }
 
-type McmodderJsonStorage<T extends McmodderTableAcceptable> = Record<string, T[]>; 
+type JsonStorage<T extends TableAcceptable> = Record<string, T[]>; 
 
-interface RequestData {
+interface AppRequest {
   config: import("$").GmXmlhttpRequestOption<"text", any>;
 }
-type RequestQueue = RequestData[];
+type RequestList = AppRequest[];
 
 interface RequestResult {
   index?: number,
@@ -900,18 +900,18 @@ interface RequestResult {
 interface RequestQueueExecution {
   [key: string]: any;
   runningIndex: Set<number>;
-  queue: RequestQueue;
+  queue: RequestList;
   results: RequestResult[];
   progress: number;
 }
 
 type RequestQueuePreExecution = Partial<RequestQueueExecution>;
 
-type RequestQueueBackupData = Omit<RequestQueueExecution, "runningIndex"> & {
+type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
 }
 
-type McmodderMapKeyHandler = (data: any) => any;
+type MapKeyHandler = (data: any) => any;
 
 interface StructureEditorBlocktype {
   id: number;

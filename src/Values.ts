@@ -2,17 +2,17 @@ import { GM_getValue, GM_info, GM_openInTab } from "$";
 import defaultEditReasons from "./assets/json/input/EditReason.json";
 import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
 
-export class McmodderValues {
+export class Values {
 
   static readonly menuCommands = {
     settings: function () {
       GM_openInTab("https://center.mcmod.cn/#/setting/", { active: true });
     },
     structureEditor: function () {
-      GM_openInTab(`${ McmodderValues.hostname }/mcmodder/structureeditor/`, { active: true });
+      GM_openInTab(`${ Values.hostname }/mcmodder/structureeditor/`, { active: true });
     },
     jsonHelper: function () {
-      GM_openInTab(`${ McmodderValues.hostname }/mcmodder/jsonhelper/`, { active: true });
+      GM_openInTab(`${ Values.hostname }/mcmodder/jsonhelper/`, { active: true });
     },
     exportLogs: function () {
       $("html").empty().html('若遇封IP，请在向作者反馈时发送下列内容，并告知具体封禁时间（精确到秒）以及被封禁时已打开的百科页面数量。下列内容可能包含敏感信息，可考虑私信发送。<textarea id="mcmodder-log-export" style="min-height: 800px; min-width: 100%;">');

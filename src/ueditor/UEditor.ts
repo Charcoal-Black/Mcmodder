@@ -1,9 +1,9 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
-export class McmodderUEditor {
+export class UEditor {
 
   editor: any;
   parent: Mcmodder;
@@ -61,7 +61,7 @@ export class McmodderUEditor {
     this.parent.ueditorFrame.push(this);
     this.parent.ueditorFrame.forEach(e => {
       if (!e.document) return;
-      McmodderUtils.addStyle(this.parent.css, "", e.document);
+      Utils.addStyle(this.parent.css, "", e.document);
       if (this.parent.isNightMode) {
         e.$document!.find("html").addClass("dark");
       }
@@ -70,9 +70,9 @@ export class McmodderUEditor {
     // 现代化按钮
     // if (this.configs.get("mcmodderUI")) {
       let toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
-      for (let i = 0; i < McmodderValues.ueButton1.length; i++) {
-        toolBar.find(`.edui-for-${McmodderValues.ueButton1[i]} .edui-icon`)
-        .addClass("mcmodder-edui-box fa fa-" + McmodderValues.ueButton2[i])
+      for (let i = 0; i < Values.ueButton1.length; i++) {
+        toolBar.find(`.edui-for-${Values.ueButton1[i]} .edui-icon`)
+        .addClass("mcmodder-edui-box fa fa-" + Values.ueButton2[i])
         .css("background-image", "none");
       }
       toolBar.find(".edui-arrow").addClass("mcmodder-edui-arrow fa fa-caret-down").css("background-image", "none");

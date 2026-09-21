@@ -1,10 +1,10 @@
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 export class StyleLoader {
 
-  static applyPaletteModifier(palette: McmodderPalette, schedule: PaletteModifierSchedule) {
+  static applyPaletteModifier(palette: Palette, schedule: PaletteModifierSchedule) {
     // 递归大手子
     const work = (schedule: PaletteModifierSchedule, stepIndex: number, currentColor: string, prefixList: string[], resultList: string[]) => {
       const step = schedule[stepIndex];
@@ -58,65 +58,65 @@ export class StyleLoader {
     const splitScreenOnVerifyCss = importCSS("splitScreenOnVerify");
     const codemirrorCss = importCSS("codemirror");
 
-    const basePalette: McmodderPalette = {
+    const basePalette: Palette = {
       "background": "#fff",
       "text": "#333"
     };
-    const nightPalette: McmodderPalette = {
+    const nightPalette: Palette = {
       "background": "#111",
       "text": "#ddd"
     };
     const basePaletteBackgroundCss = this.applyPaletteModifier({ "background": basePalette.background },
-        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1.1 - 0.15 * tier!), maxTier: 4 }}]
+        [{ "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 1.1 - 0.15 * tier!), maxTier: 4 }}]
     );
     const nightPaletteBackgroundCss = this.applyPaletteModifier({ "background": nightPalette.background },
-        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 0.9 + 0.15 * tier!), maxTier: 4 }}]
+        [{ "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 0.9 + 0.15 * tier!), maxTier: 4 }}]
     );
     const basePaletteTextCss = this.applyPaletteModifier({ "text": basePalette.text },
-        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 + 0.15 * tier!), maxTier: 3 }}]
+        [{ "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 1 + 0.15 * tier!), maxTier: 3 }}]
     );
     const nightPaletteTextCss = this.applyPaletteModifier({ "text": nightPalette.text },
-        [{ "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 - 0.15 * tier!), maxTier: 3 }}]
+        [{ "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 1 - 0.15 * tier!), maxTier: 3 }}]
     );
 
-    const themeBasePalette: McmodderPalette = {
-      "primary": McmodderUtils.setColorBrightness(parent.styleColors.tc1, 80),
-      "accent": McmodderUtils.setColorBrightness(parent.styleColors.tc2, 80),
-      "danger": McmodderUtils.setColorBrightness("#dc3545", 80),
-      "success": McmodderUtils.setColorBrightness("#28a745", 80),
-      "warning": McmodderUtils.setColorBrightness("#8a6d3b", 80)
+    const themeBasePalette: Palette = {
+      "primary": Utils.setColorBrightness(parent.styleColors.tc1, 80),
+      "accent": Utils.setColorBrightness(parent.styleColors.tc2, 80),
+      "danger": Utils.setColorBrightness("#dc3545", 80),
+      "success": Utils.setColorBrightness("#28a745", 80),
+      "warning": Utils.setColorBrightness("#8a6d3b", 80)
     };
-    const themeNightPalette: McmodderPalette = {
-      "primary": McmodderUtils.setColorBrightness(parent.styleColors.tc1, 60),
-      "accent": McmodderUtils.setColorBrightness(parent.styleColors.tc2, 60),
-      "danger": McmodderUtils.setColorBrightness("#dc3545", 60),
-      "success": McmodderUtils.setColorBrightness("#28a745", 60),
-      "warning": McmodderUtils.setColorBrightness("#8a6d3b", 60)
+    const themeNightPalette: Palette = {
+      "primary": Utils.setColorBrightness(parent.styleColors.tc1, 60),
+      "accent": Utils.setColorBrightness(parent.styleColors.tc2, 60),
+      "danger": Utils.setColorBrightness("#dc3545", 60),
+      "success": Utils.setColorBrightness("#28a745", 60),
+      "warning": Utils.setColorBrightness("#8a6d3b", 60)
     };
     const paletteTransparentStep: PaletteModifierStep = {
       "transparent": {
-        converter: (color, tier) => McmodderUtils.setColorAlpha(color, Math.pow(0.5, tier!)),
+        converter: (color, tier) => Utils.setColorAlpha(color, Math.pow(0.5, tier!)),
         maxTier: 2
       }
     };
     const themePaletteBaseCss = this.applyPaletteModifier(themeBasePalette, [
       {
-        "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 - 0.2 * tier!), maxTier: 2 },
-        "light": { converter: color => McmodderUtils.adjustColorBrightness(color, 1.5) },
-        "background": { converter: color => McmodderUtils.setColorBrightness(color, 99) },
+        "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 1 - 0.2 * tier!), maxTier: 2 },
+        "light": { converter: color => Utils.adjustColorBrightness(color, 1.5) },
+        "background": { converter: color => Utils.setColorBrightness(color, 99) },
       },
       paletteTransparentStep
     ]);
     const themePaletteNightCss = this.applyPaletteModifier(themeNightPalette, [
       {
-        "dark": { converter: (color, tier) => McmodderUtils.adjustColorBrightness(color, 1 + 0.2 * tier!), maxTier: 2 },
-        "light": { converter: color => McmodderUtils.adjustColorBrightness(color, 0.5) },
-        "background": { converter: color => McmodderUtils.setColorBrightness(color, 8) }
+        "dark": { converter: (color, tier) => Utils.adjustColorBrightness(color, 1 + 0.2 * tier!), maxTier: 2 },
+        "light": { converter: color => Utils.adjustColorBrightness(color, 0.5) },
+        "background": { converter: color => Utils.setColorBrightness(color, 8) }
       },
       paletteTransparentStep
     ]);
 
-    const codemirrorPalette: McmodderPalette = {
+    const codemirrorPalette: Palette = {
       "cm-keyword": "#708",
       "cm-atom": "#219",
       "cm-number": "#164",
@@ -201,12 +201,12 @@ export class StyleLoader {
           if (color === "#006699") return "#569cd6";
           if (color === "#808080") return "#abb2bf";
           if (color === "#ff0000") return "#f44747";
-          const brightness = McmodderUtils.colorToHSL(color).l;
-          return McmodderUtils.setColorBrightness(color, 100 - brightness);
+          const brightness = Utils.colorToHSL(color).l;
+          return Utils.setColorBrightness(color, 100 - brightness);
         } }
     }]);
 
-    const highlightPalette: McmodderPalette = {
+    const highlightPalette: Palette = {
       "highlight-gold": "#fd0",
       "highlight-aqua": "#8fd",
       "highlight-pink": "#fcc",
@@ -214,10 +214,10 @@ export class StyleLoader {
     }
     const highlightPaletteCss = this.applyPaletteModifier(highlightPalette, [paletteTransparentStep]);
 
-    const backgroundAlpha = McmodderUtils.clamp(Number(configs.getSettings("backgroundAlpha")), 128, 255) / 0xFF;
-    const textShadowAlpha = McmodderUtils.clamp(Number(configs.getSettings("textShadowAlpha")), 0, 255) / 0xFF;
+    const backgroundAlpha = Utils.clamp(Number(configs.getSettings("backgroundAlpha")), 128, 255) / 0xFF;
+    const textShadowAlpha = Utils.clamp(Number(configs.getSettings("textShadowAlpha")), 0, 255) / 0xFF;
     const otherPaletteBaseCss = this.applyPaletteModifier({
-      "background-transparent": McmodderUtils.setColorAlpha(basePalette.background, backgroundAlpha),
+      "background-transparent": Utils.setColorAlpha(basePalette.background, backgroundAlpha),
       "text-shadow": "#FFF0",
       "text-shadow-strong": "#8884",
       "box-shadow": "#8884",
@@ -293,8 +293,8 @@ export class StyleLoader {
       "classstatus-6": "#303030"
     }, []);
     const otherPaletteNightCss = this.applyPaletteModifier({
-      "background-transparent": McmodderUtils.setColorAlpha(nightPalette.background, backgroundAlpha),
-      "text-shadow": McmodderUtils.setColorAlpha(nightPalette.background, textShadowAlpha),
+      "background-transparent": Utils.setColorAlpha(nightPalette.background, backgroundAlpha),
+      "text-shadow": Utils.setColorAlpha(nightPalette.background, textShadowAlpha),
       "text-shadow-strong": "#0004",
       "box-shadow": "#0008",
       "pre-ins": "#beff7b",
@@ -356,8 +356,8 @@ export class StyleLoader {
       "classstatus-6": "#333"
     }, []);
 
-    const bg = configs.getSettings("defaultBackground") || McmodderValues.assets.bg;
-    const bgNight = configs.getSettings("defaultNightBackground") || McmodderValues.assets.nightMode.bg;
+    const bg = configs.getSettings("defaultBackground") || Values.assets.bg;
+    const bgNight = configs.getSettings("defaultNightBackground") || Values.assets.nightMode.bg;
     const otherCss = `
       --mcmodder-image-background: ${ bg === "none" ? "none" : `url(${ bg }) fixed` };
     `
@@ -428,7 +428,7 @@ export class StyleLoader {
     }
 
     parent.css = style;
-    McmodderUtils.addStyle(style);
+    Utils.addStyle(style);
 
     const radiusRatio: number | undefined = configs.getSettings("radiusRatio");
     document.documentElement.style.setProperty("--mcmodder-ratio-radius", (radiusRatio === undefined ? 1 : radiusRatio).toString());

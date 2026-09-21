@@ -3,21 +3,21 @@
     :parent="parent"
     :id="id"
     :name="name"
-    :head-configs="{
+    :rowOptions="{
       fileName: '文件名',
-      size: ['数据大小', McmodderTable.DISPLAYRULE_SIZE]
+      size: ['数据大小', TableUtils.DISPLAYRULE_SIZE]
     }"
     :data-parser="(key, item) => ({
       fileName: key,
-      size: McmodderUtils.getContextLength(JSON.stringify(item))
+      size: Utils.getContextLength(JSON.stringify(item))
     })"
   />
 </template>
 
-<script setup lang="ts" generic="K extends keyof McmodderStorage">
-import { McmodderTable } from '../../../table/Table.ts';
+<script setup lang="ts" generic="K extends keyof AppStorage">
+import { TableUtils } from '../../../table/Table.ts';
 import type { ConfigResourceFileListInteractorProps } from '../../../types/props';
-import { McmodderUtils } from '../../../Utils.ts';
+import { Utils } from '../../../Utils.ts';
 import ConfigResourceInteractor from './ConfigResourceInteractor.vue';
 
 defineProps<ConfigResourceFileListInteractorProps<K>>();

@@ -24,7 +24,7 @@
 import { computed, ref, watch } from 'vue';
 import { Mcmodder } from '../../Mcmodder.ts';
 import AlmanacsList from './AlmanacsList.vue';
-import { McmodderUtils } from '../../Utils.ts';
+import { Utils } from '../../Utils.ts';
 
 interface Props {
   parent: Mcmodder
@@ -34,8 +34,8 @@ const { parent } = defineProps<Props>();
 
 const almanacsList = parent.configRepository.getAll("almanacsList") ?? [];
 
-const date = ref<number>(McmodderUtils.getStartTime(new Date(), 0));
-const almanacs = ref<AlmanacsData>();
+const date = ref<number>(Utils.getStartTime(new Date(), 0));
+const almanacs = ref<Almanacs>();
 const prevDate = ref<number>(-1);
 const nextDate = ref<number>(-1);
 
@@ -47,7 +47,7 @@ watch(
 )
 
 const formattedChineseDate = computed(() => {
-  return McmodderUtils.getFormattedChineseDate(new Date(date.value));
+  return Utils.getFormattedChineseDate(new Date(date.value));
 })
 
 async function get(date: number) {
@@ -58,14 +58,14 @@ async function get(date: number) {
       nextDate.value = almanacsList[i + 1]?.date;
     }
   });
-  if (!almanacs.value && date === McmodderUtils.getStartTime(new Date(), 0)) {
+  if (!almanacs.value && date === Utils.getStartTime(new Date(), 0)) {
     const resp = await parent.utils.createRequest({
       url: `${ parent.hostname }/tools/almanacs`,
       method: "GET",
       headers: { "Content-Type": "text/html; charset=UTF-8" },
       anonymous: true
     });
-    let almanacs: AlmanacsData = {
+    let almanacs: Almanacs = {
       date: date,
       good: [],
       bad: []
