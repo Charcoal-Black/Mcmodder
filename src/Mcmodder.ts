@@ -650,6 +650,12 @@ export class Mcmodder {
         const myAvatar = $(`<div class="mcmodder-profile">${ avatar }<p>${ nickname } ${ lv }</p></div>`)
         .insertBefore(insertPos);
 
+        // const hoverListener = $(".header-user-info.hover");
+        // const cover = $(`<div class="header-panel-cover">`).insertBefore(myAvatar.parent());
+        // cover.bind("pointerover", _e => {
+        //   hoverListener.trigger("mouseout");
+        // })
+
         const favUserOuterContainer = $(`
           <div class="mcmodder-favuser-outercontainer" />
         `).insertAfter(myAvatar);

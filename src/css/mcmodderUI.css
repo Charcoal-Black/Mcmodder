@@ -372,6 +372,58 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   left: unset;
   right: 50px;
 }
+.header-panel .header-panel-cover {
+  display: none;
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  background-color: #0004;
+}
+@media (max-width: 499px) {
+  body .header-panel .header-panel-cover {
+    display: inherit;
+  }
+  body .header-layer .header-layer-block {
+    width: 100%;
+  }
+  body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
+    right: 0;
+    width: 100%;
+    padding-top: 0;
+  }
+  body .header-user .header-user-info .header-panel .header-layer {
+    max-height: 75vh;
+    overflow-y: auto;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    overscroll-behavior-y: contain;
+    position: relative;
+    inset-inline: 0;
+    inset-block-end: 0;
+    box-shadow: 0 10px 20px #0004;
+  }
+  body .mcmodder-profile {
+    top: 15px;
+  }
+  body .mcmodder-favuser {
+    width: calc(100% - 2em);
+    margin-top: 150px;
+  }
+  body .header-user .header-user-info .header-panel .header-layer-block.with-favuser {
+    margin-top: 275px;
+  }
+  body .header-user:not(.unlogin) li {
+    width: 100%;
+  }
+}
+@media (max-width: 279px) {
+  body .header-user .header-user-info .header-panel .header-layer {
+    flex-direction: column;
+  }
+  body .header-layer-block.layer-bbs.with-favuser {
+    margin-top: 10px;
+  }
+}
 @media (max-width: 1200px) {
   body .header-user .header-user-info .header-panel {
     left: unset;
@@ -380,11 +432,13 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 }
 .header-user .header-user-info .header-panel {
   left: -200%;
+  animation: fadeIn ease-out .2s both;
 }
-.header-user .header-user-info .header-panel {
-  width: 400px !important;
-  padding-top: 70px;
-  animation: fadeIn ease-out .2s both
+@media (min-width: 500px) {
+  .header-user .header-user-info .header-panel {
+    width: 400px !important;
+    padding-top: 70px;
+  }
 }
 .header-user .header-user-info .header-panel .header-layer {
   padding: 1em !important;
@@ -834,6 +888,7 @@ body .edui-default .edui-editor-iframeholder {
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  text-wrap: nowrap;
 }
 body .edui-default span.edui-clickable {
   color: var(--mcmodder-color-link);
