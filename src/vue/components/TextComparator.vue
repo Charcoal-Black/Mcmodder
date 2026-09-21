@@ -3,12 +3,12 @@
     <div class="mcmodder-text-stats">
       <span class="stats-del" v-show="del_num">
         <span class="mcmodder-slim-danger">
-          删除: <strong v-text="del_num.toLocaleString()" />处 (<strong v-text="del_byte.toLocaleString()" />字节)
+          删除: <strong v-text="del_num.toLocaleString()" /> 处 (<strong v-text="del_byte.toLocaleString()" /> 字节)
         </span>
       </span>
       <span class="stats-ins" v-show="ins_num">
         <span class="mcmodder-slim-dark">
-          新增: <strong v-text="ins_num.toLocaleString()" />处 (<strong v-text="ins_byte.toLocaleString()" />字节)
+          新增: <strong v-text="ins_num.toLocaleString()" /> 处 (<strong v-text="ins_byte.toLocaleString()" /> 字节)
         </span>
       </span>
       <span class="mcmodder-jsdiff-nodiffbytes" v-show="defaultMode !== 'diffChars'">

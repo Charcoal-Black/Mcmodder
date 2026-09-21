@@ -184,12 +184,12 @@ const configResourceFileListInteractorProps = [
   {
     parent: props.parent,
     id: "mcmodderJsonStorage",
-    name: "已保存的物品 JSON 文件"
+    name: "已保存的物品 JSON 文件（仅脚本存储）"
   } satisfies ConfigResourceFileListInteractorProps<"mcmodderJsonStorage">,
   {
     parent: props.parent,
     id: "mcmodderRecipeJsonStorage",
-    name: "已保存的合成表 JSON 文件"
+    name: "已保存的合成表 JSON 文件（仅脚本存储）"
   } satisfies ConfigResourceFileListInteractorProps<"mcmodderRecipeJsonStorage">
 ] as const;
 

@@ -225,7 +225,7 @@ function updateFixedMenu() {
 
 async function updateSelection() {
   const selection = await itemRepository.listFilename();
-  selectionList.value = selection.filter(e => e);
+  selectionList.value = selection.filter(Boolean);
 }
 
 function fileExistedInquire(fileName: string) {
@@ -384,6 +384,7 @@ const emit = defineEmits<{
 defineExpose({
   table,
   activeFileName,
+  itemRepository,
   isAvailableFileName,
   importFromText,
   updateSelection,

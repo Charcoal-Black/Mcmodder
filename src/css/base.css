@@ -2722,8 +2722,8 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-horizontal-flex-absolute {
   position: absolute;
   top: 0;
-  background-color: var(--mcmodder-color-background-transparent);
-  backdrop-filter: blur(5px);
+  background-color: var(--mcmodder-color-background-dark1);
+  /* backdrop-filter: blur(5px); */
   overflow: clip;
   box-shadow: 0 0 50px var(--mcmodder-color-text-dark2);
 }

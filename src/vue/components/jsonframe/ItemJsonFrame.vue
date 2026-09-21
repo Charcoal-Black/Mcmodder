@@ -128,7 +128,7 @@ const allowedKeys = ["id", "itemType", "registerName", "metadata", "smallIcon", 
   "OredictList", "harvestTools", "maxStackSize", "maxDurability"];
 const headConfigs = {
   itemType: ["类型", (type, item) => {
-    return props.parent.utils.getItemTypeHTML(item.classID, type).html();
+    return props.parent.utils.getItemTypeHTML(item.classID, type).prop("outerHTML");
   }],
   smallIcon: ["小", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
   largeIcon: ["大", McmodderTable.DISPLAYRULE_IMAGE_BASE64],
@@ -136,8 +136,8 @@ const headConfigs = {
   branch: "分支",
   relation: ["关联", (_, data) => {
     if (data.generalParent) return `<span class="mcmodder-general"><strong>综合父资料</strong></span> <span class="text-muted">(${ data.generalNum })</span>`;
-    if (data.generalTo) return `<span class="mcmodder-general">综合</span>至 <a class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.generalTo }">${ data.generalTo }</a>`;
-    if (data.jumpTo) return `<span class="mcmodder-jump">合并</span>至 <a class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.jumpTo }">${ data.jumpTo }</a>`
+    if (data.generalTo) return `<span class="mcmodder-general">综合</span>至 <a href="javascript:void(0)" class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.generalTo }">${ data.generalTo }</a>`;
+    if (data.jumpTo) return `<span class="mcmodder-jump">合并</span>至 <a href="javascript:void(0)" class="mcmodder-table-goto" data-goto-key="id" data-goto-value="${ data.jumpTo }">${ data.jumpTo }</a>`
     return null;
   }],
   name: ["主要名称", McmodderUtils.getFormattedCodeDecoratedHTML],
@@ -234,14 +234,17 @@ const fileTable = useTemplateRef("fileTable");
 const maxPage = ref(1);
 const linking = props.parent.configRepository.getSettingsWritableRef("jsonDatabase");
 
-const inferRequestQueue = new McmodderInferItemListRequestQueue(props.parent, "inferRequestQueue", 1000, logger.value!);
-const detailedRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "detailedRequestQueue", 6, 750, logger.value!);
+let inferRequestQueue: McmodderInferItemListRequestQueue | undefined;
+let detailedRequestQueue: McmodderDetailedItemListRequestQueue | undefined;
 
 // 与另一个RequestQueue区分开，这个专用于处理用户手动发起的数据同步请求，只适用于小规模数据
 const manualRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "manualRequestQueue");
 
 onMounted(() => {
   logger.value!.key("就绪。");
+  inferRequestQueue = new McmodderInferItemListRequestQueue(props.parent, "inferRequestQueue", 1000, logger.value!);
+  detailedRequestQueue = new McmodderDetailedItemListRequestQueue(props.parent, "detailedRequestQueue", 6, 750, logger.value!);
+
   InputListController.instance.add(typeInput.value!, {
     suggestionManager: {
       onInitSuggestion: () => {
@@ -708,8 +711,8 @@ async function performClassSearch(classID: number, typeID: number) {
   
   let itemList: McmodderItemList = [];
 
-  const inferBackup = inferRequestQueue.backupManager.hasBackup();
-  const detailedBackup = detailedRequestQueue.backupManager.hasBackup();
+  const inferBackup = inferRequestQueue!.backupManager.hasBackup();
+  const detailedBackup = detailedRequestQueue!.backupManager.hasBackup();
 
   // STEP 1: 初步获取所有物品的基础信息
   if (!inferBackup && !detailedBackup) {
@@ -721,19 +724,19 @@ async function performClassSearch(classID: number, typeID: number) {
 
   // STEP 2 (可选但推荐): 向前/后拓展各个区间来获取隐藏资料的基础信息
   if (!detailedBackup) {
-    if (config.infer) itemList = await inferRequestQueue.run(itemList, config);
+    if (config.infer) itemList = await inferRequestQueue!.run(itemList, config);
   }
 
   // STEP 3 (可选): 访问各资料编辑页来获取各资料详细信息
-  if (config.getall) itemList = await detailedRequestQueue.run(itemList);
+  if (config.getall) itemList = await detailedRequestQueue!.run(itemList);
   else if (config.geticon) itemList = await appendImageDataToItemList(itemList);
 
   // STEP 4: 保存结果，任务结束
   const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
   const fileName = McmodderUtils.regulateFileName(rawName);
   logger.value!.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
-  props.parent.configRepository.set("mcmodderJsonStorage", fileName, itemList);
-  jsonFrame.value!.updateSelection();
+  await jsonFrame.value!.itemRepository.write(fileName, itemList);
+  await jsonFrame.value!.updateSelection();
 }
 
 async function getJSONFromURL(url: string, ctx: McmodderTableContext<ItemJsonFrameApplication>) {

@@ -35,7 +35,7 @@ export class IndexedDBRepository<T extends object> implements ItemRepository<T> 
 
   async deleteFile(filename: string) {
     await this.table.where("_filename").equals(filename).delete();
-    this.tempFiles = this.tempFiles.filter(e => e != filename);
+    this.tempFiles = this.tempFiles.filter(e => e !== filename);
   }
 
   async read(filename: string) {
@@ -43,6 +43,9 @@ export class IndexedDBRepository<T extends object> implements ItemRepository<T> 
   }
 
   async write(filename: string, data: T[]) {
+    if ((await this.listFilename()).includes(filename)) {
+      this.tempFiles.push(filename);
+    }
     const dataWithFile = data.map(e => Object.assign(e, { _filename: filename }));
     await this.table.where("_filename").equals(filename).delete();
     await this.table.bulkPut(dataWithFile);
