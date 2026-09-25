@@ -26,7 +26,7 @@ export class AdminInit extends Init {
   }
   run() {
     const adminEntries: Record<string, (mutation: MutationRecord) => void> = {
-      "模组区内容审核": _mutation => {
+      "模组区内容审核": () => {
         // 调整排版顺序
         const containerWidgets = $(".container-widget").children();
         containerWidgets.eq(1).insertAfter(containerWidgets.eq(-1));
@@ -43,7 +43,6 @@ export class AdminInit extends Init {
         let prevHeight = 0;
         // let itemID: number | undefined;
         let verifyID: number | undefined;
-        let intervalEventID: number | undefined;
         const verifyInfo: Record<string, string> = {};
 
         // 一键查询待审项
@@ -97,7 +96,7 @@ export class AdminInit extends Init {
             }), {
               passive: true
             });
-            $(document).on("click", ".mcmodder-verify-locate", _e => {
+            $(document).on("click", ".mcmodder-verify-locate", () => {
               if (verifyID === undefined) {
                 Utils.commonMsg("待审项 ID 获取失败...", false);
                 return;
@@ -126,7 +125,7 @@ export class AdminInit extends Init {
             $(mutation.target).contents().appendTo(this.verifyFrame);
             this.verifyFrame.find("> p:first-child()").next().hide();
             this.verifyFrame.find("> p:first-child()").append("<span>[展开]</span>").attr("hide", "1").click(e => {
-              let t = $(e.currentTarget);
+              const t = $(e.currentTarget);
               if (t.attr("hide") === "1") {
                 t.attr("hide", "0").next().show();
                 t.find("span").html("[折叠]");
@@ -183,7 +182,7 @@ export class AdminInit extends Init {
 
         const lastRefundText: Record<number, string> = {};
         const singleVerifyObserver = new MutationObserver(mutationList => {
-          for (let mutation of mutationList) {
+          for (const mutation of mutationList) {
             if ((mutation.target as HTMLElement).id === "verify-window-frame" &&
             Array.from(mutation.addedNodes).filter(c => c.nodeType === Node.ELEMENT_NODE &&
             (c as HTMLElement).classList.contains("verify-info-table")).length) { // 当所有详情已全部加载完成
@@ -363,7 +362,7 @@ export class AdminInit extends Init {
                 else if (rowText === "开源许可") {
                   row.find("p").contents().each((_, e) => {
                     if (e.nodeType === Node.TEXT_NODE) {
-                      const text = e as any as Text;
+                      const text = e as unknown as Text;
                       if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
                         const link = text.data.slice(2, -1);
                         const mid = text.splitText(2);
@@ -409,27 +408,25 @@ export class AdminInit extends Init {
         });
         singleVerifyObserver.observe($("#connect-frame-sub").get(0), { childList: true, subtree: true });
 
-        clearInterval(intervalEventID);
         const interval = this.configs.getSettings("alwaysNotifyVerification") ?? 0;
         if (interval > 0.1) {
           setInterval(() => {
             if ($(".page-header .title").text() != "模组区内容审核") {
-              clearInterval(intervalEventID);
               return;
             }
             this.compareAndUpdateVerifyList();
           }, Math.max(interval * 60 * 1e3, 6e3));
         }
       },
-      "MC百科后台管理中心": _mutation => {
+      "MC百科后台管理中心": () => {
         $("td:first-child()").each((_, c) => {
           const n = c.textContent;
           c.innerHTML = `<a href="https://center.mcmod.cn/${ n }" target="_blank">${ n }</a>`;
         })
       },
-      "样式管理": _mutation => {
+      "样式管理": () => {
         const styleEditObserver = new MutationObserver(mutationList => {
-          for (let mutation of mutationList) {
+          for (const mutation of mutationList) {
             if (!(mutation.addedNodes.length > 7 || mutation.removedNodes.length > 7) || $(".item-list-table").length) return;
             // const preview = $('<table class="table table-bordered item-list-table item-list-table-1"><thead><tr><th colspan="3"><span class="title"><a target="_blank" href="//www.mcmod.cn/class/8.html">[M3]更多喵呜机 (More Meowing Machinery)</a> 的 物品/方块 资料 (预览)</span></th></tr></thead><tbody><tr><th class="item-list-type-left" style="padding: 0px">一级分类</th><th class="item-list-type-left" style="padding: 0px">二级分类</th><td class="item-list-type-right" style="padding: 0px"><ul><li><span><a href="/item/5281.html" target="_blank"><img class="icon" alt="锡矿石" src="//i.mcmod.cn/item/icon/32x32/0/5281.png?v=3" width="15" height="15"></a><a href="/item/5281.html" target="_blank" >锡矿石</a></span></li><li><span><a href="//www.mcmod.cn/item/40226.html" target="_blank"><img class="icon" alt="锇矿石" src="//i.mcmod.cn/item/icon/32x32/4/40226.png?v=5" width="15" height="15"></a><a href="//www.mcmod.cn/item/40226.html" target="_blank" >锇矿石</a></span></li><li><span><a href="/item/40227.html" target="_blank"><img class="icon" alt="铜矿石" src="//i.mcmod.cn/item/icon/32x32/4/40227.png?v=3" width="15" height="15"></a><a href="//www.mcmod.cn/item/40227.html" target="_blank" >铜矿石</a></span></li><li><span><a href="/item/40337.html" target="_blank"><img class="icon alt="盐块" src="//i.mcmod.cn/item/icon/32x32/4/40337.png?v=2" width="15" height="15"></a><a href="//www.mcmod.cn/item/40337.html" target="_blank" >盐块</a></span></li></ul></td></tr></tbody></table>').insertBefore($(".table-condensed").get(1));
             Utils.addStyle('', "mcmodder-style-preview");
@@ -457,9 +454,9 @@ export class AdminInit extends Init {
         });
         styleEditObserver.observe($("div#connect-frame-sub").get(0), { childList: true });
       },
-      "GUI管理": _mutation => {
+      "GUI管理": () => {
         const guiAdminObserver = new MutationObserver(mutationList => {
-          for (let mutation of mutationList) {
+          for (const mutation of mutationList) {
             if ((mutation.addedNodes[0] as HTMLElement)?.id === "class-gui-table") {
               $("#class-gui-table td:nth-child(4) > *:not(.btn)").css("background-color", "transparent");
             }
@@ -469,8 +466,8 @@ export class AdminInit extends Init {
       }
     };
     const adminObserver = new MutationObserver(mutationList => {
-      for (let mutation of mutationList) {
-        let title = $("#connect-frame > div.page-header > h1.title").first().text();
+      for (const mutation of mutationList) {
+        const title = $("#connect-frame > div.page-header > h1.title").first().text();
         if (adminEntries[title]) {
           adminEntries[title](mutation);
           this.triggered.add(title);
@@ -650,7 +647,7 @@ export class AdminInit extends Init {
       current[i] += parsedChanged[i];
     }
     changed.remove();
-    const node = td.contents().filter((_, e) => e.nodeType === Node.TEXT_NODE && (e as any as Text).data === targetText)[0];
+    const node = td.contents().filter((_, e) => e.nodeType === Node.TEXT_NODE && (e as unknown as Text).data === targetText)[0];
     if (node !== undefined) {
       while (node.nextSibling !== null) {
         node.nextSibling.remove();

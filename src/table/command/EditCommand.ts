@@ -1,13 +1,12 @@
 import { Command } from "./Command";
 
-export class EditCommand<T extends TableAcceptable> extends Command<T> {
+export class EditCommand<T extends TableAcceptable, K extends keyof T> extends Command<T> {
   index: number;
-  key: keyof T;
-  newValue: any;
-  originalValue: any;
+  key: K;
+  newValue: T[K];
+  originalValue?: T[K];
 
-  constructor(self: TableContext<T>, index: number, 
-      key: keyof T, newValue: any) {
+  constructor(self: TableContext<T>, index: number, key: K, newValue: T[K]) {
     super(self);
     this.index = index;
     this.key = key;

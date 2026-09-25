@@ -47,7 +47,7 @@ export class AdvancedUEditor extends UEditor {
   private isFrameReady = false;
 
   private readonly templateObserver = new MutationObserver(mutationList => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       const className = (mutation?.addedNodes[0] as HTMLElement)?.className;
       if (mutation.type === "childList" && 
       className === "swal2-container swal2-center swal2-fade swal2-shown" && 
@@ -68,7 +68,7 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
-  private addTool(id: string, text: string, callback: () => any) {
+  private addTool(id: string, text: string, callback: () => unknown) {
     $('<button class="btn btn-sm">')
     .attr("id", id)
     .text(text)
@@ -232,25 +232,25 @@ export class AdvancedUEditor extends UEditor {
     this.mdEditorOption = this.addOption(
       "Markdown 编辑器",
       "mcmodder-option-md",
-      _value => this.readyMarkdownEditor()
+      () => this.readyMarkdownEditor()
     );
 
     this.htmlEditorOption = this.addOption(
       "源代码编辑器",
       "mcmodder-option-html",
-      _value => this.readyHtmlEditor(),
+      () => this.readyHtmlEditor(),
     );
 
     this.verticalOption = this.addOption(
       "纵向排列",
       "mcmodder-option-vertical",
-      _value => this.readyVerticalEditor(),
+      () => this.readyVerticalEditor(),
     );
 
     this.toolkitOption = this.addOption(
       "实用工具",
       "mcmodder-option-toolkit",
-      _value => this.readyToolkit(),
+      () => this.readyToolkit(),
     );
 
     if (this.configs.getSettings("markdownIt") || this.isModrinthVer) {
@@ -373,10 +373,9 @@ export class AdvancedUEditor extends UEditor {
       if (this.isModrinthVer) $("#mcmodder-tool-md").click();
       $("#mcmodder-tool-md, #mcmodder-mdeditor").show();
       $(this.verticalOption![0]).show();
-    }
-    else {
+    } else {
       $("#mcmodder-tool-md, #mcmodder-mdeditor").hide();
-      $(this.verticalOption![0]).hide;
+      $(this.verticalOption![0]).hide();
     }
     this.configs.setSettings("markdownIt", c);
     this.onEditorStateChange();
@@ -559,7 +558,7 @@ export class AdvancedUEditor extends UEditor {
     this.body.contentEditable = "false";
 
     this.$body.find("*").contents().filter((_, e) => e.nodeType === Node.TEXT_NODE).each((_, _text) => {
-      let first = _text as any as Text;
+      let first = _text as unknown as Text;
       const matchList = first.data.match(/\[(h[1-6]=|ban:|mark:|icon:).*?\]/g);
       matchList?.forEach(substr => {
         const mid = first.splitText(first.data.indexOf(substr));
@@ -652,10 +651,10 @@ export class AdvancedUEditor extends UEditor {
   }
 
   colorpickerInit() {
-    let colorpicker = $(".edui-colorpicker tbody");
+    const colorpicker = $(".edui-colorpicker tbody");
 
     // 格式化代码颜色
-    let l = Values.formatColors.length;
+    const l = Values.formatColors.length;
     let s = `<tr style="border-bottom: 1px solid #ddd;font-size: 13px;line-height: 25px;color:#39C;" class="edui-default">
       <td colspan="10" class="edui-default" id="mcmodder-format-column">
         <a target="_blank" href="https://zh.minecraft.wiki/w/%E6%A0%BC%E5%BC%8F%E5%8C%96%E4%BB%A3%E7%A0%81#%E9%A2%9C%E8%89%B2%E4%BB%A3%E7%A0%81">格式化代码颜色</a>
@@ -683,11 +682,11 @@ export class AdvancedUEditor extends UEditor {
     if (!this.currentTextNode || !this.changedTextNode || 
       this.currentTextLength === undefined || this.changedTextLength === undefined ||
       !this.statsBar) return;
-    let changedTextLength = this.currentTextLength - this.originalTextLength;
+    const changedTextLength = this.currentTextLength - this.originalTextLength;
     this.currentTextNode.html(this.currentTextLength.toLocaleString());
     this.changedTextNode.attr("class", (changedTextLength < 0 ? "mcmodder-common-danger" : "mcmodder-common-light"))
       .html((changedTextLength > 0 ? "+" : "") + changedTextLength.toLocaleString());
-    let t = this.statsBar.contents().filter(i => i > 4 && i < 12);
+    const t = this.statsBar.contents().filter(i => i > 4 && i < 12);
     if (changedTextLength) t.show();
     else t.hide();
   }
@@ -728,7 +727,7 @@ export class AdvancedUEditor extends UEditor {
       this.originalTextLength += Utils.getContextLength(e.textContent);
     });
     t2.each((_, e) => {
-      let t = Utils.clearContextFormatter(e.textContent);
+      const t = Utils.clearContextFormatter(e.textContent);
       if (t) tb += t + "\n";
     });
     this.updateTextLengthDisplay();
@@ -795,8 +794,9 @@ export class AdvancedUEditor extends UEditor {
 
   anonymiseUknowtoomuch() {
     baidu.editor.commands.uknowtoomuch.execCommand = function () {
-      let b, a = editor.selection.getRange();
-      return a.select(), (b = editor.selection.getText()) ?
+      editor.selection.getRange().select();
+      const b = editor.selection.getText();
+      return b ?
         (editor.execCommand("insertHtml", `<span class="uknowtoomuch">${b}</span>`, true), void 0) :
         (Utils.commonMsg(PublicLangData['warning']['inform'][164], false), void 0);
     }

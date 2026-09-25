@@ -11,13 +11,13 @@ export class VerifyHistoryInit extends Init {
   run() {
     if (this.configs.getSettings("autoExpandPage")) {
       this.stopExpand = false;
-      let maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0])
-      let param = window.location.href.split("verify.html?")[1]?.split("&page=")[0]
+      const maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0])
+      const param = window.location.href.split("verify.html?")[1]?.split("&page=")[0]
       if (!param || !maxPage || $(".badge-secondary").text().includes("最近100条")) {
         new VerifyPageInit(this.parent).run();
         return;
       }
-      let getHistoryPage = (id: number) => {
+      const getHistoryPage = (id: number) => {
         this.parent.utils.createRequest({
           url: `${ this.parent.hostname }/verify.html?${ param }&page=${ id }`,
           method: "GET",
@@ -25,7 +25,7 @@ export class VerifyHistoryInit extends Init {
         })
         .then(resp => {
           if (!resp.responseXML) return;
-          let d = $(resp.responseXML);
+          const d = $(resp.responseXML);
           d.find(".verify-list-list-table tbody").children().appendTo(".verify-list-list-table tbody");
           Utils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
           if (id < maxPage && !this.stopExpand) setTimeout(() => getHistoryPage(++id), 1e3);

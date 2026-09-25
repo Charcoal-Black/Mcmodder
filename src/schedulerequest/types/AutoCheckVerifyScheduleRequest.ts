@@ -24,7 +24,7 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
       Utils.setButtonLoadingState(button);
     }
 
-    let total = await this.work(adminModList, inVerifyPage);
+    const total = await this.work(adminModList, inVerifyPage);
     
     if (total === 0) {
       if (!inVerifyPage) {

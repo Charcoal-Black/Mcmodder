@@ -15,9 +15,9 @@ interface CurrentUsed {
 }
 
 export class TabEditInit extends Init {
-  itemFieldIndex = new FieldIndex<Item>("registerName");
-  tagFieldIndex = new FieldIndex<Item>("OredictList");
-  guiBoundFieldIndex = new FieldIndex<RecipeJsonFrameGuiBound>("guiID");
+  itemFieldIndex = new FieldIndex<Item, "registerName">("registerName");
+  tagFieldIndex = new FieldIndex<Item, "OredictList">("OredictList");
+  guiBoundFieldIndex = new FieldIndex<RecipeJsonFrameGuiBound, "guiID">("guiID");
   private isReady = false;
   private guiFrame?: Element;
   private slotFrame?: Element;
@@ -144,7 +144,7 @@ export class TabEditInit extends Init {
     const recipeContainer = this.recipeFrame.find("#recipe-item");
 
     // 初始化 guiBoundMap
-    let guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || Values.defaultGuiBound;
+    const guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || Values.defaultGuiBound;
     this.guiBoundFieldIndex.add(guiBounds);
 
     // 尝试搜索此物品的标签，同时为 ItemDisplay 构造 itemMap 和 tagMap
@@ -230,7 +230,7 @@ export class TabEditInit extends Init {
 
   private readonly slotObserver = new MutationObserver(mutationList => {
     if (!this.guiFrame || !this.slotFrame) return;
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if (mutation.type === "attributes") {
         const target = mutation.target as HTMLInputElement;
         if (target.className === "value") {
@@ -255,11 +255,11 @@ export class TabEditInit extends Init {
   })
 
   private updateCookieByCurrentUsedList() {
-    let data: CurrentUsed = {
+    const data: CurrentUsed = {
       item: [],
       oredict: []
     };
-    let itemUsedList = $("#item-used-item"), oredictUsedList = $("#item-used-oredict, #item-used-itemtags");
+    const itemUsedList = $("#item-used-item"), oredictUsedList = $("#item-used-oredict, #item-used-itemtags");
     itemUsedList.find(".item-table-hover").each((_, c) => {
       data.item.push(c.getAttribute("item-id") || "-1");
     });
@@ -292,7 +292,7 @@ export class TabEditInit extends Init {
         <a class="delete"><i class="fa fa-trash" /></a>
       `).appendTo(target);
       target.find(".delete").click(e => {
-        let c = parseInt($("#item-used-item-btn").text().split("(")[1].split(")")[0]);
+        const c = parseInt($("#item-used-item-btn").text().split("(")[1].split(")")[0]);
         $("#item-used-item-btn").text(`资料 (${c - 1})`);
         $(".tooltip").remove();
         (e.currentTarget.parentNode as HTMLElement)?.remove();
@@ -325,7 +325,7 @@ export class TabEditInit extends Init {
       键能够帮助您更快地填充下列数据~
     </span>`).appendTo(this.guiFrame);
 
-    let input = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    const input = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -334,7 +334,7 @@ export class TabEditInit extends Init {
       chanceEditable: false,
       unit: ""
     }));
-    let output = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    const output = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -343,12 +343,12 @@ export class TabEditInit extends Init {
       chanceEditable: false,
       unit: ""
     }));
-    let fuel = {
+    const fuel = {
       valid: false,
       number: "",
       unit: ""
     };
-    let extra = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
+    const extra = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
@@ -363,8 +363,15 @@ export class TabEditInit extends Init {
       const multiName = slot.attr("data-multi-id");
       const dataId = Number(slot.attr("data-part"));
       switch (multiName) {
-        case "slot-in-item": input[dataId].id = value, input[dataId].valid = true; break;
-        case "slot-out-item": output[dataId].id = value, output[dataId].valid = true;
+        case "slot-in-item": {
+          input[dataId].id = value;
+          input[dataId].valid = true;
+          break;
+        }
+        case "slot-out-item": {
+          output[dataId].id = value;
+          output[dataId].valid = true;
+        }
       }
     })
     tablist.each((_, _tab) => {
@@ -419,7 +426,7 @@ export class TabEditInit extends Init {
     });
 
     this.recipeTable = $(`<table id="mcmodder-item-tab-edit">`).appendTo(this.guiFrame);
-    let recipeTbody = $("<tbody>").appendTo(this.recipeTable);
+    const recipeTbody = $("<tbody>").appendTo(this.recipeTable);
     $("<tr><td /></tr>").appendTo(recipeTbody);
 
     $(`<td><strong>物品 ID / 矿物词典 / 物品标签</strong></td>
@@ -428,7 +435,7 @@ export class TabEditInit extends Init {
     .appendTo(recipeTbody.children().first());
 
     let recipeTr, recipeTd, recipeInput;
-    for (let i in input) {
+    for (const i in input) {
       if (!input[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
       $(`<td class="input-head" data-toggle="tooltip" title="${ i } 号材料">
@@ -485,7 +492,7 @@ export class TabEditInit extends Init {
     $("#item-table-gui-frame > .tab-li").hide();
     $(".tips").remove();
 
-    for (let i in output) {
+    for (const i in output) {
       if (!output[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
       $(`<td class="output-head" data-toggle="tooltip" title="${ i } 号成品">
@@ -552,10 +559,10 @@ export class TabEditInit extends Init {
       .appendTo(recipeTr)
       .css("align", "right");
 
-      recipeTd = $("<td>").appendTo(recipeTr);
+      $("<td>").appendTo(recipeTr);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
+      $("<input>").appendTo(recipeTd).attr({
         "data-part": 1,
         "data-id": 1,
         "data-type": "fuel",
@@ -567,18 +574,18 @@ export class TabEditInit extends Init {
       }).val(fuel.number);
     }
 
-    for (let i in extra) {
+    for (const i in extra) {
       if (!extra[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
 
-      recipeTd = $("<td>").appendTo(recipeTr)
+      $("<td>").appendTo(recipeTr)
       .attr("align", "right")
       .html(`<strong>${extra[i].id}: ${extra[i].unit}</strong>`);
 
-      recipeTd = $("<td>").appendTo(recipeTr);
+      $("<td>").appendTo(recipeTr);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
+      $("<input>").appendTo(recipeTd).attr({
         "data-part": i,
         "data-multi-id": "slot-power-number",
         "data-multi-name": "item-table-data",
@@ -589,7 +596,7 @@ export class TabEditInit extends Init {
 
     this.recipeTable.find("input").addClass("mcmodder-item-tab-edit-input");
 
-    let guiNote = $("b").filter((_, c) => $(c).text() === "使用此GUI时注意事项:").parent().addClass("mcmodder-gui-alert");
+    const guiNote = $("b").filter((_, c) => $(c).text() === "使用此GUI时注意事项:").parent().addClass("mcmodder-gui-alert");
     let guiNoteHTMLContent = "";
     guiNote.contents().each((i, c) => {
       if (i < 2) return;
@@ -646,7 +653,7 @@ export class TabEditInit extends Init {
       const submitButton = $("#edit-submit-button");
       this.getGuiInputElement("slot-out-item").each((_, i) => {
         if (flag) return;
-        let e = (i as HTMLInputElement).value;
+        const e = (i as HTMLInputElement).value;
         if (e) {
           if (e != nItemID && !isNaN(Number(e))) {
             nItemID = e;
@@ -663,12 +670,12 @@ export class TabEditInit extends Init {
     const target = e.currentTarget as HTMLInputElement;
     if (e.keyCode === 13) {
       let col = 0;
-      for (let i in target.parentNode?.parentNode?.childNodes)
+      for (const i in target.parentNode?.parentNode?.childNodes)
         if (target.parentNode.parentNode?.childNodes[Number(i)]?.childNodes[0] === target) {
           col = Number(i);
           break;
         }
-      for (let i in target.parentNode?.parentNode?.parentNode?.childNodes)
+      for (const i in target.parentNode?.parentNode?.parentNode?.childNodes)
         if (target.parentNode.parentNode.parentNode?.childNodes[Number(i)]?.childNodes[col]?.childNodes[0] === target) {
           (target.parentNode.parentNode.parentNode?.childNodes[
             parseInt(i) + (e.shiftKey ? -1 : 1)
@@ -839,14 +846,14 @@ export class TabEditInit extends Init {
 
     // GTCEu 编辑提示
     if (this.modID === 5343) {
-      let gtceuAlert = $(".tab-ul > p.text-danger");
+      const gtceuAlert = $(".tab-ul > p.text-danger");
       gtceuAlert.html(gtceuAlert.html().replace("使用 GTCEu 中对应的材料",
       `<a data-toggle="tooltip" data-original-title="轻触插入备注" style="font-size: unset; text-decoration: underline;">
         使用 GTCEu 中对应的材料
       </a>`));
       $(".tab-ul p.text-danger a").click(() => {
-        let s = "使用 GTCEu 中对应的材料。";
-        let note = $("textarea[placeholder='备注..']");
+        const s = "使用 GTCEu 中对应的材料。";
+        const note = $("textarea[placeholder='备注..']");
         note.val(note.val().replace(s, ""));
         note.val(`${s}\n${note.val()}`);
         Utils.commonMsg("成功将此提示插入备注中~");

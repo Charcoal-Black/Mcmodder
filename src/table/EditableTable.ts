@@ -31,6 +31,8 @@ export class McmodderEditableTable extends TableUtils {
       }
     }
     else {
+      // 已经忘了这一块是什么逻辑了，能跑就行，而且确实能跑（
+      // eslint-disable-next-line
       result = Utils.simpleDeepCopy(config) as any;
       if (result.readonly) {
         if (result) result.type = InputType.TEXT;

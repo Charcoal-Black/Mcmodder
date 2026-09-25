@@ -29,7 +29,7 @@ export class ClassPageInit extends Init {
 
   private async syncSubscribeList(modID: number) {
     await Utils.sleep(1e3);
-    let hasSubscribed = $(".subscribe i.fas").length;
+    const hasSubscribed = $(".subscribe i.fas").length;
     let subscribeModlist = this.configs.getProfile("subscribeModlist") ?? [];
     if (!hasSubscribed && subscribeModlist.includes(modID)) {
       subscribeModlist = subscribeModlist.filter(e => e != modID);
@@ -70,14 +70,14 @@ export class ClassPageInit extends Init {
       const newDependences: number[] = [];
       const newExpansions: number[] = [];
       $("li.col-lg-12.relation").each((_, e) => {
-        let target = $(e);
+        const target = $(e);
         target.find("a[data-toggle=tooltip]").each((_, a) => {
           const href = (a as HTMLAnchorElement).href;
-          let id = Utils.abstractLastFromURL(href, "class");
-          let name = a.textContent;
+          const id = Utils.abstractLastFromURL(href, "class");
+          const name = a.textContent;
           if (id && name) this.parent.utils.updateClassNameIDMap(name, id);
 
-          let title = target.find("span[data-toggle=tooltip]:first-child()").text();
+          const title = target.find("span[data-toggle=tooltip]:first-child()").text();
           if (title.includes("前置Mod")) {
             newDependences.push(Utils.abstractIDFromURL(href, "class"));
           }
@@ -108,7 +108,7 @@ export class ClassPageInit extends Init {
       itemCustomTypeList = Values.itemCustomTypeList;
     }
     $(".class-item-type li").filter((_, e) => !e.className.includes("mold-")).each((_, e) => {
-      let t = $(e).find(".text .title").text(), p = $(e).find(".iconfont i");
+      const t = $(e).find(".text .title").text(), p = $(e).find(".iconfont i");
       const data: ItemType = {
         classID: nClassID,
         typeID: Number($(e).find("a").attr("href").split(classID + "-")[1]?.split(".html")[0]),
@@ -136,7 +136,7 @@ export class ClassPageInit extends Init {
     if (this.configs.getSettings("enableAprilFools")) {
       const forgeAliasList = ["诅咒锻炉", "CurseFabric", "BlessForge", "BlessFabric"];
       const langList = PublicLangData.website;
-      for (let i of $("ul.common-link-icon-frame span.name").toArray()) {
+      for (const i of $("ul.common-link-icon-frame span.name").toArray()) {
         if (i.innerHTML === langList.discord) i.innerHTML = "Drocsid";
         if (i.innerHTML === langList.github) i.innerHTML = "GayHub";
         if (i.innerHTML === langList.gitlab) i.innerHTML = "GayLab";
@@ -340,16 +340,16 @@ export class ClassPageInit extends Init {
       $(".mcver > ul > ul").each((_, versionListNode) => {
         versionRanges = [];
         currentRange = [];
-        let versionList: MCVersion[] = Array.from(versionListNode.children).slice(1).map(_ver => {
+        const versionList: MCVersion[] = Array.from(versionListNode.children).slice(1).map(_ver => {
           _ver.classList.add("mcmodder-uncompactedmcver");
           let ver = _ver.textContent;
           if (ver === "远古版本") ver = "1.1.0"; // 为统一处理，远古版本视为1.1.0
-          let verArray = ver.split(".").map(Number) as MCVersion;
+          const verArray = ver.split(".").map(Number) as MCVersion;
           while (verArray.length < 3) verArray.push(0);
           return verArray;
         });
         
-        for (let ver of versionList) {
+        for (const ver of versionList) {
           const major = ver[0];
           const minor = ver[1];
           const patch = ver[2];
@@ -408,9 +408,9 @@ export class ClassPageInit extends Init {
         });
       });
 
-      var isUncompactedmcverShown = false;
-      var uncompactedmcver = $(".mcmodder-uncompactedmcver");
-      var compactedmcver = $(".mcmodder-compactedmcver");
+      let isUncompactedmcverShown = false;
+      const uncompactedmcver = $(".mcmodder-uncompactedmcver");
+      const compactedmcver = $(".mcmodder-compactedmcver");
       uncompactedmcver.hide();
       compactedmcver.show();
       window.addEventListener("keydown", e => {

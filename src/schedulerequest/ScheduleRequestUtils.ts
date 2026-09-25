@@ -27,8 +27,8 @@ export class ScheduleRequestUtils {
   init(key: keyof ScheduleRequestTypes, trigger: ScheduleRequestTriggerType, param: [KeysOfType<Settings, number | boolean>, number, boolean]) {
     switch (trigger) {
       case ScheduleRequestTriggerType.CONFIG: {
-        let configID = param[0], minimum = param[1] ?? 0, hasUserLimit = param[2];
-        let configValue = this.configs.getSettings(configID);
+        const configID = param[0], minimum = param[1] ?? 0, hasUserLimit = param[2];
+        const configValue = this.configs.getSettings(configID);
         if (
           (hasUserLimit ? (this.parent.currentUID > 0) : true) && 
           configValue && 
@@ -58,7 +58,7 @@ export class ScheduleRequestUtils {
   }
 
   find(todo: keyof ScheduleRequestTypes, userID?: number | null) {
-    let scheduleRequestList = this.get();
+    const scheduleRequestList = this.get();
     return scheduleRequestList
     .filter(e => e.todo === todo && (!userID || e.userID === userID))
     .sort((a, b) => a.time - b.time)[0];
@@ -72,7 +72,7 @@ export class ScheduleRequestUtils {
 
   create(time: number, todo: keyof ScheduleRequestTypes, userID?: number, priority?: number) {
     this.deleteByTodo(todo);
-    let scheduleRequestList = this.get();
+    const scheduleRequestList = this.get();
     scheduleRequestList.push({
       time: time,
       todo: todo,

@@ -84,7 +84,10 @@ export class AdvancementUtils {
         tier
       );
       const t = this.list.slice(-2);
-      if (tier > 1) t[1].prev = t[0], t[0].next = t[1]; // 双链表
+      if (tier > 1) {
+        t[1].prev = t[0];
+        t[0].next = t[1];
+      } // 双链表
     }
     return this;
   }
@@ -102,8 +105,8 @@ export class AdvancementUtils {
   }
 
   getSingleProgress(id: AdvancementID) {
-    let advancements = this.getAll();
-    for (let i of advancements) {
+    const advancements = this.getAll();
+    for (const i of advancements) {
       if (i.id == id) return i.progress;
     }
     return 0;
@@ -111,8 +114,10 @@ export class AdvancementUtils {
 
   setProgress(id: AdvancementID, value: number) {
     if (!this.configs.getSettings("customAdvancements")) return;
-    let advancements = this.getAll(), max = this.getData(id).range, f = 1;
-    for (let i of advancements) {
+    const advancements = this.getAll();
+    const max = this.getData(id).range;
+    let f = 1;
+    for (const i of advancements) {
       if (i.id == id) {
         f = 0;
         if (i.progress == max && value >= i.progress) return;

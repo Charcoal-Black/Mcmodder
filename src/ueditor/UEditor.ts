@@ -38,7 +38,7 @@ export class UEditor {
   }
 
   protected init(editor: any) {
-    let iframe = editor.iframe;
+    const iframe = editor.iframe;
 
     this.outerFrame = $(iframe).parents("#editor-ueeditor").get(0) as HTMLElement;
     this.$outerFrame = $(this.outerFrame);
@@ -69,7 +69,7 @@ export class UEditor {
 
     // 现代化按钮
     // if (this.configs.get("mcmodderUI")) {
-      let toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
+      const toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
       for (let i = 0; i < Values.ueButton1.length; i++) {
         toolBar.find(`.edui-for-${Values.ueButton1[i]} .edui-icon`)
         .addClass("mcmodder-edui-box fa fa-" + Values.ueButton2[i])
@@ -106,7 +106,7 @@ export class UEditor {
   protected autoCalculateHeight() {
     let height = 50;
     if (this.$body && this.$body.children().length && this.window) {
-      let rect = this.$body.children().last().get(0).getBoundingClientRect();
+      const rect = this.$body.children().last().get(0).getBoundingClientRect();
       height += rect.top + rect.height + this.window.pageYOffset;
     }
     /* this.$body.children().each((_, e) => {

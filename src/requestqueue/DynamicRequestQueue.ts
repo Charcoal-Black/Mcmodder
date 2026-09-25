@@ -12,7 +12,7 @@ export abstract class DynamicRequestQueue extends RequestQueue {
     super(parent, id, 1, minInterval, logger);
   }
 
-  override getResultInitializer(_requestLength?: number) {
+  override getResultInitializer() {
     return [];
   }
 

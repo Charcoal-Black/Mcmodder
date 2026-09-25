@@ -1,10 +1,10 @@
 
-export class FieldIndex<T extends object> {
-  private readonly map = new Map<any, T[]>();
-  private readonly key: keyof T;
-  private readonly keyHandler?: MapKeyHandler;
+export class FieldIndex<T extends object, P extends keyof T, K = T[P]> {
+  private readonly map = new Map<K, T[]>();
+  private readonly key: P;
+  private readonly keyHandler?: MapKeyHandler<T[P], K>;
 
-  constructor(key: keyof T, keyHandler?: MapKeyHandler) {
+  constructor(key: P, keyHandler?: MapKeyHandler<T[P], K>) {
     this.key = key;
     this.keyHandler = keyHandler;
   }
@@ -16,18 +16,18 @@ export class FieldIndex<T extends object> {
   }
 
   private push(data: T) {
-    let mapKey = data[this.key];
-    if (this.keyHandler) mapKey = this.keyHandler(mapKey);
-    if (mapKey instanceof Array) {
-      mapKey.forEach(key => {
+    const mapKey = data[this.key];
+    const handledKey = this.keyHandler?.(mapKey) ?? mapKey;
+    if (handledKey instanceof Array) {
+      (handledKey as K[]).forEach(key => {
         this.pushSingle(key, data);
       });
     } else {
-      this.pushSingle(mapKey, data);
+      this.pushSingle(handledKey as K, data);
     }
   }
 
-  private pushSingle(key: any, data: T) {
+  private pushSingle(key: K, data: T) {
     let res = this.map.get(key);
     if (res === undefined) {
       res = [];
@@ -37,13 +37,13 @@ export class FieldIndex<T extends object> {
     return data;
   }
 
-  get(mapKey: any) {
+  get(mapKey: K) {
     return this.map.get(mapKey);
   }
 
-  getKeyOrDefault(mapKey: any, targetKey: keyof T, defaultValue: any) {
+  getKeyOrDefault<K2 extends keyof T>(mapKey: K, targetKey: K2, defaultValue: T[K2]) {
     const result = this.get(mapKey);
-    if (result != undefined) return result[0][targetKey];
+    if (result !== undefined) return result[0][targetKey];
     return defaultValue;
   }
 

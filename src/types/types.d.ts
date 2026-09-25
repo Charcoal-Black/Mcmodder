@@ -1,8 +1,12 @@
-declare const unsafeWindow: any;
+declare const unsafeWindow: unknown;
 
 type KeysOfType<T, P> = {
   [K in keyof T]-?: T[K] extends P ? K : never
 }[keyof T];
+
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 type IndexedType<T extends object, K extends number | string | symbol = number> = T & { _primaryKey: K };
 
@@ -560,6 +564,8 @@ interface AdvancementProgression {
   progress: number
 }
 
+// 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
+// eslint-disable-next-line
 type TableAcceptable = Record<string, any>;
 interface RowOption<T> {
   readonly name: string;
@@ -592,6 +598,8 @@ interface TableRowRange {
   r: number;
 }
 
+// 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
+// eslint-disable-next-line
 type TableDisplayRule<T> = (unit: any, row: Partial<T>) =>
   JQuery | string | number | null | undefined;
 
@@ -601,7 +609,7 @@ interface TableContext<T extends TableAcceptable> {
   refreshAll: () => void,
   getData: (index: number) => T,
   getRowData: (index: number) => TableRowData<T>,
-  editData: (index: number, key: keyof T, value: any) => void,
+  editData: (index: number, key: keyof T, value: unknown) => void,
   appendData: (data: T) => void,
   appendDataList: (dataList: TableDataList<T>) => void,
   insertRow: (index: number, newData?: T) => void,
@@ -734,7 +742,7 @@ interface InputLimit {
 }
 
 interface InputOption extends InputLimit {
-  readonly value: any;
+  readonly value: unknown;
 }
 
 interface TableInputOption extends InputOption {
@@ -763,7 +771,7 @@ interface PreSubmission {
   title: string;
   url: string;
   rawData: string;
-  config: import("$").GmXmlhttpRequestOption<"text", any>;
+  config: import("$").GmXmlhttpRequestOption<"text", unknown>;
   errState?: number;
 }
 
@@ -868,7 +876,7 @@ interface FileDisplay {
   size: number;
 }
 
-type JsonFrameToolOnClickCallback = (ev: Event) => any;
+type JsonFrameToolOnClickCallback = (ev: Event) => unknown;
 type JsonFrameToolDisplayCondition = () => boolean;
 
 interface JsonFrameTool {
@@ -905,17 +913,21 @@ interface RecipeJsonFrameGuiBound {
 type JsonStorage<T extends TableAcceptable> = Record<string, T[]>; 
 
 interface AppRequest {
-  config: import("$").GmXmlhttpRequestOption<"text", any>;
+  config: import("$").GmXmlhttpRequestOption<"text", unknown>;
 }
 type RequestList = AppRequest[];
 
 interface RequestResult {
   index?: number,
   success?: boolean,
+  // 网络通信牛逼
+  // eslint-disable-next-line
   value?: any
 }
 
 interface RequestQueueExecution {
+  // 网络通信牛逼
+  // eslint-disable-next-line
   [key: string]: any;
   runningIndex: Set<number>;
   queue: RequestList;
@@ -929,7 +941,7 @@ type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
 }
 
-type MapKeyHandler = (data: any) => any;
+type MapKeyHandler<V, K> = (data: V) => K | K[];
 
 interface StructureEditorBlocktype {
   id: number;
@@ -978,7 +990,7 @@ interface SupabaseCustomSplash {
 interface SupabaseUploadSplashResponse {
   message?: string;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface SupabaseGetCustomSplashesResponse {

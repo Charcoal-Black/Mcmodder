@@ -69,7 +69,7 @@ export class HorizontalDraggableFrame {
     this.instance.addEventListener("pointermove", ev => this.onInstancePointermove(ev as PointerEvent));
     this.instance.addEventListener("pointerup", ev => this.onInstancePointerup(ev as PointerEvent));
     this.instance.addEventListener("pointercancel", ev => this.onInstancePointerup(ev as PointerEvent));
-    this.instance.addEventListener("dblclick", ev => this.onInstanceDblclick(ev as MouseEvent));
+    this.instance.addEventListener("dblclick", () => this.onInstanceDblclick());
     this.instance.addEventListener("keydown", ev => this.onInstanceKeydown(ev as KeyboardEvent));
   }
 
@@ -106,7 +106,7 @@ export class HorizontalDraggableFrame {
     }
   }
 
-  private onInstanceDblclick(_e: MouseEvent) {
+  private onInstanceDblclick() {
     if (Math.abs(this.horizontalPos - this.initPos) < 0.025) {
       this.setHorizontalPos(this.getPreferredDragPos());
     } else {

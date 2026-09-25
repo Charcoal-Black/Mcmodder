@@ -21,7 +21,7 @@ export class RankInit extends Init {
 
   private work(contentRank: JQuery): UserRankData {
     if (contentRank.find(".empty").length) return { value: 0, rate: 100 };
-    let contentList = contentRank.find("ul > li");
+    const contentList = contentRank.find("ul > li");
     const ranklist = $(`<div class="mcmodder-ranklist-container">`).appendTo(contentRank);
     const maxValue = parseFloat(contentList.first().find("span.score").text());
     let totalValue = 0, totalRate = 0, r = 0;
@@ -30,7 +30,8 @@ export class RankInit extends Init {
       const e = contentList.eq(i);
       const href = e.find("a").first().prop("href");
       const uid = Utils.abstractIDFromURL(href, "center.mcmod.cn");
-      let li = $(`<li data-uid="${ uid }">`).appendTo(ranklist), rank = null;
+      const li = $(`<li data-uid="${ uid }">`).appendTo(ranklist);
+      let rank;
 
       let quantity = e.attr("data-content");
       if (quantity.includes("字节")) {
@@ -43,7 +44,7 @@ export class RankInit extends Init {
 
       const rate = parseFloat(e.find("span.score").text());
       totalRate += isNaN(rate) ? 0 : rate;
-      let userName = e.find("a.name").text();
+      const userName = e.find("a.name").text();
 
       let div = $('<a class="avatar" target="_blank">').attr("href", href).appendTo(li);
       $(`<i>`).appendTo(div).css({
@@ -97,12 +98,12 @@ export class RankInit extends Init {
 
     // 保存贡献数据
     if (this.configs.getSettings("byteChart")) {
-      let param = new URLSearchParams(window.location.search);
-      let startTime = Utils.getStartTime(Math.floor(Number(param.get("starttime")) * 1e3), 0) / 1e3;
-      let endTime = Utils.getStartTime(Math.floor(Number(param.get("endtime")) * 1e3), 0) / 1e3;
-      let minimumRequestInterval = this.configs.getSettings("minimumRequestInterval") || 750;
+      const param = new URLSearchParams(window.location.search);
+      const startTime = Utils.getStartTime(Math.floor(Number(param.get("starttime")) * 1e3), 0) / 1e3;
+      const endTime = Utils.getStartTime(Math.floor(Number(param.get("endtime")) * 1e3), 0) / 1e3;
+      const minimumRequestInterval = this.configs.getSettings("minimumRequestInterval") || 750;
       if (!(startTime && endTime)) return;
-      let getRankData = (t: number) => {
+      const getRankData = (t: number) => {
         if (this.configs.get("rankData", (t - 24 * 60 * 60).toString())) return; // 一天误差
         this.parent.utils.createRequest({
           url: `${ this.parent.hostname }/rank.html?starttime=${ t }&endtime=${ t }`,
@@ -110,15 +111,15 @@ export class RankInit extends Init {
           headers: { "Content-Type": "text/html; charset=UTF-8" }
         })
         .then(resp => {
-          let rawData: UserRankRecordData[] = [];
-          let d = $("<html>").html(resp.responseText.replaceAll("src=", "data-src="));
+          const rawData: UserRankRecordData[] = [];
+          const d = $("<html>").html(resp.responseText.replaceAll("src=", "data-src="));
           d.find(".rank-list-block:nth-child(1) li").each((_, e) => {
             rawData.push({
               value: Number($(e).attr("data-content").split("字节")[0].replaceAll(",", "")),
               user: Number($("a", e).attr("href").split("center.mcmod.cn/")[1].split("/")[0])
             });
           });
-          let data = JSON.stringify(rawData);
+          const data = JSON.stringify(rawData);
           this.configs.set("rankData", (t - 24 * 60 * 60).toString(), data);
           Utils.commonMsg(`成功保存${ Utils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3)) }的贡献数据~ (${ Utils.getFormattedSize(data.length) })`);
         });
@@ -132,7 +133,7 @@ export class RankInit extends Init {
       const result = ranklists.find(`[data-uid=${ uid }]`);
       if (result.length > 1) result.addClass("hover");
     })
-    .on("pointerleave", "li", _e => {
+    .on("pointerleave", "li", () => {
       ranklists.find(".hover").removeClass("hover");
     })
   }

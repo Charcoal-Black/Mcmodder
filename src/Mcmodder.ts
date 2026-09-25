@@ -118,7 +118,7 @@ export class Mcmodder {
   }
 
   private readonly generalEditorObserver = new MutationObserver(mutationList => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if ((mutation.target as HTMLElement).id === "edui1_iframeholder" && mutation.addedNodes.length) {
         this.callEditor();
         this.generalEditorObserver.disconnect();
@@ -141,6 +141,8 @@ export class Mcmodder {
       $(".modlist-block .title a").removeClass("mcmodder-item-link");
       $(".mcmodder-item-link[data-toggle=tooltip]:not([data-html])").each((_, e) => {
         $(e).tooltip("dispose");
+        // 强制序列化终极邪道
+        // eslint-disable-next-line no-self-assign
         e.outerHTML = e.outerHTML;
       })
       $(".mcmodder-item-link").each((_, e) => {
@@ -215,7 +217,7 @@ export class Mcmodder {
         }
         const rightTable = doc.find(".item-data .item-info-table").first();
         rightTable.removeClass("righttable").insertBefore(previewFrame);
-        let showImg = (c: Element) => c.outerHTML = c.outerHTML.replaceAll("data-src=", "src=");
+        const showImg = (c: Element) => c.outerHTML = c.outerHTML.replaceAll("data-src=", "src=");
         rightTable.find("img").each((_, img) => {
           showImg(img);
         });
@@ -277,7 +279,7 @@ export class Mcmodder {
     if (!$("#editor-frame").length) return;
     if (typeof editor === "undefined") {
       const editorObserver = new MutationObserver(mutationList => {
-        for (let mutation of mutationList) {
+        for (const mutation of mutationList) {
           if ((mutation.target as Element).id === "editor-frame" && mutation.removedNodes.length) {
             this.onEditorSetup();
           }
@@ -350,7 +352,8 @@ export class Mcmodder {
 
   updateSplashListData() {
     const splashes_old: string[] = GM_getValue("mcmodderSplashList").split("\n");
-    let splashes: string[] = [], count: [string, number][] = [], flag: boolean;
+    const splashes: string[] = [], count: [string, number][] = [];
+    let flag: boolean;
     splashes_old.pop();
     for (let i = 1; i < splashes_old.length; i++) {
       flag = true;
@@ -402,9 +405,10 @@ export class Mcmodder {
 
     (win as any).__mcmodder_splash_tracked__ = true;
     splashText = splashText.replace(this.currentUsername || "百科酱", "%s");
-    let splashes: string[] = GM_getValue("mcmodderSplashList_v2")?.split("\n") || [], flag = 0, index = -1;
+    const splashes: string[] = GM_getValue("mcmodderSplashList_v2")?.split("\n") || [];
+    let flag = 0, index = -1;
     splashes.forEach((e, i) => {
-      let d = e.split(",");
+      const d = e.split(",");
       if (d[1] === splashText) {
         flag = Number(d[2]) + 1;
         d[2] = flag.toString();
@@ -612,8 +616,8 @@ export class Mcmodder {
 
     if (this.configRepository.getSettings("tableLeftAlign")) {
       // StyleLoader CSS
-      let f = (e: Element) => {
-        let c = $(e).next();
+      const f = (e: Element) => {
+        const c = $(e).next();
         if (c.attr("class") === "figcaption") c.css("width", e.getBoundingClientRect().width + "px");
       };
       $(".common-text .figure .lazy").each((_, _e) => {
@@ -716,7 +720,7 @@ export class Mcmodder {
     if (this.configRepository.getSettings("adaptableNightMode")) {
       const scheme = window.matchMedia("(prefers-color-scheme: dark)");
       this.configRepository.setSettings("nightMode", scheme.matches);
-      scheme.addEventListener("change", _ => {
+      scheme.addEventListener("change", () => {
         this.configRepository.setSettings("nightMode", scheme.matches);
       });
     }
@@ -752,7 +756,7 @@ export class Mcmodder {
       <i class="fa fa-${ this.preferredWiderScreen ? "compress" : "expand" }"></i>
     </button>`)
     .appendTo(".header-container .header-search")
-    .click(_e => {
+    .click(() => {
       this.configRepository.setSettings("preferredWiderScreen", !this.preferredWiderScreen);
     });
 
@@ -778,7 +782,7 @@ export class Mcmodder {
     // TODO: 取消锁定导航栏
 
     if (this.isV4 /* && this.configRepository.getSettings("mcmodderUI") */) {
-      window.addEventListener("scroll", Utils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
+      window.addEventListener("scroll", Utils.animationThrottle(() => { // 个人目录不会超出屏幕右边界
         const header = $(".header-user").get(0).getBoundingClientRect();
         const menuWidth = 400;
         if (header.x + header.width / 2 + menuWidth / 2 >= window.innerWidth - Values.headerContainerHeight) {
@@ -793,11 +797,11 @@ export class Mcmodder {
     }
 
     if (this.isV4 && this.configRepository.getSettings("customAdvancements")) { // 更新自定义成就
-      let completed = this.configRepository.getProfile("completed");
+      const completed = this.configRepository.getProfile("completed");
       if (completed) {
         completed.split(",")?.forEach(sid => {
           const id = Number(sid);
-          let data = this.advutils.getData(id);
+          const data = this.advutils.getData(id);
           Utils.showTaskTip(data.image || "",
             PublicLangData.center.task.list[data.lang].title,
             PublicLangData.center.task.list[data.lang].content,
@@ -827,7 +831,7 @@ export class Mcmodder {
         data: "version=4.0"
       }).then(resp => {
         try {
-          let data = JSON.parse(resp.responseText);
+          const data = JSON.parse(resp.responseText);
           if (data.state || !data.user.login || !data.user.msg_count) {
             this.notifyUnreadMessage(0);
           } else {
@@ -878,7 +882,7 @@ export class Mcmodder {
         <script type="text/javascript">initModel("${ this.hostname }/live2d/")</script>
       `).appendTo("body");
 
-      $(document).on("click", ".waifu-tool .fui-cross", _ => {
+      $(document).on("click", ".waifu-tool .fui-cross", () => {
         $.cookie("mcmodgirl_hide", null, { path: "/" });
         this.configRepository.setSettings("enableLive2D", false);
       });

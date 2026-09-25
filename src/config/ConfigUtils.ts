@@ -41,7 +41,7 @@ export class ConfigUtils {
 
   constructor(parent: Mcmodder) {
     this.configs = parent.configRepository;
-    this.data = {} as any;
+    this.data = {} as Record<keyof Settings, ConfigOption>;
     this.buffer = new StorageBuffer(parent);
   }
 
@@ -76,7 +76,7 @@ export class ConfigUtils {
 
   private addConfig<T extends keyof Settings>(id: T, title: string, description: string, type = InputType.CHECKBOX, 
     value: Settings[T] | null = null, range: InputValueRange | undefined, permission = Permission.NONE, Suggestion?: InputSimplifiedSuggestion[]) {
-    (this.data as any)[id] = {
+    this.data[id] = {
       title: title,
       description: description,
       type: type,

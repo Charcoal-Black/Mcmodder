@@ -14,7 +14,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
     const preSubmitList: (PreSubmission | null)[] = (this.configs.getProfile("preSubmitList") as PreSubmission[]).filter(e => !e.errState);
     let f = true;
     if (!preSubmitList.length) return;
-    for (let i in preSubmitList) {
+    for (const i in preSubmitList) {
       const e = preSubmitList[i]!;
       let resp = await this.parent.utils.createRequest({
         url: e.url,

@@ -32,9 +32,9 @@ export class AdvancementLoader {
     .addTiered(20, tier => `user_word_all_${ tier }`, AdvancementType.COMMON,
       8, tier => tier * 5e4, tier => tier * 500, null, null)
     .addTiered(6, tier => `user_word_avg_${ tier }`, AdvancementType.COMMON,
-      9, _ => 50, tier => [192, 669, 585, 942, 1517, 2444][tier - 1])
+      9, () => 50, tier => [192, 669, 585, 942, 1517, 2444][tier - 1])
     .addTiered(29, tier => `user_lv_${ tier + 1 }`, AdvancementType.COMMON,
-      21, _ => 1, _ => 0, null, null)
+      21, () => 1, () => 0, null, null)
     .addTiered(5, tier => `user_edit_today_${ tier }`, AdvancementType.DAILY,
       27, tier => [1, 10, 20, 50, 100][tier - 1], 
       tier => [1, 10, 25, 50, 100][tier - 1], null, null)

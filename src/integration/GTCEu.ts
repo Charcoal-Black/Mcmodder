@@ -52,19 +52,19 @@ export class GTCEu {
   }
 
   static getHTMLByVoltage(voltage: GTVTier) {
-    let tier = this.getTierByVoltage(voltage);
+    const tier = this.getTierByVoltage(voltage);
     return `<span style="color: #${Values.formatColors[this.voltageColor[tier]]};${this.isVoltageBold(tier) ? " font-weight: bold;" : ""}">${this.voltageName[tier]}</span>`;
   }
 
   static getHTMLWithPercentageByVoltage(voltage: number) {
-    let tier = this.getTierByVoltage(voltage);
-    let percentage = Utils.getPrecisionFormatter().format(voltage / this.getMaxVoltageByTier(tier));
+    const tier = this.getTierByVoltage(voltage);
+    const percentage = Utils.getPrecisionFormatter().format(voltage / this.getMaxVoltageByTier(tier));
     return `${percentage}A${this.getHTMLByVoltage(voltage)}`;
   }
 
   static singleOverclock(recipe: GTCEuEnergyRecipe, isPerfect: boolean) {
     if (recipe.duration > 1) {
-      let multiplier = isPerfect ? 0.25 : 0.5;
+      const multiplier = isPerfect ? 0.25 : 0.5;
       recipe.EUt = recipe.EUt * 4;
       recipe.duration = Math.max(Math.floor(recipe.duration * multiplier), 1);
       recipe.tier++;

@@ -23,11 +23,11 @@ export class GTCEuEnergyFrame {
     this.instance = this.$instance.get(0);
     this.recipe = new GTCEuEnergyRecipe;
 
-    let instance = this.$instance;
+    const instance = this.$instance;
     instance.find("p").each((_, c) => {
-      let t = c.textContent.split(/:|\uff1a/);
-      let key = t[0];
-      let value = parseFloat(t[1].replaceAll(",", ""));
+      const t = c.textContent.split(/:|\uff1a/);
+      const key = t[0];
+      const value = parseFloat(t[1].replaceAll(",", ""));
       if (GTCEuEnergyFrame.powerText.includes(key)) {
         this.powerName = key;
         this.powerNode = c;

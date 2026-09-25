@@ -23,7 +23,7 @@ export class VersionEditInit extends Init {
     .appendTo($("li.tab-li:nth-child(1)").first())
     .bind("change", e => {
       const target = e.currentTarget as HTMLInputElement;
-      let date = [target.value.slice(0, 2), target.value.slice(2, 4), target.value.slice(4, 6)];
+      const date = [target.value.slice(0, 2), target.value.slice(2, 4), target.value.slice(4, 6)];
       if (!(this.checkIfValid(date[0], 9, year - 2e3) && 
         this.checkIfValid(date[1], 1, 12) && 
         this.checkIfValid(date[2], 1, 31))) return;
@@ -39,8 +39,14 @@ export class VersionEditInit extends Init {
     // 自动从 CurseForge/Modrinth 源获取日志
     const param = new URLSearchParams(window.location.search);
     let source = 0, id;
-    if (param.get("cfid")) source = 1, id = param.get("cfid");
-    else if (param.get("mrid")) source = 2, id = param.get("mrid");
+    if (param.get("cfid")) {
+      source = 1;
+      id = param.get("cfid");
+    }
+    else if (param.get("mrid")) {
+      source = 2;
+      id = param.get("mrid");
+    }
     if (source) {
       const fileid = param.get("fileid");
       let resp, data;
@@ -64,7 +70,8 @@ export class VersionEditInit extends Init {
           const ueditor = this.parent.ueditorFrame[0] as AdvancedUEditor;
           ueditor.mdEditor?.setValue(data);
         }
-        let w = ($("#ueditor_0").get(0) as HTMLIFrameElement).contentDocument?.body, f = false;
+        const w = ($("#ueditor_0").get(0) as HTMLIFrameElement).contentDocument?.body;
+        let f = false;
         if (!w) return;
         for (let i = 1; i < 6; i++) $(w).find("h" + i).each((_, e) => {
           $(e).replaceWith(`<p>[h${i}=${e.textContent}]</p>`);
@@ -75,7 +82,7 @@ export class VersionEditInit extends Init {
       }, 1100);
       $("[data-multi-id=name]").val(param.get("ver") || "");
       $("[data-multi-id=mcversion]").val(param.get("mcver") || "");
-      let d = new Date(parseInt(param.get("date") || ""));
+      const d = new Date(parseInt(param.get("date") || ""));
       $("#mcmodder-date-editor").val(
         d.getFullYear() % 1e2 * 1e4 + 
         (d.getMonth() + 1) * 1e2 + 

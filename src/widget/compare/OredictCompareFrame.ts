@@ -8,7 +8,7 @@ export class OredictCompareFrame {
     const oredictSet: OredictSet = new Set;
     const nodes: NodeMap = {};
     node.contents().each((_, p) => {
-      const text = (node.contents().get(0) as any as Text).data;
+      const text = (node.contents().get(0) as unknown as Text).data;
       if (text === "-") {
         return;
       }

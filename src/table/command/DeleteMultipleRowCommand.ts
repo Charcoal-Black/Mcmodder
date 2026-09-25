@@ -1,6 +1,6 @@
 import { Command } from "./Command";
 
-export class DeleteMultipleRowCommand<T extends Object> extends Command<T> {
+export class DeleteMultipleRowCommand<T extends TableAcceptable> extends Command<T> {
   selection: TableRowSelection;
   deletedData?: TableDataMap<T>;
 

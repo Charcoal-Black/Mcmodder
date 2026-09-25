@@ -16,16 +16,16 @@ export class Swiper {
     this.tab = $(`<div class="mcmodder-swiper-tab">`).appendTo(this.ul);
     this.cursor = $(`<div class="mcmodder-swiper-cursor">`).appendTo(this.tab);
     this.update();
-    this.ul.on("click", "li", _e => {
+    this.ul.on("click", "li", () => {
       this.update();
     })
-    .on("pointerenter", "li", _e => {
+    .on("pointerenter", "li", () => {
       this.hover = true;
       this.timeout = setTimeout(() => {
         this.update();
       }, 550);
     })
-    .on("pointerleave", "li", _e => {
+    .on("pointerleave", "li", () => {
       if (this.hover) {
         this.hover = false;
         clearTimeout(this.timeout);

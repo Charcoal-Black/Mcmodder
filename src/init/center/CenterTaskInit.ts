@@ -62,7 +62,8 @@ export class CenterTaskInit extends CenterBaseInit {
       showConfirmButton: false
     });
     const now = Utils.getStartTime(new Date(), 0);
-    let startTime = Utils.getStartTime(regTime, 0), endTime, resp, total = 0, verifyList: Element[] = [], maxPage, title, lastEdit, lastVerify;
+    let startTime = Utils.getStartTime(regTime, 0), endTime, resp, total = 0, maxPage, title, lastEdit, lastVerify;
+    const verifyList: Element[] = [];
     const progressBar = createApp(ProgressBar, {
       val: regTime,
       min: regTime,
@@ -109,12 +110,16 @@ export class CenterTaskInit extends CenterBaseInit {
   private parseUnlockedAchievements(frameID: number) {
     let expTotal = 0, expEarned = 0;
     $(`.task [data-menu-frame=${ frameID }] .center-task-block`).each((_, e) => {
-      let t = $(e).find(".title").text(), exp = 0, c = $(e).find(".finished").length;
-      let f = this.parent.advutils.getList().find(a => PublicLangData.center.task.list[a.lang].title === t);
-      if (!f?.tier) exp += f?.exp || 0, expTotal += exp, expEarned += c * exp;
-      else {
+      const t = $(e).find(".title").text(), c = $(e).find(".finished").length, f = this.parent.advutils.getList().find(a => PublicLangData.center.task.list[a.lang].title === t);
+      let exp = 0;
+      if (!f?.tier) {
+        exp += f?.exp || 0;
+        expTotal += exp;
+        expEarned += c * exp;
+      } else {
         let cur = f, prev, next, sum = 0;
-        while (prev = cur.prev) { // 前向遍历
+        while (cur.prev) { // 前向遍历
+          prev = cur.prev;
           sum += prev.exp;
           cur = prev;
         }
@@ -125,7 +130,8 @@ export class CenterTaskInit extends CenterBaseInit {
           expTotal += (sum + cur.exp);
         }
         else { // 后向遍历
-          while (next = cur.next) {
+          while (cur.next) {
+            next = cur.next
             sum += cur.exp;
             cur = next;
           }

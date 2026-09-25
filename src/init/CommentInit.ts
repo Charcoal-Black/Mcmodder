@@ -60,7 +60,7 @@ export class CommentInit extends Init {
   }
 
   private readonly commentObserver = new MutationObserver(mutationList => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       const commentFloor = $(mutation.target);
       const className = commentFloor.prop("class");
       if ((className === "comment-floor" || className === "comment-reply-floor") && mutation.addedNodes.length > 0) {
@@ -130,7 +130,7 @@ export class CommentInit extends Init {
             for (let i = 0; i < rawContent.length; i++) {
               newContent += (rawContent[i].charCodeAt(0) <= 0xff) ? rawContent[i] : " ";
             }
-            let urlList = newContent.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
+            const urlList = newContent.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
             urlList.forEach(item => {
               replyContent.html(replyContent.html().replace(item, '<a href="' + item + '" target="_blank">' + item + '</a>'));
             })
@@ -148,8 +148,8 @@ export class CommentInit extends Init {
     if (!this.configs.getSettings("unlockComment")) return;
     // 无限制留言板
     const commentClassName = "common-comment-block lazy";
-    let messageCenter = $(".center-block:last-child()").get(0) || $(".common-comment-block.lazy .comment-editor").get(0) || $(".author-row").get(0);
-    let messageBoard = document.getElementsByClassName(commentClassName);
+    const messageCenter = $(".center-block:last-child()").get(0) || $(".common-comment-block.lazy .comment-editor").get(0) || $(".author-row").get(0);
+    const messageBoard = document.getElementsByClassName(commentClassName);
     if (messageCenter && (!messageBoard.length || $(".comment-close").length)) {
       const t1 = document.createElement("div");
       t1.className = commentClassName;
@@ -157,7 +157,7 @@ export class CommentInit extends Init {
       const t = messageCenter.appendChild(t1);
       Utils.addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
       $(t).append('<div><ul class="comment-floor"></ul></div>');
-      Utils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(\".comment-editor-area .editor-frame\").length>0&&0==isUEReady)var ueObj=$.ajax({url:\"${ this.parent.hostname }/static/ueditor/\",async:!0,type:\"post\",data:{type:\"comment\"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(\".comment-editor-area .editor-frame .load\").html(ueObj.responseText),isUEReady=1}});`);
+      Utils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(".comment-editor-area .editor-frame").length>0&&0==isUEReady)var ueObj=$.ajax({url:"${ this.parent.hostname }/static/ueditor/",async:!0,type:"post",data:{type:"comment"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(".comment-editor-area .editor-frame .load").html(ueObj.responseText),isUEReady=1}});`);
       if ($(".comment-close").length && $(".comment-dl-tips").length) {
         // messageCenter.insertBefore($(".common-comment-block.lazy", messageCenter).get(0), $(".comment-dl-tips", messageCenter).get(0));
         $(".comment-close").remove();
@@ -204,7 +204,7 @@ export class CommentInit extends Init {
 
   run() {
     if (this.configs.getSettings("commentExpandHeight")) {
-      let commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
+      const commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
       Utils.addStyle(`.comment-row-text {max-height: ${ commentHeight }px;}`);
     }
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {

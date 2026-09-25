@@ -105,7 +105,7 @@ const opt = computed(() => {
     case InputType.SLIDER: return { finiteRange: data.range as InputValueFiniteNumericRange };
     case InputType.DROPDOWN_MENU: {
       const valueSet = data.range as InputValueSet;
-      valueSet[data.value] += " (默认)";
+      valueSet[data.value as number] += " (默认)";
       return { valueSet };
     }
     case InputType.DROPDOWN_TEXT_MENU: {

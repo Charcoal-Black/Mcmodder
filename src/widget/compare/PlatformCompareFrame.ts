@@ -19,7 +19,7 @@ export class PlatformCompareFrame {
         nodes.set(category, nodeRecord);
       }
       else if (p.nodeType === Node.TEXT_NODE) {
-        const text = (p as any as Text).data;
+        const text = (p as unknown as Text).data;
         const versionList = text.split(" / ");
         const newElement = $("<p>");
         versionList.forEach((version, index) => {

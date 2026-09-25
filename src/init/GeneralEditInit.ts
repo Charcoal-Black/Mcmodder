@@ -17,7 +17,7 @@ export class GeneralEditInit extends Init {
       t = $(".left .text").get(0);
       t.innerHTML = t.innerHTML.replace("Alt + X", "⌥X").replace("Ctrl + Enter", "⌘⏎");
     } */
-    let leftText = $(".left .text").get(0);
+    const leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
     .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
     .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
@@ -25,6 +25,8 @@ export class GeneralEditInit extends Init {
     // Bug修复：快速存档时当前菜单自动关闭
     if (this.configs.getSettings("autoSaveFix")) {
       editAutoSaveLoop = function () {
+        // 百科原生发力
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         1 == nAutoSave ? $("#editor-frame").length > 0 && 0 == editor.getContent().trim().length ? nAutoSave = 60 : (editSave(), nAutoSave--) : nAutoSave > 0 && nAutoSave--, $("#edit-autosave-sec").text(nAutoSave), setTimeout(editAutoSaveLoop, 1e3)
       }
     }

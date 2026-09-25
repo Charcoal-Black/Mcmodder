@@ -36,7 +36,7 @@ export class CenterSettingInit extends CenterBaseInit {
       Values.assets.mcmod.iconStyleSample
     }" width="220" ></a>`);
     // 脚本设置
-    let menuArea = $("div.center-main.setting.menuarea").get(0);
+    const menuArea = $("div.center-main.setting.menuarea").get(0);
     $("<li>").html('<a data-menu-select="9" href="javascript:void(0);">脚本设置</a>')
     .appendTo("#center-setting-frame > div.center-sub-menu > ul")
     .bind("change", e => {
@@ -46,7 +46,8 @@ export class CenterSettingInit extends CenterBaseInit {
         const e = target.parent().parent().parent();
         const t = e.parent().children(".center-main");
         e.children("ul").find("a").removeClass("active");
-        target.addClass("active"), t.children(".center-block").hide();
+        target.addClass("active");
+        t.children(".center-block").hide();
         t.children(`.center-block[data-menu-frame='${a}']`).show();
       }
     });

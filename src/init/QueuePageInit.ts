@@ -8,7 +8,7 @@ export class QueuePageInit extends Init {
   run() {
     $(".table td:first-child()").css("background", "var(--mcmodder-color-background-transparent)");
 
-    let t = $(".verify-queue-list-table tr")
+    const t = $(".verify-queue-list-table tr")
     .filter((_, content) => $("a[rel=nofollow]", content).text() === this.parent.currentUsername).first();
     Utils.highlight(t, "gold", 2e3, true);
   }

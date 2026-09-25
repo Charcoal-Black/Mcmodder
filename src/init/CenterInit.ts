@@ -29,8 +29,8 @@ export class CenterInit extends Init {
     return this.pageUID;
   }
 
-  private readonly centerSettingObserver = new MutationObserver((mutationList, _centerSettingObserver) => {
-    for (let mutation of mutationList) {
+  private readonly centerSettingObserver = new MutationObserver(mutationList => {
+    for (const mutation of mutationList) {
       if (mutation.addedNodes.length > 1) {
         new CenterSettingInit(this).run();
         // centerSettingObserver.disconnect();
@@ -38,7 +38,7 @@ export class CenterInit extends Init {
     }
   });
   private readonly centerRankObserver = new MutationObserver((mutationList, centerRankObserver) => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if ((mutation.addedNodes[0] as HTMLElement).className === "center-main lv" && $(".lv-title").length) {
         new CenterRankInit(this).run();
         centerRankObserver.disconnect();
@@ -46,7 +46,7 @@ export class CenterInit extends Init {
     }
   });
   private readonly centerCardObserver = new MutationObserver((mutationList, centerCardObserver) => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if ((mutation.removedNodes[0] as HTMLElement)?.className === "loading") {
         new CenterCardInit(this).run();
         centerCardObserver.disconnect();
@@ -54,7 +54,7 @@ export class CenterInit extends Init {
     }
   });
   private readonly centerTaskObserver = new MutationObserver((mutationList, centerTaskObserver) => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if ((mutation.removedNodes[0] as HTMLElement)?.className === "loading") {
         centerTaskObserver.disconnect();
         new CenterTaskInit(this).run();
@@ -62,7 +62,7 @@ export class CenterInit extends Init {
     }
   });
   private readonly centerHomeObserver = new MutationObserver((mutationList, centerHomeObserver) => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if ((mutation.addedNodes[0] as HTMLElement)?.className === "center-total") {
         new CenterHomeInit(this).run();
         centerHomeObserver.disconnect();

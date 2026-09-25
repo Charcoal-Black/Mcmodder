@@ -64,7 +64,8 @@ export class VerifyPageInit extends Init {
       }
 
       $(".table i.fa-lightbulb-o").parent().each((_, c) => {
-        let rawContent = $(c).text(), newContent = "";
+        const rawContent = $(c).text();
+        let newContent = "";
         for (let i = 0; i < rawContent.length; i++) newContent += (rawContent[i].charCodeAt(0) <= 0xff) ? rawContent[i] : " ";
         const urlList = newContent.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
         urlList.forEach(item => { c.innerHTML = rawContent.replace(item, '<a href="' + item + '" target="_blank">' + item + '</a>'); });
@@ -74,12 +75,12 @@ export class VerifyPageInit extends Init {
       const counter = new Array(Values.searchOption.length).fill(null).map(() => [0, 0, 0, 0, 0]);
       $(".verify-list-list-table tbody tr").each((_, e) => {
         const tr = $(e);
-        let d = tr.find("td:nth-child(2)").text();
+        const d = tr.find("td:nth-child(2)").text();
         Values.searchOption.forEach((item, index) => {
           if (item.reg.test(d) && ((!item.exclude) || !d.includes(item.exclude)) && ((!item.exclude2) || !d.includes(item.exclude2))) {
             tr.attr("edit-type", index.toString());
             counter[index][0]++;
-            let t = tr.find("td:nth-child(4) p:first-child() i").attr("class");
+            const t = tr.find("td:nth-child(4) p:first-child() i").attr("class");
             stateIcon.forEach((e, i) => {
               if (t.includes(e)) counter[index][i]++;
             });
@@ -88,13 +89,14 @@ export class VerifyPageInit extends Init {
       });
       $("[edit-type=3],[edit-type=9]").each((_, _e) => { // 查看详细
         const e = $(_e);
-        let d = e.find("td:nth-child(4)"), t = "item";
+        const d = e.find("td:nth-child(4)");
+        let t = "item";
         if (!d.find("i").get(0).classList.contains("fa-spinner")) return;
         switch (Number(e.attr("edit-type"))) {
           case 3: t = "class"; break;
           case 9: t = "item";
         }
-        let l = e.find("td:nth-child(2) a").filter((_, c) => (c as HTMLAnchorElement).href.includes("/" + t + "/"));
+        const l = e.find("td:nth-child(2) a").filter((_, c) => (c as HTMLAnchorElement).href.includes("/" + t + "/"));
         if (l.length && !e.find(".verify-withdraw-btn").length) {
           e.find("td").last().prev().append(`<a class="btn btn-outline-dark btn-sm mcmodder-content-block" href="/${t}/edit/${Utils.abstractLastFromURL(l.attr("href"), t)}/" target="_blank">查看改动</a>`);
         }
@@ -122,7 +124,7 @@ export class VerifyPageInit extends Init {
         c.html(h);
         c.find("input").bind("change", e => {
           const input = e.currentTarget as HTMLInputElement;
-          let opt: string[] = [], v = $("#mcmodder-verify-search").val().trim().toLowerCase();
+          const opt: string[] = [], v = $("#mcmodder-verify-search").val().trim().toLowerCase();
           $("div.checkbox input", $(input).parent().parent().parent())
           .filter((_, c) => (c as HTMLInputElement).checked)
           .each((_, c) => {
@@ -143,7 +145,7 @@ export class VerifyPageInit extends Init {
       searchFrame = $('<div class="verify-list-search-area">');
       $('<input id="mcmodder-verify-search" class="form-control" placeholder="搜索...">').bind("change", e => {
         const input = e.currentTarget as HTMLInputElement;
-        let opt: string[] = [], v = $("#mcmodder-verify-search").val().trim().toLowerCase();
+        const opt: string[] = [], v = $("#mcmodder-verify-search").val().trim().toLowerCase();
         $("div.checkbox input", $(input).parent().parent().parent())
         .each((_, c) => {
           if ((c as HTMLInputElement).checked) {
@@ -167,13 +169,13 @@ export class VerifyPageInit extends Init {
       // $("div.bd-callout-warning").first().html('审核周期通常在 24 小时以内，有管理员的模组区域审核周期通常在 7 日以内，如逾期未审，<span class="mcmodder-common-dark">可点“一键催审”按钮给重生上强度！！</span> (´・ω・`)');
       $('<button id="mcmodder-fast-urge" class="btn btn-dark btn-sm" data-toggle="tooltip" data-html="true" data-original-title="一键对当前列表中可催审的审核项催审！审核项提交 24 小时后可催审，首次催审后每隔 1 小时可再次催审。<br>催审并不会对管理员发送强提醒，但能够使审核项在后台的待审列表中排在更靠前的位置。">一键催审</button>')
       .insertBefore(".verify-list-list")
-      .click(_e => {
-        let b = $("#mcmodder-fast-urge");
+      .click(() => {
+        const b = $("#mcmodder-fast-urge");
         b.html("一键催审 (处理中...)");
-        let urgeList = $(".verify-urge-btn").filter((_, e) => e.textContent != "代催").toArray();
-        let verifyList = urgeList.map(e => Number($(e).attr("data-id")));
+        const urgeList = $(".verify-urge-btn").filter((_, e) => e.textContent != "代催").toArray();
+        const verifyList = urgeList.map(e => Number($(e).attr("data-id")));
         let t = 0, index = 0;
-        let doUrge = (id: number) => {
+        const doUrge = (id: number) => {
           this.parent.utils.createRequest({
             url: `${ this.parent.hostname }/action/edit/doUrge/`,
             method: "POST",

@@ -597,7 +597,7 @@ function createDefaultRowData() {
   const result: Partial<T> = {};
   (Object.keys(editConfigs.value!) as (keyof EditConfigs<T>)[]).forEach(key => {
     const editConfig = editConfigs.value![key];
-    if (!editConfig.optional) result[key] = editConfigs.value![key].value;
+    if (!editConfig.optional) (result[key] as unknown) = editConfigs.value![key].value;
   });
   return result as T;
 }
@@ -789,7 +789,7 @@ function onInputKeydown(e: KeyboardEvent) {
   }
   else if (e.key === "Escape") {
     e.preventDefault();
-    self.value = getEditedValue();
+    self.value = getEditedValue() as string;
     self.blur();
   }
   else if (e.key === "Shift") {

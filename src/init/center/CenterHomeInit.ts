@@ -9,6 +9,7 @@ import { CenterBaseInit } from "./CenterBaseInit";
 export class CenterHomeInit extends CenterBaseInit {
   static readonly maxRecentlyVisitedLength = 100;
   private chartMode: 1 | 2 = 1;
+
   private optionData: any;
   private tempData: any;
   private chartOriginalData: any;
@@ -30,7 +31,8 @@ export class CenterHomeInit extends CenterBaseInit {
       }],
       tooltip: [{
         formatter: (e: any) => {
-          var t = e.data[0], i = "";
+          const t = e.data[0];
+          let i = "";
           return this.tempData[t] && (i = ` <b>${
             this.tempData[t].toLocaleString()
           }字节</b> (约${
@@ -92,7 +94,9 @@ export class CenterHomeInit extends CenterBaseInit {
     // 记录模组区域
     $(".admin-list").each((_, _c) => {
       const c = $(_c);
-      let s: number[] = [], l: "editorModList" | "adminModList" | "devModList", t = c.find(".title").text();
+      const s: number[] = [];
+      let l: "editorModList" | "adminModList" | "devModList";
+      const t = c.find(".title").text();
       if (t.startsWith("编辑员")) l = "editorModList";
       else if (t.startsWith("管理员")) l = "adminModList";
       else if (t.startsWith("开发者")) l = "devModList";
@@ -128,7 +132,7 @@ export class CenterHomeInit extends CenterBaseInit {
           reject(err);
           return;
         }
-        profile.uuid = cookie[0].value,
+        profile.uuid = cookie[0].value;
         profile.expirationDate = cookie[0].expirationDate ? cookie[0].expirationDate * 1e3 : -1;
         if (this.configs.getSettings("customAdvancements") && profile.editByte >= 1e3 && profile.editAvg >= 120) {
           this.parent.advutils.addProgress(AdvancementID.MASTER_EDITOR);
@@ -185,8 +189,8 @@ export class CenterHomeInit extends CenterBaseInit {
         $('<a class="mcmodder-slim-dark" style="width: 100%; display: inline-block; text-align: center;">轻触展开</a>')
         .appendTo(e.parentElement)
         .click(f => {
-          let target = f.currentTarget;
-          let adminList = $(target).parent().find("ul").get(0) as HTMLElement;
+          const target = f.currentTarget;
+          const adminList = $(target).parent().find("ul").get(0) as HTMLElement;
           target.innerHTML = adminList.style.maxHeight === "400px" ? "轻触收起" : "轻触展开";
           adminList.style.maxHeight = (adminList.style.maxHeight === "unset" ? "400px" : "unset");
           if (adminList.style.maxHeight === "400px") target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -247,19 +251,19 @@ export class CenterHomeInit extends CenterBaseInit {
     // 字数统计表
     // 使用前需要在贡献榜页面保存数据
     if (this.configs.getSettings("byteChart") && !this.configs.getSettings("supabaseByteChart")) {
-      let rawData = this.configs.getAll("rankData") ?? {};
+      const rawData = this.configs.getAll("rankData") ?? {};
       this.optionData = [[0, "center"], [1, "mcmod"], [2, "cn"]];
       this.tempData = {};
       Object.keys(rawData).forEach(t => {
-        let d = new Date(Number(t) * 1e3);
-        let f = `${
+        const d = new Date(Number(t) * 1e3);
+        const f = `${
           d.getFullYear()
         }-${
           (1 + d.getMonth()).toString().padStart(2, '0')
         }-${
           d.getDate().toString().padStart(2, '0')
         }`;
-        let r = JSON.parse(rawData[t]);
+        const r = JSON.parse(rawData[t]);
         r.forEach((i: any) => {
           if (i.user == this.center.getPageUID()) {
             this.optionData.push([f, parseInt(i.value)]);
@@ -346,7 +350,7 @@ export class CenterHomeInit extends CenterBaseInit {
     //   }]
     // });
     if (this.configs.getSettings("enableAprilFools")) {
-      let d = editChart.getOption();
+      const d = editChart.getOption();
       d.series[0].data = (d.series[0].data as [number, number][]).map(t => {
         if (t[0] < 3) return t;
         return [t[0], t[1] + Math.round(Math.random() * 120)];

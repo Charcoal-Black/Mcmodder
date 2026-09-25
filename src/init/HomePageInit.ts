@@ -19,6 +19,8 @@ export class HomePageInit extends Init {
 
     // 函数覆写以兼容夜间模式
     if (typeof SearchOn != "undefined") SearchOn = () => {
+      // 百科原生发力
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       '搜索MOD/资料/教程..' == $('.search_box #key').val().trim() && (
         $('.search_box #key').val(''),
         $('.search_box #key').css('color', 'var(--mcmodder-color-text)')
@@ -31,7 +33,7 @@ export class HomePageInit extends Init {
 
     if (this.configs.getSettings("almanacs")) {
       // 数据迁移
-      let almanacsList = this.configs.getSettings("almanacsList");
+      const almanacsList = this.configs.getSettings("almanacsList");
       if (almanacsList) {
         GM_setValue("almanacsList", almanacsList);
         this.configs.setSettings("almanacsList", "");
@@ -95,11 +97,11 @@ export class HomePageInit extends Init {
       }
     });
     if (v4) {
-      textContainer.find("li:not([data-id=recent]) > a").click(_e => {
+      textContainer.find("li:not([data-id=recent]) > a").click(() => {
         moreNode.hide();
       });
     }
-    moreNode.click(_e => {
+    moreNode.click(() => {
       page++;
       if (page >= maxPage) page = 0;
       this.renderRecentlyVisitedMods(contentNode, recentlyVisitedMods, page);

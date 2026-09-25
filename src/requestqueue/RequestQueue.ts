@@ -168,7 +168,8 @@ export abstract class RequestQueue {
     while ((this.execution.progress < requestLength) || this.running.size) {
       if (this.running.size < this.maxConcurrent && this.execution.progress < requestLength) {
         const index = this.execution.progress;
-        if (this.execution.queue[index]?.hasOwnProperty("config")) {
+        const request = this.execution.queue[index];
+        if (request !== undefined && Object.prototype.hasOwnProperty.call(request, "config")) {
           this.create(index, this.minInterval);
         };
         this.execution.progress++;

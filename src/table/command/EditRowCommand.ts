@@ -1,7 +1,7 @@
 import { BatchCommand } from "./BatchCommand";
 import { EditCommand } from "./EditCommand";
 
-export class EditRowCommand<T extends Object> extends BatchCommand<T> {
+export class EditRowCommand<T extends TableAcceptable> extends BatchCommand<T> {
   index: number;
   constructor(self: TableContext<T>, index: number, data: T) {
     super(self);

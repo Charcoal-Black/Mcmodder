@@ -215,9 +215,9 @@ export class EditorInit extends Init {
   // }
 
   private readonly swalObserver = new MutationObserver(mutationList => {
-    for (let mutation of mutationList) {
+    for (const mutation of mutationList) {
       if (!(mutation.addedNodes[0] as HTMLElement)?.className?.includes("swal2")) continue;
-      let st = $(".swal2-title").text();
+      const st = $(".swal2-title").text();
       if (st === PublicLangData.editor.success.title) {
         if (this.configs.getSettings("autoCloseSwal")) {
           swal.close();
@@ -235,7 +235,7 @@ export class EditorInit extends Init {
             link.modifier(c as HTMLElement);
             $(c).find("a:not(.mcmodder-editor-link)")
             .addClass("badge mcmodder-editor-link")
-            .click(_e => link.run());
+            .click(() => link.run());
           });
           if (/*/正文介绍中含有疑似.+的/.test(warningContent)*/true) {
             $(c).find("b").each((_, b) => {
@@ -244,7 +244,7 @@ export class EditorInit extends Init {
                 link.modifier(c as HTMLElement);
                 $(c).find("a:not(.mcmodder-editor-link)")
                 .addClass("badge mcmodder-editor-link")
-                .click(_e => link.run());
+                .click(() => link.run());
               });
             });
           }
@@ -282,7 +282,7 @@ export class EditorInit extends Init {
           let strEditTypeName;
           if (strEditType === "author") strEditTypeName = $("#author-team").prop("checked") ? PublicLangData[strEditType].alter.team : PublicLangData[strEditType].alter.single;
           else strEditTypeName = PublicLangData[strEditType].alter;
-          let submitButton = $(`
+          const submitButton = $(`
           <div class="text">
             <b>[预编辑] 改动附言:</b>
             <textarea class="form-control" placeholder="改动附言.." id="mcmodder-presubmit-remark"></textarea>
@@ -311,8 +311,8 @@ export class EditorInit extends Init {
               }
             });
           });
-          $(document).on("click", ".mcmodder-presubmit", _e => {
-            let popup = $(".swal2-popup");
+          $(document).on("click", ".mcmodder-presubmit", () => {
+            const popup = $(".swal2-popup");
             popup.find("#swal2-title").html(popup.find("#swal2-title").html().replace("编辑", "预编辑"));
             popup.find(".edit-dataverify-frame").after('<span class="mcmodder-slim-dark">预编辑内容将会被临时保存在本地，直到该用户的待审项被处理之后才会正式提交。已保存的预编辑项可在“审核列表 -> 只显示我提交的”看到，暂不支持重新修改，请知悉。');
             (popup.find(".swal2-confirm").get(0) as HTMLButtonElement).onclick = null;

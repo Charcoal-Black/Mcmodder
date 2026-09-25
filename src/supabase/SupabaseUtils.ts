@@ -29,7 +29,7 @@ export class SupabaseUtils {
       );
     }
     catch (e) {
-      console.warn("Failed to create Supabase client!");
+      console.warn("Failed to create Supabase client: ", e);
       this.instance = null;
     }
   }

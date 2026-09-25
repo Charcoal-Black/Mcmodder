@@ -18,7 +18,7 @@ export class TabEditRecipeDisplay extends RecipeDisplay {
       }
     });
 
-    let title = "";
+    let title;
     if (this.guiID < 1) {
       title = `<span class="mcmodder-slim-danger">该配方所使用的 GUI 尚未绑定到相应的 MC 百科 GUI...</span>`;
       this.arrow?.append(`<div class="mcmodder-recipe-error fa fa-warning">`)
@@ -31,7 +31,7 @@ export class TabEditRecipeDisplay extends RecipeDisplay {
       "data-html": true
     }).tooltip();
     
-    this.instance.click(_e => {
+    this.instance.click(() => {
       const t = strTableSlotFocus;
       strTableSlotFocus = ""; // 屏蔽原生点击事件
       this.write();

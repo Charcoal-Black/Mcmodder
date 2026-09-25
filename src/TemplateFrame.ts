@@ -19,14 +19,14 @@ export class TemplateFrame {
     this.configs = this.editor.configs;
 
     // v1.x 旧版本遗留修复
-    let legacyList = this.configs.getSettings("templateList");
+    const legacyList = this.configs.getSettings("templateList");
     if (legacyList) {
       this.configs.setAll("templateList", legacyList);
       this.configs.deleteSettings("templateList");
     }
 
     // v2.0 去序列化修复
-    let legacyList_v2 = this.configs.getAll("templateList") as unknown as string;
+    const legacyList_v2 = this.configs.getAll("templateList") as unknown as string;
     if (typeof legacyList_v2 === "string") {
       this.configs.setAll("templateList", JSON.parse(legacyList_v2));
     }
@@ -76,13 +76,18 @@ export class TemplateFrame {
     $('<input id="mcmodder-template-search" class="form-control" placeholder="搜索..">')
     .insertAfter(".common-template-frame .input-group")
     .bind("change", () => {
-      let s: string[] = $(".common-template-frame .form-control").val().trim().split(" ");
+      const s: string[] = $(".common-template-frame .form-control").val().trim().split(" ");
       groupLi.each((_, c) => {
         let flag = false;
-        if (!$(c).find("#mcmodder-template-add").length) s.forEach(d => {
+        const target = $(c);
+        if (!target.find("#mcmodder-template-add").length) s.forEach(d => {
           if (!c.textContent.includes(d)) flag = true;
         });
-        flag ? $(c).hide() : $(c).show();
+        if (flag) {
+          target.hide();
+        } else {
+          target.show();
+        }
       });
     });
 
@@ -152,7 +157,7 @@ export class TemplateFrame {
     const title = selection.find(".title").first();
     const input = $(`<input id="mcmodder-template-title" class="form-control title" placeholder="新模板标题... (必填)">`)
     .val(data.title)
-    .blur(_e => {
+    .blur(() => {
       const newTitle = input.val().trim();
       data.title = newTitle;
       input.replaceWith($(`<p class="title">`).text(newTitle));
@@ -174,7 +179,7 @@ export class TemplateFrame {
     const text = selection.find("p.text").first();
     const input = $(`<input id="mcmodder-template-description" class="form-control" placeholder="新模板介绍...">`)
     .val(data.description)
-    .blur(_e => {
+    .blur(() => {
       const newDescription = input.val().trim();
       data.description = newDescription;
       const textNode = $(`<p class="text">`).text(newDescription);

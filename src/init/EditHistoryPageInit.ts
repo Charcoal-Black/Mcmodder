@@ -22,7 +22,7 @@ export class EditHistoryPageInit extends Init {
         Utils.commonMsg("加载历史编辑记录失败...", false);
         return;
       };
-      let d = $(resp.responseXML);
+      const d = $(resp.responseXML);
       d.find(".history-list-frame ul").children().appendTo(".history-list-frame ul");
       Utils.commonMsg(`成功加载第 ${ id } / ${ maxPage } 页~`);
       if (id < maxPage && !this.stopExpand) setTimeout(() => this.getHistoryPage(++id, maxPage), 1e3);
@@ -30,7 +30,7 @@ export class EditHistoryPageInit extends Init {
         $('<input id="mcmodder-history-search" class="form-control" placeholder="输入编辑记录内容以筛选...">')
         .appendTo($(".history-list-head").first())
         .bind("change", e => {
-          let s = (e.currentTarget as HTMLInputElement).value;
+          const s = (e.currentTarget as HTMLInputElement).value;
           $(".history-list-frame li").each(li => {
             if (!$(li).text().includes(s)) $(li).hide();
             else $(li).removeAttr("style");
@@ -55,8 +55,8 @@ export class EditHistoryPageInit extends Init {
     if (this.configs.getSettings("autoExpandPage")) {
       this.stopExpand = false;
       if ($(".badge-secondary").text() === "最近100条") return;
-      let maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0]);
-      let param = new URLSearchParams(window.location.search);
+      const maxPage = parseInt($(".pagination span").text().split(" / ")[1]?.split(" 页")[0]);
+      const param = new URLSearchParams(window.location.search);
       this.startTime = param.get("starttime") || "";
       this.endTime = param.get("endtime") || "";
       if (!maxPage) return;

@@ -3,7 +3,7 @@ import PreSubmitFrame from "../vue/components/PreSubmitFrame.vue";
 import { Init } from "./Init";
 
 export class PreSubmitInit extends Init {
-  scheduleRequestUtils: any;
+  // scheduleRequestUtils: any;
   canRun() {
     return false;
   }

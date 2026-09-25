@@ -40,7 +40,7 @@ export class ConfigRepository {
     let data: AppStorage[T] | undefined;
     if (isCacheable) data = this.buffer.storageRef[item]!.value;
     else {
-      let raw = GM_getValue(item) as string | undefined;
+      const raw = GM_getValue(item) as string | undefined;
       if (raw === undefined) return undefined;
       data = JSON.parse(raw) as AppStorage[T];
     }
@@ -61,7 +61,7 @@ export class ConfigRepository {
 
     const data = this.getAll(item);
     if (data === undefined) return undefined;
-    let entry = data[key];
+    const entry = data[key];
     return entry as Required<AppStorage>[T][K];
   }
 
@@ -91,7 +91,7 @@ export class ConfigRepository {
     T extends keyof AppStorage,
     K extends keyof Required<AppStorage>[T]
   >(item: T, key: K) {
-    let config = this.get(item, key);
+    const config = this.get(item, key);
     if (config === undefined) return undefined;
     if (typeof config === "string") {
       return config.replaceAll(" ", "").split(",").map(Number);
@@ -129,7 +129,7 @@ export class ConfigRepository {
     T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
     K extends keyof Required<AppStorage>[T]
   >(item: T, key: K, value: /* Required<AppStorage>[T][K] */ unknown) {
-    let obj = JSON.parse(GM_getValue(item) ?? "{}"); // as Required<AppStorage>[T];
+    const obj = JSON.parse(GM_getValue(item) ?? "{}"); // as Required<AppStorage>[T];
     obj[key] = value;
     GM_setValue(item, JSON.stringify(obj));
     if (this.parent.storageBuffer.isCacheable(item)) {
@@ -166,7 +166,7 @@ export class ConfigRepository {
   >(key: K) {
     const ref = this.getRef("mcmodderSettings", key) as ComputedRef<Settings[K] | undefined>;
     return computed<Settings[K]>({
-      get: () => ref.value ?? this.getConfigData(key).value,
+      get: () => ref.value ?? this.getConfigData(key).value as Settings[K],
       set: value => this.set("mcmodderSettings", key, value)
     })
   }
@@ -203,7 +203,7 @@ export class ConfigRepository {
     T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
     K extends keyof NonNullable<AppStorage[T]>
   >(item: T, key: K) {
-    let obj = JSON.parse(GM_getValue(item) ?? "{}") // as NonNullable<AppStorage[T]>;
+    const obj = JSON.parse(GM_getValue(item) ?? "{}") // as NonNullable<AppStorage[T]>;
     delete obj[key];
     GM_setValue(item, JSON.stringify(obj));
   }
@@ -228,7 +228,7 @@ export class ConfigRepository {
     const rawData = GM_getValue("userProfile");
     if (!rawData) return false;
     const profiles: Record<string, Profile> = JSON.parse(rawData);
-    return profiles.hasOwnProperty(uid);
+    return Object.prototype.hasOwnProperty.call(profiles, uid);
   }
 
   private getAllRecord<
@@ -241,7 +241,7 @@ export class ConfigRepository {
       raw = "{}";
     }
     const record = JSON.parse(raw) as Record<string, string>;
-    let result = JSON.parse(record[id] ?? "{}") as T;
+    const result = JSON.parse(record[id] ?? "{}") as T;
     return result;
   }
 
@@ -260,7 +260,7 @@ export class ConfigRepository {
     P extends keyof T
   >(storageKey: K, key: P, value: T[P], id: number) {
     const profiles = JSON.parse(GM_getValue(storageKey) || "{}");
-    let profile = JSON.parse(profiles[id] || "{}");
+    const profile = JSON.parse(profiles[id] || "{}");
     profile[key] = value;
     profiles[id] = JSON.stringify(profile);
     GM_setValue(storageKey, JSON.stringify(profiles));

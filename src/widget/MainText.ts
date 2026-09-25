@@ -77,7 +77,7 @@ export class MainText {
       icon: "author",
       parser: link => Utils.abstractIDFromURL(link, "author").toString()
     }, {
-      regExp: /^\/oredict\/[0-9A-Za-z:_\/]+-1.html$/,
+      regExp: /^\/oredict\/[0-9A-Za-z:_/]+-1.html$/,
       icon: "tag",
       parser: link => link.slice(9, -7)
     }

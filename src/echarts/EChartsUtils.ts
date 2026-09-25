@@ -86,7 +86,7 @@ export class EchartsUtils {
 
   setChartFont(chart: any) {
     if (!this.font) return;
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       const fontFamily = Values.assets.font.fontFamily[this.font];
       const newOption: any = {
@@ -102,7 +102,7 @@ export class EchartsUtils {
   }
 
   setClassRatingChartBaseStyle() {
-    let o = this.classRatingChart?.getOption();
+    const o = this.classRatingChart?.getOption();
     if (o) {
       o.backgroundColor = "#fff8";
       // o.axisPointer[0].lineStyle.color = "#B9BEC9";
@@ -114,7 +114,7 @@ export class EchartsUtils {
   }
 
   setClassRatingChartNightStyle() {
-    let o = this.classRatingChart?.getOption();
+    const o = this.classRatingChart?.getOption();
     if (o) {
       o.backgroundColor = "#1118";
       // o.axisPointer[0].lineStyle.color = "#444";
@@ -126,7 +126,7 @@ export class EchartsUtils {
   }
 
   setClassUserChartBaseStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#464646";
       o.title[0].subtextStyle.color = "#6e7079";
@@ -139,7 +139,7 @@ export class EchartsUtils {
   }
 
   setClassUserChartNightStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#ccc";
       o.title[0].subtextStyle.color = "#aaa";
@@ -152,7 +152,7 @@ export class EchartsUtils {
   }
 
   setClassIndexChartBaseStyle() {
-    let o = this.classIndexChart?.getOption();
+    const o = this.classIndexChart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#464646";
       o.title[0].subtextStyle.color = "#6e7079";
@@ -167,7 +167,7 @@ export class EchartsUtils {
   }
 
   setClassIndexChartNightStyle() {
-    let o = this.classIndexChart?.getOption();
+    const o = this.classIndexChart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#ccc";
       o.title[0].subtextStyle.color = "#aaa";
@@ -182,7 +182,7 @@ export class EchartsUtils {
   }
 
   setCenterEditChartBaseStyle() {
-    let o = this.centerEditChart?.getOption();
+    const o = this.centerEditChart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#fff";
       o.calendar[0].dayLabel.color = "#000";
@@ -197,7 +197,7 @@ export class EchartsUtils {
   }
 
   setCenterEditChartNightStyle() {
-    let o = this.centerEditChart?.getOption();
+    const o = this.centerEditChart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#222";
       o.calendar[0].dayLabel.color = "#fff";
@@ -212,7 +212,7 @@ export class EchartsUtils {
   }
 
   setWorldgenChartBaseStyle(chart: any) {
-    let o = chart.getOption();
+    const o = chart.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#fff";
       o.tooltip[0].borderColor = "#333";
@@ -227,7 +227,7 @@ export class EchartsUtils {
   }
 
   setWorldgenChartNightStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#333";
       o.tooltip[0].borderColor = "#666";

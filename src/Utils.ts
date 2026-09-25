@@ -44,6 +44,8 @@ export class Utils {
       common_msg(title || defaultTitle, message, isok ? "ok" : "err");
     }
     else if (typeof swal === "function") {
+      // 使用了 v3 的特殊 swal
+      // eslint-disable-next-line
       (swal as any)({
         type: isok ? "success" : "error",
         title: defaultTitle,
@@ -54,14 +56,14 @@ export class Utils {
     }
   }
 
-  static createModal(option: SweetAlertOption, interceptEvents: Record<string, (ev: Event) => any> = {}) {
+  static createModal(option: SweetAlertOption, interceptEvents: Record<string, (ev: Event) => unknown> = {}) {
     swal.fire(option).then(() => {
       Object.entries(events).forEach(([eventName, callback]) => {
         window.removeEventListener(eventName, callback);
       })
     });
     const modal = $(".swal2-modal").get(0);
-    const events: Record<string, (this: Window, ev: any) => any> = {};
+    const events: Record<string, (this: Window, ev: Event) => unknown> = {};
     Object.entries(interceptEvents).forEach(([eventName, callback]) => {
       events[eventName] = (ev: Event) => {
         const target = ev.target;
@@ -191,7 +193,7 @@ export class Utils {
   }
 
   static validateVersionForLoaderID(version: string, loaderID: string) {
-    const list = (Values.loaderSupportVersions as any)[loaderID] as string[];
+    const list = (Values.loaderSupportVersions)[loaderID as keyof typeof Values.loaderSupportVersions] as Readonly<string[]> | undefined;
     return !list || (
       list.includes(version) || (
         list[0].includes(">=") && 
@@ -201,7 +203,7 @@ export class Utils {
   }
 
   static validateVersionForLoaderName(version: string, loaderName: string) {
-    return this.validateVersionForLoaderID(version, (Values.loaderID as any)[loaderName]);
+    return this.validateVersionForLoaderID(version, Values.loaderID[loaderName as keyof typeof Values.loaderID]);
   }
 
   static simpleDeepCopy<T>(obj: T): T {
@@ -213,9 +215,9 @@ export class Utils {
     return Utils.simpleDeepCopy(obj);
   }
 
-  static deleteEmptyProperties(obj: any) {
+  static deleteEmptyProperties(obj: object) {
     let val;
-    Object.keys(obj).forEach(key => {
+    (Object.keys(obj) as (keyof typeof obj)[]).forEach(key => {
       val = obj[key];
       if (val === undefined || val === null || (typeof val === "number" && isNaN(val))) delete obj[key];
     });
@@ -240,15 +242,6 @@ export class Utils {
       const text = "用户信息获取失败...";
       return plainText ? text : `<span class="text-danger">${ text }</span>`;
     }
-    
-    let userGroup = profile.userGroup;
-    if (!plainText) {
-      switch (userGroup) {
-        case "百科编辑员": userGroup = `<span class="mcmodder-admin-editor">${ userGroup }</span>`; break;
-        case "资深编辑员": userGroup = `<span class="mcmodder-admin-admin">${ userGroup }</span>`;
-      }
-    }
-    
     const content = [profile.userGroup];
     if (showLv) content.push(`Lv.${ profile.lv }`);
     if (profile.editNum) content.push(`${ profile.editNum.toLocaleString() } 次编辑`);
@@ -267,14 +260,14 @@ export class Utils {
     return result;
   }
 
-  setInteract(value: any) {
+  setInteract(value: unknown) {
     const id = Utils.randStr(8);
     this.configs.set("mcmodderInteracts", id, value);
     return id;
   }
 
   static playsound(url = Values.assets.mcmod.level.levelup) {
-    let task_audio = document.createElement("audio");
+    const task_audio = document.createElement("audio");
     task_audio.setAttribute("muted", "muted");
     task_audio.setAttribute("src", url);
     task_audio.play();
@@ -307,7 +300,8 @@ export class Utils {
   }
 
   static getFormattedChineseTime(t: number) {
-    let a, b = t < 0 ? "前" : "后";
+    let a;
+    const b = t < 0 ? "前" : "后";
     t = t < 0 ? -t : t;
     if (t < 1e3) return `刚刚`;
     else if (t < 6e4) a = `${Math.floor(t / 1e3)}秒`;
@@ -370,7 +364,7 @@ export class Utils {
 
   static getItemFullName(name: string, ename?: string | null) {
     let res = name.trim();
-    let trimedEname = ename?.trim();
+    const trimedEname = ename?.trim();
     if (trimedEname) res += ` (${ trimedEname })`;
     return res;
   }
@@ -477,17 +471,14 @@ export class Utils {
   static abstractLastFromURL(url: string, typeList: string | string[]) {
     if (!url || !typeList) return "";
     if (!(typeList instanceof Array)) typeList = [typeList];
-    let res = "";
-    try {
-      for (let type of typeList) {
-        if (url.includes(type)) {
-          res = url.split(`/${type}/`)[1].split(".html")[0].split("/")[0];
-          break;
-        }
+    let res;
+    for (const type of typeList) {
+      if (url.includes(type)) {
+        res = url.split(`/${type}/`)?.[1]?.split(".html")?.[0]?.split("/")?.[0];
+        break;
       }
-    } finally {
-      return res || "";
     }
+    return res ?? "";
   }
 
   static abstractIDFromURL(url: string, typeList: string | string[]) {
@@ -638,10 +629,10 @@ export class Utils {
     const l = hsl.l / 100;
     const a = (hsl as HSLA).a;
 
-    let c = (1 - Math.abs(2 * l - 1)) * s,
+    const c = (1 - Math.abs(2 * l - 1)) * s,
         x = c * (1 - Math.abs((h / 60) % 2 - 1)),
-        m = l - c/2,
-        r = 0,
+        m = l - c/2;
+    let r = 0,
         g = 0,
         b = 0;
 
@@ -736,7 +727,8 @@ export class Utils {
   static keyToRawList(e: Key) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
     if (!e.key && !e.keyCode) return [];
-    let k = [], c;
+    const k = [];
+    let c;
     if (e.ctrlKey) k.push(Utils.isMac() ? "Control" : "Ctrl");
     if (e.shiftKey) k.push("Shift");
     if (e.altKey) k.push(Utils.isMac() ? "Option" : "Alt");
@@ -805,7 +797,8 @@ export class Utils {
 
   static randStr(l = 32) {
     const t = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_';
-    let n = t.length, r = '';
+    const n = t.length;
+    let r = '';
     for (let i = 0; i < l; i++)
       r += t.charAt(Math.floor(Math.random() * n));
     return r;
@@ -819,7 +812,7 @@ export class Utils {
     "'": '&#039;'
   };
   static escapeHTML(str: string | number) {
-    return str.toString().replace(/[&<>"']/g, char => (Utils.escapeHTMLMap as any)[char]);
+    return str.toString().replace(/[&<>"']/g, char => Utils.escapeHTMLMap[char as keyof typeof Utils.escapeHTMLMap]);
   }
 
   static getAbsolutePos(node: Element) {
@@ -887,36 +880,33 @@ export class Utils {
   //   return [...cnTokens, ...pinyinFull, ...pinyinInit] as V extends true ? VT[] : VF[];
   // }
 
-  static debounce = (func: Function, wait: number) => {
-    let timeout: number;
-    return function (this: any, ...args: any[]) {
-      const context = this;
+  static debounce = <T extends (...args: never[]) => void>(func: T, wait: number) => {
+    let timeout: ReturnType<typeof setTimeout>;
+    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        func.apply(context, args);
+        func.apply(this, args);
       }, wait);
     }
   }
 
-  static throttle = (func: Function, wait: number) => {
+  static throttle = <T extends (...args: never[]) => void>(func: T, wait: number) => {
     let lastTime = 0;
-    return function (this: any, ...args: any[]) {
-      const context = this;
+    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
       const now = Date.now();
       if (now - lastTime >= wait) {
-        func.apply(context, args);
+        func.apply(this, args);
         lastTime = now;
       }
     };
   }
 
-  static animationThrottle = (func: Function) => {
+  static animationThrottle = <T extends (...args: never[]) => void>(func: T) => {
     let isTicking = false;
-    return function (this: any, ...args: any[]) {
-      const context = this;
+    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
       if (!isTicking) {
         requestAnimationFrame(() => {
-          func.apply(context, args);
+          func.apply(this, args);
           isTicking = false;
         })
         isTicking = true;
@@ -926,7 +916,7 @@ export class Utils {
 
   static addStyle(value: string, id = "", doc = document) {
     if (id && doc.getElementById(id)) return;
-    let style = $('<style type="text/css">').appendTo($("head", doc)).html(value);
+    const style = $('<style type="text/css">').appendTo($("head", doc)).html(value);
     if (id) style.attr("id", id);
   }
 
@@ -937,7 +927,7 @@ export class Utils {
       })
     }
     return new Promise<void>((resolve, reject) => {
-      let link = document.createElement("link");
+      const link = document.createElement("link");
       link.type = type ? type : "text/css";
       link.rel = "stylesheet";
       if (id) link.id = id;
@@ -950,7 +940,7 @@ export class Utils {
   }
 
   static addScript(loc: HTMLElement, content: string | null, src?: string, type?: string) {
-    let script = document.createElement("script");
+    const script = document.createElement("script");
     script.type = type ? type : "text/JavaScript";
     if (content) script.innerHTML = content;
     else if (src) {
@@ -967,7 +957,7 @@ export class Utils {
       })
     }
     return new Promise<void>((resolve, reject) => {
-      let script = document.createElement("script");
+      const script = document.createElement("script");
       script.type = type ? type : "text/JavaScript";
       if (id) script.id = id;
       if (src) script.src = src;
@@ -1034,7 +1024,11 @@ export class Utils {
           else if (char2 === "m") isCodeValid = strikethrough = true;
           else if (char2 === "n") isCodeValid = underline = true;
           else if (char2 === "o") isCodeValid = italic = true;
-          else if (char2 === "r") isCodeValid = true, color = -1, bold = italic = obfuscated = underline = strikethrough = false;
+          else if (char2 === "r") {
+            isCodeValid = true;
+            color = -1;
+            bold = italic = obfuscated = underline = strikethrough = false;
+          }
 
           span.removeAttr("class");
           if (color >= 0) span.addClass(`mcmodder-format-color`).addClass(`mcmodder-format-color-${ color }`);
@@ -1076,8 +1070,8 @@ export class Utils {
   }
 
   updateRequestTime() {
-    let minimumRequestInterval = Math.max(this.configs.getSettings("minimumRequestInterval")!, 500);
-    let now = (new Date()).getTime();
+    const minimumRequestInterval = Math.max(this.configs.getSettings("minimumRequestInterval")!, 500);
+    const now = (new Date()).getTime();
     let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
     if (lastRequestTime > now + minimumRequestInterval * Values.MAX_REQUEST_COUNT) {
       console.warn("Scheduled requests have exceeded the maximum limit. New request is ignored.");
@@ -1088,7 +1082,7 @@ export class Utils {
     return lastRequestTime;
   }
 
-  createRequest(config: GmXmlhttpRequestOption<"text", any>): Promise<GmResponseEvent<"text", any>> {
+  createRequest(config: GmXmlhttpRequestOption<"text", unknown>): Promise<GmResponseEvent<"text", unknown>> {
     const lastRequestTime = this.updateRequestTime(), now = (new Date()).getTime();
     return new Promise(resolve => {
       setTimeout(() => {
@@ -1133,7 +1127,8 @@ export class Utils {
   }
 
   static unicode2Character(s: string) {
-    let chineseStr = "", l = s.length;
+    let chineseStr = "";
+    const l = s.length;
     for (let i = 0; i < l;) {
       const unicode = s.slice(i, 6);
       if (unicode.slice(0, 2) === "\\u") {
@@ -1160,11 +1155,11 @@ export class Utils {
     while (m) {
       m = false;
       r.forEach(function (i) {
-        let p = e.indexOf("[" + i);
+        const p = e.indexOf("[" + i);
         if (p > -1) {
           if (e.slice(p).indexOf("]") < 0) return;
           m = true;
-          let s = e.slice(p).split("]")[0].replace("[" + i, "");
+          const s = e.slice(p).split("]")[0].replace("[" + i, "");
           if (i.indexOf("=") > -1) e = e.replace(e.slice(p).split("]")[0] + "]", s);
           /* else if (i === "icon:" && s.includes("=")) {
             s = s.split("=")[1].replace(",", "");
@@ -1179,7 +1174,7 @@ export class Utils {
 
   static getContextLength(e: string) {
     const encoder = new TextEncoder();
-    let r = Utils.clearContextFormatter(e);
+    const r = Utils.clearContextFormatter(e);
     return encoder.encode(r).length;
   }
 
@@ -1197,7 +1192,7 @@ export class Utils {
   }
 
   static regulateFileName(name: string) {
-    return name.replace(/[\\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
+    return name.replace(/[\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
   }
 
   static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | number | (() => (string | number))) {
@@ -1209,8 +1204,8 @@ export class Utils {
   }
 
   updateClassNameIDMap(className: string, classID: string) {
-    let classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
-    let idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
+    const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
+    const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
     classNameIDMap[className] = classID;
     idClassNameMap[classID] = className;
     GM_setValue("classNameIDMap", JSON.stringify(classNameIDMap));
@@ -1218,12 +1213,12 @@ export class Utils {
   }
 
   getClassNameByClassID(classID: string | number) {
-    let idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
+    const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
     return idClassNameMap[classID.toString()];
   }
 
   getClassIDByClassName(className: string) {
-    let classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
+    const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
     return classNameIDMap[className];
   }
 
@@ -1334,8 +1329,8 @@ export class Utils {
   }
 
   static async itemToEditorData(item: Item): Promise<McmodItemEditorData> {
-    let res: any = {"item-data": {} };
-    let data: McmodItemEditorInnerData = res["item-data"];
+    const res = { "item-data": {} } as DeepPartial<McmodItemEditorData>;
+    const data = res["item-data"]! as Partial<McmodItemEditorInnerData>;
     if (item.id) {
       res["action"] = "item_edit";
       res["edit-id"] = item.id.toString();
@@ -1357,7 +1352,7 @@ export class Utils {
     if (item.maxStackSize != undefined) data["maxstack"] = item.maxStackSize.toString();
     // if (item.tools) data["tools"] = item.tools;
 
-    return res;
+    return res as McmodItemEditorData;
   }
 
   static parseItemEditorDocument($doc: JQuery = $(document)) {
@@ -1386,7 +1381,7 @@ export class Utils {
     return res;
   }
 
-  static parseClassEditorDocument(_$doc: JQuery = $(document)) {
+  // static parseClassEditorDocument(_$doc: JQuery = $(document)) {
     // TODO ...
-  }
+  // }
 }

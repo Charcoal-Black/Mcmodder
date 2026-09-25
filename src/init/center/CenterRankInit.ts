@@ -3,15 +3,17 @@ import { CenterBaseInit } from "./CenterBaseInit";
 
 export class CenterRankInit extends CenterBaseInit {
   private refreshExpBar(newExp: number, currentExp = 0) {
-    let level = 1, progress = 0, expToNextLevel = 0, s = newExp;
+    let level = 1;
+    const s = newExp;
     while (newExp - Values.expRequisition[level] >= 0) newExp -= Values.expRequisition[level++];
-    progress = Math.round(newExp / Values.expRequisition[level] * 100);
-    expToNextLevel = Values.expRequisition[level] - newExp;
+    let progress = Math.round(newExp / Values.expRequisition[level] * 100);
+    const expToNextLevel = Values.expRequisition[level] - newExp;
     if (level <= Values.maxLevel) {
       $(".lv-title span:nth-child(2)").html(`升级进度: ${newExp.toLocaleString()} / ${Values.expRequisition[level].toLocaleString()} Exp`);
       $(".lv-title span:nth-child(3)").html(`升级还需经验: ${expToNextLevel.toLocaleString()} Exp`);
     } else {
-      level = Values.maxLevel, progress = 100;
+      level = Values.maxLevel;
+      progress = 100;
       $(".lv-title span:nth-child(2)").html(`升级进度: ${s.toLocaleString()} / - Exp`);
       $(".lv-title span:nth-child(3)").html(`升级还需经验: - Exp`);
     }
@@ -24,16 +26,16 @@ export class CenterRankInit extends CenterBaseInit {
 
   run() {
     // 各等级数据查询
-    let currentLevel = parseInt($("i.common-user-lv").text().replace("Lv.", ""));
-    let lvTitle = $(".lv-title").get(0);
-    let progressExp = parseInt($(".lv-title > span:nth-child(2)").text().replace("升级进度: ", "").replace(",", ""));
+    const currentLevel = parseInt($("i.common-user-lv").text().replace("Lv.", ""));
+    const lvTitle = $(".lv-title").get(0);
+    const progressExp = parseInt($(".lv-title > span:nth-child(2)").text().replace("升级进度: ", "").replace(",", ""));
     lvTitle.innerHTML += '<span>升至<i class="common-user-lv large lv-' + Math.min(currentLevel + 1, Values.maxLevel) + '">Lv.<input id="mcmodder-lv-input" maxlength="2"></i> 还需经验: <span id="mcmodder-expreq" style="margin-right: 0px">-</span> Exp</span>';
     
     $("input#mcmodder-lv-input", lvTitle).val(Math.min(currentLevel + 1, Values.maxLevel));
     $("input#mcmodder-lv-input", lvTitle).bind("change", e => {
       const input = e.currentTarget as HTMLInputElement;
-      let lv1 = parseInt($("i.common-user-lv").text().replace("Lv.", ""));
-      let lv2 = Math.min(parseInt(input.value), Values.maxLevel);
+      const lv1 = parseInt($("i.common-user-lv").text().replace("Lv.", ""));
+      const lv2 = Math.min(parseInt(input.value), Values.maxLevel);
       if (lv2 < 0 || lv2 > Values.maxLevel || isNaN(lv2) || lv1 >= lv2) {
         $("span#mcmodder-expreq").text("-");
         return;
@@ -62,7 +64,7 @@ export class CenterRankInit extends CenterBaseInit {
       },
       keydown: (e: JQueryKeyEventObject) => {
         const target = $(e.currentTarget);
-        let v = Number(target.val());
+        const v = Number(target.val());
         switch (e.keyCode) {
           case 40: {
             if (v < 1e3) return; 
@@ -85,7 +87,7 @@ export class CenterRankInit extends CenterBaseInit {
       },
       keydown: (e: JQueryKeyEventObject) => {
         const target = $(e.currentTarget);
-        let v = Number(target.val());
+        const v = Number(target.val());
         switch (e.keyCode) {
           case 40: {
             if (v < 5e4) return;

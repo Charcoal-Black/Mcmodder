@@ -9,14 +9,14 @@ export class ItemEditorInit extends Init {
   }
 
   private imgResize(s: number | string, t: number | string) {
-    let canvas = document.createElement("canvas");
-    let ctx = canvas.getContext("2d");
-    let img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
     if (ctx) img.onload = () => {
       canvas.width = canvas.height = Number(t) * (($(".common-item-mold-list li a[data-category-selected='true']").attr("data-multi-value") === "6") ? 1.125 : 1);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      let data = canvas.toDataURL("image/png");
+      const data = canvas.toDataURL("image/png");
       $(`#icon-${t}x`).val(data);
       $(`#icon-${t}x-editor`).val(data);
       $(`#item-icon-${t}x-preview-img`).attr("src", data);
@@ -37,7 +37,7 @@ export class ItemEditorInit extends Init {
         return;
       }
       const reader = new FileReader;
-      reader.onload = _ => {
+      reader.onload = () => {
         const a = reader.result;
         if (typeof a != "string") return false;
         const image = new Image;
@@ -81,7 +81,7 @@ export class ItemEditorInit extends Init {
     // JSON 快速手导
     const jsonUploader = $('<input id="mcmodder-json-upload" class="mcmodder-monospace form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">')
     .insertBefore($(".tab-ul").first())
-    .change(_ => {
+    .change(() => {
       let data: Item & {maxStacksSize?: number};
       try {
         data = JSON.parse(jsonUploader.val());

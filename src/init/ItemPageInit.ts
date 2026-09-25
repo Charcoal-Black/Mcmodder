@@ -84,7 +84,7 @@ export class ItemPageInit extends Init {
     if (!isCompactable) $(".item-data").each((_, _c) => {
       const c = $(_c);
       c.insertBefore(c.parent().find(".item-content").children().first());
-      let n = c.parents(".item-text").find(".name h5 > a").text();
+      const n = c.parents(".item-text").find(".name h5 > a").text();
       $(`<th colspan="2" align="center">${n}</th>`).insertBefore(c.find("tbody").children().first());
       c.parent().find("i").filter((_, e) => e.textContent === "暂无简介，欢迎协助完善。").parent().css({
         "float": "unset",
