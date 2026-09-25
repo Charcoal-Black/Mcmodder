@@ -1,18 +1,16 @@
 import { createTextVNode, h, type VNode } from "vue";
 import { Utils } from "../../Utils";
 
-const MatchedText = (props: {
-  text: string,
-  ranges?: ([number, number] | undefined)[]
-}) => {
+const MatchedText = (props: { text: string; ranges?: ([number, number] | undefined)[] }) => {
   const { text, ranges } = props;
 
   const length = text.length;
   const sortedRanges = (ranges ?? [])
-    .filter(range =>
-      range !== undefined &&
-      Utils.isClamp(range[0], 0, length) &&
-      Utils.isClamp(range[1], 0, length)
+    .filter(
+      (range) =>
+        range !== undefined &&
+        Utils.isClamp(range[0], 0, length) &&
+        Utils.isClamp(range[1], 0, length),
     )
     .sort((a, b) => a![0] - b![0]) as ([number, number] | null)[];
   const rangeCount = sortedRanges.length;
@@ -30,8 +28,7 @@ const MatchedText = (props: {
       j = i;
     }
   }
-  const normalizedRanges = sortedRanges
-    .filter(range => range !== null);
+  const normalizedRanges = sortedRanges.filter((range) => range !== null);
 
   const nodes: VNode[] = [];
   let pos = 0;
@@ -48,7 +45,7 @@ const MatchedText = (props: {
     nodes.push(createTextVNode(text.slice(pos, length)));
   }
   return nodes;
-}
+};
 
 MatchedText.props = ["text", "ranges"];
 

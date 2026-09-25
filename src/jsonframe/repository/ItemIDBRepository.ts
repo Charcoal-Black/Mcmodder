@@ -19,8 +19,8 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
   protected override getSchema() {
     return {
       [ItemIDBRepository.iconTableName]: "++_primaryKey, itemPrimaryKey",
-      ...super.getSchema()
-    }
+      ...super.getSchema(),
+    };
   }
 
   override async init() {
@@ -31,7 +31,7 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
   override async write(filename: string, data: Item[]) {
     await this.db.transaction("rw", this.table!, this.iconTable!, async () => {
       const items = await this.table!.where("_filename").equals(filename).toArray();
-      const itemPrimaryKeys = items.map(item => item._primaryKey);
+      const itemPrimaryKeys = items.map((item) => item._primaryKey);
       await this.iconTable!.where("itemPrimaryKey").anyOf(itemPrimaryKeys).delete();
 
       await super.write(filename, data);
@@ -42,8 +42,8 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
         icons[index] = {
           itemPrimaryKey: item._primaryKey,
           smallIcon: item.smallIcon ? Utils.base642Blob(item.smallIcon, "image/png") : undefined,
-          largeIcon: item.largeIcon ? Utils.base642Blob(item.largeIcon, "image/png") : undefined
-        }
+          largeIcon: item.largeIcon ? Utils.base642Blob(item.largeIcon, "image/png") : undefined,
+        };
         delete item.smallIcon;
         delete item.largeIcon;
       });
@@ -53,11 +53,16 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
   }
 
   override async read(filename: string) {
-    const { items, icons } = await this.db.transaction("r", this.table!, this.iconTable!, async () => {
-      const items = await super.read(filename);
-      const icons = await this.getItemIconsByItems(items);
-      return { items, icons };
-    });
+    const { items, icons } = await this.db.transaction(
+      "r",
+      this.table!,
+      this.iconTable!,
+      async () => {
+        const items = await super.read(filename);
+        const icons = await this.getItemIconsByItems(items);
+        return { items, icons };
+      },
+    );
     return await this.combineItemAndIcons(items, icons);
   }
 
@@ -78,8 +83,8 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
         rawKeys[index] = null;
       }
     });
-    const items = rawItems.filter(item => item !== undefined);
-    const keys = rawKeys.filter(key => key !== null);
+    const items = rawItems.filter((item) => item !== undefined);
+    const keys = rawKeys.filter((key) => key !== null);
     const icons = await this.readIcons(keys);
     return { items, icons };
   }
@@ -90,28 +95,39 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
   }
 
   async getItemIconsByItems<T extends IndexedType<Item>[]>(items: T) {
-    const keys = items.map(item => item._primaryKey);
+    const keys = items.map((item) => item._primaryKey);
     return await this.readIcons(keys);
   }
-  
+
   private async readIcons(itemPrimaryKeys: number[]) {
     return await this.iconTable!.where("itemPrimaryKey").anyOf(itemPrimaryKeys).toArray();
   }
 
   private unwrapSettled<T>(results: PromiseSettledResult<PromiseSettledResult<T>[]>) {
     if (!("value" in results)) return undefined;
-    return results.value.map(result => "value" in result ? result.value : undefined);
+    return results.value.map((result) => ("value" in result ? result.value : undefined));
   }
 
-  private async combineItemAndIcons<T extends IndexedType<Item>[]>(items: T, icons: IndexedType<ItemIcon>[]) {
+  private async combineItemAndIcons<T extends IndexedType<Item>[]>(
+    items: T,
+    icons: IndexedType<ItemIcon>[],
+  ) {
     const iconMap = new Map<number, ItemIcon>();
-    icons.forEach(icon => {
+    icons.forEach((icon) => {
       iconMap.set(icon.itemPrimaryKey, icon);
     });
-    const alignedIcons = items.map(item => iconMap.get(item._primaryKey));
+    const alignedIcons = items.map((item) => iconMap.get(item._primaryKey));
     const [smallIcons, largeIcons] = await Promise.allSettled([
-      Promise.allSettled(alignedIcons.map(icon => icon?.smallIcon ? Utils.blob2Base64(icon.smallIcon) : undefined)),
-      Promise.allSettled(alignedIcons.map(icon => icon?.largeIcon ? Utils.blob2Base64(icon.largeIcon) : undefined))
+      Promise.allSettled(
+        alignedIcons.map((icon) =>
+          icon?.smallIcon ? Utils.blob2Base64(icon.smallIcon) : undefined,
+        ),
+      ),
+      Promise.allSettled(
+        alignedIcons.map((icon) =>
+          icon?.largeIcon ? Utils.blob2Base64(icon.largeIcon) : undefined,
+        ),
+      ),
     ]);
     const unwrapSmallIcons = this.unwrapSettled(smallIcons);
     const unwrapLargeIcons = this.unwrapSettled(largeIcons);

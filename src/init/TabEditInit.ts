@@ -37,32 +37,30 @@ export class TabEditInit extends Init {
   private readonly isTabAdd = window.location.href.includes("/tab/add/");
 
   canRun() {
-    return this.parent.href.includes("/item/tab/") && 
-      !this.parent.href.includes(".html");
+    return this.parent.href.includes("/item/tab/") && !this.parent.href.includes(".html");
   }
 
   private parseRecipeRegisterName(recipe: Recipe) {
     const work = (recipe: Recipe, idListName: keyof Recipe) => {
       const idList = recipe[idListName] as Record<string, RecipeIngredient> | undefined;
-      Object.keys(idList || {}).forEach(key => {
+      Object.keys(idList || {}).forEach((key) => {
         const data = idList![key];
         if (data instanceof Array) {
-          idList![key] = data.map(id => {
+          idList![key] = data.map((id) => {
             const res = this.itemFieldIndex.get(id);
             if (res instanceof Array) {
               return res[0].id.toString();
             }
             return id;
           });
-        }
-        else {
+        } else {
           const res = this.itemFieldIndex.get(data);
           if (res instanceof Array) {
             idList![key] = res[0].id.toString();
           }
         }
       });
-    }
+    };
     const result = Utils.simpleDeepCopy(recipe);
     work(result, "in_id");
     work(result, "out_id");
@@ -79,7 +77,7 @@ export class TabEditInit extends Init {
     const idExcludedRecipe = Utils.simpleDeepCopy(recipe);
     delete idExcludedRecipe.in_id;
     delete idExcludedRecipe.out_id;
-    
+
     const work = (keyIndex: number, currentRecipe: Recipe) => {
       // 递归大手子梅开二度
       if (keyIndex >= keys.length) {
@@ -91,17 +89,15 @@ export class TabEditInit extends Init {
         const data = recipe.in_id![key];
         const newRecipe = Utils.simpleDeepCopy(currentRecipe);
         if (data instanceof Array) {
-          data.forEach(id => {
+          data.forEach((id) => {
             newRecipe.in_id![key] = id;
             work(keyIndex + 1, newRecipe);
           });
-        }
-        else {
+        } else {
           newRecipe.in_id![key] = data;
           work(keyIndex + 1, newRecipe);
         }
-      }
-      else {
+      } else {
         const data = recipe.out_id![keys[keyIndex]];
         const newRecipe = Utils.simpleDeepCopy(currentRecipe);
         if (data instanceof Array) {
@@ -110,25 +106,24 @@ export class TabEditInit extends Init {
           //   work(keyIndex + 1, newRecipe);
           // }
           // else {
-            data.forEach(id => {
-              newRecipe.out_id![key] = id;
-              work(keyIndex + 1, newRecipe);
-            });
+          data.forEach((id) => {
+            newRecipe.out_id![key] = id;
+            work(keyIndex + 1, newRecipe);
+          });
           // }
-        }
-        else {
+        } else {
           newRecipe.out_id![key] = data;
           work(keyIndex + 1, newRecipe);
         }
       }
-    }
+    };
 
     work(0, {
       gui_id: recipe.gui_id,
       in_id: {},
-      out_id: {}
+      out_id: {},
     });
-    
+
     return result;
   }
 
@@ -139,20 +134,20 @@ export class TabEditInit extends Init {
         <div class="tab-content">
           <div id="recipe-item" class="tab-pane active show"></div>
         </div>
-      </div>`)
-    .appendTo("#item-table-item-frame");
+      </div>`).appendTo("#item-table-item-frame");
     const recipeContainer = this.recipeFrame.find("#recipe-item");
 
     // 初始化 guiBoundMap
-    const guiBounds: RecipeJsonFrameGuiBound[] = this.configs.getAll("guiBound") || Values.defaultGuiBound;
+    const guiBounds: RecipeJsonFrameGuiBound[] =
+      this.configs.getAll("guiBound") || Values.defaultGuiBound;
     this.guiBoundFieldIndex.add(guiBounds);
 
     // 尝试搜索此物品的标签，同时为 ItemDisplay 构造 itemMap 和 tagMap
     const itemFiles: JsonStorage<Item> = this.configs.getAll("mcmodderJsonStorage") ?? {};
-    Object.values(itemFiles).forEach(file => {
+    Object.values(itemFiles).forEach((file) => {
       this.itemFieldIndex.add(file);
       this.tagFieldIndex.add(file);
-      file.forEach(item => {
+      file.forEach((item) => {
         if (item.id === Number(nItemID)) {
           this.oredict = item.OredictList?.split(",");
         }
@@ -162,8 +157,8 @@ export class TabEditInit extends Init {
     // 将一个复合配方拆解成若干个简单配方，并显示
     const matchedRecipes: SimpleRecipe[] = [];
     const recipeFiles: JsonStorage<Recipe> = this.configs.getAll("mcmodderRecipeJsonStorage") ?? {};
-    Object.values(recipeFiles).forEach(file => {
-      file.forEach(recipe => {
+    Object.values(recipeFiles).forEach((file) => {
+      file.forEach((recipe) => {
         if (!recipe.out_id) return;
         const parsedRecipe = this.parseRecipeRegisterName(recipe);
         const splitedRecipeList = this.splitRecipe(recipe);
@@ -190,21 +185,21 @@ export class TabEditInit extends Init {
   }
 
   isOutputMatches(id: string) {
-    return id === nItemID || this.oredict?.includes(id)
+    return id === nItemID || this.oredict?.includes(id);
   }
 
   getTableInputElement(id: string | null, part?: string | number | null) {
     if (part === undefined) {
-      return this.recipeTable.find(`[data-multi-id=${ id }]`);
+      return this.recipeTable.find(`[data-multi-id=${id}]`);
     }
-    return this.recipeTable.find(`[data-multi-id=${ id }][data-part=${ part }]`).first();
+    return this.recipeTable.find(`[data-multi-id=${id}][data-part=${part}]`).first();
   }
 
   private getGuiInputElement(id: string | null, part?: string | number | null) {
     if (part === undefined) {
-      return $(`[data-multi-id=${ id }]:not(.mcmodder-item-tab-edit-input)`);
+      return $(`[data-multi-id=${id}]:not(.mcmodder-item-tab-edit-input)`);
     }
-    return $(`[data-multi-id=${ id }][data-part=${ part }]:not(.mcmodder-item-tab-edit-input)`).first();
+    return $(`[data-multi-id=${id}][data-part=${part}]:not(.mcmodder-item-tab-edit-input)`).first();
   }
 
   private getGui() {
@@ -214,11 +209,11 @@ export class TabEditInit extends Init {
   async setGui(id: number) {
     if (this.getGui() === id) return;
     let success = false;
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       this.onGuiOpen = async () => {
         success = true;
         resolve();
-      }
+      };
       $("#item-table-gui-select").selectpicker("val", id.toString());
       setTimeout(() => {
         if (!success) {
@@ -228,7 +223,7 @@ export class TabEditInit extends Init {
     });
   }
 
-  private readonly slotObserver = new MutationObserver(mutationList => {
+  private readonly slotObserver = new MutationObserver((mutationList) => {
     if (!this.guiFrame || !this.slotFrame) return;
     for (const mutation of mutationList) {
       if (mutation.type === "attributes") {
@@ -239,34 +234,38 @@ export class TabEditInit extends Init {
 
           this.getTableInputElement(
             target.getAttribute("data-multi-id"),
-            target.getAttribute("data-part")
+            target.getAttribute("data-part"),
           )
-          .val((mutation.target as HTMLInputElement).value)
-          .change();
+            .val((mutation.target as HTMLInputElement).value)
+            .change();
 
           this.slotObserver.observe($(".gui")[0], {
             attributes: true,
             childList: true,
-            subtree: true
+            subtree: true,
           });
         }
       }
     }
-  })
+  });
 
   private updateCookieByCurrentUsedList() {
     const data: CurrentUsed = {
       item: [],
-      oredict: []
+      oredict: [],
     };
-    const itemUsedList = $("#item-used-item"), oredictUsedList = $("#item-used-oredict, #item-used-itemtags");
+    const itemUsedList = $("#item-used-item"),
+      oredictUsedList = $("#item-used-oredict, #item-used-itemtags");
     itemUsedList.find(".item-table-hover").each((_, c) => {
       data.item.push(c.getAttribute("item-id") || "-1");
     });
     oredictUsedList.find(".oredict-table-hover").each((_, c) => {
       data.oredict.push(c.getAttribute("data-oredict-name") || "<Empty>");
     });
-    $.cookie("itemTableUsedList", JSON.stringify(data), { path: "/", expires: 365 });
+    $.cookie("itemTableUsedList", JSON.stringify(data), {
+      path: "/",
+      expires: 365,
+    });
   }
 
   private setSelectorInfo(containerSelector: string) {
@@ -275,23 +274,24 @@ export class TabEditInit extends Init {
       const target = $(item);
       if (target.hasClass("mcmodder-tag")) return;
       target.addClass("mcmodder-tag");
-      
-      if ((item as HTMLElement).style.backgroundColor) item.parentNode?.insertBefore(item, item.parentNode.childNodes[pt++]);
+
+      if ((item as HTMLElement).style.backgroundColor)
+        item.parentNode?.insertBefore(item, item.parentNode.childNodes[pt++]);
 
       // 显示详细信息
       const img = target.find("img").get(0) as HTMLImageElement;
       const zh = img.alt.split(" (")[0];
       const en = img.alt.replace(zh + " (", "");
       $(`<div>
-          <span class="mcmodder-slim-dark zh-name">${ target.attr("item-id") }</span>
-          <span class="zh-name">${ zh }</span>
-          <span class="en-name">${ en.slice(0, en.length - 1) } [${
+          <span class="mcmodder-slim-dark zh-name">${target.attr("item-id")}</span>
+          <span class="zh-name">${zh}</span>
+          <span class="en-name">${en.slice(0, en.length - 1)} [${
             target.attr("data-original-title").split("<b>")[1].split("</b>")[0]
           }]</span>
         </div>
         <a class="delete"><i class="fa fa-trash" /></a>
       `).appendTo(target);
-      target.find(".delete").click(e => {
+      target.find(".delete").click((e) => {
         const c = parseInt($("#item-used-item-btn").text().split("(")[1].split(")")[0]);
         $("#item-used-item-btn").text(`资料 (${c - 1})`);
         $(".tooltip").remove();
@@ -332,7 +332,7 @@ export class TabEditInit extends Init {
       numberEditable: false,
       chance: "",
       chanceEditable: false,
-      unit: ""
+      unit: "",
     }));
     const output = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
@@ -341,18 +341,18 @@ export class TabEditInit extends Init {
       numberEditable: false,
       chance: "",
       chanceEditable: false,
-      unit: ""
+      unit: "",
     }));
     const fuel = {
       valid: false,
       number: "",
-      unit: ""
+      unit: "",
     };
     const extra = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
       number: "",
-      unit: ""
+      unit: "",
     }));
 
     const slotlist = $(".gui").find("input.value");
@@ -373,7 +373,7 @@ export class TabEditInit extends Init {
           output[dataId].valid = true;
         }
       }
-    })
+    });
     tablist.each((_, _tab) => {
       const tab = $(_tab);
       const data = tab.find("input");
@@ -422,7 +422,7 @@ export class TabEditInit extends Init {
     $(".item-table-gui-slot").each((_, e) => {
       const dataType = e.getAttribute("data-type");
       const dataId = e.getAttribute("data-id");
-      $(e).append(`<span class="mcmodder-gui-${ dataType }">${ dataId }</span>`);
+      $(e).append(`<span class="mcmodder-gui-${dataType}">${dataId}</span>`);
     });
 
     this.recipeTable = $(`<table id="mcmodder-item-tab-edit">`).appendTo(this.guiFrame);
@@ -431,62 +431,78 @@ export class TabEditInit extends Init {
 
     $(`<td><strong>物品 ID / 矿物词典 / 物品标签</strong></td>
       <td><strong>数量</strong></td>
-      <td><strong>概率 (%)</strong></td>`)
-    .appendTo(recipeTbody.children().first());
+      <td><strong>概率 (%)</strong></td>`).appendTo(recipeTbody.children().first());
 
     let recipeTr, recipeTd, recipeInput;
     for (const i in input) {
       if (!input[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
-      $(`<td class="input-head" data-toggle="tooltip" title="${ i } 号材料">
+      $(`<td class="input-head" data-toggle="tooltip" title="${i} 号材料">
         <strong>
           <i class="fa fa-sign-in" />
           ${i} ${input[i].unit}
         </strong>
-      </td>`).appendTo(recipeTr).css("align", "right");
+      </td>`)
+        .appendTo(recipeTr)
+        .css("align", "right");
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "in",
-        "data-multi-id": "slot-in-item",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i
-      }).val(input[i].id);
+      $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "in",
+          "data-multi-id": "slot-in-item",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+        })
+        .val(input[i].id);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "in",
-        "data-multi-id": "slot-in-number",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i,
-        "placeholder": "1"
-      }).val(input[i].number);
-      if (!input[i].numberEditable) recipeInput.attr({
-        "title": "此材料不可设置消耗数量。",
-        "disabled": "disabled"
-      }).css("cursor", "no-drop");
+      recipeInput = $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "in",
+          "data-multi-id": "slot-in-number",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+          placeholder: "1",
+        })
+        .val(input[i].number);
+      if (!input[i].numberEditable)
+        recipeInput
+          .attr({
+            title: "此材料不可设置消耗数量。",
+            disabled: "disabled",
+          })
+          .css("cursor", "no-drop");
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "in",
-        "data-multi-id": "slot-in-chance",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i,
-        "placeholder": "100"
-      }).val(input[i].chance);
-      if (!input[i].chanceEditable) recipeInput.attr({
-        "title": "此材料不可设置消耗概率。",
-        "disabled": "disabled"
-      }).css("cursor", "no-drop");
+      recipeInput = $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "in",
+          "data-multi-id": "slot-in-chance",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+          placeholder: "100",
+        })
+        .val(input[i].chance);
+      if (!input[i].chanceEditable)
+        recipeInput
+          .attr({
+            title: "此材料不可设置消耗概率。",
+            disabled: "disabled",
+          })
+          .css("cursor", "no-drop");
     }
 
     $("#item-table-gui-frame > .tab-li").hide();
@@ -495,57 +511,72 @@ export class TabEditInit extends Init {
     for (const i in output) {
       if (!output[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
-      $(`<td class="output-head" data-toggle="tooltip" title="${ i } 号成品">
+      $(`<td class="output-head" data-toggle="tooltip" title="${i} 号成品">
         <strong>
           <i class="fa fa-sign-out" />
-          ${ i } ${ output[i].unit }
+          ${i} ${output[i].unit}
         </strong>
       </td>`)
-      .appendTo(recipeTr)
-      .css("align", "right");
+        .appendTo(recipeTr)
+        .css("align", "right");
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "out",
-        "data-multi-id": "slot-out-item",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i
-      }).val(output[i].id);
+      $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "out",
+          "data-multi-id": "slot-out-item",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+        })
+        .val(output[i].id);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "out",
-        "data-multi-id": "slot-out-number",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i,
-        "placeholder": "1"
-      }).val(output[i].number);
-      if (!output[i].numberEditable) recipeInput.attr({
-        "title": "此材料不可设置产出数量。",
-        "disabled": "disabled"
-      }).css("cursor", "no-drop");
+      recipeInput = $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "out",
+          "data-multi-id": "slot-out-number",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+          placeholder: "1",
+        })
+        .val(output[i].number);
+      if (!output[i].numberEditable)
+        recipeInput
+          .attr({
+            title: "此材料不可设置产出数量。",
+            disabled: "disabled",
+          })
+          .css("cursor", "no-drop");
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      recipeInput = $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-id": i,
-        "data-type": "out",
-        "data-multi-id": "slot-out-chance",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i,
-        "placeholder": "100"
-      }).val(output[i].chance);
-      if (!output[i].chanceEditable) recipeInput.attr({
-        "title": "此材料不可设置产出概率。",
-        "disabled": "disabled"
-      }).css("cursor", "no-drop");
+      recipeInput = $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-id": i,
+          "data-type": "out",
+          "data-multi-id": "slot-out-chance",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+          placeholder: "100",
+        })
+        .val(output[i].chance);
+      if (!output[i].chanceEditable)
+        recipeInput
+          .attr({
+            title: "此材料不可设置产出概率。",
+            disabled: "disabled",
+          })
+          .css("cursor", "no-drop");
     }
 
     if (fuel.valid) {
@@ -553,50 +584,60 @@ export class TabEditInit extends Init {
       $(`<td class="fuel-head" data-toggle="tooltip" title="燃料">
         <strong>
           <i class="fa fa-fire" />
-          ${ fuel.unit }
+          ${fuel.unit}
         </strong>
       </td>`)
-      .appendTo(recipeTr)
-      .css("align", "right");
+        .appendTo(recipeTr)
+        .css("align", "right");
 
       $("<td>").appendTo(recipeTr);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      $("<input>").appendTo(recipeTd).attr({
-        "data-part": 1,
-        "data-id": 1,
-        "data-type": "fuel",
-        "data-multi-id": "slot-out-number",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text1",
-        "placeholder": "1"
-      }).val(fuel.number);
+      $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": 1,
+          "data-id": 1,
+          "data-type": "fuel",
+          "data-multi-id": "slot-out-number",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text1",
+          placeholder: "1",
+        })
+        .val(fuel.number);
     }
 
     for (const i in extra) {
       if (!extra[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
 
-      $("<td>").appendTo(recipeTr)
-      .attr("align", "right")
-      .html(`<strong>${extra[i].id}: ${extra[i].unit}</strong>`);
+      $("<td>")
+        .appendTo(recipeTr)
+        .attr("align", "right")
+        .html(`<strong>${extra[i].id}: ${extra[i].unit}</strong>`);
 
       $("<td>").appendTo(recipeTr);
 
       recipeTd = $("<td>").appendTo(recipeTr);
-      $("<input>").appendTo(recipeTd).attr({
-        "data-part": i,
-        "data-multi-id": "slot-power-number",
-        "data-multi-name": "item-table-data",
-        "data-multi-enable": true,
-        "class": "form-control slot-text slot-text" + i
-      }).val(extra[i].number);
+      $("<input>")
+        .appendTo(recipeTd)
+        .attr({
+          "data-part": i,
+          "data-multi-id": "slot-power-number",
+          "data-multi-name": "item-table-data",
+          "data-multi-enable": true,
+          class: "form-control slot-text slot-text" + i,
+        })
+        .val(extra[i].number);
     }
 
     this.recipeTable.find("input").addClass("mcmodder-item-tab-edit-input");
 
-    const guiNote = $("b").filter((_, c) => $(c).text() === "使用此GUI时注意事项:").parent().addClass("mcmodder-gui-alert");
+    const guiNote = $("b")
+      .filter((_, c) => $(c).text() === "使用此GUI时注意事项:")
+      .parent()
+      .addClass("mcmodder-gui-alert");
     let guiNoteHTMLContent = "";
     guiNote.contents().each((i, c) => {
       if (i < 2) return;
@@ -606,21 +647,21 @@ export class TabEditInit extends Init {
     guiNote.html("<strong>[注意事项]</strong>").attr({
       "data-toggle": "tooltip",
       "data-html": true,
-      "data-original-title": guiNoteHTMLContent
+      "data-original-title": guiNoteHTMLContent,
     });
     Utils.updateAllTooltip();
 
     recipeTbody
-    // .on("mouseenter", "input", e => this.onInputMouseenter(e))
-    // .on("mouseleave", "input", e => this.onInputMouseleave(e))
-    .on("change", "input", e => this.onInputChange(e))
-    .on("keydown", "input", e => this.onInputKeydown(e));
+      // .on("mouseenter", "input", e => this.onInputMouseenter(e))
+      // .on("mouseleave", "input", e => this.onInputMouseleave(e))
+      .on("change", "input", (e) => this.onInputChange(e))
+      .on("keydown", "input", (e) => this.onInputKeydown(e));
     this.parent.updateItemTooltip();
     this.slotObserver.disconnect();
     this.slotObserver.observe($(".gui")[0], {
       attributes: true,
       childList: true,
-      subtree: true
+      subtree: true,
     });
     this.guiLockerToggle?.setCurrentValue(guiID === this.guiLocker);
     if (this.shapeless && this.isTabAdd) {
@@ -676,21 +717,25 @@ export class TabEditInit extends Init {
           break;
         }
       for (const i in target.parentNode?.parentNode?.parentNode?.childNodes)
-        if (target.parentNode.parentNode.parentNode?.childNodes[Number(i)]?.childNodes[col]?.childNodes[0] === target) {
-          (target.parentNode.parentNode.parentNode?.childNodes[
-            parseInt(i) + (e.shiftKey ? -1 : 1)
-          ]?.childNodes[col]?.childNodes[0] as HTMLInputElement)?.focus();
+        if (
+          target.parentNode.parentNode.parentNode?.childNodes[Number(i)]?.childNodes[col]
+            ?.childNodes[0] === target
+        ) {
+          (
+            target.parentNode.parentNode.parentNode?.childNodes[parseInt(i) + (e.shiftKey ? -1 : 1)]
+              ?.childNodes[col]?.childNodes[0] as HTMLInputElement
+          )?.focus();
           return;
         }
-    }
-    else if (e.keyCode === 38 || e.keyCode === 40) {
+    } else if (e.keyCode === 38 || e.keyCode === 40) {
       let num;
       if (target.value.trim() != "") num = Number(target.value.trim());
       else num = Number(target.getAttribute("placeholder"));
       if (!isNaN(num)) {
         e.preventDefault();
-        if (e.shiftKey) num = Math.floor(num * Math.pow(2, 39 - e.keyCode)); // *2, /2
-        else num += (39 - e.keyCode); // +1, -1
+        if (e.shiftKey)
+          num = Math.floor(num * Math.pow(2, 39 - e.keyCode)); // *2, /2
+        else num += 39 - e.keyCode; // +1, -1
         $(target).val(num).change();
       }
     }
@@ -702,19 +747,21 @@ export class TabEditInit extends Init {
     if (gui.length) {
       this.work();
     }
-    new MutationObserver(mutationList => {
-      mutationList.forEach(mutation => {
-        mutation.addedNodes?.forEach(node => {
-          if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).classList.contains("gui")) {
+    new MutationObserver((mutationList) => {
+      mutationList.forEach((mutation) => {
+        mutation.addedNodes?.forEach((node) => {
+          if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            (node as HTMLElement).classList.contains("gui")
+          ) {
             if (!this.isReady) this.work();
             this.updateTabFrame();
           }
         });
       });
-    })
-    .observe(this.frame.get(0), {
+    }).observe(this.frame.get(0), {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     this.initRecipeSelector();
@@ -731,13 +778,21 @@ export class TabEditInit extends Init {
     // this.guiObserver.observe(this.guiFrame, { childList: true, subtree: true });
 
     const ingredientSelectFrame = $("<div>");
-    const ingredientSelectWindow = $('<div class="mcmodder-horizontal-window">').appendTo(ingredientSelectFrame);
-    const tabEditHorizontalDivider = new HorizontalDraggableFrame("tabEditHorizontalDivider", this.configs, {}, $(".common-menu-area").get(0) as HTMLElement, {
-      initPos: 0.5,
-      leftCollapseThreshold: 0,
-      rightCollapseThreshold: 0.7,
-      leftDraggableLimit: 0.3
-    })
+    const ingredientSelectWindow = $('<div class="mcmodder-horizontal-window">').appendTo(
+      ingredientSelectFrame,
+    );
+    const tabEditHorizontalDivider = new HorizontalDraggableFrame(
+      "tabEditHorizontalDivider",
+      this.configs,
+      {},
+      $(".common-menu-area").get(0) as HTMLElement,
+      {
+        initPos: 0.5,
+        leftCollapseThreshold: 0,
+        rightCollapseThreshold: 0.7,
+        leftDraggableLimit: 0.3,
+      },
+    );
     tabEditHorizontalDivider.bindLeft($(".common-menu-area > .tab-content"));
     tabEditHorizontalDivider.bindRight(ingredientSelectFrame);
     const ingredientSelector = $("#edit-page-1 > .tab-ul > .tab-li").first().children();
@@ -747,43 +802,70 @@ export class TabEditInit extends Init {
       this.parent.updateScreenAttachedFrame(ingredientSelectWindow.get(0) as HTMLElement);
     }, 1e3);
 
-    this.modID = Number($(".common-nav li:not(.line):nth-child(5) a").first().prop("href").split("/class/")[1].split(".html")[0]);
+    this.modID = Number(
+      $(".common-nav li:not(.line):nth-child(5) a")
+        .first()
+        .prop("href")
+        .split("/class/")[1]
+        .split(".html")[0],
+    );
     // this.modName = $(".common-nav li:not(.line):nth-child(5) a").text();
 
     // v1.6 更新后，前置/拓展模组信息仅记录模组 ID，旧信息全部删除
     GM_setValue("modDependences", "");
     GM_setValue("modExpansions", "");
 
-    this.dependences = this.configs.getAsNumberList("modDependences_v2", this.modID.toString()) ?? [];
+    this.dependences =
+      this.configs.getAsNumberList("modDependences_v2", this.modID.toString()) ?? [];
     // this.expansions = this.configs.getAsNumberList(this.modID, "modExpansions_v2");
     if (this.configs.getSettings("tabSelectorInfo")) {
       const mutationCallback: MutationCallback = (_mutationList, itemSearchObserver) => {
         itemUsedObserver.disconnect();
         itemSearchObserver.disconnect();
         this.setAllSelectorInfo();
-        itemSearchObserver.observe($(".item-search").get(0), { childList: true, subtree: true });
-        if ($("#item-used-item").length) itemUsedObserver.observe($(".item-used-list").get(0), { childList: true, subtree: true });
+        itemSearchObserver.observe($(".item-search").get(0), {
+          childList: true,
+          subtree: true,
+        });
+        if ($("#item-used-item").length)
+          itemUsedObserver.observe($(".item-used-list").get(0), {
+            childList: true,
+            subtree: true,
+          });
 
         // 可拖动
-        $("#item-used-item").sortable({
-          distance: 30,
-          containerSelector: "#item-used-item",
-          itemPath: "> .item-table-hover",
-          itemSelector: "div",
-          opacity: 0.5,
-          revert: true,
-          stop: () => this.updateCookieByCurrentUsedList()
-        }).disableSelection();
+        $("#item-used-item")
+          .sortable({
+            distance: 30,
+            containerSelector: "#item-used-item",
+            itemPath: "> .item-table-hover",
+            itemSelector: "div",
+            opacity: 0.5,
+            revert: true,
+            stop: () => this.updateCookieByCurrentUsedList(),
+          })
+          .disableSelection();
       };
       const itemSearchObserver = new MutationObserver(mutationCallback);
       const itemUsedObserver = new MutationObserver(mutationCallback);
       this.setAllSelectorInfo();
-      itemSearchObserver.observe($(".item-search").get(0), { childList: true, subtree: true });
-      if ($("#item-used-item").length) itemUsedObserver.observe($(".item-used-list").get(0), { childList: true, subtree: true });
+      itemSearchObserver.observe($(".item-search").get(0), {
+        childList: true,
+        subtree: true,
+      });
+      if ($("#item-used-item").length)
+        itemUsedObserver.observe($(".item-used-list").get(0), {
+          childList: true,
+          subtree: true,
+        });
     }
 
     // 隐藏自定义矿词/标签功能
-    $(".title").filter((_, c) => c.textContent === PublicLangData.item_tab.custom.title + ":").hide().next().hide();
+    $(".title")
+      .filter((_, c) => c.textContent === PublicLangData.item_tab.custom.title + ":")
+      .hide()
+      .next()
+      .hide();
     $("hr").hide();
 
     // 显示当前合成表 ID
@@ -810,7 +892,8 @@ export class TabEditInit extends Init {
       },
       id: "mcmodder-gui-lock",
       withLabel: true,
-      withTooltip: "开始添加合成表时，自动将 GUI 设置为当前所使用的 GUI。修改现有的合成表不会触发此特性。"
+      withTooltip:
+        "开始添加合成表时，自动将 GUI 设置为当前所使用的 GUI。修改现有的合成表不会触发此特性。",
     }).mount(guiLockerContainer.get(0)) as InstanceType<typeof CheckboxInput>;
     if (this.guiLocker > 0) {
       setTimeout(() => this.setGui(this.guiLocker), 1e3);
@@ -833,7 +916,8 @@ export class TabEditInit extends Init {
       },
       id: "mcmodder-shapeless-lock",
       withLabel: true,
-      withTooltip: "开始添加合成表时，自动将摆放要求设置为无序合成。修改现有的合成表不会触发此特性。"
+      withTooltip:
+        "开始添加合成表时，自动将摆放要求设置为无序合成。修改现有的合成表不会触发此特性。",
     }).mount(shapelessContainer.get(0));
 
     // 编辑记忆列表
@@ -847,10 +931,14 @@ export class TabEditInit extends Init {
     // GTCEu 编辑提示
     if (this.modID === 5343) {
       const gtceuAlert = $(".tab-ul > p.text-danger");
-      gtceuAlert.html(gtceuAlert.html().replace("使用 GTCEu 中对应的材料",
-      `<a data-toggle="tooltip" data-original-title="轻触插入备注" style="font-size: unset; text-decoration: underline;">
+      gtceuAlert.html(
+        gtceuAlert.html().replace(
+          "使用 GTCEu 中对应的材料",
+          `<a data-toggle="tooltip" data-original-title="轻触插入备注" style="font-size: unset; text-decoration: underline;">
         使用 GTCEu 中对应的材料
-      </a>`));
+      </a>`,
+        ),
+      );
       $(".tab-ul p.text-danger a").click(() => {
         const s = "使用 GTCEu 中对应的材料。";
         const note = $("textarea[placeholder='备注..']");

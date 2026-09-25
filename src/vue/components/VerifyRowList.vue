@@ -3,7 +3,8 @@
     <li>
       <span class="title">{{ data[1] }}</span>
       <span class="text">
-        <i v-once
+        <i
+          v-once
           data-toggle="tooltip"
           data-original-title="日常审核时间段为 19:00 ~ 次日 07:00"
           class="fa fa-question-circle"
@@ -28,7 +29,7 @@
 
 <script setup lang="ts">
 interface Props {
-  data: string[]
+  data: string[];
 }
 defineProps<Props>();
 </script>

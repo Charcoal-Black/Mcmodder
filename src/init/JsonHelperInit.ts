@@ -7,7 +7,7 @@ import { Init } from "./Init";
 export class JsonHelperInit extends Init {
   canRun() {
     return !!(
-      this.parent.href === `${ this.parent.hostname }/mcmodder/jsonhelper/` && 
+      this.parent.href === `${this.parent.hostname}/mcmodder/jsonhelper/` &&
       this.configs.getSettings("enableJsonHelper")
     );
   }
@@ -25,7 +25,7 @@ export class JsonHelperInit extends Init {
 
     const container = $("<div>").appendTo(".center");
     createApp(JsonHelper, {
-      parent: this.parent
+      parent: this.parent,
     }).mount(container.get(0));
   }
 }

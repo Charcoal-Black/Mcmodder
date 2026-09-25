@@ -8,9 +8,9 @@ export class PreSubmitInit extends Init {
     return false;
   }
   run() {
-    const container = $('<div>').appendTo(".verify-list-frame").get(0);
+    const container = $("<div>").appendTo(".verify-list-frame").get(0);
     createApp(PreSubmitFrame, {
-      parent: this.parent
+      parent: this.parent,
     }).mount(container);
   }
 }

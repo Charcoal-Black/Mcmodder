@@ -1,10 +1,10 @@
 <template>
-  <span v-if="isProfileInvalid" class="text-danger">
-    用户信息获取失败...
-  </span>
+  <span v-if="isProfileInvalid" class="text-danger"> 用户信息获取失败... </span>
   <template v-else>
     <span v-if="profile.userGroup === '百科编辑员'" class="mcmodder-admin-editor">百科编辑员</span>
-    <span v-else-if="profile.userGroup === '资深编辑员'" class="mcmodder-admin-admin">资深编辑员</span>
+    <span v-else-if="profile.userGroup === '资深编辑员'" class="mcmodder-admin-admin"
+      >资深编辑员</span
+    >
     <span v-if="showLv">Lv.{{ profile.lv }}</span>
     <span v-if="profile.editNum">{{ profile.editNum.toLocaleString() }} 次编辑</span>
     <span v-if="profile.editByte">{{ profile.editByte.toLocaleString() }} 字节</span>
@@ -20,29 +20,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import Timer from './Timer.vue';
+import { computed } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import Timer from "./Timer.vue";
 
 interface Props {
-  parent: Mcmodder,
-  target: number | Profile,
-  showLv?: boolean
+  parent: Mcmodder;
+  target: number | Profile;
+  showLv?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showLv: false
-})
+  showLv: false,
+});
 
 const profile = computed(() => {
   const target = props.target;
-  return typeof target === "number" ?
-    props.parent.configRepository.getAllProfile(target) :
-    target;
-})
+  return typeof target === "number" ? props.parent.configRepository.getAllProfile(target) : target;
+});
 
 const isProfileInvalid = computed(() => {
-  return !Object.keys(profile.value).length
-})
-
+  return !Object.keys(profile.value).length;
+});
 </script>

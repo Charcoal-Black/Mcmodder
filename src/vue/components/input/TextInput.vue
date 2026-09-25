@@ -1,28 +1,22 @@
 <template>
-  <input ref="inputRef" class="form-control" :placeholder="title + '..'" @change="onChange">
+  <input ref="inputRef" class="form-control" :placeholder="title + '..'" @change="onChange" />
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue';
-import { useInputBase } from '../../composables/useInputBase';
-import type { InputProps } from '../../../types/props';
+import { useTemplateRef } from "vue";
+import { useInputBase } from "../../composables/useInputBase";
+import type { InputProps } from "../../../types/props";
 
 const props = defineProps<InputProps<string>>();
 
 const inputRef = useTemplateRef("inputRef");
 
-const {
-  onChange,
-  getInstance,
-  getValue,
-  setCurrentValue,
-  setDisplayValue
-} = useInputBase({
+const { onChange, getInstance, getValue, setCurrentValue, setDisplayValue } = useInputBase({
   inputRef,
   value: props.value,
   getDOMValue,
   setDOMValue,
-  onSuccessfulChange: props.onSuccessfulChange
+  onSuccessfulChange: props.onSuccessfulChange,
 });
 
 function getDOMValue() {
@@ -30,14 +24,13 @@ function getDOMValue() {
 }
 
 function setDOMValue(value: string) {
-  inputRef.value!.value = value
+  inputRef.value!.value = value;
 }
 
 defineExpose<InputControlRef<string>>({
   getInstance,
   getValue,
   setCurrentValue,
-  setDisplayValue
-})
-
+  setDisplayValue,
+});
 </script>

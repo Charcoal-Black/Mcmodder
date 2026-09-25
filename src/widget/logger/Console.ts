@@ -25,7 +25,5 @@ export class McmodderConsole implements Logger {
     console.log("%c" + message, "color: orchid;");
   }
 
-  scrollToBottom(): void {
-    
-  }
+  scrollToBottom(): void {}
 }

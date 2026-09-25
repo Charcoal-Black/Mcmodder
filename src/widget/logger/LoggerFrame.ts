@@ -3,7 +3,6 @@ import { Utils } from "../../Utils";
 import type { Logger } from "./Logger";
 
 export class LoggerFrame implements Logger {
-
   parent: Mcmodder;
   $instance: JQuery;
   instance: Element;
@@ -13,7 +12,7 @@ export class LoggerFrame implements Logger {
     this.$instance = $(`<div class="mcmodder-logger mcmodder-monospace" />`);
     this.instance = this.$instance.get(0);
   }
-  
+
   private getScrollTopMax() {
     return this.instance.scrollHeight - this.instance.clientHeight;
   }
@@ -27,7 +26,9 @@ export class LoggerFrame implements Logger {
   }
 
   private write(className: string, prefix: string, message: string) {
-    this.$instance.append(`<p class="${ className }">&lt;${ Utils.getFormatted24hTime() }&gt; ${ prefix }${ message }</span>`);
+    this.$instance.append(
+      `<p class="${className}">&lt;${Utils.getFormatted24hTime()}&gt; ${prefix}${message}</span>`,
+    );
     if (this.getScrollTopMax() - this.instance.scrollTop < 100) {
       this.scrollToBottom();
     }

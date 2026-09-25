@@ -1,9 +1,9 @@
 <template>
-  <div 
+  <div
     class="mcmodder-favuser"
     :class="[
       ['star', 'pin', 'heart'][configs.getSettings('favUserDisplayStyle') ?? 0],
-      ...[deleteMode ? 'delete-mode' : undefined]
+      ...[deleteMode ? 'delete-mode' : undefined],
     ]"
     v-show="profiles.length"
   >
@@ -15,23 +15,20 @@
     </div>
     <div class="mcmodder-favuser-container">
       <div class="content">
-        <a v-for="[uid, profile] in profiles"
+        <a
+          v-for="[uid, profile] in profiles"
           class="user"
           :class="[
             [userFavList.includes(uid) ? 'user-fav' : 'user-recent'],
-            ...[deleted.has(uid) ? 'deleted' : undefined]
+            ...[deleted.has(uid) ? 'deleted' : undefined],
           ]"
-          :title="`${
-            profile.nickname
-          } · ${
-            parent.utils.getProfileAbstract(profile, true, true)
-          }`"
+          :title="`${profile.nickname} · ${parent.utils.getProfileAbstract(profile, true, true)}`"
           target="_blank"
-          :href="`https://center.mcmod.cn/${ uid }/`"
+          :href="`https://center.mcmod.cn/${uid}/`"
           @click="onUserClick($event, uid)"
         >
           <div class="avatar">
-            <img :alt="profile.nickname" :src="profile.avatar">
+            <img :alt="profile.nickname" :src="profile.avatar" />
           </div>
           <div class="nickname">{{ profile.nickname }}</div>
           <div class="nickname delete-text">移除</div>
@@ -42,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, triggerRef } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
+import { computed, ref, shallowRef, triggerRef } from "vue";
+import { Mcmodder } from "../../Mcmodder";
 
 interface Props {
   parent: Mcmodder;
@@ -52,41 +49,44 @@ interface Props {
 const { parent } = defineProps<Props>();
 const configs = computed(() => parent.configRepository);
 
-const userFavList = configs.value.getSettingsWritableRefAsNumberList("userFavList",
-  value => value?.filter(Boolean) ?? []
+const userFavList = configs.value.getSettingsWritableRefAsNumberList(
+  "userFavList",
+  (value) => value?.filter(Boolean) ?? [],
 );
 
 const myProfileList = configs.value.getSettingsRefAsNumberList("myProfiles");
 
-const recentlyVisited = configs.value.getSettingsWritableRefAsNumberList("recentlyVisited",
-  value => value.filter(e => e && !userFavList.value.includes(e) && !myProfileList.value.includes(e))
+const recentlyVisited = configs.value.getSettingsWritableRefAsNumberList(
+  "recentlyVisited",
+  (value) =>
+    value.filter((e) => e && !userFavList.value.includes(e) && !myProfileList.value.includes(e)),
 );
 
 const userList = computed(() => {
   let m_userList = [];
   if (recentlyVisited.value.length) {
     // 其实可以预处理把这一步的时间复杂度砍成常数的，但是感觉意义不大
-    const userRecentMap: Map<number, number> = new Map;
-    recentlyVisited.value.forEach(id => {
+    const userRecentMap: Map<number, number> = new Map();
+    recentlyVisited.value.forEach((id) => {
       const count = userRecentMap.get(id);
       userRecentMap.set(id, count ? count + 1 : 1);
     });
-    const userRecentCountList: {id: number, count: number}[] = [];
+    const userRecentCountList: { id: number; count: number }[] = [];
     userRecentMap.forEach((count, id) => {
       userRecentCountList.push({ id: id, count: count });
     });
-    const userRecentList = userRecentCountList.sort((a, b) => b.count - a.count).map(e => e.id);
+    const userRecentList = userRecentCountList.sort((a, b) => b.count - a.count).map((e) => e.id);
     m_userList = userFavList.value.concat(userRecentList);
   } else {
     m_userList = userFavList.value;
   }
-  m_userList = m_userList.filter(e => !myProfileList.value.includes(e));
+  m_userList = m_userList.filter((e) => !myProfileList.value.includes(e));
   return m_userList;
-})
+});
 
 const profiles = computed(() => {
-  return userList.value.map(uid => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
-})
+  return userList.value.map((uid) => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
+});
 
 const deleteMode = ref(false);
 const deleted = shallowRef(new Set<number>());
@@ -104,17 +104,16 @@ function onUserClick(e: Event, uid: number) {
   triggerRef(deleted);
   setTimeout(() => {
     deleted.value.delete(uid);
-    userFavList.value = userFavList.value.filter(id => id !== uid);
-    recentlyVisited.value = recentlyVisited.value.filter(id => id !== uid);
+    userFavList.value = userFavList.value.filter((id) => id !== uid);
+    recentlyVisited.value = recentlyVisited.value.filter((id) => id !== uid);
   }, 300);
 }
 
 function isEmpty() {
-  return !(userList.value.length);
+  return !userList.value.length;
 }
 
 defineExpose({
-  isEmpty
-})
-
+  isEmpty,
+});
 </script>

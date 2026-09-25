@@ -1,9 +1,7 @@
 <template>
   <div class="center-setting-block">
     <div class="setting-item">
-      <span v-if="type !== InputType.CHECKBOX">
-        {{ configOption.title }}:
-      </span>
+      <span v-if="type !== InputType.CHECKBOX"> {{ configOption.title }}: </span>
       <CheckboxInput
         v-if="type === InputType.CHECKBOX"
         :title="title"
@@ -51,7 +49,7 @@
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
         :suggestion-manager="{
-          onInitSuggestion: () => suggestion!
+          onInitSuggestion: () => suggestion!,
         }"
       />
       <KeybindInput
@@ -60,31 +58,31 @@
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
       />
-      <slot name="afterInput"/>
+      <slot name="afterInput" />
     </div>
     <p class="text-muted" v-html="description" />
-    <slot name="afterItem"/>
+    <slot name="afterItem" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, type WritableComputedRef } from 'vue';
-import { ConfigUtils, InputType } from '../../../config/ConfigUtils';
-import { Utils } from '../../../Utils';
-import CheckboxInput from '../input/CheckboxInput.vue';
-import TextInput from '../input/TextInput.vue';
-import ColorpickerInput from '../input/ColorpickerInput.vue';
-import NumberInput from '../input/NumberInput.vue';
-import SliderInput from '../input/SliderInput.vue';
-import DropdownMenuInput from '../input/DropdownMenuInput.vue';
-import DropdownTextInput from '../input/DropdownTextInput.vue';
-import KeybindInput from '../input/KeybindInput.vue';
-import type { ConfigRepository } from '../../../config/ConfigRepository.ts';
+import { computed, ref, shallowRef, type WritableComputedRef } from "vue";
+import { ConfigUtils, InputType } from "../../../config/ConfigUtils";
+import { Utils } from "../../../Utils";
+import CheckboxInput from "../input/CheckboxInput.vue";
+import TextInput from "../input/TextInput.vue";
+import ColorpickerInput from "../input/ColorpickerInput.vue";
+import NumberInput from "../input/NumberInput.vue";
+import SliderInput from "../input/SliderInput.vue";
+import DropdownMenuInput from "../input/DropdownMenuInput.vue";
+import DropdownTextInput from "../input/DropdownTextInput.vue";
+import KeybindInput from "../input/KeybindInput.vue";
+import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 
 interface Props {
-  id: keyof Settings,
-  cfgutils: ConfigUtils,
-  configs: ConfigRepository
+  id: keyof Settings;
+  cfgutils: ConfigUtils;
+  configs: ConfigRepository;
 }
 
 const { id, cfgutils, configs } = defineProps<Props>();
@@ -98,11 +96,16 @@ const opt = computed(() => {
   const data = configOption.value;
   const type = data.type;
   switch (type) {
-    case InputType.CHECKBOX: return {} ;
-    case InputType.TEXT: return {};
-    case InputType.COLORPICKER: return {};
-    case InputType.NUMBER: return { range: data.range as InputValueNumericRange };
-    case InputType.SLIDER: return { finiteRange: data.range as InputValueFiniteNumericRange };
+    case InputType.CHECKBOX:
+      return {};
+    case InputType.TEXT:
+      return {};
+    case InputType.COLORPICKER:
+      return {};
+    case InputType.NUMBER:
+      return { range: data.range as InputValueNumericRange };
+    case InputType.SLIDER:
+      return { finiteRange: data.range as InputValueFiniteNumericRange };
     case InputType.DROPDOWN_MENU: {
       const valueSet = data.range as InputValueSet;
       valueSet[data.value as number] += " (默认)";
@@ -110,24 +113,25 @@ const opt = computed(() => {
     }
     case InputType.DROPDOWN_TEXT_MENU: {
       const suggestion = data.suggestion!;
-      suggestion.map(e => {
+      suggestion.map((e) => {
         if (typeof e === "string" && e === data.value) {
           e = {
             html: e,
-            value: e
+            value: e,
           };
         }
         if (typeof e === "object" && e.value === data.value) {
           e.html += " (默认)";
         }
         return e;
-      })
+      });
       return { suggestion };
     }
-    case InputType.KEYBIND: return {};
+    case InputType.KEYBIND:
+      return {};
   }
   throw new Error("这 InputType 有力气");
-})
+});
 const range = computed(() => opt.value.range);
 const finiteRange = computed(() => opt.value.finiteRange);
 const valueSet = computed(() => opt.value.valueSet);
@@ -145,22 +149,29 @@ const description = computed(() => {
   }
   let list = [];
   let val = configOption.value.value;
-  if (val != null) list.push(`默认：${
-    typeof val === "boolean" ? (val ? "开启" : "关闭") :
-    typeof val === "number" ? val.toLocaleString() :
-    typeof val === "object" ? Utils.keyToString(val) : val
-  }`);
+  if (val != null)
+    list.push(
+      `默认：${
+        typeof val === "boolean"
+          ? val
+            ? "开启"
+            : "关闭"
+          : typeof val === "number"
+            ? val.toLocaleString()
+            : typeof val === "object"
+              ? Utils.keyToString(val)
+              : val
+      }`,
+    );
   const range = (configOption.value.range || [null, null]) as InputValueNumericRange;
-  let l = range[0], r = range[1];
-  let tl = l?.toLocaleString(), tr = r?.toLocaleString();
-  if (l !== null && r !== null) 
-    list.push(`允许范围：${ tl } ~ ${ tr }`);
-  else if (l !== null)
-    list.push(`最小值：${ tl }`);
-  else if (r !== null)
-    list.push(`最大值：${ tr }`);
+  let l = range[0],
+    r = range[1];
+  let tl = l?.toLocaleString(),
+    tr = r?.toLocaleString();
+  if (l !== null && r !== null) list.push(`允许范围：${tl} ~ ${tr}`);
+  else if (l !== null) list.push(`最小值：${tl}`);
+  else if (r !== null) list.push(`最大值：${tr}`);
   let appendix = list.length ? `（${list.join("；")}）` : ``;
-  return `${ configOption.value.description }${ appendix }`;
-})
-
+  return `${configOption.value.description}${appendix}`;
+});
 </script>

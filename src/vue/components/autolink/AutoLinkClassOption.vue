@@ -14,11 +14,11 @@
 </template>
 
 <script setup lang="ts">
-import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
-import type { AutoLinkOptionProps } from '../../../types/props';
-import { Utils } from '../../../Utils';
-import { Values } from '../../../Values';
-import KeyDisplay from '../KeyDisplay';
+import type { AutoLinkOptionEmitPayload } from "../../../types/emits";
+import type { AutoLinkOptionProps } from "../../../types/props";
+import { Utils } from "../../../Utils";
+import { Values } from "../../../Values";
+import KeyDisplay from "../KeyDisplay";
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkClassEntry>>();
 
@@ -28,8 +28,7 @@ const fullName = Utils.getClassFullName(data.name, data.englishName, data.abbr);
 const dataId = data.id;
 const dataTextFull = fullName;
 const dataTextHalf = data.name;
-const dataOriginalTitle = `${ typeData.text } - ID:${ data.id } ${ fullName }`;
+const dataOriginalTitle = `${typeData.text} - ID:${data.id} ${fullName}`;
 
 const emit = defineEmits<AutoLinkOptionEmitPayload>();
-
 </script>

@@ -28,14 +28,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue';
-import NumberInput from './NumberInput.vue';
-import { Utils } from '../../../Utils.ts';
-import type { InputProps } from '../../../types/props';
+import { computed, ref, useTemplateRef, watch } from "vue";
+import NumberInput from "./NumberInput.vue";
+import { Utils } from "../../../Utils.ts";
+import type { InputProps } from "../../../types/props";
 
 interface Props extends InputProps<number> {
-  range: InputValueFiniteNumericRange,
-  precision?: number
+  range: InputValueFiniteNumericRange;
+  precision?: number;
 }
 
 const props = defineProps<Props>();
@@ -46,8 +46,8 @@ watch(
     if (min === null && max === null) {
       throw new Error("范围两端点必须存在。");
     }
-  }
-)
+  },
+);
 
 const inputRef = useTemplateRef("input");
 const barRef = useTemplateRef("bar");
@@ -134,12 +134,10 @@ function onBarPointercancel(e: PointerEvent) {
 }
 
 const cssRate = computed(() => {
-  return Utils.clamp((
-    valueRef.value - props.range[0]
-  ) / (
-    props.range[1] - props.range[0]
-  )) * 100 + "%";
-})
+  return (
+    Utils.clamp((valueRef.value - props.range[0]) / (props.range[1] - props.range[0])) * 100 + "%"
+  );
+});
 
 function onInput(value: number) {
   if (isFinite(value)) {
@@ -169,7 +167,6 @@ defineExpose<InputControlRef<number>>({
   getInstance,
   getValue,
   setCurrentValue,
-  setDisplayValue
-})
-
+  setDisplayValue,
+});
 </script>

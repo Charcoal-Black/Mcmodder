@@ -1,7 +1,7 @@
 <template>
   <ul class="pagination common-pages" v-bind="attr">
     <template v-if="regulatedPage > 1">
-      <li class="page-item" >
+      <li class="page-item">
         <a class="page-link" @click="setPage(1)">首页</a>
       </li>
       <li class="page-item">
@@ -22,7 +22,13 @@
     <li class="page-item">
       <a class="page-link page-custom">
         跳转至第&nbsp;
-        <NumberInput ref="input" title="" :value="regulatedPage" :range="[1, maxPage]" :on-successful-change="jump" />
+        <NumberInput
+          ref="input"
+          title=""
+          :value="regulatedPage"
+          :range="[1, maxPage]"
+          :on-successful-change="jump"
+        />
         &nbsp;页
       </a>
     </li>
@@ -30,23 +36,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import { Utils } from '../../Utils';
-import NumberInput from './input/NumberInput.vue';
+import { computed, nextTick, ref, useTemplateRef } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import { Utils } from "../../Utils";
+import NumberInput from "./input/NumberInput.vue";
 
 interface Props {
-  parent: Mcmodder,
-  attr?: object,
-  maxPage: number,
-  callback: (page: number) => void,
-  currentPage: number
+  parent: Mcmodder;
+  attr?: object;
+  maxPage: number;
+  callback: (page: number) => void;
+  currentPage: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxPage: 1,
-  currentPage: 1
-})
+  currentPage: 1,
+});
 const inputRef = useTemplateRef("input");
 
 const page = ref(props.currentPage);
@@ -57,12 +63,12 @@ const regulatedPage = computed(() => {
   const result = Utils.clamp(Math.floor(page.value), 1, props.maxPage);
   inputRef.value?.setDisplayValue(result);
   return result;
-})
+});
 const pageRange = computed(() => {
   const l = Math.max(regulatedPage.value - RENDER_RANGE, 1);
   const r = Math.min(regulatedPage.value + RENDER_RANGE, Math.max(props.maxPage, 1));
   return Utils.createRange(l, r);
-})
+});
 
 function setPage(newPage: number) {
   page.value = newPage;
@@ -75,5 +81,4 @@ function jump() {
   const num = inputRef.value!.getValue();
   setPage(num);
 }
-
 </script>

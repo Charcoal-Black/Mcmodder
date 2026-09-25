@@ -13,16 +13,16 @@ abstract class EditorAlertLink {
       const last = mid.splitText(target.length);
       mid.remove();
       $(`<a>`).text(target).insertBefore(last);
-    }
+    };
     const search = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) work(node as Text);
       else if (node.nodeType === Node.ELEMENT_NODE) {
-        (node as HTMLElement).childNodes.forEach(child => search(child));
+        (node as HTMLElement).childNodes.forEach((child) => search(child));
       }
-    }
+    };
     search(c);
-  }
-  static appendButton = (c: HTMLElement) => c.innerHTML += `<a>定位</a>`;
+  };
+  static appendButton = (c: HTMLElement) => (c.innerHTML += `<a>定位</a>`);
   protected readonly editor: UEditor[];
   private text: string[] = [];
   readonly modifier: EditorAlertHTMLModifier;
@@ -56,17 +56,18 @@ abstract class EditorAlertContextLink extends EditorAlertLink {
       state = this.checkContent(c.textContent, c);
     });
     swal.close();
-    if (state) setTimeout(() => {
-      const selection = this.editor[0]?.window?.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(this.range!);
-        (selection.anchorNode?.parentNode as HTMLElement)?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }
-    }, 400);
+    if (state)
+      setTimeout(() => {
+        const selection = this.editor[0]?.window?.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(this.range!);
+          (selection.anchorNode?.parentNode as HTMLElement)?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 400);
     return state;
   }
 }
@@ -76,7 +77,7 @@ class EditorAlertTextLink extends EditorAlertContextLink {
   checkContent(text: string, element: Element) {
     if (!this.target.length) return true;
     let flag = false;
-    this.target.forEach(target => {
+    this.target.forEach((target) => {
       if (!flag) {
         const pos = text.indexOf(target);
         if (pos >= 0) {
@@ -88,7 +89,12 @@ class EditorAlertTextLink extends EditorAlertContextLink {
     });
     return flag;
   }
-  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: string | string[]) {
+  constructor(
+    editor: UEditor[],
+    text: string | string[],
+    modifier: EditorAlertHTMLModifier,
+    target: string | string[],
+  ) {
     super(editor, text, modifier);
     if (target instanceof Array) this.target = target;
     else this.target = [target];
@@ -108,7 +114,12 @@ class EditorAlertRegLink extends EditorAlertContextLink {
     }
     return false;
   }
-  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, target: RegExp) {
+  constructor(
+    editor: UEditor[],
+    text: string | string[],
+    modifier: EditorAlertHTMLModifier,
+    target: RegExp,
+  ) {
     super(editor, text, modifier);
     this.regExp = target;
   }
@@ -125,7 +136,12 @@ class EditorAlertFormLink extends EditorAlertLink {
     }
     return false;
   }
-  constructor(editor: UEditor[], text: string | string[], modifier: EditorAlertHTMLModifier, getForm: EditorAlertForm) {
+  constructor(
+    editor: UEditor[],
+    text: string | string[],
+    modifier: EditorAlertHTMLModifier,
+    getForm: EditorAlertForm,
+  ) {
     super(editor, text, modifier);
     this.getForm = getForm;
   }
@@ -135,7 +151,7 @@ export class EditorInit extends Init {
   modName = "";
   itemName = "";
   links: EditorAlertLink[] = [];
-  
+
   canRun() {
     return false;
   }
@@ -147,74 +163,218 @@ export class EditorInit extends Init {
   private init() {
     const langList = PublicLangData.editor.inform.list;
     this.links.push(
-      new EditorAlertTextLink(this.getEditor(), langList.common_content_personal_pronoun, c => EditorAlertLink.replaceText(c, "您"), "您"),
-      new EditorAlertTextLink(this.getEditor(), langList.common_content_personal_pronoun, c => EditorAlertLink.replaceText(c, "你"), "你"),
-      new EditorAlertRegLink(this.getEditor(), langList.common_content_ban_title_duplicate, c => EditorAlertLink.replaceText(c, "大量空格"), /\s{5}/),
-      new EditorAlertTextLink(this.getEditor(), langList.common_content_wrong_horizontal_rule, c => EditorAlertLink.replaceText(c, "大量横线"), ["-----", "=====", "~~~~~"]),
-      new EditorAlertFormLink(this.getEditor(), [langList.common_name_empty, langList.common_name_repeat, langList.item_name_empty, langList.item_name_repeat], EditorAlertLink.appendButton, () => $("[data-multi-id=name]")),
-      new EditorAlertFormLink(this.getEditor(), langList.common_ename_format, EditorAlertLink.appendButton, () => $("[data-multi-id=ename]")),
-      new EditorAlertFormLink(this.getEditor(), langList.common_name_empty, EditorAlertLink.appendButton, () => $("[data-multi-id=name]")),
-      new EditorAlertFormLink(this.getEditor(), [langList.common_link_empty, langList.common_link_blank, langList.common_link_nohttp, langList.common_link_no_statement, langList.common_link_remark_redund, langList.common_link_suffix_redund_common, langList.common_link_suffix_redund_cf, langList.common_link_suffix_redund_mr, langList.common_link_no_prefix, langList.common_link_wrong_prefix, langList.common_link_personal, langList.common_link_wrong_location, langList.common_link_source_address_missing], EditorAlertLink.appendButton, () => $("#link-frame")),
-      new EditorAlertFormLink(this.getEditor(), langList.common_tag_wrong_spliter, EditorAlertLink.appendButton, () => $("#class-tags").prev()),
-      new EditorAlertFormLink(this.getEditor(), langList.common_key_wrong_spliter, EditorAlertLink.appendButton, () => $("#class-keys").prev()),
-      new EditorAlertFormLink(this.getEditor(), langList.common_cfid_format, EditorAlertLink.appendButton, () => $("#class-cfprojectid").prev()),
-      new EditorAlertFormLink(this.getEditor(), langList.common_mrid_format, EditorAlertLink.appendButton, () => $("#class-mrprojectid").prev()),
-      new EditorAlertFormLink(this.getEditor(), langList.common_author_empty, EditorAlertLink.appendButton, () => $("#author-frame")),
-      new EditorAlertFormLink(this.getEditor(), langList.common_sname_limit, EditorAlertLink.appendButton, () => $("[data-multi-id=sname]")),
-      new EditorAlertFormLink(this.getEditor(), [langList.class_category_empty, langList.modpack_category_empty], EditorAlertLink.appendButton, () => $(".common-class-category").parent()),
-      new EditorAlertFormLink(this.getEditor(), langList.class_cover_empty, EditorAlertLink.appendButton, () => $("#cover-select-label").parent()),
-      new EditorAlertFormLink(this.getEditor(), langList.class_platform_api_empty, EditorAlertLink.appendButton, () => $("#class-data-platform-1").parent().parent()),
-      new EditorAlertFormLink(this.getEditor(), langList.class_mcver_empty, EditorAlertLink.appendButton, () => $("#mcversion-frame")),
-      new EditorAlertFormLink(this.getEditor(), [langList.class_modid_empty, langList.class_modid_wrong_spliter], EditorAlertLink.appendButton, () => $("#class-modid").prev()),
-      new EditorAlertFormLink(this.getEditor(), langList.class_relation_version_duplicate, EditorAlertLink.appendButton, () => $("#relation-frame")),
-      new EditorAlertFormLink(this.getEditor(), langList.version_name_empty, EditorAlertLink.appendButton, () => $("[data-multi-id=name]")),
-      new EditorAlertFormLink(this.getEditor(), langList.version_updatetime_empty, EditorAlertLink.appendButton, () => $("#class-version-updatetime-year").parent().parent()),
-      new EditorAlertFormLink(this.getEditor(), langList.version_mcversion_empty, EditorAlertLink.appendButton, () => $("[data-multi-id=mcversion]")),
-      new EditorAlertFormLink(this.getEditor(), langList.item_category_empty, EditorAlertLink.appendButton, () => $(".common-item-mold-list")),
-      new EditorAlertFormLink(this.getEditor(), langList.item_type_empty, EditorAlertLink.appendButton, () => $("#item-type-frame")),
+      new EditorAlertTextLink(
+        this.getEditor(),
+        langList.common_content_personal_pronoun,
+        (c) => EditorAlertLink.replaceText(c, "您"),
+        "您",
+      ),
+      new EditorAlertTextLink(
+        this.getEditor(),
+        langList.common_content_personal_pronoun,
+        (c) => EditorAlertLink.replaceText(c, "你"),
+        "你",
+      ),
+      new EditorAlertRegLink(
+        this.getEditor(),
+        langList.common_content_ban_title_duplicate,
+        (c) => EditorAlertLink.replaceText(c, "大量空格"),
+        /\s{5}/,
+      ),
+      new EditorAlertTextLink(
+        this.getEditor(),
+        langList.common_content_wrong_horizontal_rule,
+        (c) => EditorAlertLink.replaceText(c, "大量横线"),
+        ["-----", "=====", "~~~~~"],
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        [
+          langList.common_name_empty,
+          langList.common_name_repeat,
+          langList.item_name_empty,
+          langList.item_name_repeat,
+        ],
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=name]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_ename_format,
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=ename]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_name_empty,
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=name]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        [
+          langList.common_link_empty,
+          langList.common_link_blank,
+          langList.common_link_nohttp,
+          langList.common_link_no_statement,
+          langList.common_link_remark_redund,
+          langList.common_link_suffix_redund_common,
+          langList.common_link_suffix_redund_cf,
+          langList.common_link_suffix_redund_mr,
+          langList.common_link_no_prefix,
+          langList.common_link_wrong_prefix,
+          langList.common_link_personal,
+          langList.common_link_wrong_location,
+          langList.common_link_source_address_missing,
+        ],
+        EditorAlertLink.appendButton,
+        () => $("#link-frame"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_tag_wrong_spliter,
+        EditorAlertLink.appendButton,
+        () => $("#class-tags").prev(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_key_wrong_spliter,
+        EditorAlertLink.appendButton,
+        () => $("#class-keys").prev(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_cfid_format,
+        EditorAlertLink.appendButton,
+        () => $("#class-cfprojectid").prev(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_mrid_format,
+        EditorAlertLink.appendButton,
+        () => $("#class-mrprojectid").prev(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_author_empty,
+        EditorAlertLink.appendButton,
+        () => $("#author-frame"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.common_sname_limit,
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=sname]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        [langList.class_category_empty, langList.modpack_category_empty],
+        EditorAlertLink.appendButton,
+        () => $(".common-class-category").parent(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.class_cover_empty,
+        EditorAlertLink.appendButton,
+        () => $("#cover-select-label").parent(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.class_platform_api_empty,
+        EditorAlertLink.appendButton,
+        () => $("#class-data-platform-1").parent().parent(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.class_mcver_empty,
+        EditorAlertLink.appendButton,
+        () => $("#mcversion-frame"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        [langList.class_modid_empty, langList.class_modid_wrong_spliter],
+        EditorAlertLink.appendButton,
+        () => $("#class-modid").prev(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.class_relation_version_duplicate,
+        EditorAlertLink.appendButton,
+        () => $("#relation-frame"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.version_name_empty,
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=name]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.version_updatetime_empty,
+        EditorAlertLink.appendButton,
+        () => $("#class-version-updatetime-year").parent().parent(),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.version_mcversion_empty,
+        EditorAlertLink.appendButton,
+        () => $("[data-multi-id=mcversion]"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.item_category_empty,
+        EditorAlertLink.appendButton,
+        () => $(".common-item-mold-list"),
+      ),
+      new EditorAlertFormLink(
+        this.getEditor(),
+        langList.item_type_empty,
+        EditorAlertLink.appendButton,
+        () => $("#item-type-frame"),
+      ),
       // new EditorAlertTextLink(this.getEditor(), [], () => {
 
       // }, )
-    )
+    );
   }
 
   // private runLatex() {
-    // let mathjax_config = document.createElement("script");
-    // mathjax_config.id = "mcmodder-mathjax-config";
-    // mathjax_config.innerHTML = "\
-    //   MathJax = {\
-    //   tex: {\
-    //     inlineMath: [['$', '$'], ['\\(', '\\)']]\
-    //   },\
-    //   svg: {\
-    //     fontCache: 'global'\
-    //   }\
-    // };";
-    // editorDoc.head.appendChild(mathjax_config);
-    // let mathjax_src = document.createElement("script");
-    // mathjax_src.id = "mcmodder-mathjax";
-    // mathjax_src.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js";
-    // editorDoc.head.appendChild(mathjax_src);
-    // let html2canvas_src = document.createElement("script");
-    // html2canvas_src.id = "mcmodder-canvg";
-    // html2canvas_src.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js";
-    // editorDoc.head.appendChild(html2canvas_src);
-    // setTimeout(function () {
-    //   $($(".edui-editor-toolbarboxinner").get(0).appendChild(document.createElement("button"))).attr("class", "btn btn-outline-dark btn-sm").html("转化为 LaTeX").click(function () {
-    //     let w = $("#ueditor_0").get(0).contentWindow;
-    //     w.MathJax.typeset();
-    //     $("mjx-container", w.document).each(function () {
-    //       w.html2canvas(this).then(canvas => {
-    //         const img = w.document.createElement("img");
-    //         img.src = canvas.toDataURL("image/png");
-    //         w.document.body.appendChild(img);
-    //       })
-    //     })
-    //   });
-    // }, 2e3);
+  // let mathjax_config = document.createElement("script");
+  // mathjax_config.id = "mcmodder-mathjax-config";
+  // mathjax_config.innerHTML = "\
+  //   MathJax = {\
+  //   tex: {\
+  //     inlineMath: [['$', '$'], ['\\(', '\\)']]\
+  //   },\
+  //   svg: {\
+  //     fontCache: 'global'\
+  //   }\
+  // };";
+  // editorDoc.head.appendChild(mathjax_config);
+  // let mathjax_src = document.createElement("script");
+  // mathjax_src.id = "mcmodder-mathjax";
+  // mathjax_src.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js";
+  // editorDoc.head.appendChild(mathjax_src);
+  // let html2canvas_src = document.createElement("script");
+  // html2canvas_src.id = "mcmodder-canvg";
+  // html2canvas_src.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js";
+  // editorDoc.head.appendChild(html2canvas_src);
+  // setTimeout(function () {
+  //   $($(".edui-editor-toolbarboxinner").get(0).appendChild(document.createElement("button"))).attr("class", "btn btn-outline-dark btn-sm").html("转化为 LaTeX").click(function () {
+  //     let w = $("#ueditor_0").get(0).contentWindow;
+  //     w.MathJax.typeset();
+  //     $("mjx-container", w.document).each(function () {
+  //       w.html2canvas(this).then(canvas => {
+  //         const img = w.document.createElement("img");
+  //         img.src = canvas.toDataURL("image/png");
+  //         w.document.body.appendChild(img);
+  //       })
+  //     })
+  //   });
+  // }, 2e3);
   // }
 
-  private readonly swalObserver = new MutationObserver(mutationList => {
+  private readonly swalObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       if (!(mutation.addedNodes[0] as HTMLElement)?.className?.includes("swal2")) continue;
       const st = $(".swal2-title").text();
@@ -222,36 +382,55 @@ export class EditorInit extends Init {
         if (this.configs.getSettings("autoCloseSwal")) {
           swal.close();
           Utils.commonMsg("提交成功，请等待管理员审核~");
+        } else {
+          $(
+            ".swal2-success-circular-line-left, .swal2-success-circular-line-right, .swal2-success-fix",
+          ).css("background-color", "transparent");
         }
-        else {
-          $(".swal2-success-circular-line-left, .swal2-success-circular-line-right, .swal2-success-fix").css("background-color", "transparent");
-        }
-      }
-      else if (st.includes("确认")) {
-        $(".edit-dataverify-frame .error li, .edit-dataverify-frame .warning li, .edit-dataverify-frame .info li")
-        .each((_i, c) => {
+      } else if (st.includes("确认")) {
+        $(
+          ".edit-dataverify-frame .error li, .edit-dataverify-frame .warning li, .edit-dataverify-frame .info li",
+        ).each((_i, c) => {
           const warningContent = $(c).text();
-          this.links.filter(link => link.check(warningContent)).forEach(link => {
-            link.modifier(c as HTMLElement);
-            $(c).find("a:not(.mcmodder-editor-link)")
-            .addClass("badge mcmodder-editor-link")
-            .click(() => link.run());
-          });
-          if (/*/正文介绍中含有疑似.+的/.test(warningContent)*/true) {
-            $(c).find("b").each((_, b) => {
-              b.textContent.split(", ").forEach(text => {
-                const link = new EditorAlertTextLink(this.getEditor(), [], c => EditorAlertLink.replaceText(c, text), text);
-                link.modifier(c as HTMLElement);
-                $(c).find("a:not(.mcmodder-editor-link)")
+          this.links
+            .filter((link) => link.check(warningContent))
+            .forEach((link) => {
+              link.modifier(c as HTMLElement);
+              $(c)
+                .find("a:not(.mcmodder-editor-link)")
                 .addClass("badge mcmodder-editor-link")
                 .click(() => link.run());
-              });
             });
+          if (/*/正文介绍中含有疑似.+的/.test(warningContent)*/ true) {
+            $(c)
+              .find("b")
+              .each((_, b) => {
+                b.textContent.split(", ").forEach((text) => {
+                  const link = new EditorAlertTextLink(
+                    this.getEditor(),
+                    [],
+                    (c) => EditorAlertLink.replaceText(c, text),
+                    text,
+                  );
+                  link.modifier(c as HTMLElement);
+                  $(c)
+                    .find("a:not(.mcmodder-editor-link)")
+                    .addClass("badge mcmodder-editor-link")
+                    .click(() => link.run());
+                });
+              });
           }
         });
 
-        if (this.configs.getSettings("noSubmitWarningDelay") && $(".edit-dataverify-frame .warning li").length) {
-          Utils.commonMsg("您已启用“取消提交警告延时”，请检查编辑内容无误后再提交！", false, "警告");
+        if (
+          this.configs.getSettings("noSubmitWarningDelay") &&
+          $(".edit-dataverify-frame .warning li").length
+        ) {
+          Utils.commonMsg(
+            "您已启用“取消提交警告延时”，请检查编辑内容无误后再提交！",
+            false,
+            "警告",
+          );
           $(".swal2-confirm").removeAttr("disabled");
         }
       }
@@ -271,16 +450,22 @@ export class EditorInit extends Init {
     Utils.addStyle(".swal2-show {animation: unset; -webkit-animation: unset;}");
 
     if ($(".edit-tools").length) {
-
       if ($(".edit-user-alert.locked").length) {
         // 改动说明提前
-        const desc = $(".col-lg-12.left .common-rowlist-block:last-child() .text p:last-child()").text();
-        $("<p>").text("改动说明: " + desc).appendTo(".edit-user-alert");
+        const desc = $(
+          ".col-lg-12.left .common-rowlist-block:last-child() .text p:last-child()",
+        ).text();
+        $("<p>")
+          .text("改动说明: " + desc)
+          .appendTo(".edit-user-alert");
 
         // 预提交
         if (this.configs.getSettings("preSubmitCheckInterval")! >= 0.1) {
           let strEditTypeName;
-          if (strEditType === "author") strEditTypeName = $("#author-team").prop("checked") ? PublicLangData[strEditType].alter.team : PublicLangData[strEditType].alter.single;
+          if (strEditType === "author")
+            strEditTypeName = $("#author-team").prop("checked")
+              ? PublicLangData[strEditType].alter.team
+              : PublicLangData[strEditType].alter.single;
           else strEditTypeName = PublicLangData[strEditType].alter;
           const submitButton = $(`
           <div class="text">
@@ -307,14 +492,20 @@ export class EditorInit extends Init {
               hideBeforeInput: true,
               suggestionManager: {
                 configs: this.configs,
-                configKey: "editReasons"
-              }
+                configKey: "editReasons",
+              },
             });
           });
           $(document).on("click", ".mcmodder-presubmit", () => {
             const popup = $(".swal2-popup");
-            popup.find("#swal2-title").html(popup.find("#swal2-title").html().replace("编辑", "预编辑"));
-            popup.find(".edit-dataverify-frame").after('<span class="mcmodder-slim-dark">预编辑内容将会被临时保存在本地，直到该用户的待审项被处理之后才会正式提交。已保存的预编辑项可在“审核列表 -> 只显示我提交的”看到，暂不支持重新修改，请知悉。');
+            popup
+              .find("#swal2-title")
+              .html(popup.find("#swal2-title").html().replace("编辑", "预编辑"));
+            popup
+              .find(".edit-dataverify-frame")
+              .after(
+                '<span class="mcmodder-slim-dark">预编辑内容将会被临时保存在本地，直到该用户的待审项被处理之后才会正式提交。已保存的预编辑项可在“审核列表 -> 只显示我提交的”看到，暂不支持重新修改，请知悉。',
+              );
             (popup.find(".swal2-confirm").get(0) as HTMLButtonElement).onclick = null;
             popup.find(".swal2-confirm").click(() => {
               // if (error.length > 0) return;
@@ -330,16 +521,18 @@ export class EditorInit extends Init {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                  "Origin": this.parent.hostname,
-                  "Referer": `${ this.parent.hostname }/`,
-                  "Priority": "u=0",
+                  Origin: this.parent.hostname,
+                  Referer: `${this.parent.hostname}/`,
+                  Priority: "u=0",
                   "Sec-Fetch-Dest": "empty",
                   "Sec-Fetch-Mode": "cors",
-                  "Sec-Fetch-Site": "same-site"
-                }
+                  "Sec-Fetch-Site": "same-site",
+                },
                 // data: $.param({ data: editorData })
               };
-              const timeStr = $(".locked").text().match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/);
+              const timeStr = $(".locked")
+                .text()
+                .match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/);
               if (!timeStr) {
                 Utils.commonMsg("待审项提交时间获取失败...", false);
                 return;
@@ -347,11 +540,11 @@ export class EditorInit extends Init {
               let preSubmitEntry: PreSubmission | null = {
                 id: Utils.randStr(8),
                 title: this.parent.title,
-                lastSubmitTime: (new Date(timeStr[0])).getTime(),
+                lastSubmitTime: new Date(timeStr[0]).getTime(),
                 createTime: Date.now(),
                 url: window.location.href,
                 rawData: editorData,
-                config: config
+                config: config,
               };
               const preSubmitList = this.configs.getProfile("preSubmitList") ?? [];
               for (const i in preSubmitList) {
@@ -362,9 +555,11 @@ export class EditorInit extends Init {
               }
               if (preSubmitEntry) preSubmitList.push(preSubmitEntry);
               this.configs.setProfile("preSubmitList", preSubmitList);
-              Utils.commonMsg(`预编辑内容${ preSubmitEntry ? "保存" : "替换" }成功，将会在正式提交时提醒~`);
+              Utils.commonMsg(
+                `预编辑内容${preSubmitEntry ? "保存" : "替换"}成功，将会在正式提交时提醒~`,
+              );
               swal.close();
-            })
+            });
           });
         }
       }

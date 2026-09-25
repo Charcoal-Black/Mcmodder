@@ -12,7 +12,7 @@ export class TabEditRecipeDisplay extends RecipeDisplay {
     this.parsedRecipe = parsedRecipe;
 
     const outputs = this.parsedRecipe.out_id || {};
-    Object.keys(outputs).forEach(key => {
+    Object.keys(outputs).forEach((key) => {
       if (tab.isOutputMatches(outputs[key])) {
         Utils.highlight(this.outputs[key].instance);
       }
@@ -21,16 +21,18 @@ export class TabEditRecipeDisplay extends RecipeDisplay {
     let title;
     if (this.guiID < 1) {
       title = `<span class="mcmodder-slim-danger">该配方所使用的 GUI 尚未绑定到相应的 MC 百科 GUI...</span>`;
-      this.arrow?.append(`<div class="mcmodder-recipe-error fa fa-warning">`)
+      this.arrow?.append(`<div class="mcmodder-recipe-error fa fa-warning">`);
     } else {
-      title = `已绑定至 ID = <span class="mcmodder-slim-dark">${ this.guiID }</span>`
+      title = `已绑定至 ID = <span class="mcmodder-slim-dark">${this.guiID}</span>`;
     }
-    title += `<br><span class="mcmodder-item-regname mcmodder-monospace">${ this.recipe.gui_id }</span>`;
-    this.arrow?.attr({
-      "data-original-title": title,
-      "data-html": true
-    }).tooltip();
-    
+    title += `<br><span class="mcmodder-item-regname mcmodder-monospace">${this.recipe.gui_id}</span>`;
+    this.arrow
+      ?.attr({
+        "data-original-title": title,
+        "data-html": true,
+      })
+      .tooltip();
+
     this.instance.click(() => {
       const t = strTableSlotFocus;
       strTableSlotFocus = ""; // 屏蔽原生点击事件
@@ -45,11 +47,11 @@ export class TabEditRecipeDisplay extends RecipeDisplay {
     const writeSingle = (data: Record<string, string | number> | undefined, id: string) => {
       const all = this.tab.getTableInputElement(id).val("");
       if (!data) return;
-      Object.keys(data).forEach(num => {
-        all.filter(`[data-part=${ num }]`).val(data[num]);
+      Object.keys(data).forEach((num) => {
+        all.filter(`[data-part=${num}]`).val(data[num]);
       });
       all.change();
-    }
+    };
     await this.tab.setGui(this.guiID === -1 ? 1 : this.guiID);
     writeSingle(this.parsedRecipe.in_id, "slot-in-item");
     writeSingle(this.parsedRecipe.in_num, "slot-in-number");

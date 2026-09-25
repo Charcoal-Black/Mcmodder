@@ -16,29 +16,37 @@ export class CommentInit extends Init {
       createApp(Timer, {
         parent: this.parent,
         dataGetter: published,
-        dataFormatter: TimerUtils.DATAFORMATTER_ZH
+        dataFormatter: TimerUtils.DATAFORMATTER_ZH,
       }).mount(container) as InstanceType<typeof Timer>;
       container.insertAdjacentText("beforebegin", " (");
       container.insertAdjacentText("afterend", ")");
-    })
+    });
   }
 
   private promoteAsManager(target: JQuery) {
     const userLv = target.find(".common-user-lv");
-    const lv = userLv.prop("title")
-    .replace(PublicLangData.comment.suffix.mod_admin + " (", "")
-    .replace(PublicLangData.comment.suffix.mod_manager + " (", "")
-    .replace(PublicLangData.comment.suffix.mod_developer + " (", "")
-    .replaceAll(")", "");
-    target.find(".common-user-lv")
-    .attr({ "class": "common-user-lv manager", "title": `${ PublicLangData.comment.suffix.mod_manager } (${ lv })`, "href": "https://t.bilibili.com/779290398405165095" })
-    .text(PublicLangData.comment.suffix.mod_manager);
+    const lv = userLv
+      .prop("title")
+      .replace(PublicLangData.comment.suffix.mod_admin + " (", "")
+      .replace(PublicLangData.comment.suffix.mod_manager + " (", "")
+      .replace(PublicLangData.comment.suffix.mod_developer + " (", "")
+      .replaceAll(")", "");
+    target
+      .find(".common-user-lv")
+      .attr({
+        class: "common-user-lv manager",
+        title: `${PublicLangData.comment.suffix.mod_manager} (${lv})`,
+        href: "https://t.bilibili.com/779290398405165095",
+      })
+      .text(PublicLangData.comment.suffix.mod_manager);
   }
 
   private replaceMobileClientIcon(target: JQuery) {
     const legacy = target.find(".phone");
     if (legacy.length) {
-      const icon = $('<i class="mcmodder-mobileclient fa fa-mobile" data-toggle="tooltip" data-original-title="移动端用户">');
+      const icon = $(
+        '<i class="mcmodder-mobileclient fa fa-mobile" data-toggle="tooltip" data-original-title="移动端用户">',
+      );
       legacy.replaceWith(icon);
       icon.tooltip({});
     }
@@ -46,26 +54,40 @@ export class CommentInit extends Init {
 
   private renderPagination() {
     $("ul.pagination.common-pages > span").each((_, e) => {
-      e.innerHTML += '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
-      $(e).find("#mcmodder-gotopage").val(e.textContent.replace("当前 ", "").split(" / ")[0]).bind("change", f => {
-        const target = f.currentTarget as HTMLInputElement;
-        const value = parseInt(target.value);
-        if (value < 1 || value > parseInt(target.textContent.replace("当前 ", "").split(" / ")[1])) {
-          return;
-        }
-        comment_nowpage = value;
-        get_comment(comment_container, comment_type);
-      });
+      e.innerHTML +=
+        '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
+      $(e)
+        .find("#mcmodder-gotopage")
+        .val(e.textContent.replace("当前 ", "").split(" / ")[0])
+        .bind("change", (f) => {
+          const target = f.currentTarget as HTMLInputElement;
+          const value = parseInt(target.value);
+          if (
+            value < 1 ||
+            value > parseInt(target.textContent.replace("当前 ", "").split(" / ")[1])
+          ) {
+            return;
+          }
+          comment_nowpage = value;
+          get_comment(comment_container, comment_type);
+        });
     });
   }
 
-  private readonly commentObserver = new MutationObserver(mutationList => {
+  private readonly commentObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       const commentFloor = $(mutation.target);
       const className = commentFloor.prop("class");
-      if ((className === "comment-floor" || className === "comment-reply-floor") && mutation.addedNodes.length > 0) {
+      if (
+        (className === "comment-floor" || className === "comment-reply-floor") &&
+        mutation.addedNodes.length > 0
+      ) {
         // 防广告误触发
-        if ((Array.from(mutation.addedNodes) as HTMLElement[]).map(e => e.className).includes("google-auto-placed")) {
+        if (
+          (Array.from(mutation.addedNodes) as HTMLElement[])
+            .map((e) => e.className)
+            .includes("google-auto-placed")
+        ) {
           return;
         }
 
@@ -82,62 +104,83 @@ export class CommentInit extends Init {
             // 隐藏黑名单用户发布的短评
             const target = $(c);
             const uid = Number(target.find("a.poped").attr("data-uid"));
-            if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) { // 用户屏蔽
+            if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) {
+              // 用户屏蔽
               target.parent().remove();
               return;
             }
 
             // 愚人节特性 全员管理
-            if (this.configs.getSettings("enableAprilFools") && 
-                uid === this.parent.currentUID && 
-                this.parent.href.includes("/class/")) {
+            if (
+              this.configs.getSettings("enableAprilFools") &&
+              uid === this.parent.currentUID &&
+              this.parent.href.includes("/class/")
+            ) {
               this.promoteAsManager(target);
             }
 
             // 楼中楼快速链接
             this.setReplyLink(target);
-            const commentContent = target.find("div.comment-row-text-content.common-text.font14").get(0);
+            const commentContent = target
+              .find("div.comment-row-text-content.common-text.font14")
+              .get(0);
             if (this.configs.getSettings("ignoreEmptyLine")) {
-              $(commentContent).children().filter((_, c) => c.innerHTML === "<br>").remove();
+              $(commentContent)
+                .children()
+                .filter((_, c) => c.innerHTML === "<br>")
+                .remove();
             }
 
             // 补充 展开更多内容 按钮
             const h = commentContent.clientHeight;
             if (h > expandHeight && h < 3e2 && expandHeight < 3e2) {
-              $(`<a class="fold text-muted"><i class="fas fa-chevron-down"></i>${ PublicLangData.comment.fold.down }</a>`).appendTo(target);
-              target.insertBefore(target.find("a.fold.text-muted").get(0)/*, target.find("ul.comment-tools").get(0) */);
+              $(
+                `<a class="fold text-muted"><i class="fas fa-chevron-down"></i>${PublicLangData.comment.fold.down}</a>`,
+              ).appendTo(target);
+              target.insertBefore(
+                target
+                  .find("a.fold.text-muted")
+                  .get(0) /*, target.find("ul.comment-tools").get(0) */,
+              );
             }
-            
+
             // 核弹警告
             if (this.configs.getSettings("missileAlert") && h > alertHeight) {
-              target.find("a.fold.text-muted")
-              .append(` - <span class="mcmodder-slim-danger">核弹警告！</span>本楼展开后将会长达 <span class="mcmodder-common-danger">${ h.toLocaleString() } px</span>！`); // 核弹警告
+              target
+                .find("a.fold.text-muted")
+                .append(
+                  ` - <span class="mcmodder-slim-danger">核弹警告！</span>本楼展开后将会长达 <span class="mcmodder-common-danger">${h.toLocaleString()} px</span>！`,
+                ); // 核弹警告
             }
 
             // 移动端图标优化
             this.replaceMobileClientIcon(target);
           });
-        }
-        else if (className === "comment-reply-floor" && this.configs.getSettings("replyLink")) {
+        } else if (className === "comment-reply-floor" && this.configs.getSettings("replyLink")) {
           $("div.comment-reply-row", mutation.target).each((_, _e) => {
             const e = $(_e);
             const uid = Number(e.find("a.poped").attr("data-uid"));
             if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) e.remove();
             this.setReplyLink(e);
-            const replyContent = e.find("div.comment-reply-row-text-content.common-text.font14").first();
+            const replyContent = e
+              .find("div.comment-reply-row-text-content.common-text.font14")
+              .first();
             const rawContent = replyContent.html().replaceAll("<br>", " ");
             let newContent = "";
             for (let i = 0; i < rawContent.length; i++) {
-              newContent += (rawContent[i].charCodeAt(0) <= 0xff) ? rawContent[i] : " ";
+              newContent += rawContent[i].charCodeAt(0) <= 0xff ? rawContent[i] : " ";
             }
             const urlList = newContent.match(/https?:\/\/(?:www\.)?[^\s/$.?#].[^\s]*/g) || [];
-            urlList.forEach(item => {
-              replyContent.html(replyContent.html().replace(item, '<a href="' + item + '" target="_blank">' + item + '</a>'));
-            })
+            urlList.forEach((item) => {
+              replyContent.html(
+                replyContent
+                  .html()
+                  .replace(item, '<a href="' + item + '" target="_blank">' + item + "</a>"),
+              );
+            });
           });
         }
-      }
-      else if (className === "common-comment-block lazy" && mutation.addedNodes.length > 0) {
+      } else if (className === "common-comment-block lazy" && mutation.addedNodes.length > 0) {
         this.unlockComment();
       }
     }
@@ -148,16 +191,25 @@ export class CommentInit extends Init {
     if (!this.configs.getSettings("unlockComment")) return;
     // 无限制留言板
     const commentClassName = "common-comment-block lazy";
-    const messageCenter = $(".center-block:last-child()").get(0) || $(".common-comment-block.lazy .comment-editor").get(0) || $(".author-row").get(0);
+    const messageCenter =
+      $(".center-block:last-child()").get(0) ||
+      $(".common-comment-block.lazy .comment-editor").get(0) ||
+      $(".author-row").get(0);
     const messageBoard = document.getElementsByClassName(commentClassName);
     if (messageCenter && (!messageBoard.length || $(".comment-close").length)) {
       const t1 = document.createElement("div");
       t1.className = commentClassName;
       t1.style = "";
       const t = messageCenter.appendChild(t1);
-      Utils.addScript(t, "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});");
+      Utils.addScript(
+        t,
+        "comment_channel = '1';comment_user_id = '1';comment_user_editnum = '19732';comment_user_wordnum = '1356802';$(document).ready(function(){$(\".comment-channel-list li a.c1\").click();});",
+      );
       $(t).append('<div><ul class="comment-floor"></ul></div>');
-      Utils.addScript(t, `get_comment(comment_container,comment_type);var isUEReady=0;if($(".comment-editor-area .editor-frame").length>0&&0==isUEReady)var ueObj=$.ajax({url:"${ this.parent.hostname }/static/ueditor/",async:!0,type:"post",data:{type:"comment"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(".comment-editor-area .editor-frame .load").html(ueObj.responseText),isUEReady=1}});`);
+      Utils.addScript(
+        t,
+        `get_comment(comment_container,comment_type);var isUEReady=0;if($(".comment-editor-area .editor-frame").length>0&&0==isUEReady)var ueObj=$.ajax({url:"${this.parent.hostname}/static/ueditor/",async:!0,type:"post",data:{type:"comment"},xhrFields:{withCredentials:true},crossDomain:true,complete:function(e){$(".comment-editor-area .editor-frame .load").html(ueObj.responseText),isUEReady=1}});`,
+      );
       if ($(".comment-close").length && $(".comment-dl-tips").length) {
         // messageCenter.insertBefore($(".common-comment-block.lazy", messageCenter).get(0), $(".comment-dl-tips", messageCenter).get(0));
         $(".comment-close").remove();
@@ -178,10 +230,10 @@ export class CommentInit extends Init {
       "fa-angry",
       "fa-tired",
       "fa-snowflake",
-      "fa-handshake"
-    ]
-    attitudeList.forEach(attitude => {
-      target.find(`.${ attitude }`).each((_, _e) => {
+      "fa-handshake",
+    ];
+    attitudeList.forEach((attitude) => {
+      target.find(`.${attitude}`).each((_, _e) => {
         const e = $(_e);
         e.removeClass(attitude).addClass("fa-surprise");
         e.parents("[title]").first().attr("title", "猎奇");
@@ -192,7 +244,7 @@ export class CommentInit extends Init {
   private setReplyLink(target: JQuery) {
     if (target.find("input.comment-id").val() === this.parent.href.split("comment-")[1]) {
       setTimeout(() => {
-        target.get(0).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.get(0).scrollIntoView({ behavior: "smooth", block: "center" });
         target.addClass("mcmodder-mark-gold");
         setTimeout(() => target.removeClass("mcmodder-mark-gold"), 2e3);
       }, 8e2);
@@ -205,7 +257,7 @@ export class CommentInit extends Init {
   run() {
     if (this.configs.getSettings("commentExpandHeight")) {
       const commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
-      Utils.addStyle(`.comment-row-text {max-height: ${ commentHeight }px;}`);
+      Utils.addStyle(`.comment-row-text {max-height: ${commentHeight}px;}`);
     }
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {
       this.unlockComment();
@@ -213,13 +265,14 @@ export class CommentInit extends Init {
     if (this.parent.href.includes("#comment-")) {
       $(".common-comment-block.lazy").get(0)?.scrollIntoView({
         behavior: "smooth",
-        block: "center"
+        block: "center",
       });
     }
     const commentContainer = $(".common-comment-block.lazy");
-    if (commentContainer.length) this.commentObserver.observe(commentContainer.get(0), {
-      childList: true,
-      subtree: true
-    });
+    if (commentContainer.length)
+      this.commentObserver.observe(commentContainer.get(0), {
+        childList: true,
+        subtree: true,
+      });
   }
 }

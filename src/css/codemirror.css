@@ -1,6 +1,6 @@
 .mcmodder-editor-container .CodeMirror {
   color: var(--mcmodder-color-text);
-  padding: .2em var(--mcmodder-width-padding-3);
+  padding: 0.2em var(--mcmodder-width-padding-3);
   background-color: transparent;
   width: 100%;
   height: 100%;
@@ -19,29 +19,75 @@
   font-size: 14px;
 }
 
-.cm-s-mcmodder span.cm-keyword {color: var(--mcmodder-color-cm-keyword-universal);}
-.cm-s-mcmodder span.cm-atom {color: var(--mcmodder-color-cm-atom-universal);}
-.cm-s-mcmodder span.cm-number {color: var(--mcmodder-color-cm-number-universal);}
-.cm-s-mcmodder span.cm-def {color: var(--mcmodder-color-cm-def-universal);}
-.cm-s-mcmodder span.cm-variable {color: var(--mcmodder-color-cm-variable-universal);}
-.cm-s-mcmodder span.cm-variable-2 {color: var(--mcmodder-color-cm-variable-2-universal);}
-.cm-s-mcmodder span.cm-variable-3 {color: var(--mcmodder-color-cm-variable-3-universal);}
-.cm-s-mcmodder span.cm-property {color: var(--mcmodder-color-cm-property-universal);}
-.cm-s-mcmodder span.cm-operator {color: var(--mcmodder-color-cm-operator-universal);}
-.cm-s-mcmodder span.cm-comment {color: var(--mcmodder-color-cm-comment-universal);}
-.cm-s-mcmodder span.cm-string {color: var(--mcmodder-color-cm-string-universal);}
-.cm-s-mcmodder span.cm-string-2 {color: var(--mcmodder-color-cm-string-2-universal);}
-.cm-s-mcmodder span.cm-meta {color: var(--mcmodder-color-cm-meta-universal);}
-.cm-s-mcmodder span.cm-error {color: var(--mcmodder-color-cm-error-universal);}
-.cm-s-mcmodder span.cm-qualifier {color: var(--mcmodder-color-cm-qualifier-universal);}
-.cm-s-mcmodder span.cm-builtin {color: var(--mcmodder-color-cm-builtin-universal);}
-.cm-s-mcmodder span.cm-bracket {color: var(--mcmodder-color-cm-bracket-universal);}
-.cm-s-mcmodder span.cm-tag {color: var(--mcmodder-color-cm-tag-universal);}
-.cm-s-mcmodder span.cm-attribute {color: var(--mcmodder-color-cm-attribute-universal);}
-.cm-s-mcmodder span.cm-header {color: var(--mcmodder-color-cm-header-universal);}
-.cm-s-mcmodder span.cm-quote {color: var(--mcmodder-color-cm-quote-universal);}
-.cm-s-mcmodder span.cm-hr {color: var(--mcmodder-color-cm-hr-universal);}
-.cm-s-mcmodder span.cm-link {color: var(--mcmodder-color-cm-link-universal);}
+.cm-s-mcmodder span.cm-keyword {
+  color: var(--mcmodder-color-cm-keyword-universal);
+}
+.cm-s-mcmodder span.cm-atom {
+  color: var(--mcmodder-color-cm-atom-universal);
+}
+.cm-s-mcmodder span.cm-number {
+  color: var(--mcmodder-color-cm-number-universal);
+}
+.cm-s-mcmodder span.cm-def {
+  color: var(--mcmodder-color-cm-def-universal);
+}
+.cm-s-mcmodder span.cm-variable {
+  color: var(--mcmodder-color-cm-variable-universal);
+}
+.cm-s-mcmodder span.cm-variable-2 {
+  color: var(--mcmodder-color-cm-variable-2-universal);
+}
+.cm-s-mcmodder span.cm-variable-3 {
+  color: var(--mcmodder-color-cm-variable-3-universal);
+}
+.cm-s-mcmodder span.cm-property {
+  color: var(--mcmodder-color-cm-property-universal);
+}
+.cm-s-mcmodder span.cm-operator {
+  color: var(--mcmodder-color-cm-operator-universal);
+}
+.cm-s-mcmodder span.cm-comment {
+  color: var(--mcmodder-color-cm-comment-universal);
+}
+.cm-s-mcmodder span.cm-string {
+  color: var(--mcmodder-color-cm-string-universal);
+}
+.cm-s-mcmodder span.cm-string-2 {
+  color: var(--mcmodder-color-cm-string-2-universal);
+}
+.cm-s-mcmodder span.cm-meta {
+  color: var(--mcmodder-color-cm-meta-universal);
+}
+.cm-s-mcmodder span.cm-error {
+  color: var(--mcmodder-color-cm-error-universal);
+}
+.cm-s-mcmodder span.cm-qualifier {
+  color: var(--mcmodder-color-cm-qualifier-universal);
+}
+.cm-s-mcmodder span.cm-builtin {
+  color: var(--mcmodder-color-cm-builtin-universal);
+}
+.cm-s-mcmodder span.cm-bracket {
+  color: var(--mcmodder-color-cm-bracket-universal);
+}
+.cm-s-mcmodder span.cm-tag {
+  color: var(--mcmodder-color-cm-tag-universal);
+}
+.cm-s-mcmodder span.cm-attribute {
+  color: var(--mcmodder-color-cm-attribute-universal);
+}
+.cm-s-mcmodder span.cm-header {
+  color: var(--mcmodder-color-cm-header-universal);
+}
+.cm-s-mcmodder span.cm-quote {
+  color: var(--mcmodder-color-cm-quote-universal);
+}
+.cm-s-mcmodder span.cm-hr {
+  color: var(--mcmodder-color-cm-hr-universal);
+}
+.cm-s-mcmodder span.cm-link {
+  color: var(--mcmodder-color-cm-link-universal);
+}
 
 .syntaxhighlighter,
 .syntaxhighlighter.java {

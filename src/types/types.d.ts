@@ -1,14 +1,16 @@
 declare const unsafeWindow: unknown;
 
 type KeysOfType<T, P> = {
-  [K in keyof T]-?: T[K] extends P ? K : never
+  [K in keyof T]-?: T[K] extends P ? K : never;
 }[keyof T];
 
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-type IndexedType<T extends object, K extends number | string | symbol = number> = T & { _primaryKey: K };
+type IndexedType<T extends object, K extends number | string | symbol = number> = T & {
+  _primaryKey: K;
+};
 
 type IDBInsertType<T extends object> = T & { _filename: string };
 
@@ -50,164 +52,164 @@ type Template = {
   title: string;
   description: string;
   content: string;
-}
+};
 
 interface AppStorage {
-  mcmodderSettings: Settings,
-  userProfile?: Record<string, string>,
-  mcmodderSplashList_v2?: string,
-  templateList?: Template[],
-  almanacsList?: Almanacs[],
-  mcmodderLogger?: string,
-  mcmodderJsonStorage?: Record<string, ItemList>,
-  mcmodderRecipeJsonStorage?: Record<string, RecipeList>,
-  latestEditTime?: Record<string, number>,
-  latestComment?: Record<string, number>,
-  classNameIDMap?: Record<string, string>,
-  idClassNameMap?: Record<string, string>,
-  modExpansions_v2?: Record<string, number[]>,
-  modDependences_v2?: Record<string, number[]>,
-  scheduleRequestList?: ScheduleRequestList,
-  mcmodderInteracts?: Record<string, unknown>,
-  mcmodderBackup?: Record<string, unknown>,
-  rankData?: Record<string, /* { user: number, value: number }[] */ string>,
-  guiBound?: RecipeJsonFrameGuiBound[],
-  classData?: Record<string, string>,
-  inputList?: Record<string, InputSimplifiedSuggestion[]>,
-  assistantViewed?: Record<string, number[]>,
+  mcmodderSettings: Settings;
+  userProfile?: Record<string, string>;
+  mcmodderSplashList_v2?: string;
+  templateList?: Template[];
+  almanacsList?: Almanacs[];
+  mcmodderLogger?: string;
+  mcmodderJsonStorage?: Record<string, ItemList>;
+  mcmodderRecipeJsonStorage?: Record<string, RecipeList>;
+  latestEditTime?: Record<string, number>;
+  latestComment?: Record<string, number>;
+  classNameIDMap?: Record<string, string>;
+  idClassNameMap?: Record<string, string>;
+  modExpansions_v2?: Record<string, number[]>;
+  modDependences_v2?: Record<string, number[]>;
+  scheduleRequestList?: ScheduleRequestList;
+  mcmodderInteracts?: Record<string, unknown>;
+  mcmodderBackup?: Record<string, unknown>;
+  rankData?: Record<string, /* { user: number, value: number }[] */ string>;
+  guiBound?: RecipeJsonFrameGuiBound[];
+  classData?: Record<string, string>;
+  inputList?: Record<string, InputSimplifiedSuggestion[]>;
+  assistantViewed?: Record<string, number[]>;
 }
 
 interface Settings {
-  themeColor1: string,
-  themeColor2: string,
-  autoCheckUpdate: boolean,
-  useSupabase: boolean,
-  fetchCustomSplashes: boolean,
-  customSplashRate: number,
-  supabaseSplash: boolean,
-  supabaseByteChart: boolean,
-  moveAds: boolean,
-  customFont: 0 | 1 | 2 | 3,
-  disableGradient: boolean,
-  adaptableNightMode: boolean,
-  bbsNightMode: boolean,
-  forceV4: boolean,
+  themeColor1: string;
+  themeColor2: string;
+  autoCheckUpdate: boolean;
+  useSupabase: boolean;
+  fetchCustomSplashes: boolean;
+  customSplashRate: number;
+  supabaseSplash: boolean;
+  supabaseByteChart: boolean;
+  moveAds: boolean;
+  customFont: 0 | 1 | 2 | 3;
+  disableGradient: boolean;
+  adaptableNightMode: boolean;
+  bbsNightMode: boolean;
+  forceV4: boolean;
   // mcmodderUI: boolean,
-  disableAutoStyleFix: boolean,
+  disableAutoStyleFix: boolean;
   // unlockHeaderContainer: boolean,
-  customAdvancements: boolean,
-  disableClassDataTypesetting: boolean,
-  fastCopyName: boolean,
-  compactSupportedVersions: boolean,
-  gtceuIntegration: boolean,
-  almanacs: boolean,
-  enableSplashTracker: boolean,
-  splashStyle: 0 | 1,
-  splashFontUrl: string,
-  enableLive2D: boolean,
-  enableAprilFools: boolean,
-  autoCheckin: boolean,
-  defaultBackground: string,
-  defaultNightBackground: string,
-  backgroundAlpha: number,
-  textShadowAlpha: number,
-  radiusRatio: number,
-  classAddHelper: boolean,
-  editorAutoResize: boolean,
-  noSubmitWarningDelay: boolean,
-  autoSaveFix: boolean,
-  fastSubmitFix: boolean,
-  tabSelectorInfo: boolean,
-  rememberModRelation: boolean,
-  editorStats: number,
-  anonymousUknowtoomuch: boolean,
-  autoExpandPage: boolean,
-  autoCloseSwal: boolean,
-  multiDiffCompare: boolean,
-  versionHelper: boolean,
-  versionEditorHelper: boolean,
-  subscribeDelay: number,
-  subscribeComment: boolean,
-  hoverDescription: boolean,
-  hoverImage: boolean,
-  imageLocalizedCheck: boolean,
-  autoFoldTable: number,
-  tableFix: boolean,
-  tableThemeColor: boolean,
-  tableLeftAlign: boolean,
-  linkCheck: boolean,
-  linkMark: boolean,
-  removePostProtection: boolean,
-  compactedChild: boolean,
+  customAdvancements: boolean;
+  disableClassDataTypesetting: boolean;
+  fastCopyName: boolean;
+  compactSupportedVersions: boolean;
+  gtceuIntegration: boolean;
+  almanacs: boolean;
+  enableSplashTracker: boolean;
+  splashStyle: 0 | 1;
+  splashFontUrl: string;
+  enableLive2D: boolean;
+  enableAprilFools: boolean;
+  autoCheckin: boolean;
+  defaultBackground: string;
+  defaultNightBackground: string;
+  backgroundAlpha: number;
+  textShadowAlpha: number;
+  radiusRatio: number;
+  classAddHelper: boolean;
+  editorAutoResize: boolean;
+  noSubmitWarningDelay: boolean;
+  autoSaveFix: boolean;
+  fastSubmitFix: boolean;
+  tabSelectorInfo: boolean;
+  rememberModRelation: boolean;
+  editorStats: number;
+  anonymousUknowtoomuch: boolean;
+  autoExpandPage: boolean;
+  autoCloseSwal: boolean;
+  multiDiffCompare: boolean;
+  versionHelper: boolean;
+  versionEditorHelper: boolean;
+  subscribeDelay: number;
+  subscribeComment: boolean;
+  hoverDescription: boolean;
+  hoverImage: boolean;
+  imageLocalizedCheck: boolean;
+  autoFoldTable: number;
+  tableFix: boolean;
+  tableThemeColor: boolean;
+  tableLeftAlign: boolean;
+  linkCheck: boolean;
+  linkMark: boolean;
+  removePostProtection: boolean;
+  compactedChild: boolean;
   // compactedTablist: boolean,
-  compactedVerifylist: boolean,
-  compactedVerifyEntry: boolean,
-  advancedRanklist: boolean,
-  advancedOredictPage: boolean,
-  rememberVisited: boolean,
-  favUserDisplayStyle: 0 | 1 | 2,
-  rememberVisitedMods: boolean,
-  centerMainExpand: boolean,
-  byteChart: boolean,
-  maxByteColorValue: number,
-  expCalculator: boolean,
-  freezeAdvancements: boolean,
-  unlockComment: boolean,
-  ignoreEmptyLine: boolean,
-  replyLink: boolean,
-  missileAlert: boolean,
-  missileAlertHeight: number,
-  commentExpandHeight: number,
-  userBlacklist: string,
-  autoVerifyDelay: number,
-  splitScreenOnVerify: boolean,
-  itemListStylePreview: boolean,
-  itemListStyleFix: boolean,
-  alwaysNotify: number,
-  alwaysNotifyVerification: number,
-  preSubmitCheckInterval: number,
-  fastUrge: boolean,
-  enableStructureEditor: boolean,
-  enableJsonHelper: boolean,
-  itemRepository: 0 | 1,
-  minimumRequestInterval: number,
-  lieqi: boolean,
-  keybindFastLink: Key,
-  keybindFastSubmit: Key,
-  keybindVerifyPass: Key,
-  keybindVerifyRefund: Key,
-  keybindVerifyCheck: Key,
-  keybindVerifyReason: Key,
+  compactedVerifylist: boolean;
+  compactedVerifyEntry: boolean;
+  advancedRanklist: boolean;
+  advancedOredictPage: boolean;
+  rememberVisited: boolean;
+  favUserDisplayStyle: 0 | 1 | 2;
+  rememberVisitedMods: boolean;
+  centerMainExpand: boolean;
+  byteChart: boolean;
+  maxByteColorValue: number;
+  expCalculator: boolean;
+  freezeAdvancements: boolean;
+  unlockComment: boolean;
+  ignoreEmptyLine: boolean;
+  replyLink: boolean;
+  missileAlert: boolean;
+  missileAlertHeight: number;
+  commentExpandHeight: number;
+  userBlacklist: string;
+  autoVerifyDelay: number;
+  splitScreenOnVerify: boolean;
+  itemListStylePreview: boolean;
+  itemListStyleFix: boolean;
+  alwaysNotify: number;
+  alwaysNotifyVerification: number;
+  preSubmitCheckInterval: number;
+  fastUrge: boolean;
+  enableStructureEditor: boolean;
+  enableJsonHelper: boolean;
+  itemRepository: 0 | 1;
+  minimumRequestInterval: number;
+  lieqi: boolean;
+  keybindFastLink: Key;
+  keybindFastSubmit: Key;
+  keybindVerifyPass: Key;
+  keybindVerifyRefund: Key;
+  keybindVerifyCheck: Key;
+  keybindVerifyReason: Key;
 
   // 以下不显示在设置界面
-  nightMode: boolean,
-  preferredWiderScreen: boolean,
-  lastUid: number,
-  lastRequestTime: number,
-  itemCustomTypeList: ItemType[],
-  userFavList: string,
-  recentlyVisited: string,
-  recentlyVisitedMods: RecentlyVisited[],
-  myProfiles: string,
-  guiLocker: number,
-  shapelessLocker: boolean,
-  jsonDatabase_v2: Record<0 | 1, string[]>
-  markdownIt: boolean,
-  htmlEditor: boolean,
-  editorVertical: boolean,
-  editorToolkit: boolean,
-  autolinkSourceLocal: boolean,
-  autolinkSourceOnline: boolean,
-  autolinkStyleSpace: boolean,
-  preferredAutolinkStyle: 1 | 2,
-  structureSelected: number,
-  preferredDragPos: Record<string, number>,
+  nightMode: boolean;
+  preferredWiderScreen: boolean;
+  lastUid: number;
+  lastRequestTime: number;
+  itemCustomTypeList: ItemType[];
+  userFavList: string;
+  recentlyVisited: string;
+  recentlyVisitedMods: RecentlyVisited[];
+  myProfiles: string;
+  guiLocker: number;
+  shapelessLocker: boolean;
+  jsonDatabase_v2: Record<0 | 1, string[]>;
+  markdownIt: boolean;
+  htmlEditor: boolean;
+  editorVertical: boolean;
+  editorToolkit: boolean;
+  autolinkSourceLocal: boolean;
+  autolinkSourceOnline: boolean;
+  autolinkStyleSpace: boolean;
+  preferredAutolinkStyle: 1 | 2;
+  structureSelected: number;
+  preferredDragPos: Record<string, number>;
 
   // 以下为旧版遗留
-  templateList?: Template[],
-  useNotoSans?: boolean,
-  almanacsList?: Almanacs[],
-  jsonDatabase?: string[]
+  templateList?: Template[];
+  useNotoSans?: boolean;
+  almanacsList?: Almanacs[];
+  jsonDatabase?: string[];
 }
 
 interface Item {
@@ -277,24 +279,24 @@ interface Item {
   generalNum?: number;
   /**
    * 矿物词典 / 物品标签列表的序列化
-   * 
+   *
    * 以单个逗号 `,` 不带空格分隔
-   * 
+   *
    * 每项无引号 `""` 包裹，无前缀 `#`；
    * 最外层*无*方括号 `[]`
-   * 
+   *
    * 合法的例子: `minecraft:piglin_loved,forge:ingots/gold`
    */
   OredictList?: string;
   /**
    * 可用挖掘工具的序列化
-   * 
+   *
    * 每一项都是一个物品的百科资料 ID 而非注册名
    * 以单个逗号 `,` 不带空格分隔
-   * 
+   *
    * 每项无引号 `""` 包裹，无前缀 `#`；
    * 最外层*有*方括号 `[]`
-   * 
+   *
    * 合法的例子: `[1,2]`
    */
   harvestTools?: string;
@@ -318,7 +320,7 @@ interface UnpurifiedItem extends Item {
 }
 
 interface ItemIcon {
-  itemPrimaryKey: number,
+  itemPrimaryKey: number;
   smallIcon?: Blob;
   largeIcon?: Blob;
 }
@@ -356,7 +358,7 @@ interface AutoLinkSearchTag {
   /** 前置模组是否匹配 */
   isModDependenceMatches?: boolean;
   /** 成功匹配的字段与匹配范围 */
-  ranges?: Partial<Record<keyof Item, [number, number][]>>
+  ranges?: Partial<Record<keyof Item, [number, number][]>>;
 }
 type AutoLinkEntryType = "item" | "class" | "modpack" | "author" | "oredict";
 interface AutoLinkBaseEntry {
@@ -380,28 +382,25 @@ interface AutoLinkOredictEntry extends AutoLinkBaseEntry {
   type: "oredict";
 }
 type AutoLinkEntry =
-  AutoLinkItemEntry |
-  AutoLinkClassEntry |
-  AutoLinkAuthorEntry |
-  AutoLinkOredictEntry;
+  AutoLinkItemEntry | AutoLinkClassEntry | AutoLinkAuthorEntry | AutoLinkOredictEntry;
 type AutoLinkEntries = AutoLinkEntry[];
 
 type Almanacs = {
-  date: number,
-  good: string[],
-  bad: string[]
-}
+  date: number;
+  good: string[];
+  bad: string[];
+};
 type AlmanacsPage = {
-  almanacs: Almanacs,
-  prevDate: number,
-  nextDate: number
-}
+  almanacs: Almanacs;
+  prevDate: number;
+  nextDate: number;
+};
 
 interface ChangedStorage {
-  id: string,
-  timestamp: number,
-  item: string,
-  key: string
+  id: string;
+  timestamp: number;
+  item: string;
+  key: string;
 }
 
 type RecipeIngredient = string | string[];
@@ -438,57 +437,57 @@ interface ItemType {
 interface Profile {
   /**
    * 存储在浏览器 Cookie 中的验证用户身份的 UUID
-   * 
+   *
    * 只有用户拥有的账号信息才存在此属性
    */
-  uuid?: string,
+  uuid?: string;
 
   /**
    * 已认证账户的认证 UID
    */
-  auth_uid?: number,
+  auth_uid?: number;
 
   /**
    * 已认证账户的认证用户名
    */
-  auth_username?: string,
+  auth_username?: string;
 
   /**
    * 已认证账户的认证密钥
    */
-  auth_key?: string
+  auth_key?: string;
 
   /**
    * 该账户的登录信息会于该时间戳 (毫秒单位) 过期，届时必须重新登录以刷新登录信息
-   * 
+   *
    * 百科账号登录一般 30 天过期，QQ 登录 7 天过期
-   * 
+   *
    * 只有用户拥有的账号信息才存在此属性
    */
-  expirationDate?: number,
+  expirationDate?: number;
 
   /** 用户头像的图片 URL */
-  avatar: string,
+  avatar: string;
 
   /**
    * 用户*当前使用*的昵称，可以在百科个人主页设置里修改
-   * 
+   *
    * 注意不要和 `username` 混淆，默认二者相同
    */
-  nickname: string,
+  nickname: string;
 
   /**
    * 用户*注册使用*的昵称，已被使用的昵称无法重复使用，
    * 一经设置无法更改，QQ 登录则为 “QQ酱<百科用户ID>”
-   * 
+   *
    * 注意不要和 `nickname` 混淆，默认二者相同
    */
-  username: string,
+  username: string;
 
   /** 用户的注册时间戳 (毫秒单位)，用于科龄计算和周年提醒 */
-  regTime: number,
+  regTime: number;
   /** 主站用户等级，注意不要和社群用户等级混淆 */
-  lv: number,
+  lv: number;
 
   /**
    * 主站用户组，通常表示为下列字符串之一：
@@ -499,69 +498,69 @@ interface Profile {
    * - 禁止编辑
    * - 禁止访问
    */
-  userGroup: string,
+  userGroup: string;
 
   /** 总编辑字节数 */
-  editByte: number,
+  editByte: number;
   /** 总编辑次数 */
-  editNum: number,
+  editNum: number;
   /** 平均字节数，只计正文有字节数增加的编辑 */
-  editAvg: number,
+  editAvg: number;
   /** 编辑员区域的模组 ID 列表，以单个逗号 `,` 分隔 */
-  editorModList?: string,
+  editorModList?: string;
   /** 管理员区域的模组 ID 列表，以单个逗号 `,` 分隔 */
-  adminModList?: string,
+  adminModList?: string;
   /** 开发者区域的模组 ID 列表，以单个逗号 `,` 分隔 */
-  devModList?: string,
+  devModList?: string;
   /** 权限等级 */
-  permission: import("../config/ConfigUtils").Permission,
+  permission: import("../config/ConfigUtils").Permission;
   /** 该数据上次更新的时间戳 */
-  lastUpdated?: number,
+  lastUpdated?: number;
 
   /**
    * 用户已完成但尚未弹出过提示的成就 ID 列表，以单个 `,` 分隔
    */
-  completed?: string,
+  completed?: string;
 
   /**
    * 用户所有成就的完成情况的序列化
    */
-  advancements?: string,
+  advancements?: string;
 
   /**
    * 关注模组列表
    */
-  subscribeModlist?: number[],
+  subscribeModlist?: number[];
 
   /**
    * 预编辑列表
    */
-  preSubmitList?: PreSubmission[],
+  preSubmitList?: PreSubmission[];
 
   /**
    * 最近一次周年庆祝时，账号自注册至今所过去的年份数
    */
-  annualCelebration?: number
+  annualCelebration?: number;
 }
 
 interface Advancement {
-  lang: string,
-  category: import("../advancement/AdvancementUtils").AdvancementType,
-  id: import("../advancement/AdvancementUtils").AdvancementID,
-  range: number,
-  exp: number,
-  image?: string | null,
-  reward?: number | null,
-  tier?: number,
-  isCustom: boolean,
-  prev?: Advancement,
-  next?: Advancement,
-  level?: number
+  lang: string;
+  category: import("../advancement/AdvancementUtils").AdvancementType;
+  id: import("../advancement/AdvancementUtils").AdvancementID;
+  range: number;
+  exp: number;
+  image?: string | null;
+  reward?: number | null;
+  tier?: number;
+  isCustom: boolean;
+  prev?: Advancement;
+  next?: Advancement;
+  level?: number;
 }
 
 interface AdvancementProgression {
-  id: import("../advancement/AdvancementUtils").AdvancementID,
-  progress: number
+  id: import("../advancement/AdvancementUtils").AdvancementID;
+  progress: number;
 }
 
 // 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
@@ -576,11 +575,20 @@ type RowOptionInitializer<T> = string | [string, TableDisplayRule<T>];
 type RowOptionsInitializer<T> = Record<string, RowOptionInitializer<T>>;
 
 type EditConfigs<T> = {
-  [P in keyof T as T[P] extends undefined ? P : never]: TableInputOption & { optional: true };
+  [P in keyof T as T[P] extends undefined ? P : never]: TableInputOption & {
+    optional: true;
+  };
 } & {
   [P in keyof T as T[P] extends undefined ? never : P]: TableInputOption;
-};  // Record<keyof T, InputOption>;
-type EditOptionInitializer = null | undefined | import("../config/ConfigUtils").InputType | InputLimit | InputOption | TableInputOption | {readonly: true};
+}; // Record<keyof T, InputOption>;
+type EditOptionInitializer =
+  | null
+  | undefined
+  | import("../config/ConfigUtils").InputType
+  | InputLimit
+  | InputOption
+  | TableInputOption
+  | { readonly: true };
 type EditOptionsInitializer<T> = Record<keyof T, EditOptionInitializer>;
 
 interface TableRowData<T> {
@@ -599,27 +607,28 @@ interface TableRowRange {
 }
 
 // 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
-// eslint-disable-next-line
-type TableDisplayRule<T> = (unit: any, row: Partial<T>) =>
-  JQuery | string | number | null | undefined;
+type TableDisplayRule<T> = (
+  unit: any, // eslint-disable-line
+  row: Partial<T>,
+) => JQuery | string | number | null | undefined;
 
 interface TableContext<T extends TableAcceptable> {
-  empty: () => void,
-  showLoading: () => void,
-  refreshAll: () => void,
-  getData: (index: number) => T,
-  getRowData: (index: number) => TableRowData<T>,
-  editData: (index: number, key: keyof T, value: unknown) => void,
-  appendData: (data: T) => void,
-  appendDataList: (dataList: TableDataList<T>) => void,
-  insertRow: (index: number, newData?: T) => void,
-  insertRowWithDataMap: (dataMap: TableDataMap<T>) => void,
-  insertMultipleRowWithDataMap: (dataMap: TableDataMap<T>) => void,
-  deleteRow: (index: number) => TableDataMap<T>,
-  deleteMultipleRow: (selection: TableRowSelection) => TableDataMap<T>,
-  copyRow: (selection: TableRowSelection) => void,
-  pasteRow: (index: number) => TableDataMap<T>,
-  dataMapToSelection: (dataMap: TableDataMap<T>) => number[]
+  empty: () => void;
+  showLoading: () => void;
+  refreshAll: () => void;
+  getData: (index: number) => T;
+  getRowData: (index: number) => TableRowData<T>;
+  editData: (index: number, key: keyof T, value: unknown) => void;
+  appendData: (data: T) => void;
+  appendDataList: (dataList: TableDataList<T>) => void;
+  insertRow: (index: number, newData?: T) => void;
+  insertRowWithDataMap: (dataMap: TableDataMap<T>) => void;
+  insertMultipleRowWithDataMap: (dataMap: TableDataMap<T>) => void;
+  deleteRow: (index: number) => TableDataMap<T>;
+  deleteMultipleRow: (selection: TableRowSelection) => TableDataMap<T>;
+  copyRow: (selection: TableRowSelection) => void;
+  pasteRow: (index: number) => TableDataMap<T>;
+  dataMapToSelection: (dataMap: TableDataMap<T>) => number[];
 }
 
 type ConfigParser<TConfig extends object> = (config: string) => TConfig;
@@ -634,51 +643,51 @@ type InputListOnModifySuggestion = (list: InputSuggestion[]) => boolean;
 
 interface SuggestionCallbackManager {
   // 手动指定初始化与修改时的回调函数
-  onInitSuggestion: InputListOnInitSuggestion,
-  onModifySuggestion?: InputListOnModifySuggestion
+  onInitSuggestion: InputListOnInitSuggestion;
+  onModifySuggestion?: InputListOnModifySuggestion;
 }
 interface SuggestionConfigManager {
   // 或是：设定好配置提供器和配置键名，组件自动从配置中获取推荐列表
-  configs: import("../config/ConfigRepository").ConfigRepository,
-  configKey: string
+  configs: import("../config/ConfigRepository").ConfigRepository;
+  configKey: string;
 }
 
 type InputListOption = import("./props").InputListOption;
 
 interface McmodItemEditorInnerData {
-  content: string,
-  name: string,
-  ename?: string,
-  type?: string,
-  category: Record<number, number>,
-  "icon-32x-data": string,
-  "icon-128x-data": string,
-  "is-general-node": string,
-  "is-general-parents": string,
-  oredict?: string,
-  maxstack?: string
+  content: string;
+  name: string;
+  ename?: string;
+  type?: string;
+  category: Record<number, number>;
+  "icon-32x-data": string;
+  "icon-128x-data": string;
+  "is-general-node": string;
+  "is-general-parents": string;
+  oredict?: string;
+  maxstack?: string;
 }
 
 interface McmodItemEditorData {
-  action: "item_add" | "item_edit",
-  "edit-id": string,
-  "class-id": string,
-  "item-data": McmodItemEditorInnerData
+  action: "item_add" | "item_edit";
+  "edit-id": string;
+  "class-id": string;
+  "item-data": McmodItemEditorInnerData;
 }
 
 interface ClassName {
-  className: string,
-  classEname: string,
-  classAbbr: string
+  className: string;
+  classEname: string;
+  classAbbr: string;
 }
 
 interface Key {
-  ctrlKey?: boolean,
-  shiftKey?: boolean,
-  altKey?: boolean,
-  metaKey?: boolean,
-  keyCode?: number,
-  key?: string
+  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  altKey?: boolean;
+  metaKey?: boolean;
+  keyCode?: number;
+  key?: string;
 }
 
 type ContextMenuDisplayRule = (e: PointerEvent) => boolean;
@@ -690,16 +699,16 @@ type ContextMenuItem = {
   shortcut?: Key;
   displayRule: ContextMenuDisplayRule;
   callback: ContextMenuCallback;
-}
+};
 type ContextMenuItems = ContextMenuItem[];
 
 type ContextMenuItemOption = {
-  key: string,
-  text: string,
-  shortcut?: Key,
-  displayRule: ContextMenuDisplayRule,
-  callback: ContextMenuCallback
-}
+  key: string;
+  text: string;
+  shortcut?: Key;
+  displayRule: ContextMenuDisplayRule;
+  callback: ContextMenuCallback;
+};
 
 type ProgressBarDisplayRule = (val: number, min: number, max: number) => string;
 
@@ -723,17 +732,17 @@ interface InputSuggestionRate {
   ranges?: {
     value?: [number, number];
     alias: Record<number, [number, number]>;
-  }
+  };
 }
 interface InputRatedSuggestion extends InputSuggestion, InputSuggestionRate {}
 
 type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
 
 interface InputControlRef<T> {
-  getInstance(): HTMLElement,
-  getValue(): T,
-  setCurrentValue(newValue: T): void,
-  setDisplayValue(newValue: T): void
+  getInstance(): HTMLElement;
+  getValue(): T;
+  setCurrentValue(newValue: T): void;
+  setDisplayValue(newValue: T): void;
 }
 
 interface InputLimit {
@@ -776,24 +785,24 @@ interface PreSubmission {
 }
 
 interface GameVersion {
-  date: Date,
-  name: string,
-  mcver: string[],
-  logid: number
+  date: Date;
+  name: string;
+  mcver: string[];
+  logid: number;
 }
 interface CFGameVersion {
-  id: number,
-  releaseType: number,
-  fileName: string,
-  gameVersions: string[],
-  dateCreated: number
+  id: number;
+  releaseType: number;
+  fileName: string;
+  gameVersions: string[];
+  dateCreated: number;
 }
 interface MRGameVersion {
-  id: number,
-  version_type: string,
-  version_number: string,
-  game_versions: string[],
-  date_published: number
+  id: number;
+  version_type: string;
+  version_number: string;
+  game_versions: string[];
+  date_published: number;
 }
 interface GameVersionCompareEntry {
   platform: 1 | 2;
@@ -819,22 +828,27 @@ type EditorAlertHTMLModifier = (e: HTMLElement) => void;
 type EditorAlertForm = () => JQuery;
 
 interface ScheduleRequestTypes {
-  autoCheckin: import("../schedulerequest/types/AutoCheckinScheduleRequest").AutoCheckinScheduleRequest,
-  autoCheckUpdate: import("../schedulerequest/types/AutoCheckUpdateScheduleRequest").AutoCheckUpdateScheduleRequest,
-  autoCheckVerify: import("../schedulerequest/types/AutoCheckVerifyScheduleRequest").AutoCheckVerifyScheduleRequest,
-  autoHandlePreSubmit: import("../schedulerequest/types/AutoHandlePreSubmitScheduleRequest").AutoHandlePreSubmitScheduleRequest,
-  autoSubscribe: import("../schedulerequest/types/AutoSubscribeScheduleRequest").AutoSubscribeScheduleRequest
+  autoCheckin: import("../schedulerequest/types/AutoCheckinScheduleRequest").AutoCheckinScheduleRequest;
+  autoCheckUpdate: import("../schedulerequest/types/AutoCheckUpdateScheduleRequest").AutoCheckUpdateScheduleRequest;
+  autoCheckVerify: import("../schedulerequest/types/AutoCheckVerifyScheduleRequest").AutoCheckVerifyScheduleRequest;
+  autoHandlePreSubmit: import("../schedulerequest/types/AutoHandlePreSubmitScheduleRequest").AutoHandlePreSubmitScheduleRequest;
+  autoSubscribe: import("../schedulerequest/types/AutoSubscribeScheduleRequest").AutoSubscribeScheduleRequest;
 }
 
 interface ScheduleRequest {
-  time: number,
-  todo: keyof ScheduleRequestTypes,
-  userID?: number,
-  priority: number,
-  id: string
+  time: number;
+  todo: keyof ScheduleRequestTypes;
+  userID?: number;
+  priority: number;
+  id: string;
 }
 
-type ScheduleRequestOption = Partial<Record<keyof ScheduleRequestTypes, import("../schedulerequest/ScheduleRequestType").ScheduleRequestType>>;
+type ScheduleRequestOption = Partial<
+  Record<
+    keyof ScheduleRequestTypes,
+    import("../schedulerequest/ScheduleRequestType").ScheduleRequestType
+  >
+>;
 type ScheduleRequestList = ScheduleRequest[];
 
 type TextCompareMode = "diffLines" | "diffWords" | "diffChars";
@@ -843,7 +857,7 @@ type JsDiffResult = {
   added: boolean;
   removed: boolean;
   value: string;
-}
+};
 
 type JsDiffResultList = JsDiffResult[];
 
@@ -880,12 +894,12 @@ type JsonFrameToolOnClickCallback = (ev: Event) => unknown;
 type JsonFrameToolDisplayCondition = () => boolean;
 
 interface JsonFrameTool {
-  id: string,
-  text: string,
-  displayCondition: import("vue").ComputedRef<boolean>,
-  onClick: JsonFrameToolOnClickCallback,
-  dangerMode: boolean,
-  labelAttr?: object
+  id: string;
+  text: string;
+  displayCondition: import("vue").ComputedRef<boolean>;
+  onClick: JsonFrameToolOnClickCallback;
+  dangerMode: boolean;
+  labelAttr?: object;
 }
 
 interface ItemJsonFrameConfig {
@@ -910,7 +924,7 @@ interface RecipeJsonFrameGuiBound {
   mcmodID: number;
 }
 
-type JsonStorage<T extends TableAcceptable> = Record<string, T[]>; 
+type JsonStorage<T extends TableAcceptable> = Record<string, T[]>;
 
 interface AppRequest {
   config: import("$").GmXmlhttpRequestOption<"text", unknown>;
@@ -918,11 +932,11 @@ interface AppRequest {
 type RequestList = AppRequest[];
 
 interface RequestResult {
-  index?: number,
-  success?: boolean,
+  index?: number;
+  success?: boolean;
   // 网络通信牛逼
   // eslint-disable-next-line
-  value?: any
+  value?: any;
 }
 
 interface RequestQueueExecution {
@@ -939,7 +953,7 @@ type RequestQueuePreExecution = Partial<RequestQueueExecution>;
 
 type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
-}
+};
 
 type MapKeyHandler<V, K> = (data: V) => K | K[];
 
@@ -968,16 +982,16 @@ interface SupabaseByteChartResponse {
 }
 
 interface SupabaseAuthenticatorResponse {
-  user_id: number,
-  user_name: string,
-  auth_key: string
+  user_id: number;
+  user_name: string;
+  auth_key: string;
 }
 
 interface SupabaseSyncSettingsResponse {
-  last_modified: string,
-  mcmodder_settings?: string,
-  user_profile?: string,
-  template_list?: string
+  last_modified: string;
+  mcmodder_settings?: string;
+  user_profile?: string;
+  template_list?: string;
 }
 
 interface SupabaseCustomSplash {

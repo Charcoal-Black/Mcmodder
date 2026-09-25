@@ -22,7 +22,7 @@ export class IDBRepository<T extends object> implements AppRepository<T> {
 
   protected getSchema() {
     return {
-      [this.tableName]: this.columns
+      [this.tableName]: this.columns,
     };
   }
 
@@ -42,7 +42,7 @@ export class IDBRepository<T extends object> implements AppRepository<T> {
 
   async deleteFile(filename: string) {
     await this.table!.where("_filename").equals(filename).delete();
-    this.tempFiles = this.tempFiles.filter(e => e !== filename);
+    this.tempFiles = this.tempFiles.filter((e) => e !== filename);
   }
 
   async read(filename: string) {
@@ -53,7 +53,7 @@ export class IDBRepository<T extends object> implements AppRepository<T> {
     if ((await this.listFilename()).includes(filename)) {
       this.tempFiles.push(filename);
     }
-    const dataWithFile = data.map(e => Object.assign(e, { _filename: filename }));
+    const dataWithFile = data.map((e) => Object.assign(e, { _filename: filename }));
     await this.table!.where("_filename").equals(filename).delete();
     await this.table!.bulkPut(dataWithFile);
   }

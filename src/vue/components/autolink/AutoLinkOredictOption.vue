@@ -11,9 +11,9 @@
 </template>
 
 <script setup lang="ts">
-import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
-import type { AutoLinkOptionProps } from '../../../types/props';
-import KeyDisplay from '../KeyDisplay';
+import type { AutoLinkOptionEmitPayload } from "../../../types/emits";
+import type { AutoLinkOptionProps } from "../../../types/props";
+import KeyDisplay from "../KeyDisplay";
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkOredictEntry>>();
 
@@ -24,5 +24,4 @@ const dataTextHalf = item.id;
 const dataOriginalTitle = item.id;
 
 const emit = defineEmits<AutoLinkOptionEmitPayload>();
-
 </script>

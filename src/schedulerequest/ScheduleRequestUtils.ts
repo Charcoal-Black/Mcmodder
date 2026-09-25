@@ -5,7 +5,7 @@ import { ScheduleRequestType } from "./ScheduleRequestType";
 
 export const enum ScheduleRequestTriggerType {
   NONE,
-  CONFIG
+  CONFIG,
 }
 
 export class ScheduleRequestUtils {
@@ -19,25 +19,35 @@ export class ScheduleRequestUtils {
     this.requestData = {};
   }
 
-  addRequestType(key: keyof ScheduleRequestTypes, request: ScheduleRequestType, trigger: ScheduleRequestTriggerType, ...param: [KeysOfType<Settings, number | boolean>, number, boolean]) {
+  addRequestType(
+    key: keyof ScheduleRequestTypes,
+    request: ScheduleRequestType,
+    trigger: ScheduleRequestTriggerType,
+    ...param: [KeysOfType<Settings, number | boolean>, number, boolean]
+  ) {
     this.requestData[key] = request;
     this.init(key, trigger, param);
   }
 
-  init(key: keyof ScheduleRequestTypes, trigger: ScheduleRequestTriggerType, param: [KeysOfType<Settings, number | boolean>, number, boolean]) {
+  init(
+    key: keyof ScheduleRequestTypes,
+    trigger: ScheduleRequestTriggerType,
+    param: [KeysOfType<Settings, number | boolean>, number, boolean],
+  ) {
     switch (trigger) {
       case ScheduleRequestTriggerType.CONFIG: {
-        const configID = param[0], minimum = param[1] ?? 0, hasUserLimit = param[2];
+        const configID = param[0],
+          minimum = param[1] ?? 0,
+          hasUserLimit = param[2];
         const configValue = this.configs.getSettings(configID);
         if (
-          (hasUserLimit ? (this.parent.currentUID > 0) : true) && 
-          configValue && 
-          Number(configValue) >= minimum && 
+          (hasUserLimit ? this.parent.currentUID > 0 : true) &&
+          configValue &&
+          Number(configValue) >= minimum &&
           !this.find(key, hasUserLimit ? this.parent.currentUID : undefined)?.time
         ) {
           this.create(0, key, hasUserLimit ? this.parent.currentUID : undefined);
-        }
-        else if (!configValue) {
+        } else if (!configValue) {
           this.deleteByTodo(key);
         }
         break;
@@ -60,13 +70,13 @@ export class ScheduleRequestUtils {
   find(todo: keyof ScheduleRequestTypes, userID?: number | null) {
     const scheduleRequestList = this.get();
     return scheduleRequestList
-    .filter(e => e.todo === todo && (!userID || e.userID === userID))
-    .sort((a, b) => a.time - b.time)[0];
+      .filter((e) => e.todo === todo && (!userID || e.userID === userID))
+      .sort((a, b) => a.time - b.time)[0];
   }
 
   deleteByTodo(todo: keyof ScheduleRequestTypes) {
     let scheduleRequestList = this.get();
-    scheduleRequestList = scheduleRequestList.filter(e => !(e.todo === todo));
+    scheduleRequestList = scheduleRequestList.filter((e) => !(e.todo === todo));
     this.set(scheduleRequestList);
   }
 
@@ -78,20 +88,24 @@ export class ScheduleRequestUtils {
       todo: todo,
       userID: userID,
       priority: priority ?? this.requestData[todo]?.priority ?? Number.MAX_SAFE_INTEGER,
-      id: Utils.randStr(8)
+      id: Utils.randStr(8),
     });
     this.set(scheduleRequestList);
   }
 
   check() {
     let scheduleRequestList = this.get();
-    const now = (new Date()).getTime();
-    const todoList = scheduleRequestList.filter(e => e.time <= now && (e.userID === undefined || e.userID <= 0 || e.userID === this.parent.currentUID));
-    const idList = todoList.map(e => e.id);
+    const now = new Date().getTime();
+    const todoList = scheduleRequestList.filter(
+      (e) =>
+        e.time <= now &&
+        (e.userID === undefined || e.userID <= 0 || e.userID === this.parent.currentUID),
+    );
+    const idList = todoList.map((e) => e.id);
     if (todoList.length) {
       todoList.sort((a, b) => a.priority - b.priority);
-      todoList.forEach(e => this.run(e.todo));
-      scheduleRequestList = this.get().filter(e => !(idList.includes(e.id)));
+      todoList.forEach((e) => this.run(e.todo));
+      scheduleRequestList = this.get().filter((e) => !idList.includes(e.id));
       this.set(scheduleRequestList);
     }
   }

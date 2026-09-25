@@ -8,21 +8,37 @@
 }
 .btn,
 .btn-dark {
-  background: linear-gradient(45deg, var(--mcmodder-color-primary-light), var(--mcmodder-color-accent-light));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-primary-light),
+    var(--mcmodder-color-accent-light)
+  );
   color: var(--mcmodder-color-text);
   border-color: 1px solid var(--mcmodder-color-background-transparent);
 }
 .btn.btn-success,
 .btn-dark.btn-success {
-  background: linear-gradient(45deg, var(--mcmodder-color-success-light), var(--mcmodder-color-success-light-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-success-light),
+    var(--mcmodder-color-success-light-transparent1)
+  );
 }
 .btn.btn-warning,
 .btn-dark.btn-warning {
-  background: linear-gradient(45deg, var(--mcmodder-color-warning-light), var(--mcmodder-color-warning-light-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-warning-light),
+    var(--mcmodder-color-warning-light-transparent1)
+  );
 }
 .btn.btn-danger,
 .btn-dark.btn-danger {
-  background: linear-gradient(45deg, var(--mcmodder-color-danger-light), var(--mcmodder-color-danger-light-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-danger-light),
+    var(--mcmodder-color-danger-light-transparent1)
+  );
 }
 .btn:hover,
 .btn-dark:hover {
@@ -32,15 +48,27 @@
 }
 .btn.btn-success:hover,
 .btn-dark.btn-success:hover {
-  background: linear-gradient(45deg, var(--mcmodder-color-success), var(--mcmodder-color-success-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-success),
+    var(--mcmodder-color-success-transparent1)
+  );
 }
 .btn.btn-warning:hover,
 .btn-dark.btn-warning:hover {
-  background: linear-gradient(45deg, var(--mcmodder-color-warning), var(--mcmodder-color-warning-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-warning),
+    var(--mcmodder-color-warning-transparent1)
+  );
 }
 .btn.btn-danger:hover,
 .btn-dark.btn-danger:hover {
-  background: linear-gradient(45deg, var(--mcmodder-color-danger), var(--mcmodder-color-danger-transparent1));
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-danger),
+    var(--mcmodder-color-danger-transparent1)
+  );
 }
 .btn:active,
 .btn-dark:active,
@@ -67,21 +95,25 @@ body .edui-default .edui-bubble .edui-popup-content {
   color: var(--mcmodder-color-text);
 }
 .btn-outline-dark {
-  border-color: var(--mcmodder-color-primary-dark1-transparent1)
+  border-color: var(--mcmodder-color-primary-dark1-transparent1);
 }
-.common-imglist a[rel=nofollow] img,
+.common-imglist a[rel="nofollow"] img,
 .sidebar .user-info img {
-  border-radius: 50%
+  border-radius: 50%;
 }
 .common-rowlist-block .title,
 .common-imglist-block .title,
 .popover-header {
-  background: linear-gradient(90deg, var(--mcmodder-color-primary-transparent1), var(--mcmodder-color-accent-transparent1));
+  background: linear-gradient(
+    90deg,
+    var(--mcmodder-color-primary-transparent1),
+    var(--mcmodder-color-accent-transparent1)
+  );
 }
 body > .content,
 .fold-list-object-ul .count,
 .item-table-gui-slot .view,
-.table-striped > tbody > tr:nth-of-type(2n+1),
+.table-striped > tbody > tr:nth-of-type(2n + 1),
 .common-select .find-close,
 .tools-list li,
 .syntaxhighlighter .line.alt1,
@@ -120,7 +152,7 @@ body > .content,
   color: var(--mcmodder-color-text);
 }
 .itemname h5 {
-  margin: 0 0 .5em 0;
+  margin: 0 0 0.5em 0;
 }
 .item-h5-ename {
   font-size: 16px;
@@ -148,7 +180,7 @@ body > .content,
 .common-center {
   background-color: transparent;
   border: unset;
-  padding: .5em;
+  padding: 0.5em;
   border-radius: 0px;
   margin: 6em 10% 0 10%;
   width: 80%;
@@ -195,7 +227,11 @@ body > .content,
 .common-center .maintext .item-give {
   width: unset;
   border: unset;
-  background: linear-gradient(90deg,var(--mcmodder-color-primary-transparent1),var(--mcmodder-color-accent-transparent1))
+  background: linear-gradient(
+    90deg,
+    var(--mcmodder-color-primary-transparent1),
+    var(--mcmodder-color-accent-transparent1)
+  );
 }
 .common-center .maintext .item-give span {
   font-size: 14px;
@@ -210,9 +246,13 @@ body .common-nav {
   color: var(--mcmodder-color-text);
   font-family: var(--mcmodder-font-monospace);
   border-radius: 10px;
-  background: linear-gradient(90deg,var(--mcmodder-color-primary-transparent1),var(--mcmodder-color-accent-transparent1));
+  background: linear-gradient(
+    90deg,
+    var(--mcmodder-color-primary-transparent1),
+    var(--mcmodder-color-accent-transparent1)
+  );
   padding: 5px;
-  margin-right: .5em;
+  margin-right: 0.5em;
 }
 .center-content.admin-list li,
 .center-content.edit-list li,
@@ -232,7 +272,7 @@ body .header-layer {
   padding-right: 3em !important;
   backdrop-filter: blur(10px);
   background-color: var(--mcmodder-color-background);
-  border-color: var(--mcmodder-color-background-dark2)
+  border-color: var(--mcmodder-color-background-dark2);
 }
 .header-layer .header-layer-block {
   width: 250px;
@@ -240,7 +280,7 @@ body .header-layer {
 .header-menu-widget-homepage .header-layer-block.layer-category {
   width: 170px !important;
 }
-.header-layer .header-layer-block li:nth-child(2n+1) {
+.header-layer .header-layer-block li:nth-child(2n + 1) {
   margin-right: 25px;
 }
 .class-menu-page li i,
@@ -254,7 +294,7 @@ body .header-layer {
 .common-center .right .class-relation-list .relation i,
 .center-main.attitude li i {
   color: var(--mcmodder-color-primary-dark1);
-  margin-right: .5em
+  margin-right: 0.5em;
 }
 .class-excount .star .fire i {
   color: goldenrod;
@@ -264,9 +304,9 @@ body .header-layer {
 }
 .class-menu-page li,
 .class-menu-page li.active,
-.class-menu-page li:hover, 
+.class-menu-page li:hover,
 .center-menu li a,
-.center-menu li.active a, 
+.center-menu li.active a,
 .center-menu li:hover a,
 .common-menu-page li,
 .common-menu-page li.active,
@@ -276,7 +316,7 @@ body .header-layer {
 }
 .center-content.lv-info .lv-bar .progress-bar,
 #mcmodder-progress {
-  background: linear-gradient(90deg,var(--mcmodder-color-primary),var(--mcmodder-color-accent));
+  background: linear-gradient(90deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
 .common-center .right .class-info .class-info-left .author li {
   height: 60px;
@@ -310,7 +350,8 @@ body .header-layer {
 .common-center .right .class-info .class-info-lest .tag li {
   margin: 2px 5px 2px 0;
 }
-.common-select, .header-search form {
+.common-select,
+.header-search form {
   border-width: 1px;
   animation: var(--mcmodder-animation-shinyborder);
 }
@@ -326,7 +367,9 @@ body .edui-default .edui-bubble .edui-popup-content {
   max-width: unset;
   border-radius: 1rem;
   padding: 1em 2em;
-  animation: fadeIn .3s ease-out forwards, var(--mcmodder-animation-shinyborder);
+  animation:
+    fadeIn 0.3s ease-out forwards,
+    var(--mcmodder-animation-shinyborder);
   border: 2px solid;
   position: relative;
   box-shadow: 0 0 10px var(--mcmodder-color-box-shadow);
@@ -347,9 +390,13 @@ body .edui-default .edui-bubble .edui-popup-content {
 .star_block .title .hover {
   height: 100%;
   width: 50px;
-  background-image: linear-gradient(90deg, var(--mcmodder-color-primary-dark1), var(--mcmodder-color-accent-dark1));
+  background-image: linear-gradient(
+    90deg,
+    var(--mcmodder-color-primary-dark1),
+    var(--mcmodder-color-accent-dark1)
+  );
   border-radius: 1.5px;
-  transition: margin-left .3s;
+  transition: margin-left 0.3s;
 }
 body .news_block .left .hover {
   width: 62px;
@@ -365,7 +412,7 @@ body .star_block .title .hover {
 }
 .class-excount .star .block-left,
 .bootstrap-tagsinput .tag {
-  background: linear-gradient(45deg,var(--mcmodder-color-primary), var(--mcmodder-color-accent));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
 body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   position: fixed;
@@ -432,7 +479,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 }
 .header-user .header-user-info .header-panel {
   left: -200%;
-  animation: fadeIn ease-out .2s both;
+  animation: fadeIn ease-out 0.2s both;
 }
 @media (min-width: 500px) {
   .header-user .header-user-info .header-panel {
@@ -542,7 +589,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   color: var(--mcmodder-color-accent-dark2);
 }
 .mcmodder-favuser.delete-mode .user.deleted .avatar img {
-  transition: transform .2s linear;
+  transition: transform 0.2s linear;
   transform: scale(0);
 }
 @keyframes mcmodder-favuser-hover {
@@ -557,7 +604,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   }
 }
 .mcmodder-favuser a:hover .avatar {
-  animation: mcmodder-favuser-hover .5s both 1;
+  animation: mcmodder-favuser-hover 0.5s both 1;
 }
 .mcmodder-favuser:not(.delete-mode) a:hover .nickname {
   color: var(--mcmodder-color-accent-dark1);
@@ -575,18 +622,18 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
   z-index: 1;
 }
 .mcmodder-favuser.pin .user-fav .avatar:before {
-  top: -.4em;
+  top: -0.4em;
   content: "\f08d";
   color: var(--mcmodder-color-primary);
   transform: rotate(45deg);
 }
 .mcmodder-favuser.star .user-fav .avatar:before {
-  top: -.2em;
+  top: -0.2em;
   content: "\f005";
   color: gold;
 }
 .mcmodder-favuser.heart .user-fav .avatar:before {
-  top: -.2em;
+  top: -0.2em;
   content: "\f004";
   color: #f55;
 }
@@ -665,7 +712,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 }
 .mcmodder-loadername {
   font-size: 16px;
-  margin-left: .2em;
+  margin-left: 0.2em;
 }
 .common-nav,
 .common-center .left,
@@ -684,8 +731,7 @@ body .header-user .header-user-info .header-panel.mcmodder-header-panel-fixed {
 .donate-frame > *:not(hr),
 .center > fieldset,
 .center > ul:not(.common-item-mold-list),
-.center .main > div:not(.nav,
-.mbx),
+.center .main > div:not(.nav, .mbx),
 .oredict-list-table,
 .modal-content,
 *:not(.center-block) > .common-comment-block.lazy,
@@ -761,7 +807,7 @@ body > .container > *,
 .sl-state-block,
 .btn {
   border-radius: var(--mcmodder-width-radius);
-  padding: .1em var(--mcmodder-width-padding-2);
+  padding: 0.1em var(--mcmodder-width-padding-2);
   box-shadow: var(--mcmodder-color-box-shadow) 0px 2px 4px 0px;
 }
 #edui1 {
@@ -772,19 +818,23 @@ body .edui-default .edui-editor-toolbarboxouter,
   border-radius: var(--mcmodder-width-radius) var(--mcmodder-width-radius) 0 0;
 }
 body .edui-default .edui-editor-iframeholder {
-  padding: 0 .5em;
+  padding: 0 0.5em;
 }
 .mcmodder-gui-alert {
   max-width: 60%;
-  background: linear-gradient(45deg, var(--mcmodder-color-primary-transparent1), var(--mcmodder-color-accent-transparent1));
-  line-height: 1.8
+  background: linear-gradient(
+    45deg,
+    var(--mcmodder-color-primary-transparent1),
+    var(--mcmodder-color-accent-transparent1)
+  );
+  line-height: 1.8;
 }
 .mcmodder-logger {
   height: 300px;
   max-height: 300px;
   background-color: #313131;
-  margin-top: .5em;
-  padding: .5em;
+  margin-top: 0.5em;
+  padding: 0.5em;
   color: white;
   font-size: 12px;
   overflow: auto;
@@ -831,7 +881,7 @@ body .edui-default .edui-editor-iframeholder {
 .mcmodder-logger {
   border-radius: var(--mcmodder-width-radius);
   box-shadow: rgba(50, 50, 100, 0.1) 0px 2px 4px 0px;
-  padding: .2em .5em;
+  padding: 0.2em 0.5em;
   line-height: unset;
 }
 .common-comment-block .comment-row {
@@ -868,7 +918,7 @@ body .edui-default .edui-editor-iframeholder {
   left: 5px;
 }
 .header-layer-block li a i:last-child {
-  transition: right .3s;
+  transition: right 0.3s;
   right: 5px;
 }
 .header-layer-block li a:hover i:last-child {
@@ -908,7 +958,7 @@ body .edui-default .edui-toolbar .edui-menubutton .edui-state-opened .edui-menub
   border-color: var(--mcmodder-color-primary-dark1);
 }
 body .edui-default .edui-editor-toolbarboxinner {
-  padding: 2px .4em;
+  padding: 2px 0.4em;
 }
 .common-pages .page-item a:hover {
   background-color: var(--mcmodder-color-accent) !important;
@@ -943,12 +993,12 @@ body .edui-default .edui-editor-toolbarboxinner {
 }
 .modlist-filter-block ul:not(.common-class-category) li.main span,
 .center-item-popover-b {
-  background:linear-gradient(45deg,var(--mcmodder-color-primary),var(--mcmodder-color-accent));
+  background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
 .form-control:focus,
 .mcmodder-slider-tap.focus {
   border-color: var(--mcmodder-color-accent);
-  box-shadow: 0 0 0 .2em var(--mcmodder-color-accent-transparent2);
+  box-shadow: 0 0 0 0.2em var(--mcmodder-color-accent-transparent2);
 }
 .fixed-top {
   position: fixed;
@@ -959,11 +1009,11 @@ body .edui-default .edui-editor-toolbarboxinner {
 .common-center .right .class-relation-list fieldset,
 .common-center .right .class-license-list fieldset {
   border-color: var(--mcmodder-color-primary-transparent1);
-  border-radius: calc(var(--mcmodder-width-radius) * .8);
+  border-radius: calc(var(--mcmodder-width-radius) * 0.8);
 }
 .common-center .right .class-info .class-info-right {
   top: 0;
-  right: .5em;
+  right: 0.5em;
   width: 270px;
 }
 .common-class-category li .normal,
@@ -974,9 +1024,10 @@ body .edui-default .edui-editor-toolbarboxinner {
   line-height: 1.5;
   border-radius: var(--mcmodder-width-radius);
   font-weight: unset;
-  padding: .25em var(--mcmodder-width-padding-2);
+  padding: 0.25em var(--mcmodder-width-padding-2);
 }
-.class-item-type ul, .common-center .right .class-post-frame {
+.class-item-type ul,
+.common-center .right .class-post-frame {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: calc(2 * var(--mcmodder-width-padding-3));
@@ -988,7 +1039,7 @@ body .edui-default .edui-editor-toolbarboxinner {
 }
 .common-center .right .class-post-frame .post-block .info,
 .edit-tools > span {
-  padding: .2em var(--mcmodder-width-padding-3);
+  padding: 0.2em var(--mcmodder-width-padding-3);
 }
 .class-item-type li {
   margin: 0;
@@ -1069,7 +1120,7 @@ body .header-container {
   margin: 4em 1em;
 }
 .center-content.post-list .post-block {
-  padding: .2em var(--mcmodder-width-padding-3);
+  padding: 0.2em var(--mcmodder-width-padding-3);
   width: 100%;
 }
 .center-content.post-list .post-block .info .other .click {
@@ -1162,14 +1213,14 @@ body .header-container {
   border-radius: 1rem;
 }
 .news_block .right .addArea a {
-  background-image: url(https://i.mcmod.cn/editor/upload/20250331/1743434611_179043_ghtQ.png)
+  background-image: url(https://i.mcmod.cn/editor/upload/20250331/1743434611_179043_ghtQ.png);
 }
-@media(min-width:992px) {
+@media (min-width: 992px) {
   .item-text > .item-info-table {
     display: none;
   }
 }
-@media(max-width:991px) {
+@media (max-width: 991px) {
   .common-center .maintext .item-content > .item-data {
     display: none;
   }
@@ -1211,7 +1262,7 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
 .mcmodder-edui-arrow {
   text-align: center;
   line-height: 2;
-  font-size: .7em;
+  font-size: 0.7em;
 }
 .info-frame .radio {
   display: inline-block;
@@ -1238,7 +1289,7 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
 .oredict-item-list li .name .sub {
   height: 20px;
   margin-left: 5px;
-  display: inline-block
+  display: inline-block;
 }
 .oredict-item-list li .name {
   line-height: 20px;
@@ -1253,11 +1304,11 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   height: unset;
 }
 .oredict-item-list {
-  margin-left: .75rem;
-  margin-right: .75rem;
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
 }
 .class-excount.mcmodder-disable-modern {
-  margin: 1em 0 .5em 0;
+  margin: 1em 0 0.5em 0;
 }
 .common-text > div,
 .common-text > table,
@@ -1364,5 +1415,5 @@ body .edui-default .edui-toolbar .edui-menubutton .edui-state-hover .edui-menubu
 body .edui-default .edui-editor-toolbarbox {
   box-shadow: none;
   -webkit-box-shadow: none;
-  -moz-box-shadow: none; 
+  -moz-box-shadow: none;
 }

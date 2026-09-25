@@ -28,13 +28,13 @@ export const enum AdvancementID {
   USER_WORD_TODAY,
   USER_ADD_CLASS,
   USER_ADD_MODPACK,
-  USER_ADD_POST
+  USER_ADD_POST,
 }
 
 export const enum AdvancementType {
   DAILY = 1,
   COMMON,
-  SPECIAL
+  SPECIAL,
 }
 
 type LangGenerator = (tier: number) => string;
@@ -44,7 +44,6 @@ type ImageGenerator = ((tier: number) => string) | null;
 type RewardGenerator = ((tier: number) => number) | null;
 
 export class AdvancementUtils {
-
   // parent: Mcmodder;
   private readonly configs: ConfigRepository;
   private readonly list: Advancement[];
@@ -54,8 +53,16 @@ export class AdvancementUtils {
     this.list = [];
   }
 
-  add(lang: string, category: AdvancementType, id: AdvancementID, range: number,
-      exp: number, image?: string | null, reward?: number | null, tier?: number) {
+  add(
+    lang: string,
+    category: AdvancementType,
+    id: AdvancementID,
+    range: number,
+    exp: number,
+    image?: string | null,
+    reward?: number | null,
+    tier?: number,
+  ) {
     this.list.push({
       lang: lang,
       category: category,
@@ -65,13 +72,21 @@ export class AdvancementUtils {
       image: image,
       reward: reward,
       tier: tier,
-      isCustom: image ? true : false
+      isCustom: image ? true : false,
     });
     return this;
   }
 
-  addTiered(maxTier: number, langGen: LangGenerator, category: AdvancementType, id: number, 
-      rangeGen: RangeGenerator, expGen?: ExpGenerator, imageGen?: ImageGenerator, rewardGen?: RewardGenerator) {
+  addTiered(
+    maxTier: number,
+    langGen: LangGenerator,
+    category: AdvancementType,
+    id: number,
+    rangeGen: RangeGenerator,
+    expGen?: ExpGenerator,
+    imageGen?: ImageGenerator,
+    rewardGen?: RewardGenerator,
+  ) {
     for (let tier = 1; tier <= maxTier; ++tier) {
       this.add(
         langGen(tier),
@@ -81,7 +96,7 @@ export class AdvancementUtils {
         expGen ? expGen(tier) : 0,
         imageGen ? imageGen(tier) : null,
         rewardGen ? rewardGen(tier) : null,
-        tier
+        tier,
       );
       const t = this.list.slice(-2);
       if (tier > 1) {
@@ -97,7 +112,7 @@ export class AdvancementUtils {
   }
 
   getData(id: AdvancementID) {
-    return this.list.filter(e => e.id == id)[0];
+    return this.list.filter((e) => e.id == id)[0];
   }
 
   getAll() {

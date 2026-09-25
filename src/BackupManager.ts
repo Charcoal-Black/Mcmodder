@@ -18,7 +18,7 @@ export class BackupManager<BackupData> {
   }
 
   restore(): BackupData | null {
-    return this.configs.get("mcmodderBackup", this.id) as BackupData ?? null;
+    return (this.configs.get("mcmodderBackup", this.id) as BackupData) ?? null;
   }
 
   clear() {

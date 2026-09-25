@@ -1,15 +1,6 @@
 <template>
-  <span
-    ref="container"
-    class="mcmodder-dropdown-container"
-    :class="{ expanded: selected }"
-  >
-    <input
-      ref="valueInput"
-      readonly
-      class="hidden"
-      @change="onChange"
-    />
+  <span ref="container" class="mcmodder-dropdown-container" :class="{ expanded: selected }">
+    <input ref="valueInput" readonly class="hidden" @change="onChange" />
     <input
       ref="input"
       readonly
@@ -18,18 +9,18 @@
       @click="onClick"
       @focus="onFocus"
       @blur="onBlur"
-    >
+    />
   </span>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue';
-import { InputListController } from '../../../widget/InputListController.ts';
-import { useInputBase } from '../../composables/useInputBase.ts';
-import type { InputProps } from '../../../types/props';
+import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { InputListController } from "../../../widget/InputListController.ts";
+import { useInputBase } from "../../composables/useInputBase.ts";
+import type { InputProps } from "../../../types/props";
 
 interface Props extends InputProps<number> {
-  range: InputValueSet
+  range: InputValueSet;
 }
 
 const props = defineProps<Props>();
@@ -43,18 +34,14 @@ let focusLock = false;
 
 const content = computed(() => {
   return props.range[valueRef.value];
-})
+});
 
-const {
-  valueRef,
-  getValue,
-  onChange
-} = useInputBase({
+const { valueRef, getValue, onChange } = useInputBase({
   inputRef: valueInputRef,
   value: props.value,
   getDOMValue,
   validate,
-  onSuccessfulChange: props.onSuccessfulChange
+  onSuccessfulChange: props.onSuccessfulChange,
 });
 
 function getDOMValue() {
@@ -85,19 +72,20 @@ onMounted(() => {
     anchorElement: inputRef.value!,
     alwaysShowAllSuggestions: true,
     suggestionManager: {
-      onInitSuggestion: () => Object.entries(props.range).map(([value, html]) => ({ html, value }))
-    }
+      onInitSuggestion: () => Object.entries(props.range).map(([value, html]) => ({ html, value })),
+    },
   });
-})
+});
 
 function validate(newValue: number) {
-  if (Object.keys(props.range).map(Number).includes(newValue)) return {
-    isok: true,
-    final: newValue
-  };
+  if (Object.keys(props.range).map(Number).includes(newValue))
+    return {
+      isok: true,
+      final: newValue,
+    };
   return {
     isok: false,
-    msg: "你干~~嘛~~~哈哈哎~哟。"
+    msg: "你干~~嘛~~~哈哈哎~哟。",
   };
 }
 
@@ -119,7 +107,6 @@ defineExpose<InputControlRef<number>>({
   getInstance,
   getValue,
   setCurrentValue,
-  setDisplayValue
-})
-
+  setDisplayValue,
+});
 </script>

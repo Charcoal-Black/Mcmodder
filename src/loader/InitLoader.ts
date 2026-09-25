@@ -57,7 +57,7 @@ export class InitLoader {
       new AdminInit(parent),
       new StructureEditorInit(parent),
       new JsonHelperInit(parent),
-      new CommentInit(parent)
+      new CommentInit(parent),
     );
   }
 }

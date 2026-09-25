@@ -2,25 +2,29 @@ import { onMounted, shallowRef, type ShallowRef } from "vue";
 import { Utils } from "../../Utils";
 
 export function useInputBase<T>(opts: {
-  inputRef: Readonly<ShallowRef<HTMLElement | null>>,
-  value: T,
-  validate?: (newValue: T) => InputValidInfo<T>,
-  getDOMValue?: () => T,
-  setDOMValue?: (value: T) => void,
-  onSuccessfulChange?: InputSuccessfulChangeCallBack<T>
+  inputRef: Readonly<ShallowRef<HTMLElement | null>>;
+  value: T;
+  validate?: (newValue: T) => InputValidInfo<T>;
+  getDOMValue?: () => T;
+  setDOMValue?: (value: T) => void;
+  onSuccessfulChange?: InputSuccessfulChangeCallBack<T>;
 }) {
   const valueRef = shallowRef<T>(opts.value);
 
-  const validate = opts.validate ?? (newValue => {
-    return {
-      isok: valueRef.value != newValue,
-      final: newValue
-    } as InputValidInfo<T>
-  });
+  const validate =
+    opts.validate ??
+    ((newValue) => {
+      return {
+        isok: valueRef.value != newValue,
+        final: newValue,
+      } as InputValidInfo<T>;
+    });
 
-  const getDOMValue = opts.getDOMValue ?? (() => {
-    return valueRef.value;
-  });
+  const getDOMValue =
+    opts.getDOMValue ??
+    (() => {
+      return valueRef.value;
+    });
 
   function onChange() {
     const value = getDOMValue();
@@ -28,8 +32,7 @@ export function useInputBase<T>(opts: {
     if (resp.isok) {
       valueRef.value = resp.final!;
       opts.onSuccessfulChange?.(resp);
-    }
-    else {
+    } else {
       if (resp.msg) {
         Utils.commonMsg(resp.msg, false);
       }
@@ -64,6 +67,6 @@ export function useInputBase<T>(opts: {
     getInstance,
     getValue,
     setCurrentValue,
-    setDisplayValue
-  }
+    setDisplayValue,
+  };
 }

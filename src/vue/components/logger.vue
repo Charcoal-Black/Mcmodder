@@ -3,13 +3,13 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import type { Logger } from '../../widget/logger/Logger';
-import { Utils } from '../../Utils';
+import { useTemplateRef } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import type { Logger } from "../../widget/logger/Logger";
+import { Utils } from "../../Utils";
 
 interface Props {
-  parent: Mcmodder
+  parent: Mcmodder;
 }
 
 const props = defineProps<Props>();
@@ -24,7 +24,10 @@ function scrollToBottom() {
 }
 
 function write(className: string, prefix: string, message: string) {
-  root.value!.insertAdjacentHTML("beforeend", `<p class="${ className }">&lt;${ Utils.getFormatted24hTime() }&gt; ${ prefix }${ message }</span>`);
+  root.value!.insertAdjacentHTML(
+    "beforeend",
+    `<p class="${className}">&lt;${Utils.getFormatted24hTime()}&gt; ${prefix}${message}</span>`,
+  );
   if (getScrollTopMax() - root.value!.scrollTop < 100) {
     scrollToBottom();
   }
@@ -61,7 +64,6 @@ defineExpose<Logger>({
   error,
   fatal,
   key,
-  scrollToBottom
-})
-
+  scrollToBottom,
+});
 </script>

@@ -1,37 +1,44 @@
 <template>
   <div ref="root" class="mcmodder-jsonframe">
     <div class="jsonframe-menu">
-      <div ref="menuContent" class="jsonframe-menucontent" :class="{
-        'jsonframe-fixedmenu': isFixedMenuVisible
-      }" :style="{
-        width: cssMenuWidth,
-        top: cssMenuTopOffset
-      }">
+      <div
+        ref="menuContent"
+        class="jsonframe-menucontent"
+        :class="{
+          'jsonframe-fixedmenu': isFixedMenuVisible,
+        }"
+        :style="{
+          width: cssMenuWidth,
+          top: cssMenuTopOffset,
+        }"
+      >
         <select class="jsonframe-select" v-model="activeFileName">
           <option value="">选择一个JSON文件</option>
-          <option v-for="filename in selectionList" :value="filename">{{ filename }}</option>
+          <option v-for="filename in selectionList" :value="filename">
+            {{ filename }}
+          </option>
         </select>
         <template v-for="tool in tools">
           <label
             v-if="tool.labelAttr"
             v-show="tool.displayCondition"
-            :for="`jsonframe_${ id }-${ tool.id }`"
+            :for="`jsonframe_${id}-${tool.id}`"
             class="btn btn-sm"
             :class="{ 'btn-danger': tool.dangerMode }"
           >
             {{ tool.text }}
             <input
               v-show="false"
-              :id="`jsonframe_${ id }-${ tool.id }`"
+              :id="`jsonframe_${id}-${tool.id}`"
               type="file"
               accept="application/json"
               @change="tool.onClick"
-            >
+            />
           </label>
           <button
             v-else
             v-show="tool.displayCondition.value"
-            :id="`jsonframe_${ id }-${ tool.id }`"
+            :id="`jsonframe_${id}-${tool.id}`"
             class="btn btn-sm"
             :class="{ 'btn-danger': tool.dangerMode }"
             @click="tool.onClick"
@@ -56,15 +63,15 @@
 </template>
 
 <script setup lang="ts" generic="T extends TableAcceptable">
-import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { Utils } from '../../../Utils';
-import { Permission } from '../../../config/ConfigUtils';
-import { IDBRepository } from '../../../jsonframe/repository/IDBRepository.ts';
-import { GMStorageRepository } from '../../../jsonframe/repository/GMStorageRepository';
-import type { AppRepository } from '../../../jsonframe/repository/AppRepository.ts';
-import { Values } from '../../../Values';
-import GenericTable from '../table/GenericTable.vue';
-import type { GenericJsonFrameProps } from '../../../types/props';
+import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
+import { Utils } from "../../../Utils";
+import { Permission } from "../../../config/ConfigUtils";
+import { IDBRepository } from "../../../jsonframe/repository/IDBRepository.ts";
+import { GMStorageRepository } from "../../../jsonframe/repository/GMStorageRepository";
+import type { AppRepository } from "../../../jsonframe/repository/AppRepository.ts";
+import { Values } from "../../../Values";
+import GenericTable from "../table/GenericTable.vue";
+import type { GenericJsonFrameProps } from "../../../types/props";
 
 const props = defineProps<GenericJsonFrameProps<T>>();
 const configs = computed(() => props.parent.configRepository);
@@ -80,53 +87,91 @@ const selectionList = ref<string[]>([]);
 const cssMenuWidth = ref("100%");
 const cssMenuTopOffset = ref("50px");
 
-const appRepository: AppRepository<T> =
-  props.parent.configRepository.getSettings("itemRepository") ?
-  props.opts?.idbRepo?.() ?? new IDBRepository(props.configName, props.allowedKeys) :
-  props.opts?.gmStorageRepo?.() ?? new GMStorageRepository(configs.value, props.configName);
+const appRepository: AppRepository<T> = props.parent.configRepository.getSettings("itemRepository")
+  ? (props.opts?.idbRepo?.() ?? new IDBRepository(props.configName, props.allowedKeys))
+  : (props.opts?.gmStorageRepo?.() ?? new GMStorageRepository(configs.value, props.configName));
 
 onMounted(() => {
-  addTool("importLocal", "从本地导入JSON", () => true, e => {
-    const fileList = (e.target as HTMLInputElement)?.files;
-    if (!fileList) return;
-    const file = fileList[0];
-    importFromFile(file);
-  }, false, {
-    type: "file",
-    accept: "application/json"
-  });
-  addTool("new", "新建文件", () => true, () => newUnnamedJson());
-  addTool("saveedit", "保存修改", () => !!activeFileName.value || hasRearranged.value, () => saveEdit());
-  addTool("rename", "重命名", () => !!activeFileName.value && !(table.value!.unsaved), () => rename());
-  addTool("deleteall", "删除当前文件", () => !!activeFileName.value, async () => {
-    if (await tryDeleteJson(activeFileName.value)) reset();
-  });
-  addTool("more", "更多...", () => typeof props.opts?.more === "function", () => props.opts!.more!());
+  addTool(
+    "importLocal",
+    "从本地导入JSON",
+    () => true,
+    (e) => {
+      const fileList = (e.target as HTMLInputElement)?.files;
+      if (!fileList) return;
+      const file = fileList[0];
+      importFromFile(file);
+    },
+    false,
+    {
+      type: "file",
+      accept: "application/json",
+    },
+  );
+  addTool(
+    "new",
+    "新建文件",
+    () => true,
+    () => newUnnamedJson(),
+  );
+  addTool(
+    "saveedit",
+    "保存修改",
+    () => !!activeFileName.value || hasRearranged.value,
+    () => saveEdit(),
+  );
+  addTool(
+    "rename",
+    "重命名",
+    () => !!activeFileName.value && !table.value!.unsaved,
+    () => rename(),
+  );
+  addTool(
+    "deleteall",
+    "删除当前文件",
+    () => !!activeFileName.value,
+    async () => {
+      if (await tryDeleteJson(activeFileName.value)) reset();
+    },
+  );
+  addTool(
+    "more",
+    "更多...",
+    () => typeof props.opts?.more === "function",
+    () => props.opts!.more!(),
+  );
 
-  window.addEventListener("scroll", Utils.animationThrottle(() => {
-    const frameRect = root.value!.getBoundingClientRect();
-    const isFrameVisible = 
-      frameRect.top < Values.headerContainerHeight &&
-      frameRect.bottom >= Values.headerContainerHeight;
-    
-    if (isFrameVisible && !isFixedMenuVisible.value) {
-      isFixedMenuVisible.value = true;
-    }
-    else if (!isFrameVisible && isFixedMenuVisible.value) {
+  window.addEventListener(
+    "scroll",
+    Utils.animationThrottle(() => {
+      const frameRect = root.value!.getBoundingClientRect();
+      const isFrameVisible =
+        frameRect.top < Values.headerContainerHeight &&
+        frameRect.bottom >= Values.headerContainerHeight;
+
+      if (isFrameVisible && !isFixedMenuVisible.value) {
+        isFixedMenuVisible.value = true;
+      } else if (!isFrameVisible && isFixedMenuVisible.value) {
+        updateFixedMenu();
+        isFixedMenuVisible.value = false;
+      }
+    }),
+    {
+      passive: true,
+    },
+  );
+  window.addEventListener(
+    "resize",
+    Utils.animationThrottle(() => {
       updateFixedMenu();
-      isFixedMenuVisible.value = false;
-    }
-  }), {
-    passive: true
-  });
-  window.addEventListener("resize", Utils.animationThrottle(() => {
-    updateFixedMenu();
-  }), {
-    passive: true
-  });
+    }),
+    {
+      passive: true,
+    },
+  );
 
   appRepository.init().then(() => updateSelection());
-})
+});
 
 function addTool(
   id: string,
@@ -134,7 +179,7 @@ function addTool(
   displayCondition: JsonFrameToolDisplayCondition,
   onClick: JsonFrameToolOnClickCallback,
   dangerMode = false,
-  labelAttr?: object
+  labelAttr?: object,
 ) {
   tools.value.push({
     id,
@@ -142,7 +187,7 @@ function addTool(
     displayCondition: computed(displayCondition),
     onClick,
     dangerMode,
-    labelAttr
+    labelAttr,
   });
   triggerRef(tools);
 }
@@ -155,7 +200,9 @@ function purifyData(data: T) {
 }
 
 function parseText(text: string) {
-  let success = 0, fail = 0, save: T[] | undefined;
+  let success = 0,
+    fail = 0,
+    save: T[] | undefined;
   try {
     save = JSON.parse(text);
     success = 1;
@@ -166,7 +213,7 @@ function parseText(text: string) {
   return {
     success: success,
     fail: fail,
-    result: save
+    result: save,
   };
 }
 
@@ -178,9 +225,12 @@ function onCaughtParseException(err: unknown) {
 function getUniqueRegulatedFileName(name: string) {
   let regulated = Utils.regulateFileName(name);
   if (selectionList.value.includes(regulated)) {
-    let i = 2, dot = regulated.lastIndexOf("."), main = regulated.slice(0, dot), extension = regulated.slice(dot + 1);
+    let i = 2,
+      dot = regulated.lastIndexOf("."),
+      main = regulated.slice(0, dot),
+      extension = regulated.slice(dot + 1);
     let newName;
-    while ((newName = `${ main }(${ i }).${ extension }`) && selectionList.value.includes(newName)) i++;
+    while ((newName = `${main}(${i}).${extension}`) && selectionList.value.includes(newName)) i++;
     regulated = newName!;
   }
   return regulated;
@@ -190,16 +240,16 @@ async function importFromText(text: string, saveAs: string) {
   saveAs = getUniqueRegulatedFileName(saveAs);
   const { success, fail, result } = props.opts?.parseText?.(text) ?? parseText(text);
   if (success) {
-    const purified = result!.map(e => purifyData(e));
+    const purified = result!.map((e) => purifyData(e));
     await appRepository.write(saveAs, purified);
     await updateSelection();
-    Utils.commonMsg(`已读取并保存为 ${ saveAs }，其中 ${ success } 条解析成功，${ fail } 条解析失败。`);
+    Utils.commonMsg(`已读取并保存为 ${saveAs}，其中 ${success} 条解析成功，${fail} 条解析失败。`);
   }
 }
 
 function importFromFile(file: File) {
   const reader = new FileReader();
-  reader.onload = o => {
+  reader.onload = (o) => {
     const result = o.target?.result;
     if (typeof result === "string") {
       importFromText(result, file.name);
@@ -220,8 +270,8 @@ watch(
     } else {
       reset();
     }
-  }
-)
+  },
+);
 
 function updateFixedMenu() {
   cssMenuWidth.value = root.value!.getBoundingClientRect().width + "px";
@@ -237,7 +287,7 @@ function fileExistedInquire(fileName: string) {
   return swal.fire({
     type: "warning",
     title: "文件名重复",
-    text: `在脚本内部存储中已存在拥有该文件名 (${ fileName }) 的文件，继续导入将会覆盖此文件，确定要继续吗？`,
+    text: `在脚本内部存储中已存在拥有该文件名 (${fileName}) 的文件，继续导入将会覆盖此文件，确定要继续吗？`,
     showCancelButton: true,
     confirmButtonText: "覆盖",
     cancelButtonText: "取消",
@@ -246,17 +296,14 @@ function fileExistedInquire(fileName: string) {
 
 async function newJson(fileName: string, content: T[]) {
   let storages = await appRepository.listFilename();
-  if (storages.includes(fileName)) return new Promise(resolve => {
-    fileExistedInquire(fileName)
-    .then(isConfirm => {
-      if (isConfirm.value) {
-        appRepository
-        .write(fileName, content)
-        .then(() => resolve(true));
-      }
-      else resolve(false);
+  if (storages.includes(fileName))
+    return new Promise((resolve) => {
+      fileExistedInquire(fileName).then((isConfirm) => {
+        if (isConfirm.value) {
+          appRepository.write(fileName, content).then(() => resolve(true));
+        } else resolve(false);
+      });
     });
-  });
   else {
     await appRepository.write(fileName, content);
     return true;
@@ -264,7 +311,7 @@ async function newJson(fileName: string, content: T[]) {
 }
 
 async function loadJson(fileName: string) {
-  table.value!.setAllData(await appRepository.read(fileName) ?? []);
+  table.value!.setAllData((await appRepository.read(fileName)) ?? []);
   hasRearranged.value = false;
 }
 
@@ -272,11 +319,11 @@ async function newUnnamedJson() {
   const regulated = getUniqueRegulatedFileName("Unnamed.json");
   await appRepository.createFile(regulated);
   await updateSelection();
-  Utils.commonMsg(`创建了新的文件 ${ regulated } ~`);
+  Utils.commonMsg(`创建了新的文件 ${regulated} ~`);
 }
 
 async function saveEdit() {
-  if (!(table.value!.unsaved)) {
+  if (!table.value!.unsaved) {
     Utils.commonMsg("当前暂无需要保存的改动...", false);
     return;
   }
@@ -295,7 +342,7 @@ async function rename() {
     preConfirm: async () => {
       const newName = getUniqueRegulatedFileName(input.val().trim());
       if (name === newName) return;
-      
+
       const fileData = await appRepository.read(name);
       await appRepository.deleteFile(name);
       await appRepository.write(newName, fileData);
@@ -305,13 +352,15 @@ async function rename() {
       Utils.commonMsg("文件重命名成功~");
       activeFileName.value = newName;
       updateSelection();
-    }
+    },
   });
-  const input = $("#jsonframe-rename-input").val(name).change(e => {
-    const target = e.currentTarget as HTMLInputElement;
-    let newName = target.value.trim();
-    target.value = Utils.regulateFileName(newName);
-  });
+  const input = $("#jsonframe-rename-input")
+    .val(name)
+    .change((e) => {
+      const target = e.currentTarget as HTMLInputElement;
+      let newName = target.value.trim();
+      target.value = Utils.regulateFileName(newName);
+    });
   /*.keydown(e => {
     if (e.keyCode === 13) Swal.clickConfirm();
   }*/
@@ -325,26 +374,33 @@ function submitEdit() {
   const lv: number = configs.value.getProfile("lv");
   const permission: Permission = configs.value.getProfile("permission");
   if (lv < 5 && !(permission === Permission.EDITOR || permission >= Permission.ADMIN)) {
-    Utils.commonMsg("当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）", false);
+    Utils.commonMsg(
+      "当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）",
+      false,
+    );
     return;
   }
   Utils.commonMsg("此功能尚未完工，敬请期待~");
 }
 
 function fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState> {
-  return new Promise(resolve => swal.fire({
-    type: "warning",
-    title: "警告",
-    text: `您正在尝试删除 (${fileName})，此操作不可逆，确定要继续吗？`,
-    showCancelButton: true,
-    confirmButtonText: "删除",
-    cancelButtonText: "取消",
-    confirmButtonColor: "var(--mcmodder-color-danger)"
-  }).then(isConfirm => resolve(isConfirm)));
+  return new Promise((resolve) =>
+    swal
+      .fire({
+        type: "warning",
+        title: "警告",
+        text: `您正在尝试删除 (${fileName})，此操作不可逆，确定要继续吗？`,
+        showCancelButton: true,
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        confirmButtonColor: "var(--mcmodder-color-danger)",
+      })
+      .then((isConfirm) => resolve(isConfirm)),
+  );
 }
 
 async function tryDeleteJson(fileName: string) {
-  if (!isAvailableFileName(fileName)) return new Promise(resolve => resolve(false));
+  if (!isAvailableFileName(fileName)) return new Promise((resolve) => resolve(false));
   const { value: isConfirm } = await fileDeleteInquire(fileName);
   if (isConfirm) {
     await deleteJson(fileName);
@@ -352,8 +408,7 @@ async function tryDeleteJson(fileName: string) {
     Utils.commonMsg(`成功删除 ${fileName} ~`);
     updateSelection();
     return true;
-  }
-  else return false;
+  } else return false;
 }
 
 async function deleteJson(fileName: string) {
@@ -378,10 +433,10 @@ function onRefresh() {
 }
 
 const emit = defineEmits<{
-  edit: [],
-  refresh: [],
-  rename: [ newName: string, oldName: string ],
-  delete: [ filename: string ]
+  edit: [];
+  refresh: [];
+  rename: [newName: string, oldName: string];
+  delete: [filename: string];
 }>();
 
 defineExpose({
@@ -397,7 +452,6 @@ defineExpose({
 
   // 暂时没有用
   newJson,
-  onStopRearrage
-})
-
+  onStopRearrage,
+});
 </script>

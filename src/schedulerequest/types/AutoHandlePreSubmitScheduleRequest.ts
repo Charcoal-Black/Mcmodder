@@ -10,21 +10,27 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
     if (!preSubmitCheckInterval) {
       return;
     }
-    list.create(Date.now() + preSubmitCheckInterval * 60 * 60 * 1000, "autoHandlePreSubmit", this.parent.currentUID);
-    const preSubmitList: (PreSubmission | null)[] = (this.configs.getProfile("preSubmitList") as PreSubmission[]).filter(e => !e.errState);
+    list.create(
+      Date.now() + preSubmitCheckInterval * 60 * 60 * 1000,
+      "autoHandlePreSubmit",
+      this.parent.currentUID,
+    );
+    const preSubmitList: (PreSubmission | null)[] = (
+      this.configs.getProfile("preSubmitList") as PreSubmission[]
+    ).filter((e) => !e.errState);
     let f = true;
     if (!preSubmitList.length) return;
     for (const i in preSubmitList) {
       const e = preSubmitList[i]!;
       let resp = await this.parent.utils.createRequest({
         url: e.url,
-        method: "GET"
+        method: "GET",
       });
       if (!resp.responseXML) return;
       const doc = $(resp.responseXML);
       if (doc.find(".edit-user-alert.locked").length) continue;
       f = false;
-      e.config.data = `data=${ encodeURIComponent(JSON.stringify(e.rawData)) }`;
+      e.config.data = `data=${encodeURIComponent(JSON.stringify(e.rawData))}`;
       resp = await this.parent.utils.createRequest(e.config);
       console.log(resp);
       if (resp.status != 200) {

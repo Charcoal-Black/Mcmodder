@@ -33,7 +33,7 @@ const BASE_RESET_STYLE = `
  */
 export function syncVueStyles(root: ShadowRoot) {
   const sources = document.querySelectorAll("style[data-mcmodder-vue-css]");
-  sources.forEach(source => {
+  sources.forEach((source) => {
     const style = document.createElement("style");
     style.textContent = source.textContent;
     root.appendChild(style);
@@ -71,7 +71,7 @@ export function syncFontAwesome(): boolean {
   if (!faceCss) {
     faceCss = [
       "@font-face { font-family: 'FontAwesome'; src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2?v=4.7.0') format('woff2'), url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff?v=4.7.0') format('woff'); font-weight: normal; font-style: normal; }",
-      "@font-face { font-family: 'FontAwesome'; src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf?v=4.7.0') format('truetype'); font-weight: normal; font-style: normal; }"
+      "@font-face { font-family: 'FontAwesome'; src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf?v=4.7.0') format('truetype'); font-weight: normal; font-style: normal; }",
     ].join("\n");
   }
   const style = document.createElement("style");
@@ -85,15 +85,16 @@ export function mountVueApp<Props extends Record<string, any> = Record<string, a
   Component: Component<Props>,
   props?: Props,
   target?: HTMLElement | string,
-  options: { shadow?: boolean } = {}
+  options: { shadow?: boolean } = {},
 ): MountedVueApp {
-  const container = typeof target === "string" ? document.querySelector(target) : (target || document.body);
+  const container =
+    typeof target === "string" ? document.querySelector(target) : target || document.body;
   if (!container) {
-    throw new Error(`mountVueApp: 目标容器不存在 (${ String(target) })`);
+    throw new Error(`mountVueApp: 目标容器不存在 (${String(target)})`);
   }
 
   const host = document.createElement("div");
-  host.id = `${HOST_ID_PREFIX}-${ ++hostCount }`;
+  host.id = `${HOST_ID_PREFIX}-${++hostCount}`;
 
   let root: ShadowRoot | null = null;
   if (options.shadow !== false) {
@@ -133,6 +134,6 @@ export function mountVueApp<Props extends Record<string, any> = Record<string, a
     unmount() {
       app.unmount();
       host.remove();
-    }
+    },
   };
 }

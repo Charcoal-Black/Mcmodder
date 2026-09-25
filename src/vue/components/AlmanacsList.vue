@@ -12,20 +12,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Utils } from '../../Utils';
-
+import { computed } from "vue";
+import { Utils } from "../../Utils";
 
 interface Props {
-  data: string[],
-  className: string,
-  title: string
+  data: string[];
+  className: string;
+  title: string;
 }
 
 const { data } = defineProps<Props>();
 
 const range = computed(() => {
   return Utils.createRange(0, data.length, 2);
-})
-
+});
 </script>

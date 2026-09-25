@@ -15,27 +15,32 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
       return null;
     }
     const doc = $(resp.responseXML);
-    const data = this.execution!.config.getall ? Utils.parseItemEditorDocument(doc) : Utils.parseItemDocument(doc);
+    const data = this.execution!.config.getall
+      ? Utils.parseItemEditorDocument(doc)
+      : Utils.parseItemDocument(doc);
     if (data.classID != this.execution!.config.classID) {
-      this.logger.log(`${ data.id } 不属于目标模组，而是属于 ${ data.classID }`);
+      this.logger.log(`${data.id} 不属于目标模组，而是属于 ${data.classID}`);
       return null;
     }
     if ((data.itemType || 1) != this.execution!.config.typeID) {
-      this.logger.log(`${ data.id } 属于目标模组，但资料类型编号是 ${ data.itemType || 1 } 而不是 ${ this.execution!.config.typeID }`);
+      this.logger.log(
+        `${data.id} 属于目标模组，但资料类型编号是 ${data.itemType || 1} 而不是 ${this.execution!.config.typeID}`,
+      );
       return null;
     }
-    this.logger.success(`[${ data.id }] ${ Utils.getItemFullName(data.name, data.englishName) }`);
+    this.logger.success(`[${data.id}] ${Utils.getItemFullName(data.name, data.englishName)}`);
     return data;
   }
 
-  async run(itemList: ItemList, config: ItemJsonFrameConfig) { // 其实就是 STEP 2
+  async run(itemList: ItemList, config: ItemJsonFrameConfig) {
+    // 其实就是 STEP 2
     if (this.backupManager.hasBackup()) {
       await this.executeBackup();
     } else {
-      this.logger.log(`共 ${ itemList.length.toLocaleString() } 个资料`);
+      this.logger.log(`共 ${itemList.length.toLocaleString()} 个资料`);
       this.logger.log("搜索潜在资料");
 
-      const ids = itemList.map(item => item.id).sort((a, b) => a - b);
+      const ids = itemList.map((item) => item.id).sort((a, b) => a - b);
       const idsLength = ids.length;
 
       this.preExecution = {
@@ -43,7 +48,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
         itemList: itemList,
         idRanges: [],
         idsLength: idsLength,
-        checkedRangeLength: 0
+        checkedRangeLength: 0,
       };
 
       ids.push(Number.MAX_SAFE_INTEGER);
@@ -56,7 +61,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
         }
         this.preExecution.idRanges.push({
           l: ids[l],
-          r: ids[i - 1]
+          r: ids[i - 1],
         });
         prev = ids[i];
         l = i;
@@ -71,7 +76,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
         await this.execute();
       }
     }
-    
+
     this.logger.log("搜索潜在资料 完成");
     this.backupManager.clear();
     this.execution!.itemList = this.execution!.itemList.concat(this.results);
@@ -89,22 +94,34 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
       if (execution.rangeIndex >= rangeLength) {
         return null;
       }
-      if (execution.dir === -1 && ((execution.rangeIndex > 0 && nextID === execution.idRanges[execution.rangeIndex - 1].r) || nextID < 1 || forceSkip)) {
+      if (
+        execution.dir === -1 &&
+        ((execution.rangeIndex > 0 && nextID === execution.idRanges[execution.rangeIndex - 1].r) ||
+          nextID < 1 ||
+          forceSkip)
+      ) {
         execution.dir = 1;
         nextID = execution.idRanges[execution.rangeIndex].r + execution.dir;
         forceSkip = false;
         continue;
       }
-      if (execution.dir === 1 && ((execution.rangeIndex < rangeLength - 1 && nextID === execution.idRanges[execution.rangeIndex + 1].l) || forceSkip)) {
+      if (
+        execution.dir === 1 &&
+        ((execution.rangeIndex < rangeLength - 1 &&
+          nextID === execution.idRanges[execution.rangeIndex + 1].l) ||
+          forceSkip)
+      ) {
         execution.rangeIndex++;
         if (execution.rangeIndex >= rangeLength) {
           return null;
         }
         const range = execution.idRanges[execution.rangeIndex];
         execution.checkedRangeLength += range.r - range.l + 1;
-        this.logger.log(`连续区间 [${ range.l }, ${ range.r }] - ${
-          Utils.getPrecisionFormatter().format(execution.checkedRangeLength / execution.idsLength * 100)
-        }% 已完成`);
+        this.logger.log(
+          `连续区间 [${range.l}, ${range.r}] - ${Utils.getPrecisionFormatter().format(
+            (execution.checkedRangeLength / execution.idsLength) * 100,
+          )}% 已完成`,
+        );
         execution.dir = -1;
         nextID = range.l + execution.dir;
         forceSkip = false;
@@ -120,12 +137,12 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
     execution.currentID = nextID;
     return {
       config: {
-        url: execution.config.getall ?
-          `${ this.parent.hostname }/item/edit/${ execution.currentID }/` :
-          `${ this.parent.hostname }/item/${ execution.currentID }.html`,
+        url: execution.config.getall
+          ? `${this.parent.hostname}/item/edit/${execution.currentID}/`
+          : `${this.parent.hostname}/item/${execution.currentID}.html`,
         method: "GET",
-        redirect: "manual"
-      }
-    }
+        redirect: "manual",
+      },
+    };
   }
 }

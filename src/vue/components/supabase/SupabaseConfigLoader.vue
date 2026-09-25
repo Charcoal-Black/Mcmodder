@@ -1,4 +1,3 @@
-
 <template>
   <Button :on-click="onUpload">
     <i class="fa fa-cloud-upload" />
@@ -7,18 +6,18 @@
   <Button :on-click="onDownload">
     <i class="fa fa-cloud-download" />
     从云端同步所有配置数据
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
-import { GM_getValue, GM_setValue } from '$';
-import { computed } from 'vue';
-import { Mcmodder } from '../../../Mcmodder';
-import { Utils } from '../../../Utils.ts';
-import Button from '../Button.vue';
+import { GM_getValue, GM_setValue } from "$";
+import { computed } from "vue";
+import { Mcmodder } from "../../../Mcmodder";
+import { Utils } from "../../../Utils.ts";
+import Button from "../Button.vue";
 
 interface Props {
-  parent: Mcmodder
+  parent: Mcmodder;
 }
 
 const { parent } = defineProps<Props>();
@@ -32,7 +31,7 @@ async function onUpload() {
       云端若已保存配置则会被覆盖，无法撤销。是否继续？`,
     showCancelButton: true,
     confirmButtonText: "确认",
-    cancelButtonText: "取消"
+    cancelButtonText: "取消",
   });
   if (!value) return;
   const resp = await parent.supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
@@ -42,8 +41,8 @@ async function onUpload() {
         mcmodder_settings: GM_getValue("mcmodderSettings"),
         user_profile: GM_getValue("userProfile"),
         template_list: GM_getValue("templateList"),
-      }
-    }
+      },
+    },
   });
   if (resp) {
     Utils.commonMsg("已将本地配置保存至云端~");
@@ -58,13 +57,13 @@ async function onDownload() {
       本地配置将会与云端配置合并（模板则是全部覆盖），无法撤销。是否继续？`,
     showCancelButton: true,
     confirmButtonText: "确认",
-    cancelButtonText: "取消"
+    cancelButtonText: "取消",
   });
   if (!value) return;
   const resp = await parent.supabaseUtils.invoke<SupabaseSyncSettingsResponse>("sync_settings", {
     body: {
-      auth_key: configs.value.getProfile("auth_key")
-    }
+      auth_key: configs.value.getProfile("auth_key"),
+    },
   });
   if (resp) {
     let success = 0;
@@ -74,8 +73,7 @@ async function onDownload() {
         const obj2 = JSON.parse(resp.mcmodder_settings);
         GM_setValue("mcmodderSettings", JSON.stringify(Object.assign({}, obj1, obj2)));
         success++;
-      }
-      catch (e) {
+      } catch (e) {
         Utils.commonMsg(String(e), false);
       }
     }
@@ -85,8 +83,7 @@ async function onDownload() {
         const obj2 = JSON.parse(resp.user_profile);
         GM_setValue("userProfile", JSON.stringify(Object.assign({}, obj1, obj2)));
         success++;
-      }
-      catch (e) {
+      } catch (e) {
         Utils.commonMsg(String(e), false);
       }
     }
@@ -97,15 +94,12 @@ async function onDownload() {
     if (success > 0) {
       const interval = Date.now() - Date.parse(resp.last_modified);
       const formatted = Utils.getFormattedTime(interval);
-      Utils.commonMsg(`已将 ${
-        formatted
-      } 前保存在云端的 ${
-        success
-      } 项配置同步到本地，刷新标签页以查看同步后的配置~`);
+      Utils.commonMsg(
+        `已将 ${formatted} 前保存在云端的 ${success} 项配置同步到本地，刷新标签页以查看同步后的配置~`,
+      );
     } else {
       Utils.commonMsg(`本地配置未发生变化...`);
     }
   }
 }
-
 </script>

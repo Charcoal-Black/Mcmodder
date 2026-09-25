@@ -8,17 +8,20 @@
             -- 未登录状态 --
           </div>
         </li>
-        <li v-for="[uid, profile] in myProfiles" :class="{ 'profile-selected': profile.uuid === uuid }">
+        <li
+          v-for="[uid, profile] in myProfiles"
+          :class="{ 'profile-selected': profile.uuid === uuid }"
+        >
           <div class="profile-option" @click="onClick($event, uid, profile)">
             <div class="avatar">
-              <img :src="profile.avatar">
+              <img :src="profile.avatar" />
             </div>
             <div class="info">
               <div class="title">
                 <span class="uid mcmodder-slim-dark">[UID:{{ uid }}]</span>
                 <span class="username mcmodder-subtitle">{{ getSubtitle(profile) }}</span>
                 <span class="lv">
-                  <a :class="`common-user-lv lv-${ profile.lv }`">Lv.{{ profile.lv || "null" }}</a>
+                  <a :class="`common-user-lv lv-${profile.lv}`">Lv.{{ profile.lv || "null" }}</a>
                 </span>
               </div>
               <div class="text">
@@ -36,13 +39,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import ProfileAbstract from './ProfileAbstract.vue';
-import { Utils } from '../../Utils.ts';
+import { computed, ref } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import ProfileAbstract from "./ProfileAbstract.vue";
+import { Utils } from "../../Utils.ts";
 
 interface Props {
-  parent: Mcmodder
+  parent: Mcmodder;
 }
 
 const { parent } = defineProps<Props>();
@@ -50,11 +53,12 @@ const configs = computed(() => parent.configRepository);
 
 const myUID = configs.value.getSettingsWritableRefAsNumberList("myProfiles");
 const myProfiles = computed(() => {
-  return myUID.value.filter(Boolean)
-  .map(uid => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
+  return myUID.value
+    .filter(Boolean)
+    .map((uid) => [uid, configs.value.getAllProfile(uid)] as [number, Profile]);
 });
 const uuid = ref<string>();
-Utils.getUuidCookie().then(result => uuid.value = result);
+Utils.getUuidCookie().then((result) => (uuid.value = result));
 
 function getSubtitle(profile: Profile) {
   return profile.username + (profile.nickname ? ` (${profile.nickname})` : "");
@@ -64,15 +68,14 @@ function onClick(e: Event, uid: number, profile: Profile) {
   const target = e.target as HTMLElement;
   if (target.className === "delete" || target.parentElement?.className === "delete") {
     configs.value.delete("userProfile", uid.toString());
-    myUID.value = myUID.value.filter(id => id !== uid);
+    myUID.value = myUID.value.filter((id) => id !== uid);
     configs.value.setSettingsAsNumberList("myProfiles", myUID.value);
     return;
   }
-  parent.switchProfile(uid).then(result =>{
+  parent.switchProfile(uid).then((result) => {
     if (result) {
       uuid.value = profile.uuid;
     }
-  })
+  });
 }
-
 </script>

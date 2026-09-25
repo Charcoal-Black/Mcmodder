@@ -1,8 +1,8 @@
 <template>
   <Teleport to="head">
-    <link type="text/css" :href="Values.assets.mcmod.css.item" rel="stylesheet">
-    <link type="text/css" :href="Values.assets.mcmod.css.structureBrowser" rel="stylesheet">
-    <link type="text/css" :href="Values.assets.mcmod.css.bootstrapSelect" rel="stylesheet">
+    <link type="text/css" :href="Values.assets.mcmod.css.item" rel="stylesheet" />
+    <link type="text/css" :href="Values.assets.mcmod.css.structureBrowser" rel="stylesheet" />
+    <link type="text/css" :href="Values.assets.mcmod.css.bootstrapSelect" rel="stylesheet" />
   </Teleport>
   <div id="structure-container" />
   <div>
@@ -19,11 +19,11 @@
   <div>
     操作状态：
     <div class="radio">
-      <input id="previewMode" name="mode" type="radio" checked="true">
+      <input id="previewMode" name="mode" type="radio" checked="true" />
       <label for="previewMode">预览模式</label>
     </div>
     <div class="radio">
-      <input id="editMode" name="mode" type="radio">
+      <input id="editMode" name="mode" type="radio" />
       <label for="editMode">编辑模式</label>
     </div>
   </div>
@@ -39,15 +39,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, useTemplateRef } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import { TableUtils } from '../../table/Table.ts';
-import { Utils } from '../../Utils.ts';
-import GenericTable from './table/GenericTable.vue';
-import { Values } from '../../Values.ts';
+import { onMounted, ref, useTemplateRef } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import { TableUtils } from "../../table/Table.ts";
+import { Utils } from "../../Utils.ts";
+import GenericTable from "./table/GenericTable.vue";
+import { Values } from "../../Values.ts";
 
 interface Props {
-  parent: Mcmodder
+  parent: Mcmodder;
 }
 
 const { parent } = defineProps<Props>();
@@ -58,25 +58,31 @@ let blocktype = -1;
 const blockListTable = useTemplateRef("blockListTable");
 
 const blockListRowOptions = {
-  op: ["操作", (_, row) => {
-    const id = row.id;
-    if (id === undefined) {
-      throw new Error("`id` is undefined");
-    }
-    return `
+  op: [
+    "操作",
+    (_, row) => {
+      const id = row.id;
+      if (id === undefined) {
+        throw new Error("`id` is undefined");
+      }
+      return `
       <div class="radio">
-        <input class="block-selector" id="block-selector-${ id }" name="blocktype" type="radio" ${ blocktype === id ? "checked" : "" }>
-        <label for="block-selector-${ id }">选取</label>
+        <input class="block-selector" id="block-selector-${id}" name="blocktype" type="radio" ${blocktype === id ? "checked" : ""}>
+        <label for="block-selector-${id}">选取</label>
       </div>`;
-  }],
+    },
+  ],
   blockName: "方块名称",
   class: "所属模组",
-  textures: ["右-左-上-下-前-后", data => {
-    let res = "";
-    data.forEach((face: string) => res += `<img src="${ face }" width="24">`);
-    return res;
-  }],
-  itemID: ["对应资料ID", TableUtils.DISPLAYRULE_LINK_ITEM]
+  textures: [
+    "右-左-上-下-前-后",
+    (data) => {
+      let res = "";
+      data.forEach((face: string) => (res += `<img src="${face}" width="24">`));
+      return res;
+    },
+  ],
+  itemID: ["对应资料ID", TableUtils.DISPLAYRULE_LINK_ITEM],
 } as RowOptionsInitializer<StructureEditorBlocktype>;
 
 function onInputChange(e: Event) {
@@ -87,7 +93,10 @@ function onInputChange(e: Event) {
 }
 
 function onStructureSelectorChange(e: Event) {
-  parent.configRepository.setSettings("structureSelected", (e.currentTarget as HTMLInputElement).value);
+  parent.configRepository.setSettings(
+    "structureSelected",
+    (e.currentTarget as HTMLInputElement).value,
+  );
   location.reload();
 }
 
@@ -97,13 +106,20 @@ async function loadScripts() {
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.three);
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeOrbitControls);
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeTween);
-  const gridHelper = (import.meta.glob('../../js/structureGridHelper.js', { query: "?raw", eager: true })
-    ['../../js/structureGridHelper.js'] as { default: string }).default;
+  const gridHelper = (
+    import.meta.glob("../../js/structureGridHelper.js", {
+      query: "?raw",
+      eager: true,
+    })["../../js/structureGridHelper.js"] as { default: string }
+  ).default;
   Utils.loadScript(document.head, gridHelper, null, "module");
-  Utils.loadScript(document.body, `comment_container = ${ parent.configRepository.getSettings("structureSelected") || "36016" };`);
+  Utils.loadScript(
+    document.body,
+    `comment_container = ${parent.configRepository.getSettings("structureSelected") || "36016"};`,
+  );
   await Utils.loadScripts(document.body, [
     Values.assets.mcmod.js.structureBrowser,
-    Values.assets.mcmod.js.item
+    Values.assets.mcmod.js.item,
   ]);
 }
 
@@ -121,19 +137,21 @@ onMounted(async () => {
         mod: e.data.name.mod,
         // material: e.material,
         face: e.material.map((t: any) => t.map.image.src),
-        id: e.data.id
-      }
+        id: e.data.id,
+      };
       for (let j of structure_browser.blocktype_list)
         if (JSON.stringify(i) === JSON.stringify(j)) return;
       structure_browser.blocktype_list.push(i);
     });
-  }
+  };
   structure_browser.remove_block = (uuid: any) => {
     structure_browser.cube_list = structure_browser.cube_list.filter((e: any) => e.uuid != uuid);
-    structure_browser.group.children = structure_browser.group.children.filter((e: any) => e.uuid != uuid);
+    structure_browser.group.children = structure_browser.group.children.filter(
+      (e: any) => e.uuid != uuid,
+    );
     structure_browser.scene.remove(structure_browser.group);
     structure_browser.scene.add(structure_browser.group);
-  }
+  };
   let defaultDocumentMouseUp = structure_browser.onDocumentMouseUp;
   structure_browser.onDocumentMouseUp = (e: any) => {
     if ($("#previewMode").prop("checked")) defaultDocumentMouseUp(e);
@@ -141,21 +159,34 @@ onMounted(async () => {
       if (e.button != 2 || blocktype < 0) return;
       const u = structure_browser.raycaster.intersectObjects(structure_browser.cube_list);
       if (u.length) {
-        let n = u[0].face.normal, x = u[0].object.data.position[0] + n.x, z = u[0].object.data.position[1] + n.z, y = u[0].object.data.layer + n.y;
+        let n = u[0].face.normal,
+          x = u[0].object.data.position[0] + n.x,
+          z = u[0].object.data.position[1] + n.z,
+          y = u[0].object.data.layer + n.y;
         const blockData = structure_browser.blocktype_list[blocktype];
         if (!blockData) {
           Utils.commonMsg("请先在下方表格选取目标方块种类~", false);
           return;
         }
-        if (structure_browser.cube_list.filter((e: any) => (x === e.data.position[0] && y === e.data.layer && z === e.data.position[1])).length) return;
+        if (
+          structure_browser.cube_list.filter(
+            (e: any) => x === e.data.position[0] && y === e.data.layer && z === e.data.position[1],
+          ).length
+        )
+          return;
         structure_browser.set_block(
-          y - 1, [x, z],
-          [blockData.face[0].split("/texture/")[1].split("/")[0], blockData.face[0].split("/texture/")[1].split("/")[1], blockData.face[0].includes("/fill.")],
-          [blockData.id, blockData.item, blockData.mod]
+          y - 1,
+          [x, z],
+          [
+            blockData.face[0].split("/texture/")[1].split("/")[0],
+            blockData.face[0].split("/texture/")[1].split("/")[1],
+            blockData.face[0].includes("/fill."),
+          ],
+          [blockData.id, blockData.item, blockData.mod],
         );
       }
     }
-  }
+  };
   const defaultDocumentClick = structure_browser.onDocumentClick;
   structure_browser.onDocumentClick = (e: any) => {
     if ($("#previewMode").prop("checked")) defaultDocumentClick(e);
@@ -163,7 +194,7 @@ onMounted(async () => {
       const u = structure_browser.raycaster.intersectObjects(structure_browser.cube_list);
       if (u.length) structure_browser.remove_block(u[0].object.uuid);
     }
-  }
+  };
 
   await Utils.sleep(3e3);
 
@@ -176,7 +207,7 @@ onMounted(async () => {
       blockName: blocktype.item,
       class: blocktype.mod,
       textures: blocktype.face,
-      itemID: blocktype.id
+      itemID: blocktype.id,
     });
   });
   blockListTable.value!.refreshAll();
@@ -191,10 +222,9 @@ onMounted(async () => {
       cube.data.id
     ].reduce((a, b) => a + '<td>' + b + '</td>', "") + "</tr>").appendTo("#mcmodder-structure-data-menu tbody");
   });*/
-})
+});
 
 defineExpose({
-  blockListTable
-})
-
+  blockListTable,
+});
 </script>

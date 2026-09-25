@@ -7,30 +7,25 @@
     @keydown="onKeydown"
     @keyup="onKeyup"
     @blur="onBlur"
-  >
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, useTemplateRef } from 'vue';
-import { useInputBase } from '../../composables/useInputBase';
-import { Utils } from '../../../Utils';
-import type { InputProps } from '../../../types/props';
+import { computed, ref, shallowRef, useTemplateRef } from "vue";
+import { useInputBase } from "../../composables/useInputBase";
+import { Utils } from "../../../Utils";
+import type { InputProps } from "../../../types/props";
 
 const props = defineProps<InputProps<Key>>();
 
 const inputRef = useTemplateRef("inputRef");
 const valueRef = shallowRef(props.value);
 
-const {
-  getInstance,
-  getValue,
-  setCurrentValue,
-  setDisplayValue
-} = useInputBase({
+const { getInstance, getValue, setCurrentValue, setDisplayValue } = useInputBase({
   inputRef,
   value: props.value,
   validate,
-  onSuccessfulChange: props.onSuccessfulChange
+  onSuccessfulChange: props.onSuccessfulChange,
 });
 
 const keyFinished = ref(true);
@@ -60,7 +55,8 @@ function onKeydown(e: KeyboardEvent) {
 function onKeyup(e: KeyboardEvent) {
   e.preventDefault();
   if (--keyQueue.value) return;
-  const d: Key = {}, r = valueRef.value;
+  const d: Key = {},
+    r = valueRef.value;
   if (!r) return;
   if (r.ctrlKey) d.ctrlKey = true;
   if (r.shiftKey) d.shiftKey = true;
@@ -87,12 +83,12 @@ const content = computed(() => {
     return "";
   }
   return Utils.keyToString(valueRef.value);
-})
+});
 
 function validate(newValue: Key) {
   return {
     isok: true,
-    final: newValue
+    final: newValue,
   };
 }
 
@@ -100,7 +96,6 @@ defineExpose<InputControlRef<Key>>({
   getInstance,
   getValue,
   setCurrentValue,
-  setDisplayValue
-})
-
+  setDisplayValue,
+});
 </script>

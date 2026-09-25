@@ -5,7 +5,10 @@ export class GMStorageRepository<T extends object> implements AppRepository<T> {
   private readonly configs: ConfigRepository;
   private readonly configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>;
 
-  constructor(configs: ConfigRepository, configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>) {
+  constructor(
+    configs: ConfigRepository,
+    configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>,
+  ) {
     this.configs = configs;
     this.configName = configName;
   }

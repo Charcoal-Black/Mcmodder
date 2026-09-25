@@ -1,4 +1,3 @@
-
 export class FieldIndex<T extends object, P extends keyof T, K = T[P]> {
   private readonly map = new Map<K, T[]>();
   private readonly key: P;
@@ -10,7 +9,7 @@ export class FieldIndex<T extends object, P extends keyof T, K = T[P]> {
   }
 
   add(list: T[]) {
-    list.forEach(data => {
+    list.forEach((data) => {
       this.push(data);
     });
   }
@@ -19,7 +18,7 @@ export class FieldIndex<T extends object, P extends keyof T, K = T[P]> {
     const mapKey = data[this.key];
     const handledKey = this.keyHandler?.(mapKey) ?? mapKey;
     if (handledKey instanceof Array) {
-      (handledKey as K[]).forEach(key => {
+      (handledKey as K[]).forEach((key) => {
         this.pushSingle(key, data);
       });
     } else {
@@ -51,4 +50,3 @@ export class FieldIndex<T extends object, P extends keyof T, K = T[P]> {
     this.map.clear();
   }
 }
-

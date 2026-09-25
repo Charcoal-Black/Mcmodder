@@ -5,12 +5,13 @@ import { Mcmodder } from "./Mcmodder";
 type DefaultProvider<T extends keyof AppStorage> = () => AppStorage[T];
 
 export class StorageBuffer {
-
   readonly parent: Mcmodder;
   readonly storageRef: /* {
     [T in keyof AppStorage as AppStorage[T] extends Record<string, any> ? T : never]: { [K in keyof AppStorage[T]]: ShallowRef<AppStorage[T][K]> }
   } & */ {
-    [T in keyof AppStorage /* as AppStorage[T] extends Record<string, any> ? never : T */]?: ShallowRef<AppStorage[T]>
+    [
+      T in keyof AppStorage /* as AppStorage[T] extends Record<string, any> ? never : T */
+    ]?: ShallowRef<AppStorage[T]>;
   } = {};
   private readonly isDisabled: Partial<Record<keyof AppStorage, boolean>> = {};
   // private readonly synchorizedStorages = new Set<string>();
@@ -40,7 +41,9 @@ export class StorageBuffer {
     return this.isDisabled[key] !== undefined;
   }
 
-  addCacheableItem<T extends /*Exclude<*/keyof AppStorage/*, KeysOfType<AppStorage, Record<string, any>>>*/>(key: T, defaultProvider?: DefaultProvider<T>) {
+  addCacheableItem<
+    T extends /*Exclude<*/ keyof AppStorage /*, KeysOfType<AppStorage, Record<string, any>>>*/,
+  >(key: T, defaultProvider?: DefaultProvider<T>) {
     let data;
     try {
       data = JSON.parse(GM_getValue(key)) as AppStorage[T] | undefined;
@@ -49,7 +52,9 @@ export class StorageBuffer {
     }
 
     if (data !== undefined) {
-      (this.storageRef[key] as ShallowRef<AppStorage[T]>) = shallowRef(data ?? defaultProvider?.() ?? {}) as ShallowRef<AppStorage[T]>;
+      (this.storageRef[key] as ShallowRef<AppStorage[T]>) = shallowRef(
+        data ?? defaultProvider?.() ?? {},
+      ) as ShallowRef<AppStorage[T]>;
     }
 
     this.isDisabled[key] = false;

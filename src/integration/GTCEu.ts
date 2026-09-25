@@ -32,11 +32,27 @@ export const enum GTVTier {
   UIV,
   UXV,
   OpV,
-  MAX
+  MAX,
 }
 
 export class GTCEu {
-  static readonly voltageName = ["ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "UHV", "UEV", "UIV", "UXV", "OpV", "MAX"];
+  static readonly voltageName = [
+    "ULV",
+    "LV",
+    "MV",
+    "HV",
+    "EV",
+    "IV",
+    "LuV",
+    "ZPM",
+    "UV",
+    "UHV",
+    "UEV",
+    "UIV",
+    "UXV",
+    "OpV",
+    "MAX",
+  ];
   static readonly voltageColor = [8, 7, 11, 6, 5, 1, 13, 12, 3, 4, 2, 10, 14, 9, 12];
 
   static isVoltageBold(tier: GTVTier) {
@@ -58,7 +74,9 @@ export class GTCEu {
 
   static getHTMLWithPercentageByVoltage(voltage: number) {
     const tier = this.getTierByVoltage(voltage);
-    const percentage = Utils.getPrecisionFormatter().format(voltage / this.getMaxVoltageByTier(tier));
+    const percentage = Utils.getPrecisionFormatter().format(
+      voltage / this.getMaxVoltageByTier(tier),
+    );
     return `${percentage}A${this.getHTMLByVoltage(voltage)}`;
   }
 
@@ -71,7 +89,12 @@ export class GTCEu {
     }
   }
 
-  static overclock(recipe: GTCEuEnergyRecipe, tierFrom: GTVTier, tierTo: GTVTier, isPerfect: boolean) {
+  static overclock(
+    recipe: GTCEuEnergyRecipe,
+    tierFrom: GTVTier,
+    tierTo: GTVTier,
+    isPerfect: boolean,
+  ) {
     const usage = recipe.copy();
     for (let i = tierFrom; i < tierTo; i++) GTCEu.singleOverclock(usage, isPerfect);
     return usage;

@@ -7,8 +7,8 @@ export class ModlistInit extends Init {
   run() {
     $(".modlist-filter-block button").css({
       "background-color": "transparent",
-      "top": "50%",
-      "transform": "translateY(-50%)"
+      top: "50%",
+      transform: "translateY(-50%)",
     });
   }
 }

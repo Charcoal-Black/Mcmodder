@@ -30,7 +30,7 @@ export function useConfig(storageKey = "mcmodderSettings") {
       lastWritten = json;
       GM_setValue(storageKey, json);
     },
-    { deep: true }
+    { deep: true },
   );
 
   GM_addValueChangeListener(storageKey, (_key: string, _oldValue?: string, newValue?: string) => {

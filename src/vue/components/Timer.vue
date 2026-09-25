@@ -3,25 +3,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import { Mcmodder } from '../../Mcmodder';
-import { TimerUtils } from '../../widget/Timer';
+import { onMounted, onUnmounted, ref } from "vue";
+import { Mcmodder } from "../../Mcmodder";
+import { TimerUtils } from "../../widget/Timer";
 
 interface Props {
-  parent: Mcmodder,
-  dataGetter: TimerDataGetter | number,
-  updateInterval?: number,
-  dataFormatter?: TimerDataFormatter
+  parent: Mcmodder;
+  dataGetter: TimerDataGetter | number;
+  updateInterval?: number;
+  dataFormatter?: TimerDataFormatter;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   updateInterval: 1000,
-  dataFormatter: () => TimerUtils.DATAFORMATTER_EN
+  dataFormatter: () => TimerUtils.DATAFORMATTER_EN,
 });
 
-const dataGetter = typeof props.dataGetter === "number" ?
-  TimerUtils.DATAGETTER_CONSTANT(props.dataGetter) :
-  props.dataGetter;
+const dataGetter =
+  typeof props.dataGetter === "number"
+    ? TimerUtils.DATAGETTER_CONSTANT(props.dataGetter)
+    : props.dataGetter;
 const html = ref("");
 let intervalID: number | undefined;
 
@@ -30,17 +31,14 @@ onMounted(() => {
   intervalID = setInterval(() => {
     update();
   }, props.updateInterval);
-})
+});
 
 onUnmounted(() => {
   clearInterval(intervalID);
-})
+});
 
 function update() {
   let time = dataGetter();
-  html.value = time ?
-    props.dataFormatter(time - Date.now()) :
-    "-";
+  html.value = time ? props.dataFormatter(time - Date.now()) : "-";
 }
-
 </script>

@@ -1,5 +1,4 @@
 export class DraggableFrame {
-
   $instance: JQuery;
   instance: Element;
   dragging: boolean;
@@ -16,10 +15,10 @@ export class DraggableFrame {
 
     this.$instance.addClass("mcmodder-draggable");
 
-    this.instance.addEventListener("pointerdown", ev => this.onPointerdown(ev as PointerEvent));
-    this.instance.addEventListener("pointermove", ev => this.onPointermove(ev as PointerEvent));
-    this.instance.addEventListener("pointerup", ev => this.onPointerup(ev as PointerEvent));
-    this.instance.addEventListener("pointercancel", ev => this.onPointerup(ev as PointerEvent));
+    this.instance.addEventListener("pointerdown", (ev) => this.onPointerdown(ev as PointerEvent));
+    this.instance.addEventListener("pointermove", (ev) => this.onPointermove(ev as PointerEvent));
+    this.instance.addEventListener("pointerup", (ev) => this.onPointerup(ev as PointerEvent));
+    this.instance.addEventListener("pointercancel", (ev) => this.onPointerup(ev as PointerEvent));
   }
 
   private onPointerdown(e: PointerEvent) {
@@ -36,8 +35,8 @@ export class DraggableFrame {
   private onPointermove(e: PointerEvent) {
     if (!this.dragging) return;
     this.$instance.css({
-      "left": (this.startX - this.offsetX) + (e.clientX - this.startX) + 'px',
-      "top": (this.startY - this.offsetY) + (e.clientY - this.startY) + 'px'
+      left: this.startX - this.offsetX + (e.clientX - this.startX) + "px",
+      top: this.startY - this.offsetY + (e.clientY - this.startY) + "px",
     });
   }
 

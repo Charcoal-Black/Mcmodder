@@ -5,7 +5,7 @@ type NodeMap = Record<string, HTMLElement>;
 
 export class OredictCompareFrame {
   private static parse(node: JQuery): [OredictSet, NodeMap] {
-    const oredictSet: OredictSet = new Set;
+    const oredictSet: OredictSet = new Set();
     const nodes: NodeMap = {};
     node.contents().each((_, p) => {
       const text = (node.contents().get(0) as unknown as Text).data;
@@ -29,14 +29,19 @@ export class OredictCompareFrame {
     return [oredictSet, nodes];
   }
 
-  private static compare(from: OredictSet, to: OredictSet, nodes: NodeMap, className: string | string[]) {
+  private static compare(
+    from: OredictSet,
+    to: OredictSet,
+    nodes: NodeMap,
+    className: string | string[],
+  ) {
     for (const oredict of from) {
       if (to.size && !to.has(oredict)) {
         const node = nodes[oredict];
         if (!(className instanceof Array)) {
           className = [className];
         }
-        className.forEach(e => {
+        className.forEach((e) => {
           node.classList.add(e);
         });
       }

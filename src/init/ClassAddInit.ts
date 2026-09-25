@@ -7,19 +7,24 @@ export class ClassAddInit extends Init {
   }
 
   private refreshCrashList() {
-    const crashList = $('.title.text-danger').first().next();
-    crashList.children().first().append(` (${crashList.find(".text-danger").length.toLocaleString()})`);
+    const crashList = $(".title.text-danger").first().next();
+    crashList
+      .children()
+      .first()
+      .append(` (${crashList.find(".text-danger").length.toLocaleString()})`);
   }
 
   private async runCrashProtector() {
     $("#mcmodder-crash-protector").html("[刷新中...]");
     const resp = await this.parent.utils.createRequest({
-      url: `${ this.parent.hostname }/class/add/`,
-      method: "GET"
+      url: `${this.parent.hostname}/class/add/`,
+      method: "GET",
     });
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
-    $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(doc.find("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html());
+    $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(
+      doc.find("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(),
+    );
     $("#mcmodder-crash-protector").html("[刷新]");
     Utils.commonMsg("刷新成功！");
     this.refreshCrashList();
@@ -28,10 +33,10 @@ export class ClassAddInit extends Init {
   run() {
     // 提醒撞车小助手
     $('<a id="mcmodder-crash-protector">[刷新]</a>')
-    .appendTo($("div.text-danger").first())
-    .click(() => {
-      this.runCrashProtector();
-    });
+      .appendTo($("div.text-danger").first())
+      .click(() => {
+        this.runCrashProtector();
+      });
     this.refreshCrashList();
 
     if (this.configs.getSettings("classAddHelper")) {

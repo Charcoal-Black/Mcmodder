@@ -11,13 +11,12 @@
 </template>
 
 <script setup lang="ts">
-import { Values } from '../../Values';
+import { Values } from "../../Values";
 
 interface Props {
-  latestVersion: string,
-  changelog: string
+  latestVersion: string;
+  changelog: string;
 }
 
 defineProps<Props>();
-
 </script>

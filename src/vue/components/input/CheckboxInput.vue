@@ -6,47 +6,41 @@
     :data-toggle="withTooltip ? 'tooltip' : undefined"
     :data-original-title="withTooltip"
   >
-    <input :id="fullID" ref="checkbox" type="checkbox" :checked="value" @change="onChange">
+    <input :id="fullID" ref="checkbox" type="checkbox" :checked="value" @change="onChange" />
     <label :for="fullID" v-html="title" />
   </span>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue';
-import { Utils } from '../../../Utils.ts';
-import { useInputBase } from '../../composables/useInputBase.ts';
-import type { InputProps } from '../../../types/props';
+import { computed, useTemplateRef } from "vue";
+import { Utils } from "../../../Utils.ts";
+import { useInputBase } from "../../composables/useInputBase.ts";
+import type { InputProps } from "../../../types/props";
 
 interface Props extends InputProps<boolean> {
-  id?: string,
-  withLabel?: boolean,
-  withTooltip?: string
+  id?: string;
+  withLabel?: boolean;
+  withTooltip?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   id: Utils.randStr(8),
-  withLabel: false
+  withLabel: false,
 });
 
 const checkboxRef = useTemplateRef("checkbox");
 
 const fullID = computed(() => {
   return "settings-" + props.id;
-})
+});
 
-const {
-  valueRef,
-  onChange,
-  getValue,
-  setCurrentValue,
-  setDisplayValue
-} = useInputBase({
+const { valueRef, onChange, getValue, setCurrentValue, setDisplayValue } = useInputBase({
   inputRef: checkboxRef,
   value: props.value,
   validate,
   getDOMValue,
   setDOMValue,
-  onSuccessfulChange: props.onSuccessfulChange
+  onSuccessfulChange: props.onSuccessfulChange,
 });
 
 function validate(newValue: boolean): InputValidInfo<boolean> {
@@ -70,7 +64,6 @@ defineExpose<InputControlRef<boolean>>({
   getInstance,
   getValue,
   setCurrentValue,
-  setDisplayValue
-})
-
+  setDisplayValue,
+});
 </script>

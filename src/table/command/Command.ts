@@ -1,4 +1,3 @@
-
 export abstract class Command<T extends TableAcceptable> {
   self: TableContext<T>;
   constructor(self: TableContext<T>) {

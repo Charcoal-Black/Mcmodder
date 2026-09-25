@@ -2,14 +2,20 @@ import type { ConfigRepository } from "../../config/ConfigRepository";
 import { GMStorageRepository } from "./GMStorageRepository";
 import type { ItemRepository } from "./ItemRepository";
 
-export class ItemGMStorageRepository extends GMStorageRepository<Item> implements ItemRepository<string> {
+export class ItemGMStorageRepository
+  extends GMStorageRepository<Item>
+  implements ItemRepository<string>
+{
   constructor(configs: ConfigRepository) {
     super(configs, "mcmodderJsonStorage");
   }
 
   async readSearchText(filename: string) {
     const items = await this.read(filename);
-    return items.map((item, index) => ({ ...item, _primaryKey: `${ filename }/${ index }` }));
+    return items.map((item, index) => ({
+      ...item,
+      _primaryKey: `${filename}/${index}`,
+    }));
   }
 
   async readByPrimaryKeys(itemPrimaryKeys: string[]) {
@@ -26,16 +32,15 @@ export class ItemGMStorageRepository extends GMStorageRepository<Item> implement
       fileAndIndexes[itemIndex] = [filename, Number(index)];
     });
     const fileArray = new Array<string>(count);
-    fileMap.forEach((index, name) => fileArray[index] = name);
-    const contents = await Promise.all(fileArray.map(file => this.read(file)));
+    fileMap.forEach((index, name) => (fileArray[index] = name));
+    const contents = await Promise.all(fileArray.map((file) => this.read(file)));
     return fileAndIndexes.map(([file, index]) => {
       const fileIndex = fileMap.get(file);
       return contents[fileIndex!][index];
-    })
+    });
   }
 
   async readByItems(items: Item[]) {
     return items;
   }
 }
-

@@ -4,7 +4,7 @@ type NodeMap = WeakMap<Set<number>, Record<number, HTMLElement>>;
 export class RelationCompareFrame {
   private static parse(node: JQuery): [RelationMap, NodeMap] {
     const relations: RelationMap = {};
-    const nodes: NodeMap = new Map;
+    const nodes: NodeMap = new Map();
     let category: Record<string, Set<number>>;
     let title = "";
     node.children("p").each((_, p) => {
@@ -13,8 +13,7 @@ export class RelationCompareFrame {
         title = (firstChild as HTMLElement).textContent;
         category = {};
         relations[title] = category;
-      }
-      else if (firstChild?.nodeType === Node.TEXT_NODE) {
+      } else if (firstChild?.nodeType === Node.TEXT_NODE) {
         const type = (firstChild as Text).data.trim();
         const length = type.length;
         if (type.charAt(0) === "[" && type.charAt(length - 1) === "]") {
@@ -26,7 +25,7 @@ export class RelationCompareFrame {
           let relationSet = category[typeName];
           let nodeMap;
           if (relationSet === undefined) {
-            relationSet = new Set;
+            relationSet = new Set();
             nodeMap = {};
             nodes.set(relationSet, nodeMap);
             category[typeName] = relationSet;
@@ -41,11 +40,16 @@ export class RelationCompareFrame {
     return [relations, nodes];
   }
 
-  private static compare(from: RelationMap, to: RelationMap, nodes: NodeMap, className: string | string[]) {
+  private static compare(
+    from: RelationMap,
+    to: RelationMap,
+    nodes: NodeMap,
+    className: string | string[],
+  ) {
     Object.entries(from).forEach(([fromCategoryName, fromCategory]) => {
       const toCategory = to[fromCategoryName] ?? {};
       Object.entries(fromCategory).forEach(([fromTypeName, fromType]) => {
-        const toType = toCategory[fromTypeName] ?? new Set;
+        const toType = toCategory[fromTypeName] ?? new Set();
         for (const fromID of fromType) {
           if (!toType.has(fromID)) {
             const nodeRecord = nodes.get(fromType);
@@ -54,20 +58,26 @@ export class RelationCompareFrame {
               if (!(className instanceof Array)) {
                 className = [className];
               }
-              className.forEach(e => {
+              className.forEach((e) => {
                 node.classList.add(e);
-              })
+              });
             }
           }
         }
-      })
+      });
     });
   }
 
   static performCompare(prev: JQuery, next: JQuery) {
     const [prevData, prevNodes] = this.parse(prev);
     const [nextData, nextNodes] = this.parse(next);
-    this.compare(prevData, nextData, prevNodes, ["mcmodder-compare-del", "mcmodder-compare-diffline"]);
-    this.compare(nextData, prevData, nextNodes, ["mcmodder-compare-ins", "mcmodder-compare-diffline"]);
+    this.compare(prevData, nextData, prevNodes, [
+      "mcmodder-compare-del",
+      "mcmodder-compare-diffline",
+    ]);
+    this.compare(nextData, prevData, nextNodes, [
+      "mcmodder-compare-ins",
+      "mcmodder-compare-diffline",
+    ]);
   }
 }

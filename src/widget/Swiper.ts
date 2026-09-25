@@ -9,29 +9,30 @@ export class Swiper {
   private hover = false;
   private timeout?: number;
 
-  constructor(/* parent: Mcmodder, */instance: JQuery) {
+  constructor(/* parent: Mcmodder, */ instance: JQuery) {
     // this.parent = parent;
     this.instance = instance;
     this.ul = this.instance.find("ul");
     this.tab = $(`<div class="mcmodder-swiper-tab">`).appendTo(this.ul);
     this.cursor = $(`<div class="mcmodder-swiper-cursor">`).appendTo(this.tab);
     this.update();
-    this.ul.on("click", "li", () => {
-      this.update();
-    })
-    .on("pointerenter", "li", () => {
-      this.hover = true;
-      this.timeout = setTimeout(() => {
+    this.ul
+      .on("click", "li", () => {
         this.update();
-      }, 550);
-    })
-    .on("pointerleave", "li", () => {
-      if (this.hover) {
-        this.hover = false;
-        clearTimeout(this.timeout);
-        this.timeout = undefined;
-      }
-    })
+      })
+      .on("pointerenter", "li", () => {
+        this.hover = true;
+        this.timeout = setTimeout(() => {
+          this.update();
+        }, 550);
+      })
+      .on("pointerleave", "li", () => {
+        if (this.hover) {
+          this.hover = false;
+          clearTimeout(this.timeout);
+          this.timeout = undefined;
+        }
+      });
   }
 
   private update() {

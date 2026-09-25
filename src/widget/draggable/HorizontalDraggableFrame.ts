@@ -2,11 +2,11 @@ import type { ConfigRepository } from "../../config/ConfigRepository";
 import { Utils } from "../../Utils";
 
 interface HorizontalDraggableFrameConfig {
-  initPos?: number,
-  leftCollapseThreshold?: number,
-  rightCollapseThreshold?: number,
-  leftDraggableLimit?: number,
-  rightDraggableLimit?: number
+  initPos?: number;
+  leftCollapseThreshold?: number;
+  rightCollapseThreshold?: number;
+  leftDraggableLimit?: number;
+  rightDraggableLimit?: number;
 }
 
 export class HorizontalDraggableFrame {
@@ -33,20 +33,20 @@ export class HorizontalDraggableFrame {
     configs: ConfigRepository,
     attr: Record<string, string> = {},
     parent: HTMLElement = document.body,
-    config: HorizontalDraggableFrameConfig = {}
+    config: HorizontalDraggableFrameConfig = {},
   ) {
     this.id = id;
     this.configs = configs;
     this.$instance = $("<div>")
-    .attr({
-      tabindex: 0,
-      role: "separator",
-      orientation: "horizontal",
-      "aria-label": id
-    })
-    .appendTo(parent);
+      .attr({
+        tabindex: 0,
+        role: "separator",
+        orientation: "horizontal",
+        "aria-label": id,
+      })
+      .appendTo(parent);
     this.instance = this.$instance.get(0) as HTMLElement;
-    if (typeof attr === "object") Object.keys(attr).forEach(e => this.$instance.attr(e, attr[e]));
+    if (typeof attr === "object") Object.keys(attr).forEach((e) => this.$instance.attr(e, attr[e]));
     this.$instance.addClass("mcmodder-horizontal-divider");
     this.parent = parent;
     $(this.parent).css("position", "relative");
@@ -62,15 +62,27 @@ export class HorizontalDraggableFrame {
     this.leftDraggableLimit = config.leftDraggableLimit ?? 0;
     this.rightDraggableLimit = config.rightDraggableLimit ?? 1;
     this.$instance.attr({
-      "aria-valuemin": Math.round(Math.max(this.leftCollapseThreshold, this.leftDraggableLimit) * 100),
-      "aria-valuemax": Math.round(Math.min(this.rightCollapseThreshold, this.rightDraggableLimit) * 100)
+      "aria-valuemin": Math.round(
+        Math.max(this.leftCollapseThreshold, this.leftDraggableLimit) * 100,
+      ),
+      "aria-valuemax": Math.round(
+        Math.min(this.rightCollapseThreshold, this.rightDraggableLimit) * 100,
+      ),
     });
-    this.instance.addEventListener("pointerdown", ev => this.onInstancePointerdown(ev as PointerEvent));
-    this.instance.addEventListener("pointermove", ev => this.onInstancePointermove(ev as PointerEvent));
-    this.instance.addEventListener("pointerup", ev => this.onInstancePointerup(ev as PointerEvent));
-    this.instance.addEventListener("pointercancel", ev => this.onInstancePointerup(ev as PointerEvent));
+    this.instance.addEventListener("pointerdown", (ev) =>
+      this.onInstancePointerdown(ev as PointerEvent),
+    );
+    this.instance.addEventListener("pointermove", (ev) =>
+      this.onInstancePointermove(ev as PointerEvent),
+    );
+    this.instance.addEventListener("pointerup", (ev) =>
+      this.onInstancePointerup(ev as PointerEvent),
+    );
+    this.instance.addEventListener("pointercancel", (ev) =>
+      this.onInstancePointerup(ev as PointerEvent),
+    );
     this.instance.addEventListener("dblclick", () => this.onInstanceDblclick());
-    this.instance.addEventListener("keydown", ev => this.onInstanceKeydown(ev as KeyboardEvent));
+    this.instance.addEventListener("keydown", (ev) => this.onInstanceKeydown(ev as KeyboardEvent));
   }
 
   private onInstancePointerdown(e: PointerEvent) {
@@ -120,14 +132,12 @@ export class HorizontalDraggableFrame {
       const width = this.getWidth();
       const leftCollapseThresholdWidth = this.getWidth(this.leftCollapseThreshold);
       this.setHorizontalPosByWidth(Math.max(width - 10, leftCollapseThresholdWidth + 1));
-    }
-    else if (e.key === "ArrowRight") {
+    } else if (e.key === "ArrowRight") {
       e.preventDefault();
       const width = this.getWidth();
       const rightCollapseThresholdWidth = this.getWidth(this.rightCollapseThreshold);
       this.setHorizontalPosByWidth(Math.min(width + 10, rightCollapseThresholdWidth - 1));
-    }
-    else if (e.key === "Escape") {
+    } else if (e.key === "Escape") {
       this.$instance.blur();
     }
   }
@@ -151,18 +161,22 @@ export class HorizontalDraggableFrame {
     this.horizontalPos = pos;
     this.$instance.css("left", pos * 100 + "%");
     if (this.leftBindNode) {
-      this.leftBindNode.css("width", this.getLeftWidth() / this.getParentWidth() * 100 + "%");
+      this.leftBindNode.css("width", (this.getLeftWidth() / this.getParentWidth()) * 100 + "%");
       if (this.horizontalPos <= this.leftCollapseThreshold) this.leftBindNode.hide();
       else this.leftBindNode.show();
     }
     if (this.rightBindNode) {
-      this.rightBindNode.css("width", this.getRightWidth() / this.getParentWidth() * 100 + "%");
+      this.rightBindNode.css("width", (this.getRightWidth() / this.getParentWidth()) * 100 + "%");
       if (this.horizontalPos >= this.rightCollapseThreshold) this.rightBindNode.hide();
       else this.rightBindNode.show();
     }
-    this.$instance.attr("aria-valuenow", Math.round(Utils.clamp(
-      this.horizontalPos, this.leftCollapseThreshold, this.rightCollapseThreshold
-    ) * 100));
+    this.$instance.attr(
+      "aria-valuenow",
+      Math.round(
+        Utils.clamp(this.horizontalPos, this.leftCollapseThreshold, this.rightCollapseThreshold) *
+          100,
+      ),
+    );
     return this;
   }
 
@@ -173,7 +187,7 @@ export class HorizontalDraggableFrame {
   }
 
   updateHorizontalPos() {
-   return this.setHorizontalPosOnDrag(this.horizontalPos);
+    return this.setHorizontalPosOnDrag(this.horizontalPos);
   }
 
   private getParentWidth() {
@@ -195,7 +209,10 @@ export class HorizontalDraggableFrame {
   bindLeft(node: JQuery, isAbsolute = false) {
     this.leftBindNode = node;
     this.leftBindNode.insertBefore(this.instance);
-    node.addClass("mcmodder-horizontal-flex" + (isAbsolute ? " mcmodder-horizontal-flex-absolute" : ""))
+    node
+      .addClass(
+        "mcmodder-horizontal-flex" + (isAbsolute ? " mcmodder-horizontal-flex-absolute" : ""),
+      )
       .addClass("mcmodder-horizontal-flex-left");
     return this.updateHorizontalPos();
   }
@@ -203,7 +220,10 @@ export class HorizontalDraggableFrame {
   bindRight(node: JQuery, isAbsolute = true) {
     this.rightBindNode = node;
     this.rightBindNode.insertBefore(this.instance);
-    node.addClass("mcmodder-horizontal-flex" + (isAbsolute ? " mcmodder-horizontal-flex-absolute" : ""))
+    node
+      .addClass(
+        "mcmodder-horizontal-flex" + (isAbsolute ? " mcmodder-horizontal-flex-absolute" : ""),
+      )
       .addClass("mcmodder-horizontal-flex-right");
     return this.updateHorizontalPos();
   }
@@ -213,7 +233,10 @@ export class HorizontalDraggableFrame {
   }
 
   isCollapsed() {
-    return this.horizontalPos <= this.leftDraggableLimit || this.horizontalPos >= this.rightDraggableLimit;
+    return (
+      this.horizontalPos <= this.leftDraggableLimit ||
+      this.horizontalPos >= this.rightDraggableLimit
+    );
   }
 
   expandIfCollapsed() {

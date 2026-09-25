@@ -2,7 +2,7 @@ import { Mcmodder } from "../Mcmodder";
 import { TemplateFrame } from "../TemplateFrame.ts";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
-import { UEditor as UEditor } from "./UEditor"
+import { UEditor as UEditor } from "./UEditor";
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
 import html_beautify from "js-beautify";
@@ -14,7 +14,6 @@ import TextComparator from "../vue/components/TextComparator.vue";
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
 
 export class AdvancedUEditor extends UEditor {
-
   editToolsBar?: JQuery;
   optionBar?: JQuery;
   toolBar?: JQuery;
@@ -46,12 +45,14 @@ export class AdvancedUEditor extends UEditor {
   private pending = true;
   private isFrameReady = false;
 
-  private readonly templateObserver = new MutationObserver(mutationList => {
+  private readonly templateObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       const className = (mutation?.addedNodes[0] as HTMLElement)?.className;
-      if (mutation.type === "childList" && 
-      className === "swal2-container swal2-center swal2-fade swal2-shown" && 
-      $("h2#swal2-title").text() === PublicLangData.editor.template.title) {
+      if (
+        mutation.type === "childList" &&
+        className === "swal2-container swal2-center swal2-fade swal2-shown" &&
+        $("h2#swal2-title").text() === PublicLangData.editor.template.title
+      ) {
         this.template.init();
       }
     }
@@ -70,11 +71,11 @@ export class AdvancedUEditor extends UEditor {
 
   private addTool(id: string, text: string, callback: () => unknown) {
     $('<button class="btn btn-sm">')
-    .attr("id", id)
-    .text(text)
-    .hide()
-    .appendTo(this.toolBar!)
-    .click(callback);
+      .attr("id", id)
+      .text(text)
+      .hide()
+      .appendTo(this.toolBar!)
+      .click(callback);
   }
 
   protected override init(editor: any) {
@@ -133,9 +134,12 @@ export class AdvancedUEditor extends UEditor {
     `);
     this.htmlEditorOuterContainer.hide().insertBefore(this.$innerFrame);
     this.htmlEditorContainer = this.htmlEditorOuterContainer.children().last();
-    this.refreshHtmlNode = this.htmlEditorOuterContainer.find(".refresh-text").hide().click(() => {
-      this.manualTriggerHtmlUpdate();
-    });;
+    this.refreshHtmlNode = this.htmlEditorOuterContainer
+      .find(".refresh-text")
+      .hide()
+      .click(() => {
+        this.manualTriggerHtmlUpdate();
+      });
 
     this.addTool("mcmodder-tool-md", "Markdown → HTML", () => this.performMarkdownIt());
 
@@ -147,25 +151,29 @@ export class AdvancedUEditor extends UEditor {
 
     this.autoLinkFrame = $('<div class="mcmodder-autolink-frame">');
     this.autoLink = createApp(AutoLink, {
-      editor: this
+      editor: this,
     }).mount(this.autoLinkFrame.get(0)) as InstanceType<typeof AutoLink>;
 
     // 快速提交
-    this.$document.keydown(e => this.fastSubmitOverride(e));
+    this.$document.keydown((e) => this.fastSubmitOverride(e));
 
     const postRow = $(".post-row").first();
     const editTools = $(".edit-tools").first();
 
     // 按钮展示修改
-    ((this.parent.isMobileClient ? [
-      ["save", "快速存档", { ctrlKey: true, key: "S" }],
-      ["new", "存档", { ctrlKey: true, shiftKey: true, key: "S" }],
-      ["load", "读取", { ctrlKey: true, key: "O" }]
-    ] : []) as [string, string, Key][]).forEach(data => {
-      const editToolButton = editTools.find(`.${ data[0] } a`);
+    (
+      (this.parent.isMobileClient
+        ? [
+            ["save", "快速存档", { ctrlKey: true, key: "S" }],
+            ["new", "存档", { ctrlKey: true, shiftKey: true, key: "S" }],
+            ["load", "读取", { ctrlKey: true, key: "O" }],
+          ]
+        : []) as [string, string, Key][]
+    ).forEach((data) => {
+      const editToolButton = editTools.find(`.${data[0]} a`);
       if (editToolButton.length) {
         (editToolButton.get(0).lastChild as Text).data = data[1];
-        editToolButton.append(` ${ Utils.keyToHTML(data[2]) }`);
+        editToolButton.append(` ${Utils.keyToHTML(data[2])}`);
       }
     });
 
@@ -174,13 +182,13 @@ export class AdvancedUEditor extends UEditor {
       if (!editTools.length && postRow.length) {
         // $("div.col-lg-12.left").remove();
         // $("div.col-lg-12.right").css("padding-left", "0px");
-        this.statsBar = $('<span style="font-size: 12px; margin-top: 10px; position: relative;">').appendTo(postRow);
-      }
-      else {
+        this.statsBar = $(
+          '<span style="font-size: 12px; margin-top: 10px; position: relative;">',
+        ).appendTo(postRow);
+      } else {
         this.statsBar = $("<span>").appendTo(editTools);
       }
-      this.statsBar.attr('class', 'mcmodder-editor-stats')
-      .html(`<i class="fa fa-edit"></i>
+      this.statsBar.attr("class", "mcmodder-editor-stats").html(`<i class="fa fa-edit"></i>
         <span class="current-text mcmodder-common-dark" style="margin-right: 0px">0</span>
         <span style="margin-right: 0px">字节</span>
         <i class="fa fa-line-chart" style="margin-left: .8em;"></i>
@@ -191,8 +199,7 @@ export class AdvancedUEditor extends UEditor {
             <i class="fa fa-rotate-left" style="margin: 0;"></i>
             轻触刷新
           </span>
-        </span>`
-      );
+        </span>`);
 
       // 正文编辑量统计
       this.originalTextLength = 0;
@@ -218,39 +225,41 @@ export class AdvancedUEditor extends UEditor {
     });
 
     // 全屏背景不再透明
-    this.$outerFrame.find(".edui-for-fullscreen").children().click(() => {
-      if (this.isEditorFullScreen())
-        Utils.addStyle("#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-color-background);}", "mcmodder-fullscreen-style");
-      else
-        $("#mcmodder-fullscreen-style").remove();
-    });
+    this.$outerFrame
+      .find(".edui-for-fullscreen")
+      .children()
+      .click(() => {
+        if (this.isEditorFullScreen())
+          Utils.addStyle(
+            "#editor-ueeditor > .edui-editor {background-color: var(--mcmodder-color-background);}",
+            "mcmodder-fullscreen-style",
+          );
+        else $("#mcmodder-fullscreen-style").remove();
+      });
 
     if (!this.editToolsBar.length && $(".post-row").length) {
-      $(".post-row").get(0).insertBefore($(".post-row > .mcmodder-editor-stats").get(0), $(".post-row > #editor-ueeditor").get(0));
+      $(".post-row")
+        .get(0)
+        .insertBefore(
+          $(".post-row > .mcmodder-editor-stats").get(0),
+          $(".post-row > #editor-ueeditor").get(0),
+        );
     }
 
-    this.mdEditorOption = this.addOption(
-      "Markdown 编辑器",
-      "mcmodder-option-md",
-      () => this.readyMarkdownEditor()
+    this.mdEditorOption = this.addOption("Markdown 编辑器", "mcmodder-option-md", () =>
+      this.readyMarkdownEditor(),
     );
 
-    this.htmlEditorOption = this.addOption(
-      "源代码编辑器",
-      "mcmodder-option-html",
-      () => this.readyHtmlEditor(),
+    this.htmlEditorOption = this.addOption("源代码编辑器", "mcmodder-option-html", () =>
+      this.readyHtmlEditor(),
     );
 
-    this.verticalOption = this.addOption(
-      "纵向排列",
-      "mcmodder-option-vertical",
-      () => this.readyVerticalEditor(),
+    this.verticalOption = this.addOption("纵向排列", "mcmodder-option-vertical", () =>
+      this.readyVerticalEditor(),
     );
 
-    this.toolkitOption = this.addOption(
-      "实用工具",
-      "mcmodder-option-toolkit",
-      () => this.readyToolkit(),
+    this.toolkitOption = this.addOption("实用工具", "mcmodder-option-toolkit", () =>
+      this.readyToolkit(),
     );
 
     if (this.configs.getSettings("markdownIt") || this.isModrinthVer) {
@@ -264,7 +273,7 @@ export class AdvancedUEditor extends UEditor {
     let isVertical = this.configs.getSettings("editorVertical");
     if (isVertical === undefined) {
       isVertical = screen.width < 741;
-      this.configs.setSettings("editorVertical", isVertical); 
+      this.configs.setSettings("editorVertical", isVertical);
     }
     if (isVertical) {
       this.verticalOption![1].setCurrentValue(true);
@@ -275,19 +284,25 @@ export class AdvancedUEditor extends UEditor {
     }
 
     // 匿名吐槽
-    if (this.configs.getSettings("anonymousUknowtoomuch"))
-      this.anonymiseUknowtoomuch();
+    if (this.configs.getSettings("anonymousUknowtoomuch")) this.anonymiseUknowtoomuch();
   }
 
-  addOption(title: string, id: string, onSuccessfulChange: InputSuccessfulChangeCallBack<boolean>): ContainerComponentPair {
+  addOption(
+    title: string,
+    id: string,
+    onSuccessfulChange: InputSuccessfulChangeCallBack<boolean>,
+  ): ContainerComponentPair {
     const container = $("<span>").appendTo(this.optionBar!).get(0) as HTMLSpanElement;
-    return [container, createApp(CheckboxInput, {
-      title,
-      value: false,
-      onSuccessfulChange,
-      id,
-      withLabel: true
-    }).mount(container) as InstanceType<typeof CheckboxInput>];
+    return [
+      container,
+      createApp(CheckboxInput, {
+        title,
+        value: false,
+        onSuccessfulChange,
+        id,
+        withLabel: true,
+      }).mount(container) as InstanceType<typeof CheckboxInput>,
+    ];
   }
 
   override widthAutoResize() {
@@ -329,47 +344,76 @@ export class AdvancedUEditor extends UEditor {
   }
 
   private async readyMarkdownEditor() {
-    if (!this.$document || !this.head || !this.$outerFrame || !this.mdEditorContainer || !this.mdEditorOption) return;
+    if (
+      !this.$document ||
+      !this.head ||
+      !this.$outerFrame ||
+      !this.mdEditorContainer ||
+      !this.mdEditorOption
+    )
+      return;
     const c = this.mdEditorOption![1].getValue();
     if (c) {
       // await McmodderUtils.loadScript(editorDoc.head, null, "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js", null, "mcmodder-script-markdownit");
-      await Utils.loadScript(this.head, null, Values.assets.js.markdownit, null, "mcmodder-script-markdownit");
+      await Utils.loadScript(
+        this.head,
+        null,
+        Values.assets.js.markdownit,
+        null,
+        "mcmodder-script-markdownit",
+      );
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirror, null, "mcmodder-script-codemirror");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.markdown, null, "mcmodder-script-codemirror-mod-markdown");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.htmlEmbedded, null, "mcmodder-script-codemirror-mod-htmlembedded");
-      await Utils.loadStyle(document.head, null, Values.assets.css.codemirror, null, "mcmodder-style-codemirror");
-      
+      await Utils.loadStyle(
+        document.head,
+        null,
+        Values.assets.css.codemirror,
+        null,
+        "mcmodder-style-codemirror",
+      );
+
       if (!this.mdEditor) {
         this.mdEditor = CodeMirror(this.mdEditorContainer.get(0), {
           mode: "markdown",
-          theme: "mcmodder"
+          theme: "mcmodder",
         });
-        this.mdEditor.on("change", Utils.throttle(() => {
-          this.heightAutoResize();
-        }, 300));
+        this.mdEditor.on(
+          "change",
+          Utils.throttle(() => {
+            this.heightAutoResize();
+          }, 300),
+        );
         this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
         if (this.$body) {
           const content = this.$body.clone();
-          content.contents().filter((_, e) => e.tagName === "P").each((_, p) => {
-            $(p).contents().filter((_, e) => e.nodeType == Node.TEXT_NODE).each((_, e) => {
-              const textNode = e as Node as Text;
-              const text = textNode.data;
-              const matchResult = text.match(/\[h[1-6]=.*?\]/);
-              if (matchResult) matchResult.forEach(result => {
-                const index = text.indexOf(result);
-                const mid = textNode.splitText(index);
-                mid.splitText(result.length);
-                const title =  document.createElement(`h${ text.charAt(2) }`);
-                title.textContent = result.slice(4, -1);
-                mid.replaceWith(title);
-              });
+          content
+            .contents()
+            .filter((_, e) => e.tagName === "P")
+            .each((_, p) => {
+              $(p)
+                .contents()
+                .filter((_, e) => e.nodeType == Node.TEXT_NODE)
+                .each((_, e) => {
+                  const textNode = e as Node as Text;
+                  const text = textNode.data;
+                  const matchResult = text.match(/\[h[1-6]=.*?\]/);
+                  if (matchResult)
+                    matchResult.forEach((result) => {
+                      const index = text.indexOf(result);
+                      const mid = textNode.splitText(index);
+                      mid.splitText(result.length);
+                      const title = document.createElement(`h${text.charAt(2)}`);
+                      title.textContent = result.slice(4, -1);
+                      mid.replaceWith(title);
+                    });
+                });
             });
-          });
           const converted = this.turndownSurvice.turndown(content.html());
           this.mdEditor.setValue(converted);
         }
       }
-      
+
       if (this.isModrinthVer) $("#mcmodder-tool-md").click();
       $("#mcmodder-tool-md, #mcmodder-mdeditor").show();
       $(this.verticalOption![0]).show();
@@ -385,23 +429,35 @@ export class AdvancedUEditor extends UEditor {
     if (!this.htmlEditorContainer || !this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
-      await Utils.loadStyle(document.head, null, Values.assets.css.codemirror, null, "mcmodder-style-codemirror");
+      await Utils.loadStyle(
+        document.head,
+        null,
+        Values.assets.css.codemirror,
+        null,
+        "mcmodder-style-codemirror",
+      );
       if (!this.htmlEditor) {
         this.htmlEditor = CodeMirror(this.htmlEditorContainer.get(0), {
           mode: "xml",
-          theme: "mcmodder"
+          theme: "mcmodder",
         });
-        this.htmlEditor.on("change", Utils.throttle(() => {
-          this.heightAutoResize();
-        }, 300));
-        this.htmlEditor.on("change", Utils.throttle((instance: CodeMirror.Editor) => {
-          if (!this.contentLock) {
-            this.contentLock = true;
-            this.editor?.setContent(instance.getValue());
-            this.refreshHtmlNode?.hide();
-            this.contentLock = false;
-          }
-        }, 300));
+        this.htmlEditor.on(
+          "change",
+          Utils.throttle(() => {
+            this.heightAutoResize();
+          }, 300),
+        );
+        this.htmlEditor.on(
+          "change",
+          Utils.throttle((instance: CodeMirror.Editor) => {
+            if (!this.contentLock) {
+              this.contentLock = true;
+              this.editor?.setContent(instance.getValue());
+              this.refreshHtmlNode?.hide();
+              this.contentLock = false;
+            }
+          }, 300),
+        );
         this.syncHtml();
       }
       $("#mcmodder-htmleditor").show();
@@ -453,45 +509,55 @@ export class AdvancedUEditor extends UEditor {
     const htmlOutput = md.render(this.mdEditor.getValue());
     const content = this.$body?.html(htmlOutput);
     for (let i = 1; i <= 6; i++) {
-      content?.find(`h${ i }`).each((_, e) => {
+      content?.find(`h${i}`).each((_, e) => {
         const node = document.createElement("p");
-        node.textContent = `[h${ i }=${ e.textContent }]`;
+        node.textContent = `[h${i}=${e.textContent}]`;
         e.replaceWith(node);
       });
     }
 
     // 后期检测
-    this.$document.find("code").css("border", "3px solid red").each(() => {
-      Utils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~")
-    });
+    this.$document
+      .find("code")
+      .css("border", "3px solid red")
+      .each(() => {
+        Utils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~");
+      });
     this.$document.find("pre").each((_, c) => {
       $(c).html($(c).text());
-      if (!c.classList.length) Utils.commonMsg("转换结果中出现代码块 (pre)，记得设置相应语言~")
+      if (!c.classList.length) Utils.commonMsg("转换结果中出现代码块 (pre)，记得设置相应语言~");
     });
-    this.$document.find("blockquote").css("border", "3px solid red").each(() =>
-      Utils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false)
-    );
+    this.$document
+      .find("blockquote")
+      .css("border", "3px solid red")
+      .each(() =>
+        Utils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false),
+      );
 
     // 列表统一标准
-    this.$document.find("ul")
-    .addClass("list-paddingleft-2")
-    .each((_, ul) => {
-      ul.childNodes.forEach(li => {
-        if (li.nodeType === Node.ELEMENT_NODE && (li as HTMLElement).tagName === "LI") {
-          li.childNodes.forEach(e => {
-            if ((e as Text).nodeType === Node.TEXT_NODE) {
-              const p = document.createElement("p");
-              p.textContent = (e as Text).data;
-              const next = e.nextSibling;
-              if (next?.nodeType === Node.ELEMENT_NODE && (next as HTMLElement).tagName === "BR") {
-                next.remove();
+    this.$document
+      .find("ul")
+      .addClass("list-paddingleft-2")
+      .each((_, ul) => {
+        ul.childNodes.forEach((li) => {
+          if (li.nodeType === Node.ELEMENT_NODE && (li as HTMLElement).tagName === "LI") {
+            li.childNodes.forEach((e) => {
+              if ((e as Text).nodeType === Node.TEXT_NODE) {
+                const p = document.createElement("p");
+                p.textContent = (e as Text).data;
+                const next = e.nextSibling;
+                if (
+                  next?.nodeType === Node.ELEMENT_NODE &&
+                  (next as HTMLElement).tagName === "BR"
+                ) {
+                  next.remove();
+                }
+                e.replaceWith(p);
               }
-              e.replaceWith(p);
-            }
-          });
-        }
-      })
-    })
+            });
+          }
+        });
+      });
 
     this.updateEditorStats();
   }
@@ -516,7 +582,7 @@ export class AdvancedUEditor extends UEditor {
       Utils.commonMsg(`未发现 br 换行问题~`);
       return;
     }
-    ps.forEach(p => {
+    ps.forEach((p) => {
       let np = p.clone().html("").insertAfter(p);
       p.contents().each((_, e) => {
         if (e.tagName === "BR") {
@@ -527,7 +593,7 @@ export class AdvancedUEditor extends UEditor {
       });
       p.remove();
     });
-    Utils.commonMsg(`${ count } 处 br 换行问题已被修复~`);
+    Utils.commonMsg(`${count} 处 br 换行问题已被修复~`);
   }
 
   performLinkFix() {
@@ -547,7 +613,7 @@ export class AdvancedUEditor extends UEditor {
     if (!count) {
       Utils.commonMsg("未发现异常链接~");
     } else {
-      Utils.commonMsg(`${ count } 处异常链接已被修复~`);
+      Utils.commonMsg(`${count} 处异常链接已被修复~`);
     }
   }
 
@@ -557,93 +623,98 @@ export class AdvancedUEditor extends UEditor {
     const isEditable = this.body.contentEditable;
     this.body.contentEditable = "false";
 
-    this.$body.find("*").contents().filter((_, e) => e.nodeType === Node.TEXT_NODE).each((_, _text) => {
-      let first = _text as unknown as Text;
-      const matchList = first.data.match(/\[(h[1-6]=|ban:|mark:|icon:).*?\]/g);
-      matchList?.forEach(substr => {
-        const mid = first.splitText(first.data.indexOf(substr));
-        const last = mid.splitText(substr.length);
-        const temp = this.document!.createElement("a");
-        temp.classList.add("mcmodder-tempnode");
-        temp.title = substr;
+    this.$body
+      .find("*")
+      .contents()
+      .filter((_, e) => e.nodeType === Node.TEXT_NODE)
+      .each((_, _text) => {
+        let first = _text as unknown as Text;
+        const matchList = first.data.match(/\[(h[1-6]=|ban:|mark:|icon:).*?\]/g);
+        matchList?.forEach((substr) => {
+          const mid = first.splitText(first.data.indexOf(substr));
+          const last = mid.splitText(substr.length);
+          const temp = this.document!.createElement("a");
+          temp.classList.add("mcmodder-tempnode");
+          temp.title = substr;
 
-        if (substr.startsWith("[icon:")) {
-          const colon = substr.indexOf(":");
-          const equal = substr.indexOf("=");
-          const comma = substr.indexOf(",");
-          if (colon > 0 && equal > 0 && comma > 0) {
-            const name = substr.slice(colon + 1, equal);
-            const number = substr.slice(equal + 1, comma);
-            const text = substr.slice(comma + 1, -1);
-            temp.setAttribute("data-name", name);
-            temp.setAttribute("data-number", number);
-            temp.setAttribute("data-text", text);
-            if (first && /\s/.test(first.data.slice(-1))) temp.setAttribute("data-space-prev", "1");
-            if (last && /\s/.test(last?.data.slice(0))) temp.setAttribute("data-space-next", "1");
-            temp.text = number + text;
-          }
-        }
-
-        mid.replaceWith(temp);
-        first = last;
-      });
-    });
-
-    (this.window as any).pangu.spacingPage();
-    if (isEditable === "true") setTimeout(() => {
-
-      this.$body?.find(".mcmodder-tempnode").each((_, e) => {
-        const temp = e as HTMLAnchorElement;
-        const parent = temp.parentNode;
-        if (parent && temp.hasAttribute("data-name")) {
-          const name = temp.getAttribute("data-name")!;
-          const number = temp.getAttribute("data-number")!;
-          const text = temp.getAttribute("data-text")!;
-          let prependSpace = false;
-          let appendSpace = false;
-          let insertSpace = false;
-          const children = parent.childNodes;
-          const length = children.length;
-          for (let i = 0; i < length; i++) {
-            const node = children[i];
-            if (node === temp) {
-              const prev = children.item(i - 1) as Text;
-              const next = children.item(i + 1) as Text;
-              if (prev && prev.nodeType === Node.TEXT_NODE &&
-                !temp.hasAttribute("data-space-prev") &&
-                /\s/.test(prev.data.slice(-1)) &&
-                !/\s/.test(temp.text.slice(0))
-              ) {
-                prependSpace = true;
-              }
-              if (next && next.nodeType === Node.TEXT_NODE &&
-                !temp.hasAttribute("data-space-prev") &&
-                /\s/.test(next.data.slice(0)) &&
-                !/\s/.test(temp.text.slice(-1))
-              ) {
-                appendSpace = true;
-              }
-              if (`${ number } ${ text }` === temp.text) {
-                insertSpace = true;
-              }
-              const result = `${
-                prependSpace ? " " : ""
-              }[icon:${ name }=${ number },${
-                insertSpace ? " " : ""
-              }${ text }]${
-                appendSpace ? " " : ""
-              }`;
-              temp.replaceWith(result);
-              break;
+          if (substr.startsWith("[icon:")) {
+            const colon = substr.indexOf(":");
+            const equal = substr.indexOf("=");
+            const comma = substr.indexOf(",");
+            if (colon > 0 && equal > 0 && comma > 0) {
+              const name = substr.slice(colon + 1, equal);
+              const number = substr.slice(equal + 1, comma);
+              const text = substr.slice(comma + 1, -1);
+              temp.setAttribute("data-name", name);
+              temp.setAttribute("data-number", number);
+              temp.setAttribute("data-text", text);
+              if (first && /\s/.test(first.data.slice(-1)))
+                temp.setAttribute("data-space-prev", "1");
+              if (last && /\s/.test(last?.data.slice(0))) temp.setAttribute("data-space-next", "1");
+              temp.text = number + text;
             }
           }
-        }
-        temp.replaceWith(temp.title);
-        parent?.normalize();
+
+          mid.replaceWith(temp);
+          first = last;
+        });
       });
 
-      this.body!.contentEditable = "true";
-    }, 1e2);
+    (this.window as any).pangu.spacingPage();
+    if (isEditable === "true")
+      setTimeout(() => {
+        this.$body?.find(".mcmodder-tempnode").each((_, e) => {
+          const temp = e as HTMLAnchorElement;
+          const parent = temp.parentNode;
+          if (parent && temp.hasAttribute("data-name")) {
+            const name = temp.getAttribute("data-name")!;
+            const number = temp.getAttribute("data-number")!;
+            const text = temp.getAttribute("data-text")!;
+            let prependSpace = false;
+            let appendSpace = false;
+            let insertSpace = false;
+            const children = parent.childNodes;
+            const length = children.length;
+            for (let i = 0; i < length; i++) {
+              const node = children[i];
+              if (node === temp) {
+                const prev = children.item(i - 1) as Text;
+                const next = children.item(i + 1) as Text;
+                if (
+                  prev &&
+                  prev.nodeType === Node.TEXT_NODE &&
+                  !temp.hasAttribute("data-space-prev") &&
+                  /\s/.test(prev.data.slice(-1)) &&
+                  !/\s/.test(temp.text.slice(0))
+                ) {
+                  prependSpace = true;
+                }
+                if (
+                  next &&
+                  next.nodeType === Node.TEXT_NODE &&
+                  !temp.hasAttribute("data-space-prev") &&
+                  /\s/.test(next.data.slice(0)) &&
+                  !/\s/.test(temp.text.slice(-1))
+                ) {
+                  appendSpace = true;
+                }
+                if (`${number} ${text}` === temp.text) {
+                  insertSpace = true;
+                }
+                const result = `${prependSpace ? " " : ""}[icon:${name}=${number},${insertSpace ? " " : ""}${text}]${
+                  appendSpace ? " " : ""
+                }`;
+                temp.replaceWith(result);
+                break;
+              }
+            }
+          }
+          temp.replaceWith(temp.title);
+          parent?.normalize();
+        });
+
+        this.body!.contentEditable = "true";
+      }, 1e2);
   }
 
   isEditorLocked() {
@@ -663,8 +734,8 @@ export class AdvancedUEditor extends UEditor {
     for (let i = 0; i < l; i += 10) {
       s += '<tr class="edui-default">';
       for (let j = i; j < Math.min(i + 10, l); j++)
-        s += `<td style="padding: ${j < 10 ? "6px 2px 0 2px" : "0 2px"};" class="edui-default"><a hidefocus="" title="§${j.toString(16)} - ${Values.formatColors[j]}" onclick="return false;" href="javascript:" unselectable="on" class="edui-box edui-colorpicker-colorcell edui-default" data-color="#${Values.formatColors[j]}" style="background-color:#${Values.formatColors[j]};border:solid #ccc;border-width:1px;"></a></td>`
-      s += '</tr>';
+        s += `<td style="padding: ${j < 10 ? "6px 2px 0 2px" : "0 2px"};" class="edui-default"><a hidefocus="" title="§${j.toString(16)} - ${Values.formatColors[j]}" onclick="return false;" href="javascript:" unselectable="on" class="edui-box edui-colorpicker-colorcell edui-default" data-color="#${Values.formatColors[j]}" style="background-color:#${Values.formatColors[j]};border:solid #ccc;border-width:1px;"></a></td>`;
+      s += "</tr>";
     }
     $(s).appendTo(colorpicker);
 
@@ -679,14 +750,20 @@ export class AdvancedUEditor extends UEditor {
   }
 
   updateTextLengthDisplay() {
-    if (!this.currentTextNode || !this.changedTextNode || 
-      this.currentTextLength === undefined || this.changedTextLength === undefined ||
-      !this.statsBar) return;
+    if (
+      !this.currentTextNode ||
+      !this.changedTextNode ||
+      this.currentTextLength === undefined ||
+      this.changedTextLength === undefined ||
+      !this.statsBar
+    )
+      return;
     const changedTextLength = this.currentTextLength - this.originalTextLength;
     this.currentTextNode.html(this.currentTextLength.toLocaleString());
-    this.changedTextNode.attr("class", (changedTextLength < 0 ? "mcmodder-common-danger" : "mcmodder-common-light"))
+    this.changedTextNode
+      .attr("class", changedTextLength < 0 ? "mcmodder-common-danger" : "mcmodder-common-light")
       .html((changedTextLength > 0 ? "+" : "") + changedTextLength.toLocaleString());
-    const t = this.statsBar.contents().filter(i => i > 4 && i < 12);
+    const t = this.statsBar.contents().filter((i) => i > 4 && i < 12);
     if (changedTextLength) t.show();
     else t.hide();
   }
@@ -707,20 +784,27 @@ export class AdvancedUEditor extends UEditor {
     // 根据先前的正文数据计算字节变化量
     const commonNav = $(".common-nav > ul");
     this.changedTextNode.html(`<img src="${Values.assets.mcmod.loading}"></img>`);
-    const url = commonNav.children().eq(commonNav.children().length - 3).children().first().attr("href");
+    const url = commonNav
+      .children()
+      .eq(commonNav.children().length - 3)
+      .children()
+      .first()
+      .attr("href");
     const resp = await this.parent.utils.createRequest({
       url: url,
       method: "GET",
       headers: { "Content-Type": "text/html; charset=UTF-8" },
-      anonymous: true
+      anonymous: true,
     });
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
-    const textArea = doc.find(".text-area.common-text").first() || doc.find(".item-content.common-text").first();
+    const textArea =
+      doc.find(".text-area.common-text").first() || doc.find(".item-content.common-text").first();
     textArea.find(".figure").remove();
     const t1 = textArea.children().filter((_, c) => this.isNodeCountableForBytes(c as HTMLElement));
     const t2 = this.$body.children();
-    let ta = "", tb = "";
+    let ta = "",
+      tb = "";
     this.originalTextLength = 0;
     t1.each((_, e) => {
       ta += e.textContent + "\n";
@@ -741,7 +825,10 @@ export class AdvancedUEditor extends UEditor {
     if (node.className === "common-text-menu") return false;
     if (node.id.slice(0, 5) === "link_") return false;
     if (node.tagName === "SCRIPT") return false;
-    if ($(node).attr("style") === "text-align:center;color:#888;width:100%;float:left;font-size:14px;") return false;
+    if (
+      $(node).attr("style") === "text-align:center;color:#888;width:100%;float:left;font-size:14px;"
+    )
+      return false;
     return true;
   }
 
@@ -774,11 +861,13 @@ export class AdvancedUEditor extends UEditor {
 
   private calculateBytes() {
     let contextLength = 0;
-    if (this.body) $(this.body).contents()
-      .filter((_i, c) => c.tagName != "PRE")
-      .each((_i, c) => {
-        contextLength += Utils.getContextLength(c.textContent);
-      });
+    if (this.body)
+      $(this.body)
+        .contents()
+        .filter((_i, c) => c.tagName != "PRE")
+        .each((_i, c) => {
+          contextLength += Utils.getContextLength(c.textContent);
+        });
     this.updateCurrentTextLength(contextLength);
   }
 
@@ -796,21 +885,25 @@ export class AdvancedUEditor extends UEditor {
     baidu.editor.commands.uknowtoomuch.execCommand = function () {
       editor.selection.getRange().select();
       const b = editor.selection.getText();
-      return b ?
-        (editor.execCommand("insertHtml", `<span class="uknowtoomuch">${b}</span>`, true), void 0) :
-        (Utils.commonMsg(PublicLangData['warning']['inform'][164], false), void 0);
-    }
+      return b
+        ? (editor.execCommand("insertHtml", `<span class="uknowtoomuch">${b}</span>`, true), void 0)
+        : (Utils.commonMsg(PublicLangData["warning"]["inform"][164], false), void 0);
+    };
   }
 
   showAutoLinkList() {
-    Utils.createModal({ // 初始化
-      title: PublicLangData.editor.autolink.title,
-      html: `<div class="mcmodder-autolink-outerframe" />`,
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: PublicLangData.close,
-      preConfirm: () => { }
-    }, this.autoLink!.interceptEvents);
+    Utils.createModal(
+      {
+        // 初始化
+        title: PublicLangData.editor.autolink.title,
+        html: `<div class="mcmodder-autolink-outerframe" />`,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: PublicLangData.close,
+        preConfirm: () => {},
+      },
+      this.autoLink!.interceptEvents,
+    );
     this.autoLinkFrame?.appendTo(".swal2-content .mcmodder-autolink-outerframe");
     this.autoLink?.init();
   }
@@ -820,8 +913,11 @@ export class AdvancedUEditor extends UEditor {
     if (this.parent.utils.isKeyMatchConfig("keybindFastLink", e)) {
       e.preventDefault();
       this.showAutoLinkList();
-    };
-    if ($(".common-menu-area").length > 0 && (Utils.isKeyMatch({ keyCode: 33 }, e) || Utils.isKeyMatch({ keyCode: 34 }, e))) {
+    }
+    if (
+      $(".common-menu-area").length > 0 &&
+      (Utils.isKeyMatch({ keyCode: 33 }, e) || Utils.isKeyMatch({ keyCode: 34 }, e))
+    ) {
       $(".common-menu-area").hide();
       setTimeout(() => {
         $(".common-menu-area").show();

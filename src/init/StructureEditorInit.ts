@@ -5,7 +5,7 @@ import { createApp } from "vue";
 export class StructureEditorInit extends Init {
   canRun() {
     return !!(
-      this.parent.href === `${ this.parent.hostname }/mcmodder/structureeditor/` && 
+      this.parent.href === `${this.parent.hostname}/mcmodder/structureeditor/` &&
       this.configs.getSettings("enableStructureEditor")
     );
   }
@@ -19,7 +19,7 @@ export class StructureEditorInit extends Init {
     const infoFrame = $(".info-frame").html('<div class="common-text" />');
 
     createApp(StructureEditor, {
-      parent: this.parent
+      parent: this.parent,
     }).mount(infoFrame.get(0));
   }
 }

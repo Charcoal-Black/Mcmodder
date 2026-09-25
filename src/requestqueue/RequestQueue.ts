@@ -6,7 +6,6 @@ import type { Logger } from "../widget/logger/Logger";
 import { McmodderConsole } from "../widget/logger/Console";
 
 export abstract class RequestQueue {
-
   static BACKUP_FREQUENCY = 50;
 
   parent: Mcmodder;
@@ -23,13 +22,19 @@ export abstract class RequestQueue {
   running?: Set<Promise<RequestResult>>;
   results?: RequestResult[];
 
-  constructor(parent: Mcmodder, id: string, maxConcurrent = 6, minInterval = 750, logger: Logger = new McmodderConsole) {
+  constructor(
+    parent: Mcmodder,
+    id: string,
+    maxConcurrent = 6,
+    minInterval = 750,
+    logger: Logger = new McmodderConsole(),
+  ) {
     this.parent = parent;
     this.id = id;
     this.maxConcurrent = maxConcurrent;
     this.minInterval = minInterval;
     this.logger = logger;
-    this.backupManager = new BackupManager(parent, `${ id }_backup`);
+    this.backupManager = new BackupManager(parent, `${id}_backup`);
   }
 
   protected async executeBackup() {
@@ -40,9 +45,9 @@ export abstract class RequestQueue {
     }
     this.isIdle = false;
     (backup as any).runningIndex = new Set<number>(backup.runningIndex);
-    this.execution = (backup as any);
-    this.running = new Set;
-    backup.runningIndex.forEach(index => {
+    this.execution = backup as any;
+    this.running = new Set();
+    backup.runningIndex.forEach((index) => {
       this.create(index, this.minInterval);
     });
     this.logger.success("读取到先前的备份，请求队列已重启。");
@@ -50,7 +55,11 @@ export abstract class RequestQueue {
     this.backupManager.clear();
   }
 
-  protected abstract onCallback(resp: GmResponseEvent<"text", any>, index: number, queue: RequestList): any;
+  protected abstract onCallback(
+    resp: GmResponseEvent<"text", any>,
+    index: number,
+    queue: RequestList,
+  ): any;
 
   protected pausing() {
     // return new Promise<boolean>(resolve => {
@@ -62,7 +71,7 @@ export abstract class RequestQueue {
     // .then(shouldContinue => {
     //   if (!shouldContinue) return this.pausing();
     // });
-    return new Promise<void>(resolve => resolve());
+    return new Promise<void>((resolve) => resolve());
   }
 
   protected async create(index: number, interval: number, baseInterval = interval) {
@@ -73,46 +82,46 @@ export abstract class RequestQueue {
     const result: RequestResult = {
       index: index,
       success: false,
-      value: null
+      value: null,
     };
-    const promise = new Promise<GmResponseEvent<"text", any>>(resolve => {
+    const promise = new Promise<GmResponseEvent<"text", any>>((resolve) => {
       this.pausing().then(() => {
         setTimeout(() => {
           resolve(this.parent.utils.createRequest(request.config));
         }, interval);
       });
     })
-    .then(resp => {
-      if (resp.status === 200 || resp.status === 301) {
-        result.success = true;
-        result.value = this.onCallback(resp, index, this.execution!.queue);
-      }
-      else { // 网络连接成功但返回异常
-        this.logger?.error(`访问失败 ${ resp.status }: ${ resp.statusText }`);
-        console.error("Failed to access: ", resp);
-        if (resp.status === 429) {
-          this.logger?.error("等待重试");
-          this.create(index, baseInterval * 30, baseInterval);
+      .then((resp) => {
+        if (resp.status === 200 || resp.status === 301) {
+          result.success = true;
+          result.value = this.onCallback(resp, index, this.execution!.queue);
+        } else {
+          // 网络连接成功但返回异常
+          this.logger?.error(`访问失败 ${resp.status}: ${resp.statusText}`);
+          console.error("Failed to access: ", resp);
+          if (resp.status === 429) {
+            this.logger?.error("等待重试");
+            this.create(index, baseInterval * 30, baseInterval);
+          }
         }
-      }
-      return result;
-    })
-    .catch(err => { // 网络无法连接
-      if (err instanceof TypeError) {
-        console.error(err);
-        this.logger?.error("网络连接失败，等待重试");
-        this.create(index, baseInterval * 30, baseInterval);
-      }
-      else {
-        this.logger?.error("未知错误");
-        console.error(err);
-      }
-      return result;
-    })
-    .finally(() => {
-      this.running!.delete(promise);
-      this.execution!.runningIndex!.delete(index);
-    });
+        return result;
+      })
+      .catch((err) => {
+        // 网络无法连接
+        if (err instanceof TypeError) {
+          console.error(err);
+          this.logger?.error("网络连接失败，等待重试");
+          this.create(index, baseInterval * 30, baseInterval);
+        } else {
+          this.logger?.error("未知错误");
+          console.error(err);
+        }
+        return result;
+      })
+      .finally(() => {
+        this.running!.delete(promise);
+        this.execution!.runningIndex!.delete(index);
+      });
     this.running!.add(promise);
     this.execution!.runningIndex!.add(index);
   }
@@ -156,28 +165,27 @@ export abstract class RequestQueue {
       const execution: RequestQueueExecution = {
         queue: this.queue,
         results: this.getResultInitializer(this.queue.length),
-        runningIndex: new Set,
-        progress: 0
-      }
+        runningIndex: new Set(),
+        progress: 0,
+      };
       if (this.preExecution) this.execution = Object.assign(this.preExecution, execution);
       else this.execution = execution;
-      this.running = new Set;
+      this.running = new Set();
     }
     if (!this.execution || this.running === undefined) return;
     const requestLength = this.execution.queue.length;
-    while ((this.execution.progress < requestLength) || this.running.size) {
+    while (this.execution.progress < requestLength || this.running.size) {
       if (this.running.size < this.maxConcurrent && this.execution.progress < requestLength) {
         const index = this.execution.progress;
         const request = this.execution.queue[index];
         if (request !== undefined && Object.prototype.hasOwnProperty.call(request, "config")) {
           this.create(index, this.minInterval);
-        };
+        }
         this.execution.progress++;
         if (this.execution.progress % RequestQueue.BACKUP_FREQUENCY === 0) {
           this.tryBackup();
         }
-      }
-      else {
+      } else {
         const result = await Promise.race(this.running);
         this.storeResult(result);
       }

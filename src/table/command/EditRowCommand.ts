@@ -7,7 +7,7 @@ export class EditRowCommand<T extends TableAcceptable> extends BatchCommand<T> {
     super(self);
     this.index = index;
     const original = self.getData(index);
-    (Object.keys(data) as (keyof T)[]).forEach(key => {
+    (Object.keys(data) as (keyof T)[]).forEach((key) => {
       if (data[key] != original[key]) {
         this.push(new EditCommand(self, index, key, data[key]));
       }

@@ -1,15 +1,14 @@
 import { TabEditInit } from "../init/TabEditInit";
-import { FieldIndex } from "../fieldindex/FieldIndex";
 import { ItemDisplay } from "./ItemDisplay";
 
 export class RecipeDisplay {
-  protected readonly tab: TabEditInit;
-  protected readonly recipe: SimpleRecipe;
-  protected readonly instance: JQuery;
-  protected readonly itemFieldIndex: FieldIndex<Item>;
-  protected readonly tagFieldIndex: FieldIndex<Item>;
-  protected readonly guiBoundFieldIndex: FieldIndex<RecipeJsonFrameGuiBound>;
-  protected readonly guiID: number;
+  protected readonly tab;
+  protected readonly recipe;
+  protected readonly instance;
+  protected readonly itemFieldIndex;
+  protected readonly tagFieldIndex;
+  protected readonly guiBoundFieldIndex;
+  protected readonly guiID;
 
   protected readonly inputs: Record<string, ItemDisplay> = {};
   protected readonly outputs: Record<string, ItemDisplay> = {};
@@ -25,11 +24,17 @@ export class RecipeDisplay {
     this.guiID = this.guiBoundFieldIndex.getKeyOrDefault(this.recipe.gui_id, "mcmodID", -1);
 
     if (recipe.in_id) {
-      Object.keys(recipe.in_id).forEach(key => {
+      Object.keys(recipe.in_id).forEach((key) => {
         const id = recipe.in_id![key];
         const count = recipe.in_num ? recipe.in_num[key] : undefined;
         const chance = recipe.in_chance ? recipe.in_chance[key] : undefined;
-        const itemDisplay = new ItemDisplay(this.itemFieldIndex, this.tagFieldIndex, id, count, chance)
+        const itemDisplay = new ItemDisplay(
+          this.itemFieldIndex,
+          this.tagFieldIndex,
+          id,
+          count,
+          chance,
+        );
         itemDisplay.instance.appendTo(this.instance);
         this.inputs[key] = itemDisplay;
       });
@@ -40,11 +45,17 @@ export class RecipeDisplay {
     this.appendArrow();
 
     if (recipe.out_id) {
-      Object.keys(recipe.out_id).forEach(key => {
+      Object.keys(recipe.out_id).forEach((key) => {
         const id = recipe.out_id![key];
         const count = recipe.out_num ? recipe.out_num[key] : undefined;
         const chance = recipe.out_chance ? recipe.out_chance[key] : undefined;
-        const itemDisplay = new ItemDisplay(this.itemFieldIndex, this.tagFieldIndex, id, count, chance);
+        const itemDisplay = new ItemDisplay(
+          this.itemFieldIndex,
+          this.tagFieldIndex,
+          id,
+          count,
+          chance,
+        );
         itemDisplay.instance.appendTo(this.instance);
         this.outputs[key] = itemDisplay;
       });
@@ -67,26 +78,35 @@ export class RecipeDisplay {
     const spritePosition = this.getSpritePosition();
     if (spritePosition) {
       $(`<span class="mcmodder-tab-item-icon">`)
-      .css({
-        "background-position-x": -spritePosition[0] + "px",
-        "background-position-y": -spritePosition[1] + "px"
-      })
-      .appendTo(this.arrow);
+        .css({
+          "background-position-x": -spritePosition[0] + "px",
+          "background-position-y": -spritePosition[1] + "px",
+        })
+        .appendTo(this.arrow);
     }
     this.arrow.appendTo(this.instance);
   }
 
   private getSpritePosition(): [number, number] | null {
     switch (this.recipe.gui_id) {
-      case "minecraft:crafting": return [0, 0]; // 工作台
-      case "minecraft:smelting": return [34, 0]; // 熔炉
-      case "minecraft:blasting": return [68, 0]; // 高炉
-      case "minecraft:smoking": return [0, 34]; // 烟熏炉
-      case "minecraft:campfire_cooking": return [34, 34]; // 营火
-      case "minecraft:stonecutting": return [68, 34]; // 切石机
-      case "minecraft:smithing": return [0, 68]; // 锻造台
-      case "minecraft:brewing": return [34, 68]; // 酿造台
-      case "emi:grinding": return [68, 68]; // 砂轮
+      case "minecraft:crafting":
+        return [0, 0]; // 工作台
+      case "minecraft:smelting":
+        return [34, 0]; // 熔炉
+      case "minecraft:blasting":
+        return [68, 0]; // 高炉
+      case "minecraft:smoking":
+        return [0, 34]; // 烟熏炉
+      case "minecraft:campfire_cooking":
+        return [34, 34]; // 营火
+      case "minecraft:stonecutting":
+        return [68, 34]; // 切石机
+      case "minecraft:smithing":
+        return [0, 68]; // 锻造台
+      case "minecraft:brewing":
+        return [34, 68]; // 酿造台
+      case "emi:grinding":
+        return [68, 68]; // 砂轮
     }
     return null;
   }

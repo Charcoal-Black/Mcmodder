@@ -5,10 +5,11 @@ const KeyDisplay = (props: { keyData: Key }) => {
   const { keyData: key } = props;
   const list = Utils.keyToRawList(key);
   const isMac = Utils.isMac();
-  const nodes = list.map(data => {
+  const nodes = list.map((data) => {
     if (isMac) {
       switch (data) {
-        case "Ctrl": case "Control": {
+        case "Ctrl":
+        case "Control": {
           data = "⌃‌";
           break;
         }
@@ -16,19 +17,21 @@ const KeyDisplay = (props: { keyData: Key }) => {
           data = "⇧";
           break;
         }
-        case "Alt": case "Option": {
+        case "Alt":
+        case "Option": {
           data = "⌥";
           break;
         }
-        case "Meta": case "Command": {
+        case "Meta":
+        case "Command": {
           data = "⌘";
         }
       }
     }
     return h("kbd", null, data);
-  })
+  });
   return nodes;
-}
+};
 
 KeyDisplay.props = ["keyData"];
 

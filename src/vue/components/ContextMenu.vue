@@ -5,12 +5,12 @@
     :class="{
       'expand-right': classExpandRight,
       'expand-left': classExpandLeft,
-      'faded': classFaded,
+      faded: classFaded,
     }"
     v-show="!classHidden"
     :style="{
       left: cssX + 'px',
-      top: cssY + 'px'
+      top: cssY + 'px',
     }"
     tabindex="-1"
     @keydown="onMenuKeydown"
@@ -38,7 +38,6 @@
   </div>
 </template>
 <script setup lang="ts">
-
 import { onMounted, ref, useTemplateRef } from "vue";
 import { Utils } from "../../Utils";
 import KeyDisplay from "./KeyDisplay";
@@ -67,9 +66,9 @@ const cssY = ref(0);
 onMounted(() => {
   container = root.value?.parentElement!.parentElement!;
   $(container!)
-  .contextmenu(e => onContextmenu(e.originalEvent as PointerEvent))
-  .click(e => onClick(e.originalEvent as PointerEvent));
-})
+    .contextmenu((e) => onContextmenu(e.originalEvent as PointerEvent))
+    .click((e) => onClick(e.originalEvent as PointerEvent));
+});
 
 function moveTo(x: number, y: number) {
   cssX.value = x;
@@ -90,15 +89,16 @@ function show(x: number, y: number) {
     if (x && y) {
       const menuRect = root.value!.getBoundingClientRect();
       const containerRect = container!.getBoundingClientRect();
-      if (menuRect.right <= containerRect.right) { // 箭头靠左
+      if (menuRect.right <= containerRect.right) {
+        // 箭头靠左
         classExpandRight.value = true;
-      }
-      else { // 箭头靠右
+      } else {
+        // 箭头靠右
         classExpandLeft.value = true;
         nx = x + (-1.7 - 0.2) * em - menuRect.width;
         ny = y + (-0.75 - 0.2) * em;
       }
-      
+
       moveTo(nx, ny);
       root.value!.focus();
     }
@@ -165,13 +165,11 @@ function onMenuKeydown(e: KeyboardEvent) {
     if (selected.value !== -1) {
       onItemClick(selected.value);
     }
-  }
-  else if (Utils.isKeyMatch({ keyCode: 27 }, e)) {
+  } else if (Utils.isKeyMatch({ keyCode: 27 }, e)) {
     e.preventDefault();
     root.value!.blur();
     hide();
-  }
-  else if (Utils.isKeyMatch({ keyCode: 40 }, e)) {
+  } else if (Utils.isKeyMatch({ keyCode: 40 }, e)) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;
@@ -181,8 +179,7 @@ function onMenuKeydown(e: KeyboardEvent) {
     } else {
       selected.value = Math.min(selected.value + 1, activeIndexLength.value - 1);
     }
-  }
-  else if (Utils.isKeyMatch({ keyCode: 38 }, e)) {
+  } else if (Utils.isKeyMatch({ keyCode: 38 }, e)) {
     e.preventDefault();
     e.stopPropagation();
     if (activeIndexLength.value < 1) return;
@@ -238,7 +235,6 @@ function isActive() {
 defineExpose({
   addItem,
   isActive,
-  hide
-})
-
+  hide,
+});
 </script>

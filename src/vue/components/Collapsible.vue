@@ -1,12 +1,6 @@
 <template>
-  <div
-    class="mcmodder-collapsible-container"
-    :class="{ expanded: classExpanded }"
-  >
-    <div
-      class="mcmodder-collapsible-header"
-      @click="onClick"
-    >
+  <div class="mcmodder-collapsible-container" :class="{ expanded: classExpanded }">
+    <div class="mcmodder-collapsible-header" @click="onClick">
       <slot name="header" />
     </div>
     <div class="mcmodder-collapsible-content">
@@ -16,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 interface Props {
   onClick?: (e: PointerEvent) => any;
@@ -30,5 +24,4 @@ function onClick(e: PointerEvent) {
   classExpanded.value = !classExpanded.value;
   props.onClick?.(e);
 }
-
 </script>

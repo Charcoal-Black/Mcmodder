@@ -43,21 +43,20 @@ export class TemplateFrame {
   init() {
     $(".group li").remove();
     const groupUl = $(".group ul");
-    this.list.forEach(item => {
-      const entry = $(`<li data-tag="${ item.id }">
-        <p class="title">${ item.title }</p>
-        <p class="text">${ item.description }</p>
+    this.list.forEach((item) => {
+      const entry = $(`<li data-tag="${item.id}">
+        <p class="title">${item.title}</p>
+        <p class="text">${item.description}</p>
       </li>`).appendTo(groupUl);
       if (!item.description) entry.find(".text").hide();
     });
     const groupLi = groupUl.find("li");
-    groupUl.on("click", "li", e => {
+    groupUl.on("click", "li", (e) => {
       const menu = this.currentContextMenu;
       const isActive = menu?.isActive();
       if (!menu || !isActive) {
         this.load(e.currentTarget.getAttribute("data-tag"));
-      }
-      else if (menu && isActive) {
+      } else if (menu && isActive) {
         menu.hide();
       }
     });
@@ -74,55 +73,58 @@ export class TemplateFrame {
     this.newDescription = $("#mcmodder-template-newdescription").hide();
 
     $('<input id="mcmodder-template-search" class="form-control" placeholder="搜索..">')
-    .insertAfter(".common-template-frame .input-group")
-    .bind("change", () => {
-      const s: string[] = $(".common-template-frame .form-control").val().trim().split(" ");
-      groupLi.each((_, c) => {
-        let flag = false;
-        const target = $(c);
-        if (!target.find("#mcmodder-template-add").length) s.forEach(d => {
-          if (!c.textContent.includes(d)) flag = true;
+      .insertAfter(".common-template-frame .input-group")
+      .bind("change", () => {
+        const s: string[] = $(".common-template-frame .form-control").val().trim().split(" ");
+        groupLi.each((_, c) => {
+          let flag = false;
+          const target = $(c);
+          if (!target.find("#mcmodder-template-add").length)
+            s.forEach((d) => {
+              if (!c.textContent.includes(d)) flag = true;
+            });
+          if (flag) {
+            target.hide();
+          } else {
+            target.show();
+          }
         });
-        if (flag) {
-          target.hide();
-        } else {
-          target.show();
-        }
       });
-    });
 
-    this.currentContextMenu = createApp(ContextMenu)
-      .mount($("<div>").appendTo(".group").get(0)) as InstanceType<typeof ContextMenu>;
+    this.currentContextMenu = createApp(ContextMenu).mount(
+      $("<div>").appendTo(".group").get(0),
+    ) as InstanceType<typeof ContextMenu>;
 
-    this.currentContextMenu.addItem({
-      key: "modifyTitle",
-      text: "修改标题",
-      displayRule: e => this.isValidSelection(e),
-      callback: e => this.onModifyTitle(e)
-    })
-    .addItem({
-      key: "modifyDescription",
-      text: "修改简介",
-      displayRule: e => this.isValidSelection(e),
-      callback: e => this.onModifyDescription(e)
-    })
-    .addItem({
-      key: "updateContent",
-      text: "更新为当前编辑器内容",
-      displayRule: e => this.isValidSelection(e),
-      callback: e => this.onUpdateContent(e)
-    })
-    .addItem({
-      key: "delete",
-      text: `<span class="mcmodder-slim-danger">删除</span>`,
-      displayRule: e => this.isValidSelection(e),
-      callback: e => this.delete(this.getCurrentSelection(e).attr("data-tag"))
-    });
+    this.currentContextMenu
+      .addItem({
+        key: "modifyTitle",
+        text: "修改标题",
+        displayRule: (e) => this.isValidSelection(e),
+        callback: (e) => this.onModifyTitle(e),
+      })
+      .addItem({
+        key: "modifyDescription",
+        text: "修改简介",
+        displayRule: (e) => this.isValidSelection(e),
+        callback: (e) => this.onModifyDescription(e),
+      })
+      .addItem({
+        key: "updateContent",
+        text: "更新为当前编辑器内容",
+        displayRule: (e) => this.isValidSelection(e),
+        callback: (e) => this.onUpdateContent(e),
+      })
+      .addItem({
+        key: "delete",
+        text: `<span class="mcmodder-slim-danger">删除</span>`,
+        displayRule: (e) => this.isValidSelection(e),
+        callback: (e) => this.delete(this.getCurrentSelection(e).attr("data-tag")),
+      });
   }
 
   private getCurrentSelection(e: PointerEvent) {
     const target = $(e.currentTarget!);
-    if (target.prop("tagName") === "LI") return target; 
+    if (target.prop("tagName") === "LI") return target;
     return target.parents(".group li");
   }
 
@@ -140,12 +142,11 @@ export class TemplateFrame {
         id: Utils.randStr(),
         title: this.newTitle.val(),
         description: this.newDescription.val(),
-        content: this.editor.editor.getContent()
+        content: this.editor.editor.getContent(),
       });
       this.syncTemplateConfig();
       this.editor.$outerFrame?.find(".edui-for-mctemplate .edui-button-body").click();
-    }
-    else {
+    } else {
       this.newTitle.show();
       this.newDescription.show();
     }
@@ -153,66 +154,70 @@ export class TemplateFrame {
 
   private onModifyTitle(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
-    const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
+    const data = this.list.filter((e) => e.id === selection.attr("data-tag"))[0];
     const title = selection.find(".title").first();
-    const input = $(`<input id="mcmodder-template-title" class="form-control title" placeholder="新模板标题... (必填)">`)
-    .val(data.title)
-    .blur(() => {
-      const newTitle = input.val().trim();
-      data.title = newTitle;
-      input.replaceWith($(`<p class="title">`).text(newTitle));
-      this.syncTemplateConfig();
-    })
-    .click(e => {
-      e.stopPropagation();
-    })
-    .keyup(e => {
-      if (e.key === "Enter") input.blur();
-    });
+    const input = $(
+      `<input id="mcmodder-template-title" class="form-control title" placeholder="新模板标题... (必填)">`,
+    )
+      .val(data.title)
+      .blur(() => {
+        const newTitle = input.val().trim();
+        data.title = newTitle;
+        input.replaceWith($(`<p class="title">`).text(newTitle));
+        this.syncTemplateConfig();
+      })
+      .click((e) => {
+        e.stopPropagation();
+      })
+      .keyup((e) => {
+        if (e.key === "Enter") input.blur();
+      });
     title.replaceWith(input);
     input.focus();
   }
 
   private onModifyDescription(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
-    const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
+    const data = this.list.filter((e) => e.id === selection.attr("data-tag"))[0];
     const text = selection.find("p.text").first();
-    const input = $(`<input id="mcmodder-template-description" class="form-control" placeholder="新模板介绍...">`)
-    .val(data.description)
-    .blur(() => {
-      const newDescription = input.val().trim();
-      data.description = newDescription;
-      const textNode = $(`<p class="text">`).text(newDescription);
-      if (!newDescription) textNode.hide();
-      input.replaceWith(textNode);
-      this.syncTemplateConfig();
-    })
-    .click(e => {
-      e.stopPropagation();
-    })
-    .keyup(e => {
-      if (e.key === "Enter") input.blur();
-    });
+    const input = $(
+      `<input id="mcmodder-template-description" class="form-control" placeholder="新模板介绍...">`,
+    )
+      .val(data.description)
+      .blur(() => {
+        const newDescription = input.val().trim();
+        data.description = newDescription;
+        const textNode = $(`<p class="text">`).text(newDescription);
+        if (!newDescription) textNode.hide();
+        input.replaceWith(textNode);
+        this.syncTemplateConfig();
+      })
+      .click((e) => {
+        e.stopPropagation();
+      })
+      .keyup((e) => {
+        if (e.key === "Enter") input.blur();
+      });
     text.replaceWith(input);
     input.focus();
   }
 
   private onUpdateContent(e: PointerEvent) {
     const selection = this.getCurrentSelection(e);
-    const data = this.list.filter(e => e.id === selection.attr("data-tag"))[0];
+    const data = this.list.filter((e) => e.id === selection.attr("data-tag"))[0];
     data.content = this.editor.editor.getContent();
     this.configs.setAll("templateList", this.list);
-    Utils.commonMsg(`${ data.title } 内容已更新~`);
+    Utils.commonMsg(`${data.title} 内容已更新~`);
   }
 
   private delete(id: string | null) {
-    this.list = this.list.filter(item => item.id != id);
+    this.list = this.list.filter((item) => item.id != id);
     this.configs.setAll("templateList", this.list);
     this.editor.$outerFrame?.find(".edui-for-mctemplate .edui-button-body").click();
   }
 
   private load(id: string | null) {
-    const matched = this.list.filter(item => id === item.id)[0];
+    const matched = this.list.filter((item) => id === item.id)[0];
     if (matched) {
       if ($(".common-template-frame .input-group input").prop("checked")) {
         this.editor.editor.execCommand("insertHtml", matched.content);

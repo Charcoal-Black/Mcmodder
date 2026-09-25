@@ -42,8 +42,14 @@ declare global {
   /* MCMOD */
   function common_msg(title: string, message: string, state: string): void;
 
-  function showTaskTip(imageUrl: string, title: string, text: string, 
-    achieveTime: string, progress: number, rewardExp: number | string): number;
+  function showTaskTip(
+    imageUrl: string,
+    title: string,
+    text: string,
+    achieveTime: string,
+    progress: number,
+    rewardExp: number | string,
+  ): number;
 
   function setSetting(key: string, data: string | number): void;
 
@@ -73,4 +79,4 @@ declare global {
   var getEditorData: (isTest: boolean) => any;
 }
 
-export {}
+export {};

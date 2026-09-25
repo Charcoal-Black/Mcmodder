@@ -1,11 +1,18 @@
-import { GM_cookie, GM_getValue, GM_setValue, GM_xmlhttpRequest, type GmResponseEvent, type GmXmlhttpRequestOption } from "$";
+import {
+  GM_cookie,
+  GM_getValue,
+  GM_setValue,
+  GM_xmlhttpRequest,
+  type GmResponseEvent,
+  type GmXmlhttpRequestOption,
+} from "$";
 import { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
 import { Values } from "./Values";
 
 export interface ThemeColorSet {
-  tc1: string,
-  tc2: string
+  tc1: string;
+  tc2: string;
 }
 
 export class Utils {
@@ -19,22 +26,23 @@ export class Utils {
 
   private static m_isMac: boolean | undefined;
   static isMac() {
-    return this.m_isMac ??= navigator.userAgent.includes("Macintosh");
+    return (this.m_isMac ??= navigator.userAgent.includes("Macintosh"));
   }
 
   private static m_isMobileClient: boolean | undefined;
   static isMobileClient() {
-    return this.m_isMobileClient ??=
-      !!(navigator.userAgent.match(/Mobi/i) ||
+    return (this.m_isMobileClient ??= !!(
+      navigator.userAgent.match(/Mobi/i) ||
       navigator.userAgent.match(/Android/i) ||
-      navigator.userAgent.match(/iPhone/i));
+      navigator.userAgent.match(/iPhone/i)
+    ));
   }
 
   static toQzoneLogin() {
     window.open(
-      `${ Values.hostname }/plugs/loginConnect/qqConnect/oauth/index.php`,
-      'TencentLogin',
-      'width=755,height=515,menubar=0,scrollbars=0,resizable=0,status=1,titlebar=0,toolbar=0,location=1'
+      `${Values.hostname}/plugs/loginConnect/qqConnect/oauth/index.php`,
+      "TencentLogin",
+      "width=755,height=515,menubar=0,scrollbars=0,resizable=0,status=1,titlebar=0,toolbar=0,location=1",
     );
   }
 
@@ -42,8 +50,7 @@ export class Utils {
     const defaultTitle = isok ? "提示" : "错误";
     if (typeof common_msg === "function") {
       common_msg(title || defaultTitle, message, isok ? "ok" : "err");
-    }
-    else if (typeof swal === "function") {
+    } else if (typeof swal === "function") {
       // 使用了 v3 的特殊 swal
       // eslint-disable-next-line
       (swal as any)({
@@ -51,16 +58,19 @@ export class Utils {
         title: defaultTitle,
         text: message,
         button: false,
-        timer: 3e3
+        timer: 3e3,
       });
     }
   }
 
-  static createModal(option: SweetAlertOption, interceptEvents: Record<string, (ev: Event) => unknown> = {}) {
+  static createModal(
+    option: SweetAlertOption,
+    interceptEvents: Record<string, (ev: Event) => unknown> = {},
+  ) {
     swal.fire(option).then(() => {
       Object.entries(events).forEach(([eventName, callback]) => {
         window.removeEventListener(eventName, callback);
-      })
+      });
     });
     const modal = $(".swal2-modal").get(0);
     const events: Record<string, (this: Window, ev: Event) => unknown> = {};
@@ -71,11 +81,11 @@ export class Utils {
           ev.stopPropagation();
           callback(ev);
         }
-      }
-    })
+      };
+    });
     Object.entries(events).forEach(([eventName, callback]) => {
       window.addEventListener(eventName, callback, true);
-    })
+    });
   }
 
   // static rawMap(mods: Record<string, { default: string }>) {
@@ -102,10 +112,10 @@ export class Utils {
   /** 读取 `_uuid` cookie 的值，未登录或无权访问时返回空字符串 */
   static getUuidCookie(): Promise<string> {
     if (!Utils.supportCookieAPI()) return Promise.resolve($.cookie("_uuid") || "");
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       GM_cookie.list({ name: "_uuid" }, (cookies, err) => {
         if (err) console.warn("读取 `_uuid` cookie 失败，回退至 document.cookie：", err);
-        resolve(cookies?.length ? cookies[0].value : ($.cookie("_uuid") || ""));
+        resolve(cookies?.length ? cookies[0].value : $.cookie("_uuid") || "");
       });
     });
   }
@@ -120,24 +130,28 @@ export class Utils {
       console.warn("当前脚本管理器不支持 `GM_cookie`，无法写入 HttpOnly cookie `_uuid`。");
       return Promise.resolve(false);
     }
-    return new Promise(resolve => {
-      GM_cookie.set({
-        name: "_uuid",
-        value: uuid,
-        domain: ".mcmod.cn",
-        path: "/",
-        // 妥协mcmod的httponly以及保证XSS不能偷取用户cookie
-        httpOnly: true,
-        secure: true,
-        expirationDate: expirationDate && expirationDate > 0 ? Math.floor(expirationDate / 1e3) : undefined
-      }, err => {
-        if (err) {
-          console.warn("写入 `_uuid` cookie 失败：", err);
-          resolve(false);
-          return;
-        }
-        resolve(true);
-      });
+    return new Promise((resolve) => {
+      GM_cookie.set(
+        {
+          name: "_uuid",
+          value: uuid,
+          domain: ".mcmod.cn",
+          path: "/",
+          // 妥协mcmod的httponly以及保证XSS不能偷取用户cookie
+          httpOnly: true,
+          secure: true,
+          expirationDate:
+            expirationDate && expirationDate > 0 ? Math.floor(expirationDate / 1e3) : undefined,
+        },
+        (err) => {
+          if (err) {
+            console.warn("写入 `_uuid` cookie 失败：", err);
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        },
+      );
     });
   }
 
@@ -147,8 +161,8 @@ export class Utils {
       console.warn("当前脚本管理器不支持 `GM_cookie`，无法删除 HttpOnly cookie `_uuid`。");
       return Promise.resolve(false);
     }
-    return new Promise(resolve => {
-      GM_cookie.delete({ name: "_uuid" }, err => {
+    return new Promise((resolve) => {
+      GM_cookie.delete({ name: "_uuid" }, (err) => {
         if (err) {
           console.warn("删除 `_uuid` cookie 失败：", err);
           resolve(false);
@@ -159,16 +173,23 @@ export class Utils {
     });
   }
 
-  static showTaskTip(imageUrl: string, title: string, text: string, achieveTime: string, progress: number, rewardExp: number | string) {
+  static showTaskTip(
+    imageUrl: string,
+    title: string,
+    text: string,
+    achieveTime: string,
+    progress: number,
+    rewardExp: number | string,
+  ) {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
   static getThemeColors = (configs: ConfigRepository): ThemeColorSet => {
     return {
       tc1: configs.getSettings("themeColor1")!,
-      tc2: configs.getSettings("themeColor2")!
-    }
-  }
+      tc2: configs.getSettings("themeColor2")!,
+    };
+  };
 
   static clamp(value: number, min = 0, max = 1) {
     if (value < min) return min;
@@ -193,17 +214,21 @@ export class Utils {
   }
 
   static validateVersionForLoaderID(version: string, loaderID: string) {
-    const list = (Values.loaderSupportVersions)[loaderID as keyof typeof Values.loaderSupportVersions] as Readonly<string[]> | undefined;
-    return !list || (
-      list.includes(version) || (
-        list[0].includes(">=") && 
-        this.versionCompare(version, list[0].split(">=")[1]) > -1
-      )
+    const list = Values.loaderSupportVersions[
+      loaderID as keyof typeof Values.loaderSupportVersions
+    ] as Readonly<string[]> | undefined;
+    return (
+      !list ||
+      list.includes(version) ||
+      (list[0].includes(">=") && this.versionCompare(version, list[0].split(">=")[1]) > -1)
     );
   }
 
   static validateVersionForLoaderName(version: string, loaderName: string) {
-    return this.validateVersionForLoaderID(version, Values.loaderID[loaderName as keyof typeof Values.loaderID]);
+    return this.validateVersionForLoaderID(
+      version,
+      Values.loaderID[loaderName as keyof typeof Values.loaderID],
+    );
   }
 
   static simpleDeepCopy<T>(obj: T): T {
@@ -217,9 +242,10 @@ export class Utils {
 
   static deleteEmptyProperties(obj: object) {
     let val;
-    (Object.keys(obj) as (keyof typeof obj)[]).forEach(key => {
+    (Object.keys(obj) as (keyof typeof obj)[]).forEach((key) => {
       val = obj[key];
-      if (val === undefined || val === null || (typeof val === "number" && isNaN(val))) delete obj[key];
+      if (val === undefined || val === null || (typeof val === "number" && isNaN(val)))
+        delete obj[key];
     });
   }
 
@@ -240,14 +266,15 @@ export class Utils {
     const profile = typeof target === "number" ? this.configs.getAllProfile(target) : target;
     if (!Object.keys(profile).length) {
       const text = "用户信息获取失败...";
-      return plainText ? text : `<span class="text-danger">${ text }</span>`;
+      return plainText ? text : `<span class="text-danger">${text}</span>`;
     }
     const content = [profile.userGroup];
-    if (showLv) content.push(`Lv.${ profile.lv }`);
-    if (profile.editNum) content.push(`${ profile.editNum.toLocaleString() } 次编辑`);
-    if (profile.editByte) content.push(`${ profile.editByte.toLocaleString() } 字节`)
+    if (showLv) content.push(`Lv.${profile.lv}`);
+    if (profile.editNum) content.push(`${profile.editNum.toLocaleString()} 次编辑`);
+    if (profile.editByte) content.push(`${profile.editByte.toLocaleString()} 字节`);
     if (profile.expirationDate && !plainText) {
-      if (profile.expirationDate > Date.now()) content.push(`登录信息 <span class="mcmodder-timer-pre" /> 后过期`);
+      if (profile.expirationDate > Date.now())
+        content.push(`登录信息 <span class="mcmodder-timer-pre" /> 后过期`);
       else content.push(`<span class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>`);
     }
     return content.join(" · ");
@@ -274,18 +301,22 @@ export class Utils {
   }
 
   static rgbToHex(s: string) {
-    return "#" + s.replace(/(?:\(|\)|RGB|rgb)*/g, "")
-      .split(",")
-      .map(e => parseInt(e))
-      .reduce((p, q) => (p << 8) + q)
-      .toString(16)
-      .padStart(6, "0");
+    return (
+      "#" +
+      s
+        .replace(/(?:\(|\)|RGB|rgb)*/g, "")
+        .split(",")
+        .map((e) => parseInt(e))
+        .reduce((p, q) => (p << 8) + q)
+        .toString(16)
+        .padStart(6, "0")
+    );
   }
 
   static getPrecisionFormatter(minDigit = 0, maxDigit = 2) {
     return Intl.NumberFormat("en-US", {
       minimumFractionDigits: minDigit,
-      maximumFractionDigits: maxDigit
+      maximumFractionDigits: maxDigit,
     });
   }
 
@@ -294,8 +325,8 @@ export class Utils {
     if (t < 1e3) return `${t}ms`;
     if (t < 5e3) return `${Math.floor(t / 1e3)}s ${t % 1e3}ms`;
     if (t < 6e4) return `${Math.floor(t / 1e3)}s`;
-    if (t < 3.6e6) return `${Math.floor(t / 6e4)}m ${Math.floor(t % 6e4 / 1e3)}s`;
-    if (t < 8.64e7) return `${Math.floor(t / 3.6e6)}h ${Math.floor(t % 3.6e6 / 6e4)}m`;
+    if (t < 3.6e6) return `${Math.floor(t / 6e4)}m ${Math.floor((t % 6e4) / 1e3)}s`;
+    if (t < 8.64e7) return `${Math.floor(t / 3.6e6)}h ${Math.floor((t % 3.6e6) / 6e4)}m`;
     return `${Math.floor(t / 8.64e7)}d`;
   }
 
@@ -329,14 +360,17 @@ export class Utils {
     const abbr = (args.length === 1 ? args[0].abbr : args[2]).trim();
     if (!name) return undefined;
     let res = "";
-    if (abbr) res += `[${ abbr }] `;
+    if (abbr) res += `[${abbr}] `;
     res += name;
-    if (ename) res += ` (${ ename })`;
+    if (ename) res += ` (${ename})`;
     return res;
   }
 
   static parseClassFullName(fullName: string): ClassName {
-    let abbr = "", name = "", ename = "", indexOf: number;
+    let abbr = "",
+      name = "",
+      ename = "",
+      indexOf: number;
     if (fullName) {
       fullName = fullName.trim();
       if (fullName.charAt(0) === "[") {
@@ -358,14 +392,14 @@ export class Utils {
     return {
       className: name.trim(),
       classEname: ename.trim(),
-      classAbbr: abbr.trim()
+      classAbbr: abbr.trim(),
     };
   }
 
   static getItemFullName(name: string, ename?: string | null) {
     let res = name.trim();
     const trimedEname = ename?.trim();
-    if (trimedEname) res += ` (${ trimedEname })`;
+    if (trimedEname) res += ` (${trimedEname})`;
     return res;
   }
 
@@ -381,9 +415,8 @@ export class Utils {
       const response = await fetch(url);
       const blob = await response.blob();
       return Utils.blob2Base64(blob);
-    }
-    catch (error) {
-      console.error('Error converting image to Base64: ', error);
+    } catch (error) {
+      console.error("Error converting image to Base64: ", error);
       return null;
     }
   }
@@ -395,7 +428,7 @@ export class Utils {
         const result = reader.result;
         if (typeof result === "string") resolve(result);
         else resolve("");
-      }
+      };
       reader.onerror = () => reject;
       reader.readAsDataURL(blob);
     });
@@ -423,7 +456,7 @@ export class Utils {
 
   static appendBase64ImgPrefix(v?: string, defaultMimeType?: string) {
     const mimeType = defaultMimeType ?? "image/png";
-    if (v && v.slice(0, 11) !== "data:image/") return `data:${ mimeType };base64,${ v }`;
+    if (v && v.slice(0, 11) !== "data:image/") return `data:${mimeType};base64,${v}`;
     return v;
   }
 
@@ -450,7 +483,7 @@ export class Utils {
   }
 
   static sleep(ms: number) {
-    return new Promise<void>(resolve => setTimeout(() => resolve(), ms));
+    return new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
   }
 
   static highlight(jQueryNode: JQuery, color = "gold", timeout = 0, scrollIntoView = false) {
@@ -461,10 +494,11 @@ export class Utils {
     }
     const className = `mcmodder-mark-${color}`;
     jQueryNode.addClass(className);
-    if (scrollIntoView) jQueryNode.get(0).scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
+    if (scrollIntoView)
+      jQueryNode.get(0).scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     if (timeout > 0) setTimeout(() => jQueryNode.removeClass(className), timeout);
   }
 
@@ -488,38 +522,40 @@ export class Utils {
   static getImageURLByItemID(id: number, width = 32, ver = 0) {
     const validSize = [32, 36, 128, 144];
     if (!validSize.includes(width)) {
-      console.error(`Image size parameter must be within: [${ validSize.join(", ") }]`);
+      console.error(`Image size parameter must be within: [${validSize.join(", ")}]`);
       return "";
     }
-    if (!id) return `https://i.mcmod.cn/item/icon/${ width }x${ width }/0.png?v=${ ver }`;
-    return `https://i.mcmod.cn/item/icon/${ width }x${ width }/${ Math.floor(id / 1e4) }/${ id }.png?v=${ ver }`;
+    if (!id) return `https://i.mcmod.cn/item/icon/${width}x${width}/0.png?v=${ver}`;
+    return `https://i.mcmod.cn/item/icon/${width}x${width}/${Math.floor(id / 1e4)}/${id}.png?v=${ver}`;
   }
 
   static getItemURL(id: number) {
-    return `${ Values.hostname }/item/${ id }.html`;
+    return `${Values.hostname}/item/${id}.html`;
   }
 
   static getItemTypeURL(classID: number, typeID: number) {
-    return `${ Values.hostname }/item/list/${ classID }-${ typeID }.html`;
+    return `${Values.hostname}/item/list/${classID}-${typeID}.html`;
   }
 
   static getClassURL(id: number) {
-    return `${ Values.hostname }/class/${ id }.html`;
+    return `${Values.hostname}/class/${id}.html`;
   }
 
   static getOredictURL(oredict: string) {
-    return `${ Values.hostname }/oredict/${ oredict }-1.html`;
+    return `${Values.hostname}/oredict/${oredict}-1.html`;
   }
 
   static getCenterURL(id: number) {
-    return `https://center.mcmod.cn/${ id }/`;
+    return `https://center.mcmod.cn/${id}/`;
   }
 
   static URLToAnchor(url: string, text?: string) {
-    return $("<a>").attr({
-      target: "_blank",
-      href: url
-    }).text(text ?? url);
+    return $("<a>")
+      .attr({
+        target: "_blank",
+        href: url,
+      })
+      .text(text ?? url);
   }
 
   static versionArrayToString(arr: number[]) {
@@ -539,25 +575,29 @@ export class Utils {
       throw colorParseError;
     }
     switch (color.length) {
-      case 7: return {
-        r: dec >> 16,
-        g: (dec & 0x00FF00) >> 8,
-        b: dec & 0x0000FF
-      };
-      case 9: return {
-        r: dec >>> 24,
-        g: (dec & 0x00FF0000) >> 16,
-        b: (dec & 0x0000FF00) >> 8,
-        a: dec & 0x000000FF / 0xFF
-      }
-      case 4: case 5: {
+      case 7:
+        return {
+          r: dec >> 16,
+          g: (dec & 0x00ff00) >> 8,
+          b: dec & 0x0000ff,
+        };
+      case 9:
+        return {
+          r: dec >>> 24,
+          g: (dec & 0x00ff0000) >> 16,
+          b: (dec & 0x0000ff00) >> 8,
+          a: dec & (0x000000ff / 0xff),
+        };
+      case 4:
+      case 5: {
         const t = ["#"];
         for (let i = 1; i < color.length; i++) {
           t.push(color.charAt(i).repeat(2));
         }
         return this.colorToRGB(t.join(""));
       }
-      default: throw colorFormatError;
+      default:
+        throw colorFormatError;
     }
   }
 
@@ -567,19 +607,17 @@ export class Utils {
       return {
         r: numList[0],
         g: numList[1],
-        b: numList[2]
+        b: numList[2],
       };
-    }
-    else if (/rgba\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
+    } else if (/rgba\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
       const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
       return {
         r: numList[0],
         g: numList[1],
         b: numList[2],
-        a: numList[3]
+        a: numList[3],
       };
-    }
-    else {
+    } else {
       return null;
     }
   }
@@ -587,7 +625,7 @@ export class Utils {
   static RGBToColor(rgb: RGB) {
     const a = (rgb as RGBA).a;
     let dec = (rgb.r << 16) + (rgb.g << 8) + rgb.b;
-    if (a != undefined) dec = dec * 256 + Math.round(a * 0xFF);
+    if (a != undefined) dec = dec * 256 + Math.round(a * 0xff);
     return "#" + dec.toString(16).padStart(a != undefined ? 8 : 6, "0");
   }
 
@@ -598,17 +636,26 @@ export class Utils {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
-    let h: number, s: number, l = (max + min) / 2;
+    let h: number,
+      s: number,
+      l = (max + min) / 2;
 
     if (delta === 0) {
       h = s = 0;
     } else {
       s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
       switch (max) {
-        case r: h = ((g - b) / delta) % 6; break;
-        case g: h = (b - r) / delta + 2; break;
-        case b: h = (r - g) / delta + 4; break;
-        default: h = -1;
+        case r:
+          h = ((g - b) / delta) % 6;
+          break;
+        case g:
+          h = (b - r) / delta + 2;
+          break;
+        case b:
+          h = (r - g) / delta + 4;
+          break;
+        default:
+          h = -1;
       }
       h = Math.round(h * 60);
       if (h < 0) h += 360;
@@ -630,26 +677,38 @@ export class Utils {
     const a = (hsl as HSLA).a;
 
     const c = (1 - Math.abs(2 * l - 1)) * s,
-        x = c * (1 - Math.abs((h / 60) % 2 - 1)),
-        m = l - c/2;
+      x = c * (1 - Math.abs(((h / 60) % 2) - 1)),
+      m = l - c / 2;
     let r = 0,
-        g = 0,
-        b = 0;
+      g = 0,
+      b = 0;
 
     if (0 <= h && h < 60) {
-      r = c; g = x; b = 0;
+      r = c;
+      g = x;
+      b = 0;
     } else if (60 <= h && h < 120) {
-      r = x; g = c; b = 0;
+      r = x;
+      g = c;
+      b = 0;
     } else if (120 <= h && h < 180) {
-      r = 0; g = c; b = x;
+      r = 0;
+      g = c;
+      b = x;
     } else if (180 <= h && h < 240) {
-      r = 0; g = x; b = c;
+      r = 0;
+      g = x;
+      b = c;
     } else if (240 <= h && h < 300) {
-      r = x; g = 0; b = c;
+      r = x;
+      g = 0;
+      b = c;
     } else if (300 <= h && h < 360) {
-      r = c; g = 0; b = x;
+      r = c;
+      g = 0;
+      b = x;
     }
-    
+
     r = Math.round((r + m) * 255);
     g = Math.round((g + m) * 255);
     b = Math.round((b + m) * 255);
@@ -677,27 +736,27 @@ export class Utils {
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
-      l: this.clamp(lightness, 0, 100)
+      l: this.clamp(lightness, 0, 100),
     });
-  }
+  };
 
   static reverseColorBrightness = (color: string | RGB) => {
     const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
-      l: 100 - hsl.l
+      l: 100 - hsl.l,
     });
-  }
+  };
 
   static setColorBrightness = (color: string | RGB, lightness: number) => {
     const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
       h: hsl.h,
       s: hsl.s,
-      l: this.clamp(lightness, 0, 100)
+      l: this.clamp(lightness, 0, 100),
     });
-  }
+  };
 
   static setColorAlpha(color: string, alpha: number) {
     const rgb = this.colorToRGB(color);
@@ -705,7 +764,7 @@ export class Utils {
       r: rgb.r,
       g: rgb.g,
       b: rgb.b,
-      a: this.clamp(alpha)
+      a: this.clamp(alpha),
     } as RGBA);
   }
 
@@ -735,11 +794,11 @@ export class Utils {
     if (e.metaKey) k.push(Utils.isMac() ? "Command" : "Meta");
     if (!e.key || !["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
       if (e.keyCode) {
-        if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 98 && e.keyCode <= 123)) c = String.fromCharCode(e.keyCode).toUpperCase();
+        if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 98 && e.keyCode <= 123))
+          c = String.fromCharCode(e.keyCode).toUpperCase();
         else if (e.keyCode >= 48 && e.keyCode <= 57) c = String.fromCharCode(e.keyCode);
         else c = e.key;
-      }
-      else c = e.key;
+      } else c = e.key;
       k.push(c);
     }
     return k;
@@ -757,23 +816,34 @@ export class Utils {
   static keyToHTML(e: Key) {
     const list = Utils.keyToRawList(e);
     const isMac = Utils.isMac();
-    const HTMLList = list.map(data => {
+    const HTMLList = list.map((data) => {
       if (isMac) {
         switch (data) {
-          case "Ctrl": case "Control": data = "⌃‌"; break;
-          case "Shift": data = "⇧"; break;
-          case "Alt": case "Option": data = "⌥"; break;
-          case "Meta": case "Command": data = "⌘";
+          case "Ctrl":
+          case "Control":
+            data = "⌃‌";
+            break;
+          case "Shift":
+            data = "⇧";
+            break;
+          case "Alt":
+          case "Option":
+            data = "⌥";
+            break;
+          case "Meta":
+          case "Command":
+            data = "⌘";
         }
       }
-      return `<kbd>${ data }</kbd>`;
-    })
+      return `<kbd>${data}</kbd>`;
+    });
     return HTMLList.join("");
   }
 
-  static isKeyMatch(a: Key, b: Key) { // b需要匹配a
+  static isKeyMatch(a: Key, b: Key) {
+    // b需要匹配a
     if (!Object.keys(a).length) return false;
-    if ((a.ctrlKey && !b.ctrlKey)) return false;
+    if (a.ctrlKey && !b.ctrlKey) return false;
     if (a.shiftKey && !b.shiftKey) return false;
     if (a.altKey && !b.altKey) return false;
     if (a.metaKey && !b.metaKey) return false;
@@ -796,34 +866,35 @@ export class Utils {
   }
 
   static randStr(l = 32) {
-    const t = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_';
+    const t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
     const n = t.length;
-    let r = '';
-    for (let i = 0; i < l; i++)
-      r += t.charAt(Math.floor(Math.random() * n));
+    let r = "";
+    for (let i = 0; i < l; i++) r += t.charAt(Math.floor(Math.random() * n));
     return r;
   }
 
   private static readonly escapeHTMLMap = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   };
   static escapeHTML(str: string | number) {
-    return str.toString().replace(/[&<>"']/g, char => Utils.escapeHTMLMap[char as keyof typeof Utils.escapeHTMLMap]);
+    return str
+      .toString()
+      .replace(/[&<>"']/g, (char) => Utils.escapeHTMLMap[char as keyof typeof Utils.escapeHTMLMap]);
   }
 
   static getAbsolutePos(node: Element) {
     const rect = node.getBoundingClientRect();
     return {
       x: window.scrollX + rect.left,
-      y: window.scrollY + rect.top
-    }
+      y: window.scrollY + rect.top,
+    };
   }
 
-  // private static readonly segmenter = typeof Intl.Segmenter === "function" ? 
+  // private static readonly segmenter = typeof Intl.Segmenter === "function" ?
   //   new Intl.Segmenter("zh-Hans", {
   //     granularity: "word"
   //   }) : undefined;
@@ -887,8 +958,8 @@ export class Utils {
       timeout = setTimeout(() => {
         func.apply(this, args);
       }, wait);
-    }
-  }
+    };
+  };
 
   static throttle = <T extends (...args: never[]) => void>(func: T, wait: number) => {
     let lastTime = 0;
@@ -899,7 +970,7 @@ export class Utils {
         lastTime = now;
       }
     };
-  }
+  };
 
   static animationThrottle = <T extends (...args: never[]) => void>(func: T) => {
     let isTicking = false;
@@ -908,11 +979,11 @@ export class Utils {
         requestAnimationFrame(() => {
           func.apply(this, args);
           isTicking = false;
-        })
+        });
         isTicking = true;
       }
-    }
-  }
+    };
+  };
 
   static addStyle(value: string, id = "", doc = document) {
     if (id && doc.getElementById(id)) return;
@@ -920,11 +991,17 @@ export class Utils {
     if (id) style.attr("id", id);
   }
 
-  static loadStyle(loc: HTMLElement, content?: string | null, href?: string | null, type?: string | null, id?: string) {
+  static loadStyle(
+    loc: HTMLElement,
+    content?: string | null,
+    href?: string | null,
+    type?: string | null,
+    id?: string,
+  ) {
     if (id && loc.ownerDocument.getElementById(id)) {
-      return new Promise<void>(resolve => {
+      return new Promise<void>((resolve) => {
         resolve();
-      })
+      });
     }
     return new Promise<void>((resolve, reject) => {
       const link = document.createElement("link");
@@ -950,11 +1027,17 @@ export class Utils {
     loc.appendChild(script);
   }
 
-  static loadScript(loc: HTMLElement, content?: string | null, src?: string | null, type?: string | null, id?: string) {
+  static loadScript(
+    loc: HTMLElement,
+    content?: string | null,
+    src?: string | null,
+    type?: string | null,
+    id?: string,
+  ) {
     if (id && loc.ownerDocument.getElementById(id)) {
-      return new Promise<void>(resolve => {
+      return new Promise<void>((resolve) => {
         resolve();
-      })
+      });
     }
     return new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
@@ -969,7 +1052,7 @@ export class Utils {
   }
 
   static loadScripts(loc: HTMLElement, srcList: string[], type?: string | null, id?: string) {
-    return Promise.all(srcList.map(src => this.loadScript(loc, null, src, type, id)));
+    return Promise.all(srcList.map((src) => this.loadScript(loc, null, src, type, id)));
   }
 
   static getStartTime(d: number | Date, num = 1) {
@@ -977,20 +1060,20 @@ export class Utils {
     return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
   }
 
-  static getFormattedDate(date = new Date) {
+  static getFormattedDate(date = new Date()) {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   }
 
-  static getFormattedChineseDate(date = new Date) {
+  static getFormattedChineseDate(date = new Date()) {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   }
 
-  static getFormatted24hTime(date = new Date) {
+  static getFormatted24hTime(date = new Date()) {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
   }
 
-  static getFormattedDateTime(date = new Date) {
-    return `${ this.getFormattedDate(date) } ${ this.getFormatted24hTime(date) }`;
+  static getFormattedDateTime(date = new Date()) {
+    return `${this.getFormattedDate(date)} ${this.getFormatted24hTime(date)}`;
   }
 
   static getFormattedSize = (size: number | string) => {
@@ -1000,13 +1083,18 @@ export class Utils {
     else if (size < 1048576) return f(size / 1024) + " KiB";
     else if (size < 1073741824) return f(size / 1048576) + " MiB";
     else return f(size / 1073741824) + " GiB";
-  }
+  };
 
   static getFormattedCodeDecoratedHTML = (str: string) => {
-    
     const res = $("<span>");
     if (str.indexOf("\u00a7") >= 0) {
-      let i = 0, color = -1, bold = false, italic = false, obfuscated = false, underline = false, strikethrough = false;
+      let i = 0,
+        color = -1,
+        bold = false,
+        italic = false,
+        obfuscated = false,
+        underline = false,
+        strikethrough = false;
       const length = str.length;
       while (i < length) {
         const span = $("<span>");
@@ -1015,11 +1103,10 @@ export class Utils {
           const char2Code = str.charCodeAt(i + 1);
           let isCodeValid = false;
           if ((char2Code >= 48 && char2Code <= 57) || (char2Code >= 97 && char2Code <= 102)) {
-            color = (char2Code <= 57 ? char2Code - 48 : char2Code - 87);
+            color = char2Code <= 57 ? char2Code - 48 : char2Code - 87;
             bold = italic = obfuscated = underline = strikethrough = false;
             isCodeValid = true;
-          }
-          else if (char2 === "k") isCodeValid = obfuscated = true;
+          } else if (char2 === "k") isCodeValid = obfuscated = true;
           else if (char2 === "l") isCodeValid = bold = true;
           else if (char2 === "m") isCodeValid = strikethrough = true;
           else if (char2 === "n") isCodeValid = underline = true;
@@ -1031,7 +1118,8 @@ export class Utils {
           }
 
           span.removeAttr("class");
-          if (color >= 0) span.addClass(`mcmodder-format-color`).addClass(`mcmodder-format-color-${ color }`);
+          if (color >= 0)
+            span.addClass(`mcmodder-format-color`).addClass(`mcmodder-format-color-${color}`);
           if (obfuscated) span.addClass(`mcmodder-format-obfuscated`);
           if (bold) span.addClass(`mcmodder-format-bold`);
           if (strikethrough) span.addClass(`mcmodder-format-strikethrough`);
@@ -1039,7 +1127,11 @@ export class Utils {
           if (italic) span.addClass(`mcmodder-format-italic`);
 
           if (isCodeValid) {
-            $(`<span>`).attr("class", span.attr("class")).addClass("mcmodder-format-formatter").text(str.slice(i, i + 2)).appendTo(res);
+            $(`<span>`)
+              .attr("class", span.attr("class"))
+              .addClass("mcmodder-format-formatter")
+              .text(str.slice(i, i + 2))
+              .appendTo(res);
             i += 2;
           } else {
             break;
@@ -1049,29 +1141,30 @@ export class Utils {
         let substr = "";
         do {
           substr += str.charAt(i++);
-        }
-        while (str.charAt(i) != "\u00a7" && i < length);
+        } while (str.charAt(i) != "\u00a7" && i < length);
         span.text(substr).appendTo(res);
       }
-    }
-    else $("<span>").text(str).appendTo(res);
+    } else $("<span>").text(str).appendTo(res);
 
     res.find("span").each((_, c) => {
       const content = c.innerHTML;
       const matched = content.match(/%\d*\.{0,1}\d*s/g);
       let result = content;
       if (matched) {
-        matched.forEach(e => result = result.replaceAll(e, `<code>${ e }</code>`));
+        matched.forEach((e) => (result = result.replaceAll(e, `<code>${e}</code>`)));
         c.innerHTML = result;
       }
-    })
+    });
 
     return res.prop("outerHTML");
-  }
+  };
 
   updateRequestTime() {
-    const minimumRequestInterval = Math.max(this.configs.getSettings("minimumRequestInterval")!, 500);
-    const now = (new Date()).getTime();
+    const minimumRequestInterval = Math.max(
+      this.configs.getSettings("minimumRequestInterval")!,
+      500,
+    );
+    const now = new Date().getTime();
     let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
     if (lastRequestTime > now + minimumRequestInterval * Values.MAX_REQUEST_COUNT) {
       console.warn("Scheduled requests have exceeded the maximum limit. New request is ignored.");
@@ -1082,11 +1175,14 @@ export class Utils {
     return lastRequestTime;
   }
 
-  createRequest(config: GmXmlhttpRequestOption<"text", unknown>): Promise<GmResponseEvent<"text", unknown>> {
-    const lastRequestTime = this.updateRequestTime(), now = (new Date()).getTime();
-    return new Promise(resolve => {
+  createRequest(
+    config: GmXmlhttpRequestOption<"text", unknown>,
+  ): Promise<GmResponseEvent<"text", unknown>> {
+    const lastRequestTime = this.updateRequestTime(),
+      now = new Date().getTime();
+    return new Promise((resolve) => {
       setTimeout(() => {
-        config.onload = resp => {
+        config.onload = (resp) => {
           const str = resp.responseText?.trim() ?? "";
           if (str.startsWith("<script>") && str.endsWith("</script>")) {
             const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
@@ -1097,23 +1193,26 @@ export class Utils {
               const index = pathname.lastIndexOf("/");
               const path = "/" + pathname.slice(1, index);
               const yxdToken = yxdTokenList[0].slice(11, -1);
-              GM_cookie.set({
-                name: "yxd_token",
-                value: yxdToken,
-                domain: hostname,
-                path: path
-              }, err => {
-                if (err) {
-                  console.warn("Failed to set `yxd_token!`");
-                } else {
-                  this.createRequest(config).then(resp => resolve(resp));
-                }
-              });
+              GM_cookie.set(
+                {
+                  name: "yxd_token",
+                  value: yxdToken,
+                  domain: hostname,
+                  path: path,
+                },
+                (err) => {
+                  if (err) {
+                    console.warn("Failed to set `yxd_token!`");
+                  } else {
+                    this.createRequest(config).then((resp) => resolve(resp));
+                  }
+                },
+              );
             }
           } else {
             resolve(resp);
           }
-        }
+        };
         const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
         if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
         let content = `A${lastRequestTime}:${config.url}`;
@@ -1122,7 +1221,7 @@ export class Utils {
         GM_setValue("mcmodderLogger", logs.join(";"));
         // console.debug("Send Async request: ", config);
         GM_xmlhttpRequest(config);
-      }, (lastRequestTime - now));
+      }, lastRequestTime - now);
     });
   }
 
@@ -1134,8 +1233,7 @@ export class Utils {
       if (unicode.slice(0, 2) === "\\u") {
         chineseStr += String.fromCharCode(parseInt(unicode.slice(2), 16));
         i += 6;
-      }
-      else {
+      } else {
         chineseStr += unicode.charAt(0);
         i += 1;
       }
@@ -1159,7 +1257,10 @@ export class Utils {
         if (p > -1) {
           if (e.slice(p).indexOf("]") < 0) return;
           m = true;
-          const s = e.slice(p).split("]")[0].replace("[" + i, "");
+          const s = e
+            .slice(p)
+            .split("]")[0]
+            .replace("[" + i, "");
           if (i.indexOf("=") > -1) e = e.replace(e.slice(p).split("]")[0] + "]", s);
           /* else if (i === "icon:" && s.includes("=")) {
             s = s.split("=")[1].replace(",", "");
@@ -1184,7 +1285,10 @@ export class Utils {
   }
 
   static setButtonLoadingState(node: Element | JQuery) {
-    $(node).addClass("disabled").attr("disabled", "true").append(`<i class="fa fa-pulse fa-spinner">`);
+    $(node)
+      .addClass("disabled")
+      .attr("disabled", "true")
+      .append(`<i class="fa fa-pulse fa-spinner">`);
   }
 
   static cancelButtonLoadingState(node: Element | JQuery) {
@@ -1192,14 +1296,22 @@ export class Utils {
   }
 
   static regulateFileName(name: string) {
-    return name.replace(/[\\/:*?"<>|]/g, '_').replace(/ /g, '_').substring(0, 255);
+    return name
+      .replace(/[\\/:*?"<>|]/g, "_")
+      .replace(/ /g, "_")
+      .substring(0, 255);
   }
 
-  static addClickCopyEvent(node: JQuery, typeName: string, copyData?: string | number | (() => (string | number))) {
-    node.addClass("mcmodder-copyable").click(e => {
-      const text = typeof copyData === "function" ? copyData() : (copyData || e.currentTarget.textContent);
+  static addClickCopyEvent(
+    node: JQuery,
+    typeName: string,
+    copyData?: string | number | (() => string | number),
+  ) {
+    node.addClass("mcmodder-copyable").click((e) => {
+      const text =
+        typeof copyData === "function" ? copyData() : copyData || e.currentTarget.textContent;
       navigator.clipboard.writeText(text.toString());
-      Utils.commonMsg(`${ typeName }已成功复制到剪贴板~ (${ text })`);
+      Utils.commonMsg(`${typeName}已成功复制到剪贴板~ (${text})`);
     });
   }
 
@@ -1223,14 +1335,18 @@ export class Utils {
   }
 
   getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
-    const matchedTypeList = this.parent.itemTypeList?.filter(entry => 
-      (entry.classID === classID || entry.classID === 0) &&
-      ((entry.typeID || 1) === (itemType || 1) || (entry.text === itemType))
+    const matchedTypeList = this.parent.itemTypeList?.filter(
+      (entry) =>
+        (entry.classID === classID || entry.classID === 0) &&
+        ((entry.typeID || 1) === (itemType || 1) || entry.text === itemType),
     );
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }
 
-  getItemTypeHTML(...args: [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]) {
+  getItemTypeHTML(
+    ...args:
+      [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]
+  ) {
     let itemType;
     if (args.length === 1) {
       itemType = args[0];
@@ -1245,21 +1361,21 @@ export class Utils {
   }
 
   static updateAllTooltip() {
-    return $().tooltip ?
-      $('[data-toggle="tooltip"]').tooltip({
-        // animation: false,
-        // delay: { show: 200 }
-      }) :
-      null;
+    return $().tooltip
+      ? $('[data-toggle="tooltip"]').tooltip({
+          // animation: false,
+          // delay: { show: 200 }
+        })
+      : null;
   }
 
   async getItemByID(id: string | number) {
     id = Number(id);
     const resp = await this.createRequest({
-      url: `${ this.parent.hostname }/item/${ id }.html`,
+      url: `${this.parent.hostname}/item/${id}.html`,
       method: "GET",
       redirect: "manual",
-      anonymous: true
+      anonymous: true,
     });
     if (resp.status > 300 || !resp.responseXML) {
       return;
@@ -1272,9 +1388,9 @@ export class Utils {
     if (!this.parent.currentUID) return;
     id = Number(id);
     const resp = await this.createRequest({
-      url: `${ this.parent.hostname }/item/edit/${ id }/`,
+      url: `${this.parent.hostname}/item/edit/${id}/`,
       method: "GET",
-      redirect: "manual"
+      redirect: "manual",
     });
     if (resp.status > 300 || !resp.responseXML) {
       return;
@@ -1290,7 +1406,9 @@ export class Utils {
     const righttable = itemRow.find(".righttable tbody > tr");
     const nav = $doc.find(".common-nav li");
     const classID = Utils.abstractIDFromURL(nav.eq(4).find("a").attr("href"), "class");
-    const itemType = Number(nav.eq(6).find("a").attr("href").split(`/item/list/${ classID }-`)[1].slice(0, -5));
+    const itemType = Number(
+      nav.eq(6).find("a").attr("href").split(`/item/list/${classID}-`)[1].slice(0, -5),
+    );
     const res: Item = {
       id: Utils.abstractIDFromURL(itemRow.find(".tool a").first().prop("href"), "item/edit"),
       classID: classID,
@@ -1300,7 +1418,9 @@ export class Utils {
       smallIcon: "",
       largeIcon: "",
       creativeTabName: righttable.eq(3).find("a")?.text(),
-      harvestTools: `[${ Array.from(righttable.eq(5).find(".item-table-hover"))?.map(e => e.getAttribute("item-id")).join(",") }]`
+      harvestTools: `[${Array.from(righttable.eq(5).find(".item-table-hover"))
+        ?.map((e) => e.getAttribute("item-id"))
+        .join(",")}]`,
     };
     if (command) {
       res.registerName = command[0];
@@ -1323,9 +1443,9 @@ export class Utils {
         name: name.text(),
         englishName: ename.text(),
         abbr: abbr.text().slice(1, -1),
-        cover: $doc.find(".class-cover-image img").attr("src")
-      } as Class
-    }
+        cover: $doc.find(".class-cover-image img").attr("src"),
+      } as Class,
+    };
   }
 
   static async itemToEditorData(item: Item): Promise<McmodItemEditorData> {
@@ -1344,11 +1464,14 @@ export class Utils {
     if (item.englishName) data["ename"] = item.englishName;
     data["category"] = { 0: 1 };
     data["type"] = item.creativeTabName;
-    data["icon-32x-data"] = item.smallIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 32)) || "";
-    data["icon-128x-data"] = item.largeIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 128)) || "";
+    data["icon-32x-data"] =
+      item.smallIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 32)) || "";
+    data["icon-128x-data"] =
+      item.largeIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 128)) || "";
     data["is-general-node"] = "0";
     data["is-general-parents"] = "0";
-    if (item.OredictList && item.OredictList.length <= 2) data["oredict"] = item.OredictList.slice(1, -1).replaceAll(", ", ",");
+    if (item.OredictList && item.OredictList.length <= 2)
+      data["oredict"] = item.OredictList.slice(1, -1).replaceAll(", ", ",");
     if (item.maxStackSize != undefined) data["maxstack"] = item.maxStackSize.toString();
     // if (item.tools) data["tools"] = item.tools;
 
@@ -1368,20 +1491,21 @@ export class Utils {
       largeIcon: Utils.appendBase64ImgPrefix(headScript[7]?.slice(7, -1)),
       name: inputs.find("[data-multi-id=name]").val(),
       englishName: inputs.find("[data-multi-id=ename]").val(),
-      harvestTools: `[${ bodyScript.split(");addItemTools(").slice(1).map(parseInt).join(",") }]`,
-      OredictList: `[${ inputs.find("[data-multi-id=oredict]").val() }]`,
+      harvestTools: `[${bodyScript.split(");addItemTools(").slice(1).map(parseInt).join(",")}]`,
+      OredictList: `[${inputs.find("[data-multi-id=oredict]").val()}]`,
       maxDurability: Number(inputs.find("[data-multi-id=damage]").val()),
       maxStackSize: Number(inputs.find("[data-multi-id=maxstack]").val()),
       registerName: inputs.find("[data-multi-id=regname]").val(),
-      metadata: inputs.find("[data-multi-id=metadata]").val()
-    }
+      metadata: inputs.find("[data-multi-id=metadata]").val(),
+    };
     Utils.deleteEmptyProperties(res);
     const generalAlert = $(".edit-user-alert.isgeneral");
-    if (generalAlert.length) res.generalTo = Utils.abstractIDFromURL(generalAlert.find("a").attr("href"), "item");
+    if (generalAlert.length)
+      res.generalTo = Utils.abstractIDFromURL(generalAlert.find("a").attr("href"), "item");
     return res;
   }
 
   // static parseClassEditorDocument(_$doc: JQuery = $(document)) {
-    // TODO ...
+  // TODO ...
   // }
 }

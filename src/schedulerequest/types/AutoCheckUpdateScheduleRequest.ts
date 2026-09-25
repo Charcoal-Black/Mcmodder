@@ -21,7 +21,7 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
   private async check(list: ScheduleRequestUtils) {
     const resp = await this.parent.utils.createRequest({
       url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
-      method: "GET"
+      method: "GET",
     });
     if (!resp.responseXML) {
       Utils.commonMsg("脚本发布帖打开失败...", false);
@@ -32,24 +32,32 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
     if (title === "页面重载开启") {
       list.create(Date.now() + 100, "autoCheckUpdate", 0); // 你已急哭
       return;
-    }
-    else if (title === "CC check") {
-      Utils.commonMsg("自动检查更新需要完成人机验证，请手动检查更新~ 此功能将在接下来的 24 小时内暂时禁用。");
+    } else if (title === "CC check") {
+      Utils.commonMsg(
+        "自动检查更新需要完成人机验证，请手动检查更新~ 此功能将在接下来的 24 小时内暂时禁用。",
+      );
       list.create(Date.now() + 24 * 60 * 60 * 1000, "autoCheckUpdate", 0);
       return;
     }
-    const latestVersion = doc.find("#postmessage_85878 font[size=5]").first().text().split("Mcmodder v")[1].split(" --")[0];
+    const latestVersion = doc
+      .find("#postmessage_85878 font[size=5]")
+      .first()
+      .text()
+      .split("Mcmodder v")[1]
+      .split(" --")[0];
     if (Utils.versionCompare(Values.mcmodderVersion, latestVersion) < 0) {
       const changelog = doc.find("#postmessage_85878 .spoilerbody").first().html();
       const a = "https://bbs.mcmod.cn/" + doc.find(".attnm a").first().attr("href");
-      swal.fire({
-        html: `<div class="mcmodder-changelog-container" />`,
-        confirmButtonText: "立即下载",
-        showCancelButton: true,
-        cancelButtonText: "稍后提醒"
-      }).then(isConfirm => {
-        if (isConfirm.value) GM_openInTab(a, { active: true });
-      });
+      swal
+        .fire({
+          html: `<div class="mcmodder-changelog-container" />`,
+          confirmButtonText: "立即下载",
+          showCancelButton: true,
+          cancelButtonText: "稍后提醒",
+        })
+        .then((isConfirm) => {
+          if (isConfirm.value) GM_openInTab(a, { active: true });
+        });
       const container = $(".mcmodder-changelog-container").get(0);
       createApp(UpdateReminder, { latestVersion, changelog }).mount(container);
     } else {

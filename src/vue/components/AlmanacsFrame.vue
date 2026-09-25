@@ -21,13 +21,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { Mcmodder } from '../../Mcmodder.ts';
-import AlmanacsList from './AlmanacsList.vue';
-import { Utils } from '../../Utils.ts';
+import { computed, ref, watch } from "vue";
+import { Mcmodder } from "../../Mcmodder.ts";
+import AlmanacsList from "./AlmanacsList.vue";
+import { Utils } from "../../Utils.ts";
 
 interface Props {
-  parent: Mcmodder
+  parent: Mcmodder;
 }
 
 const { parent } = defineProps<Props>();
@@ -41,14 +41,15 @@ const nextDate = ref<number>(-1);
 
 watch(
   () => date.value,
-  date => get(date), {
-    immediate: true
-  }
-)
+  (date) => get(date),
+  {
+    immediate: true,
+  },
+);
 
 const formattedChineseDate = computed(() => {
   return Utils.getFormattedChineseDate(new Date(date.value));
-})
+});
 
 async function get(date: number) {
   almanacsList.forEach((e, i) => {
@@ -60,20 +61,20 @@ async function get(date: number) {
   });
   if (!almanacs.value && date === Utils.getStartTime(new Date(), 0)) {
     const resp = await parent.utils.createRequest({
-      url: `${ parent.hostname }/tools/almanacs`,
+      url: `${parent.hostname}/tools/almanacs`,
       method: "GET",
       headers: { "Content-Type": "text/html; charset=UTF-8" },
-      anonymous: true
+      anonymous: true,
     });
     let almanacs: Almanacs = {
       date: date,
       good: [],
-      bad: []
-    }
+      bad: [],
+    };
     if (!resp.responseXML) {
       console.error("Error loading almanac data for today...");
       return;
-    };
+    }
     let d = $(resp.responseXML);
     d.find(".good .block").each((_, c) => {
       almanacs.good.push($(c).find(".title").text(), $(c).find(".text").text());
@@ -86,6 +87,4 @@ async function get(date: number) {
     get(date);
   }
 }
-
-
 </script>

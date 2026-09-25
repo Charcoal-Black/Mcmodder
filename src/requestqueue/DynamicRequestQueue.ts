@@ -2,9 +2,9 @@ import { Mcmodder } from "../Mcmodder";
 import { RequestQueue } from "./RequestQueue";
 import type { Logger } from "../widget/logger/Logger";
 
-/** 
+/**
  * 传统的 `RequestQueue` 只能对付静态队列。
- * 
+ *
  * 如果队列中每个任务的信息都由前一个任务动态决定，那么无脑用这个！
  */
 export abstract class DynamicRequestQueue extends RequestQueue {

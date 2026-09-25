@@ -13,7 +13,6 @@ import svgPlatformDefault from "../assets/platform/default.svg";
 import { MainText } from "../widget/MainText";
 
 export class ClassPageInit extends Init {
-
   static readonly maxRecentlyVisitedLength = 50;
   static classPageRegExp = /class\/[0-9]*\.html/;
   static modpackPageRegExp = /modpack\/[0-9]*\.html/;
@@ -21,10 +20,12 @@ export class ClassPageInit extends Init {
   private pageTypeName?: "模组" | "整合包";
 
   canRun() {
-    return !this.parent.href.includes("/class/version/") &&
-      !this.parent.href.includes("/modpack/version/") && 
-      (ClassPageInit.classPageRegExp.test(this.parent.href) || 
-       ClassPageInit.modpackPageRegExp.test(this.parent.href));
+    return (
+      !this.parent.href.includes("/class/version/") &&
+      !this.parent.href.includes("/modpack/version/") &&
+      (ClassPageInit.classPageRegExp.test(this.parent.href) ||
+        ClassPageInit.modpackPageRegExp.test(this.parent.href))
+    );
   }
 
   private async syncSubscribeList(modID: number) {
@@ -32,7 +33,7 @@ export class ClassPageInit extends Init {
     const hasSubscribed = $(".subscribe i.fas").length;
     let subscribeModlist = this.configs.getProfile("subscribeModlist") ?? [];
     if (!hasSubscribed && subscribeModlist.includes(modID)) {
-      subscribeModlist = subscribeModlist.filter(e => e != modID);
+      subscribeModlist = subscribeModlist.filter((e) => e != modID);
       this.configs.setProfile("subscribeModlist", subscribeModlist);
       this.configs.set("latestEditTime", modID.toString(), 0);
       Utils.commonMsg("成功同步关注状态~");
@@ -51,7 +52,7 @@ export class ClassPageInit extends Init {
     // 自动记忆前置Mod
     const classID = Utils.abstractLastFromURL(window.location.href, ["class", "modpack"]);
     const nClassID = Number(classID);
-    const {nameNode, enameNode, abbrNode, classData}  = Utils.parseClassDocument($(document));
+    const { nameNode, enameNode, abbrNode, classData } = Utils.parseClassDocument($(document));
     const className = classData.name;
     const classEname = classData.englishName;
     const classAbbr = classData.abbr;
@@ -80,11 +81,10 @@ export class ClassPageInit extends Init {
           const title = target.find("span[data-toggle=tooltip]:first-child()").text();
           if (title.includes("前置Mod")) {
             newDependences.push(Utils.abstractIDFromURL(href, "class"));
-          }
-          else if (title.includes("依赖")) {
+          } else if (title.includes("依赖")) {
             newExpansions.push(Utils.abstractIDFromURL(href, "class"));
           }
-        })
+        });
       });
 
       if (JSON.stringify(modDependences) != JSON.stringify(newDependences)) {
@@ -102,35 +102,52 @@ export class ClassPageInit extends Init {
     $(".subscribe").click(() => this.syncSubscribeList(nClassID));
 
     // 自动同步自定义资料类型
-    let itemCustomTypeList: ItemCustomTypeList = this.configs.getSettings("itemCustomTypeList") ?? [];
+    let itemCustomTypeList: ItemCustomTypeList =
+      this.configs.getSettings("itemCustomTypeList") ?? [];
     if (typeof itemCustomTypeList === "string") {
       this.configs.setSettings("itemCustomTypeList", Values.itemCustomTypeList);
       itemCustomTypeList = Values.itemCustomTypeList;
     }
-    $(".class-item-type li").filter((_, e) => !e.className.includes("mold-")).each((_, e) => {
-      const t = $(e).find(".text .title").text(), p = $(e).find(".iconfont i");
-      const data: ItemType = {
-        classID: nClassID,
-        typeID: Number($(e).find("a").attr("href").split(classID + "-")[1]?.split(".html")[0]),
-        text: t,
-        icon: p.attr("class").slice(4),
-        color: Utils.rgbToHex(p.css("color"))
-      };
-      if (!(itemCustomTypeList.filter(entry => (
-        entry.classID === data.classID &&
-        entry.typeID === data.typeID &&
-        entry.text === data.text &&
-        entry.icon === data.icon &&
-        entry.color === data.color
-      )).length)) {
-        itemCustomTypeList.push(data);
-        this.configs.setSettings("itemCustomTypeList", itemCustomTypeList);
-        Utils.commonMsg(`成功同步自定义资料类型数据~ (${t})`);
-      }
-    });
+    $(".class-item-type li")
+      .filter((_, e) => !e.className.includes("mold-"))
+      .each((_, e) => {
+        const t = $(e).find(".text .title").text(),
+          p = $(e).find(".iconfont i");
+        const data: ItemType = {
+          classID: nClassID,
+          typeID: Number(
+            $(e)
+              .find("a")
+              .attr("href")
+              .split(classID + "-")[1]
+              ?.split(".html")[0],
+          ),
+          text: t,
+          icon: p.attr("class").slice(4),
+          color: Utils.rgbToHex(p.css("color")),
+        };
+        if (
+          !itemCustomTypeList.filter(
+            (entry) =>
+              entry.classID === data.classID &&
+              entry.typeID === data.typeID &&
+              entry.text === data.text &&
+              entry.icon === data.icon &&
+              entry.color === data.color,
+          ).length
+        ) {
+          itemCustomTypeList.push(data);
+          this.configs.setSettings("itemCustomTypeList", itemCustomTypeList);
+          Utils.commonMsg(`成功同步自定义资料类型数据~ (${t})`);
+        }
+      });
 
     // 日志总是显示更多按钮
-    $(".title").filter((_, e) => e.textContent === "更新日志").append(`<span class="more"><a href="/class/version/${classID}.html" target="_blank">更多</a><a></a></span>`);
+    $(".title")
+      .filter((_, e) => e.textContent === "更新日志")
+      .append(
+        `<span class="more"><a href="/class/version/${classID}.html" target="_blank">更多</a><a></a></span>`,
+      );
 
     // 愚人节特性
     if (this.configs.getSettings("enableAprilFools")) {
@@ -143,28 +160,47 @@ export class ClassPageInit extends Init {
         if (i.innerHTML === langList.gitee) i.innerHTML = "Giteeeeee";
         if (i.innerHTML === langList.modrinth) i.innerHTML = "Pluginrinth";
         if (i.innerHTML === langList.wiki) i.innerHTML = "Kiwi";
-        if (i.innerHTML === langList.curseforge) i.innerHTML = forgeAliasList[Math.floor(Math.random() * 4)];
+        if (i.innerHTML === langList.curseforge)
+          i.innerHTML = forgeAliasList[Math.floor(Math.random() * 4)];
       }
-      $("div.frame span.avatar[title='MCreator - MCr'] img").attr("src", Values.assets.mcmod.aprilFools.mcr);
+      $("div.frame span.avatar[title='MCreator - MCr'] img").attr(
+        "src",
+        Values.assets.mcmod.aprilFools.mcr,
+      );
       $(".class-card .text-block span").each((_, e) => {
         e.innerHTML = e.innerHTML
-        .replace(PublicLangData.class.card.red, "猛票")
-        .replace(PublicLangData.class.card.black, "盲票")
+          .replace(PublicLangData.class.card.red, "猛票")
+          .replace(PublicLangData.class.card.black, "盲票");
       });
       $(".class-card .progress-bar").each((_, e) => {
-        $(e).attr("data-original-title", $(e).attr("data-original-title")
-        .replace(PublicLangData.class.card.red, "猛票")
-        .replace(PublicLangData.class.card.black, "盲票"))
+        $(e).attr(
+          "data-original-title",
+          $(e)
+            .attr("data-original-title")
+            .replace(PublicLangData.class.card.red, "猛票")
+            .replace(PublicLangData.class.card.black, "盲票"),
+        );
       });
     }
 
     // 禁用模组页排版
-    if (/* this.configs.get("mcmodderUI") && */ !this.configs.getSettings("disableClassDataTypesetting")) {
-      Utils.addStyle('.common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {width: 90%; margin: 0 5%; margin-top: 6em;}');
-      $("<div>").attr("class", "mcmodder-info-right").insertAfter(".class-info-left .col-lg-12:first-child()");
+    if (
+      /* this.configs.get("mcmodderUI") && */ !this.configs.getSettings(
+        "disableClassDataTypesetting",
+      )
+    ) {
+      Utils.addStyle(
+        ".common-center .right .class-text-top {min-height: unset; padding-right: unset;} .mcmodder-class-page {width: 90%; margin: 0 5%; margin-top: 6em;}",
+      );
+      $("<div>")
+        .attr("class", "mcmodder-info-right")
+        .insertAfter(".class-info-left .col-lg-12:first-child()");
       $(".class-info-right").children().clone().appendTo(".mcmodder-info-right");
       const src = $(".class-info-left").attr("class", "class-info-left mcmodder-class-source-info");
-      src.clone().attr("class", "class-info-left mcmodder-class-info").appendTo(".class-info-right");
+      src
+        .clone()
+        .attr("class", "class-info-left mcmodder-class-info")
+        .appendTo(".class-info-right");
 
       $(".common-center").append('<div class="right"><div class="class-info"></div></div>');
       $(".class-info-right").appendTo(".common-center .right .class-info");
@@ -174,25 +210,37 @@ export class ClassPageInit extends Init {
       $(".common-center > .right").insertBefore(".common-center .right");
       $(".common-center > .right").remove();
       $(".mcmodder-class-info > ul > *, .common-link-frame .title")
-      .contents()
-      .filter((_, c) => {
-        if (c.nodeType != Node.TEXT_NODE) return false;
-        const text = $(c).text();
-        if (![PublicLangData.class.link.title + ":", PublicLangData.class.tags.title + ": ", PublicLangData.modpack.tags.title + ": ", "支持的MC版本: "].includes(text) && !text.includes("作者")) return false;
-        return true;
-      })
-      .each((_, _text) => {
-        const text = $(_text);
-        text.parent().find("> i").remove();
-        text.replaceWith(`<span class="mcmodder-subtitle">${text.text().replace(":", "")}</span>`)
-      });
+        .contents()
+        .filter((_, c) => {
+          if (c.nodeType != Node.TEXT_NODE) return false;
+          const text = $(c).text();
+          if (
+            ![
+              PublicLangData.class.link.title + ":",
+              PublicLangData.class.tags.title + ": ",
+              PublicLangData.modpack.tags.title + ": ",
+              "支持的MC版本: ",
+            ].includes(text) &&
+            !text.includes("作者")
+          )
+            return false;
+          return true;
+        })
+        .each((_, _text) => {
+          const text = $(_text);
+          text.parent().find("> i").remove();
+          text.replaceWith(
+            `<span class="mcmodder-subtitle">${text.text().replace(":", "")}</span>`,
+          );
+        });
       $(".mcmodder-class-info .author .fold").remove();
 
       $(".col-lg-12.common-rowlist-2 li, .mcmodder-class-info .col-lg-4").each((_, c) => {
         const t = c.textContent;
         const d = t.split(t.includes("：") ? "：" : ": ");
         if (!isNaN(Number(d[1]))) d[1] = Number(d[1]).toLocaleString();
-        if (d[0] === "支持平台") d[1] = d[1].replace(" (JAVA Edition)", "").replace(" (Bedrock Edition)", "");
+        if (d[0] === "支持平台")
+          d[1] = d[1].replace(" (JAVA Edition)", "").replace(" (Bedrock Edition)", "");
         else if (d[0] === "运作方式") {
           const a = d[1].split(", ");
           let innerHTML = "";
@@ -200,54 +248,96 @@ export class ClassPageInit extends Init {
           a.forEach((e, index) => {
             let svg;
             switch (e.toLowerCase()) {
-              case "forge": svg = svgPlarformForge; break;
-              case "fabric": svg = svgPlatformFabric; break;
-              case "neoforge": svg = svgPlatformNeoForge; break;
-              case "quilt": svg = svgPlatformQuilt; break;
-              case "rift": svg = svgPlatformRift; break;
-              case "liteloader": svg = svgPlatformLiteLoader; break;
-              case "nilloader": svg = svgPlatformNilLoader; break;
-              case "javaagent": svg = svgPlatformJavaAgent; break;
-              default: svg = svgPlatformDefault;
+              case "forge":
+                svg = svgPlarformForge;
+                break;
+              case "fabric":
+                svg = svgPlatformFabric;
+                break;
+              case "neoforge":
+                svg = svgPlatformNeoForge;
+                break;
+              case "quilt":
+                svg = svgPlatformQuilt;
+                break;
+              case "rift":
+                svg = svgPlatformRift;
+                break;
+              case "liteloader":
+                svg = svgPlatformLiteLoader;
+                break;
+              case "nilloader":
+                svg = svgPlatformNilLoader;
+                break;
+              case "javaagent":
+                svg = svgPlatformJavaAgent;
+                break;
+              default:
+                svg = svgPlatformDefault;
             }
-            const icon = `<img src="${ svg }" />`;
-            const text = `<span class="mcmodder-loadername" style="color: var(--mcmodder-color-platform-${ a[index].toLowerCase() })">${ a[index] }</span>`;
+            const icon = `<img src="${svg}" />`;
+            const text = `<span class="mcmodder-loadername" style="color: var(--mcmodder-color-platform-${a[index].toLowerCase()})">${a[index]}</span>`;
             if (index < 3) {
-              innerHTML += `<a class="mcmodder-modloader">${ icon }${ a.length === 1 ? text : "" }</a>`;
+              innerHTML += `<a class="mcmodder-modloader">${icon}${a.length === 1 ? text : ""}</a>`;
             } else if (index === 3) {
-              innerHTML += `<span class="more">..+${ a.length - index }</span>`;
+              innerHTML += `<span class="more">..+${a.length - index}</span>`;
             }
-            tooltipHTML += `<a class="mcmodder-modloader">${ icon }${ text }</a>`;
+            tooltipHTML += `<a class="mcmodder-modloader">${icon}${text}</a>`;
           });
-          d[1] = `<div class="mcmodder-modloader-container" data-toggle="tooltip" data-html="true" data-original-title="${ Utils.escapeHTML(tooltipHTML) }">${ innerHTML }</div>`;
+          d[1] = `<div class="mcmodder-modloader-container" data-toggle="tooltip" data-html="true" data-original-title="${Utils.escapeHTML(tooltipHTML)}">${innerHTML}</div>`;
         }
         if (d[0] === "运行环境") {
           const a = d[1].split(", ");
-          a.forEach(e => {
+          a.forEach((e) => {
             let r = e.slice(3, 5);
-            if (r === "需装") r = `<span class="mcmodder-class-env-required"><i class="fa fa-check" />${r}</span>`;
-            else if (r === "无效") r = `<span class="mcmodder-class-env-invalid"><i class="fa fa-ban" />${r}</span>`;
-            else if (r === "可选") r = `<span class="mcmodder-class-env-optional"><i class="fa fa-circle-o" />${r}</span>`;
-            $(`<li class="col-lg-6"><span class="title">${r}</span><span class="text">${e.slice(0, 3)}</span></li>`).insertAfter($(c).prev());
+            if (r === "需装")
+              r = `<span class="mcmodder-class-env-required"><i class="fa fa-check" />${r}</span>`;
+            else if (r === "无效")
+              r = `<span class="mcmodder-class-env-invalid"><i class="fa fa-ban" />${r}</span>`;
+            else if (r === "可选")
+              r = `<span class="mcmodder-class-env-optional"><i class="fa fa-circle-o" />${r}</span>`;
+            $(
+              `<li class="col-lg-6"><span class="title">${r}</span><span class="text">${e.slice(0, 3)}</span></li>`,
+            ).insertAfter($(c).prev());
           });
           c.remove();
         } else c.innerHTML = `<span class="title">${d[1]}</span><span class="text">${d[0]}</span>`;
         if (c.className === "col-lg-4") c.className = "col-lg-6";
       });
       $(".slider-block").remove();
-      $(".modlist-filter-block.auto button[type=submit]").css({ "background": "transparent", "color": "var(--mcmodder-color-text)" });
+      $(".modlist-filter-block.auto button[type=submit]").css({
+        background: "transparent",
+        color: "var(--mcmodder-color-text)",
+      });
 
       const infoModpack = parseInt($(".infolist.modpack").text().slice(2));
       const infoServerCount = parseInt($(".infolist.server-count").text().slice(2));
       const infoServerPre = parseFloat($(".infolist.server-pre").text().split("安装率为 ")[1]);
       const infoWorldgen = parseFloat($(".infolist.worldgen").text().split("有 ")[1]);
       const infoDownload = $(".download-btn").attr("title")?.split("共 ")[1]?.split(" 次下载")[0];
-      $(".infolist.modpack, .infolist.server-count, .infolist.server-pre, .infolist.worldgen").remove();
-      if (infoModpack) $(`<li class="col-lg-6"><span class="title">${infoModpack}</span><span class="text"><a target="_blank" href="/modpack.html?mod=${classID}">整合包已收录</a></span></li>`).insertAfter($(".col-lg-6").last());
-      if (infoServerCount) $(`<li class="col-lg-6"><span class="title">${infoServerCount}</span><span class="text"><a target="_blank" href="https://play.mcmod.cn/list/?classid=${classID}">服务器已安装</a></span></li>`).insertAfter($(".col-lg-6").last());
-      if (infoServerPre) $(`<li class="col-lg-6"><span class="title">${infoServerPre}%</span><span class="text">模组服安装率</span></li>`).insertAfter($(".col-lg-6").last());
-      if (infoWorldgen) $(`<li class="col-lg-6"><span class="title">${infoWorldgen}</span><span class="text"><a target="_blank" href="${ this.parent.hostname }/worldgen.html?mod=${classID}">资源分布数据</a></span></li>`).insertAfter($(".col-lg-6").last());
-      if (infoDownload) $(`<li class="col-lg-6"><span class="title">${infoDownload}</span><span class="text">本站下载量</span></li>`).insertAfter($(".col-lg-6").last());
+      $(
+        ".infolist.modpack, .infolist.server-count, .infolist.server-pre, .infolist.worldgen",
+      ).remove();
+      if (infoModpack)
+        $(
+          `<li class="col-lg-6"><span class="title">${infoModpack}</span><span class="text"><a target="_blank" href="/modpack.html?mod=${classID}">整合包已收录</a></span></li>`,
+        ).insertAfter($(".col-lg-6").last());
+      if (infoServerCount)
+        $(
+          `<li class="col-lg-6"><span class="title">${infoServerCount}</span><span class="text"><a target="_blank" href="https://play.mcmod.cn/list/?classid=${classID}">服务器已安装</a></span></li>`,
+        ).insertAfter($(".col-lg-6").last());
+      if (infoServerPre)
+        $(
+          `<li class="col-lg-6"><span class="title">${infoServerPre}%</span><span class="text">模组服安装率</span></li>`,
+        ).insertAfter($(".col-lg-6").last());
+      if (infoWorldgen)
+        $(
+          `<li class="col-lg-6"><span class="title">${infoWorldgen}</span><span class="text"><a target="_blank" href="${this.parent.hostname}/worldgen.html?mod=${classID}">资源分布数据</a></span></li>`,
+        ).insertAfter($(".col-lg-6").last());
+      if (infoDownload)
+        $(
+          `<li class="col-lg-6"><span class="title">${infoDownload}</span><span class="text">本站下载量</span></li>`,
+        ).insertAfter($(".col-lg-6").last());
 
       // 启用悬浮链接提示兼容
       if (src.find(".common-link-frame a").first().attr("href") === "javascript:void(0);") {
@@ -255,7 +345,7 @@ export class ClassPageInit extends Init {
           const srca = $(c);
           const cpta = $(".class-info-left.mcmodder-class-info").find("#" + srca.attr("id"));
           const url = srca.next().html().split("<strong>")[1].split("</strong>")[0];
-          const jumpUrl = srca.next().html().split("href=\\\"")[1].split("\\\">前往链接")[0];
+          const jumpUrl = srca.next().html().split('href=\\"')[1].split('\\">前往链接')[0];
           cpta.webuiPopover({
             title: "这是一个站外链接",
             content: `
@@ -268,13 +358,13 @@ export class ClassPageInit extends Init {
               </p>`,
             trigger: "click",
             closeable: true,
-            delay: 0
+            delay: 0,
           });
           cpta.parent().click(() => $(".tooltip").tooltip("hide"));
-        })
+        });
       }
     } else {
-      Utils.addStyle('.common-center .right .class-text-top {padding-right: 250px;}');
+      Utils.addStyle(".common-center .right .class-text-top {padding-right: 250px;}");
       $(".class-info-right, .class-excount").addClass("mcmodder-disable-modern");
     }
 
@@ -282,12 +372,12 @@ export class ClassPageInit extends Init {
     new MainText(this.parent, $(".text-area.common-text"));
 
     // if (this.configs.get("mcmodderUI")) {
-      $(".class-item-type .mold:not(.mold-0)").each((_, c) => {
-        $('<span class="mcmodder-mold-num">')
+    $(".class-item-type .mold:not(.mold-0)").each((_, c) => {
+      $('<span class="mcmodder-mold-num">')
         .text(parseInt($(c).find(".count").text().slice(1)).toLocaleString())
         .css("color", $(c).find(".title").css("color"))
         .appendTo(c);
-      });
+    });
     // }
 
     // 广告优化
@@ -300,62 +390,96 @@ export class ClassPageInit extends Init {
       $(`<a class="btn mcmodder-class-info-fold btn-outline-secondary mcmodder-content-block">
         <i class="fas fa-chevron-down"></i>
         <span>展开高级信息</span>
-      </a>`).click(e => {
-        const button = $(e.currentTarget);
-        button.addClass("disabled");
-        button.find("span").text("努力加载中...");
-        button.find("i").attr("class", "fa fa-pulse fa-spinner");
-        this.parent.utils.createRequest({
-          url: `${ this.parent.hostname }/${ this.isClassPage ? "class" : "modpack" }/edit/${ classID }/`,
-          method: "GET"
+      </a>`)
+        .click((e) => {
+          const button = $(e.currentTarget);
+          button.addClass("disabled");
+          button.find("span").text("努力加载中...");
+          button.find("i").attr("class", "fa fa-pulse fa-spinner");
+          this.parent.utils
+            .createRequest({
+              url: `${this.parent.hostname}/${this.isClassPage ? "class" : "modpack"}/edit/${classID}/`,
+              method: "GET",
+            })
+            .then((resp) => {
+              if (!resp.responseXML) return;
+              const doc = $(resp.responseXML);
+              if (doc.find(".edit-unlogining").length) {
+                if (doc.find(".edit-unlogining").text().includes("登录"))
+                  Utils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
+                else Utils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
+                button.removeClass("disabled");
+                button.find("span").text("展开高级信息");
+                button.find("i").attr("class", "fas fa-chevron-down");
+                return;
+              }
+              const infoModID = this.isClassPage ? doc.find("#class-modid").val() : undefined;
+              const infoCFID = doc.find("#class-cfprojectid").val();
+              const infoMRID = doc.find("#class-mrprojectid").val();
+              const lastElement = $(".col-lg-6").last();
+              if (infoModID)
+                Utils.addClickCopyEvent(
+                  $(
+                    `<li class="col-lg-6"><a><span class="title">${infoModID}</span></a><span class="text">MODID</span></li>`,
+                  )
+                    .insertAfter(lastElement)
+                    .find("a"),
+                  "MODID ",
+                );
+              if (infoCFID)
+                Utils.addClickCopyEvent(
+                  $(
+                    `<li class="col-lg-6"><a><span class="title">${infoCFID}</span></a><span class="text">CFID</span></li>`,
+                  )
+                    .insertAfter(lastElement)
+                    .find("a"),
+                  "CFID ",
+                );
+              if (infoMRID)
+                Utils.addClickCopyEvent(
+                  $(
+                    `<li class="col-lg-6"><a><span class="title">${infoMRID}</span></a><span class="text">MRID</span></li>`,
+                  )
+                    .insertAfter(lastElement)
+                    .find("a"),
+                  "MRID ",
+                );
+              button.remove();
+            });
         })
-        .then(resp => {
-          if (!resp.responseXML) return;
-          const doc = $(resp.responseXML);
-          if (doc.find(".edit-unlogining").length) {
-            if (doc.find(".edit-unlogining").text().includes("登录")) Utils.commonMsg("请重新登录或在切换账号界面中退出未登录状态后再操作~", false);
-            else Utils.commonMsg("受本模组/整合包区域限制，无法直接获取高级信息...", false);
-            button.removeClass("disabled");
-            button.find("span").text("展开高级信息");
-            button.find("i").attr("class", "fas fa-chevron-down");
-            return;
-          }
-          const infoModID = this.isClassPage ? doc.find("#class-modid").val() : undefined;
-          const infoCFID = doc.find("#class-cfprojectid").val();
-          const infoMRID = doc.find("#class-mrprojectid").val();
-          const lastElement = $(".col-lg-6").last();
-          if (infoModID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoModID }</span></a><span class="text">MODID</span></li>`).insertAfter(lastElement).find("a"), "MODID ");
-          if (infoCFID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoCFID }</span></a><span class="text">CFID</span></li>`).insertAfter(lastElement).find("a"), "CFID ");
-          if (infoMRID) Utils.addClickCopyEvent($(`<li class="col-lg-6"><a><span class="title">${ infoMRID }</span></a><span class="text">MRID</span></li>`).insertAfter(lastElement).find("a"), "MRID ");
-          button.remove();
-        });
-      }).insertAfter($(".col-lg-6").last());
+        .insertAfter($(".col-lg-6").last());
     }
-    
+
     // 压缩支持版本
     if (this.configs.getSettings("compactSupportedVersions")) {
       type MCVersion = [number, number, number];
       type MCVersionRange = [MCVersion?, MCVersion?];
-      let startIndex: number, patchIndex: number, versionRanges: MCVersionRange[], currentRange: MCVersionRange;
+      let startIndex: number,
+        patchIndex: number,
+        versionRanges: MCVersionRange[],
+        currentRange: MCVersionRange;
       $(".mcver > ul > ul").each((_, versionListNode) => {
         versionRanges = [];
         currentRange = [];
-        const versionList: MCVersion[] = Array.from(versionListNode.children).slice(1).map(_ver => {
-          _ver.classList.add("mcmodder-uncompactedmcver");
-          let ver = _ver.textContent;
-          if (ver === "远古版本") ver = "1.1.0"; // 为统一处理，远古版本视为1.1.0
-          const verArray = ver.split(".").map(Number) as MCVersion;
-          while (verArray.length < 3) verArray.push(0);
-          return verArray;
-        });
-        
+        const versionList: MCVersion[] = Array.from(versionListNode.children)
+          .slice(1)
+          .map((_ver) => {
+            _ver.classList.add("mcmodder-uncompactedmcver");
+            let ver = _ver.textContent;
+            if (ver === "远古版本") ver = "1.1.0"; // 为统一处理，远古版本视为1.1.0
+            const verArray = ver.split(".").map(Number) as MCVersion;
+            while (verArray.length < 3) verArray.push(0);
+            return verArray;
+          });
+
         for (const ver of versionList) {
           const major = ver[0];
           const minor = ver[1];
           const patch = ver[2];
           patchIndex = 0;
           // 根据版本格式获取对应的版本列表
-          const list = major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
+          const list =
+            major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
           const series = minor;
 
           if (list) {
@@ -371,32 +495,45 @@ export class ClassPageInit extends Init {
           if (currentRange && currentRange.length) {
             const prevMajor = currentRange[0]![0];
             const prevSeries = currentRange[0]![1];
-            isSameSeries = (prevSeries === series) && (prevMajor === major);
+            isSameSeries = prevSeries === series && prevMajor === major;
           }
 
-          if (!currentRange || !currentRange.length || !isSameSeries || patchIndex + 1 != startIndex) { // 新建一个版本区间
+          if (
+            !currentRange ||
+            !currentRange.length ||
+            !isSameSeries ||
+            patchIndex + 1 != startIndex
+          ) {
+            // 新建一个版本区间
             currentRange = [Array.from(ver) as MCVersion, Array.from(ver) as MCVersion];
             versionRanges.push(currentRange);
             startIndex = patchIndex;
-          }
-          else if (patchIndex + 1 === startIndex) { // 将当前版本与最近的版本区间合并
+          } else if (patchIndex + 1 === startIndex) {
+            // 将当前版本与最近的版本区间合并
             startIndex = patchIndex;
             currentRange[0] = Array.from(ver) as MCVersion;
           }
         }
 
         const $versionListNode = $(versionListNode);
-        versionRanges.forEach(versionRange => { // 将所有版本区间写入页面
+        versionRanges.forEach((versionRange) => {
+          // 将所有版本区间写入页面
           if (versionRange.length < 2) return;
           let rangeContent;
           const major = versionRange[0]![0];
           const minor = versionRange[0]![1];
           const patchOld = versionRange[0]![2];
           const patchNew = versionRange[1]![2];
-          
-          const list = major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
 
-          if (list && list.length > 1 && patchOld === list[0] && patchNew === list[list.length - 1]) {
+          const list =
+            major === 1 ? Values.allVersionList[minor] : Values.newVersionList[major - 26]?.[minor];
+
+          if (
+            list &&
+            list.length > 1 &&
+            patchOld === list[0] &&
+            patchNew === list[list.length - 1]
+          ) {
             rangeContent = major === 1 ? `1.${minor}.x` : `${major}.${minor}.x`;
           } else if (patchOld === patchNew) {
             rangeContent = Utils.versionArrayToString(versionRange[0]!);
@@ -404,7 +541,9 @@ export class ClassPageInit extends Init {
             rangeContent = `${Utils.versionArrayToString(versionRange[1]!)}-${Utils.versionArrayToString(versionRange[0]!)}`;
           }
 
-          $versionListNode.append(`<li class="text-danger mcmodder-compactedmcver"><a target="_blank" class="mcmodder-content-block">${rangeContent}</a></li>`);
+          $versionListNode.append(
+            `<li class="text-danger mcmodder-compactedmcver"><a target="_blank" class="mcmodder-content-block">${rangeContent}</a></li>`,
+          );
         });
       });
 
@@ -413,7 +552,7 @@ export class ClassPageInit extends Init {
       const compactedmcver = $(".mcmodder-compactedmcver");
       uncompactedmcver.hide();
       compactedmcver.show();
-      window.addEventListener("keydown", e => {
+      window.addEventListener("keydown", (e) => {
         if (isUncompactedmcverShown) return;
         if (e.key === "Shift" && e.target === document.body) {
           uncompactedmcver.show();
@@ -421,7 +560,7 @@ export class ClassPageInit extends Init {
           isUncompactedmcverShown = true;
         }
       });
-      window.addEventListener("keyup", e => {
+      window.addEventListener("keyup", (e) => {
         if (!isUncompactedmcverShown) return;
         if (e.key === "Shift" && e.target === document.body) {
           uncompactedmcver.hide();
@@ -434,30 +573,37 @@ export class ClassPageInit extends Init {
     // 将本模组加入最近浏览中
     if (this.isClassPage && this.configs.getSettings("rememberVisitedMods")) {
       let recentlyVisitedMods = this.configs.getSettings("recentlyVisitedMods") ?? [];
-      recentlyVisitedMods = recentlyVisitedMods.filter(e => e.id !== nClassID);
+      recentlyVisitedMods = recentlyVisitedMods.filter((e) => e.id !== nClassID);
       recentlyVisitedMods.push({
         id: nClassID,
-        time: Date.now()
+        time: Date.now(),
       });
       if (recentlyVisitedMods.length > ClassPageInit.maxRecentlyVisitedLength) {
         recentlyVisitedMods = recentlyVisitedMods.slice(-ClassPageInit.maxRecentlyVisitedLength);
       }
       this.configs.setSettings("recentlyVisitedMods", recentlyVisitedMods);
-      
+
       // 记录模组数据
       this.configs.setAllClass(Utils.parseClassDocument().classData, nClassID);
     }
 
     // 样式修复
-    $(".class-excount .span").first().css("border-right-color", "var(--mcmodder-color-background-dark2)");
+    $(".class-excount .span")
+      .first()
+      .css("border-right-color", "var(--mcmodder-color-background-dark2)");
 
     // 若参与了活动，则为活动添加外边框
     const events = $(".class-text > span.figure");
     if (events.length) {
-      const eventContainer = $('<div class="mcmodder-modjam-container">').insertBefore(events.first());
+      const eventContainer = $('<div class="mcmodder-modjam-container">').insertBefore(
+        events.first(),
+      );
       events.appendTo(eventContainer);
-      events.addClass("mcmodder-golden-alert").css("width", "100%")
-        .find(".figcaption").css("color", "var(--mcmodder-color-text-dark1)");
+      events
+        .addClass("mcmodder-golden-alert")
+        .css("width", "100%")
+        .find(".figcaption")
+        .css("color", "var(--mcmodder-color-text-dark1)");
     }
   }
 }

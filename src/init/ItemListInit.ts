@@ -7,6 +7,6 @@ export class ItemListInit extends Init {
   run() {
     if (this.configs.getSettings("moveAds")) {
       $(".center .adsbygoogle").insertAfter(".center .item-list-table");
-    }  
+    }
   }
 }

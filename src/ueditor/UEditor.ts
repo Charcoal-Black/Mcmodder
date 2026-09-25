@@ -4,7 +4,6 @@ import { Utils } from "../Utils";
 import { Values } from "../Values";
 
 export class UEditor {
-
   editor: any;
   parent: Mcmodder;
   configs: ConfigRepository;
@@ -59,7 +58,7 @@ export class UEditor {
     this.$body = $(this.body || "");
 
     this.parent.ueditorFrame.push(this);
-    this.parent.ueditorFrame.forEach(e => {
+    this.parent.ueditorFrame.forEach((e) => {
       if (!e.document) return;
       Utils.addStyle(this.parent.css, "", e.document);
       if (this.parent.isNightMode) {
@@ -69,13 +68,17 @@ export class UEditor {
 
     // 现代化按钮
     // if (this.configs.get("mcmodderUI")) {
-      const toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
-      for (let i = 0; i < Values.ueButton1.length; i++) {
-        toolBar.find(`.edui-for-${Values.ueButton1[i]} .edui-icon`)
+    const toolBar = this.$outerFrame.find(".edui-editor-toolbarboxinner");
+    for (let i = 0; i < Values.ueButton1.length; i++) {
+      toolBar
+        .find(`.edui-for-${Values.ueButton1[i]} .edui-icon`)
         .addClass("mcmodder-edui-box fa fa-" + Values.ueButton2[i])
         .css("background-image", "none");
-      }
-      toolBar.find(".edui-arrow").addClass("mcmodder-edui-arrow fa fa-caret-down").css("background-image", "none");
+    }
+    toolBar
+      .find(".edui-arrow")
+      .addClass("mcmodder-edui-arrow fa fa-caret-down")
+      .css("background-image", "none");
     // }
 
     // 宽度自适应
@@ -85,19 +88,23 @@ export class UEditor {
     this.updateEditorStats();
 
     this.editor.addListener("contentChange", () => {
-      this.updateEditorStats()
+      this.updateEditorStats();
     });
   }
 
   isEditorFullScreen() {
-    return this.$outerFrame
-    ?.find(".edui-editor")
-    .prop("style")
-    .getPropertyValue("position") === "absolute";
+    return (
+      this.$outerFrame?.find(".edui-editor").prop("style").getPropertyValue("position") ===
+      "absolute"
+    );
   }
 
   resizeHeight(height: number) {
-    this.frame?.style?.setProperty("height", (height + $("#edui1_toolbarbox").first().prop("offsetHeight")) + "px", "important");
+    this.frame?.style?.setProperty(
+      "height",
+      height + $("#edui1_toolbarbox").first().prop("offsetHeight") + "px",
+      "important",
+    );
     this.iframeHolder?.style?.setProperty("height", height + "px", "important");
 
     // this.editor.setHeight(height);

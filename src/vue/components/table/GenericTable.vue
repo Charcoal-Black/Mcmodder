@@ -18,27 +18,19 @@
     </div>
     <table class="mcmodder-table">
       <thead>
-        <th
-          v-for="option in rowOptions"
-          v-html="option.name"
-        />
+        <th v-for="option in rowOptions" v-html="option.name" />
       </thead>
       <tbody>
-        <tr
-          class="mcmodder-table-margin-top"
-          :style="{ height: cssMarginTopHeight + 'px' }"
-        />
-        <tr
-          class="mcmodder-table-empty"
-          v-show="!currentData.length"
-        />
+        <tr class="mcmodder-table-margin-top" :style="{ height: cssMarginTopHeight + 'px' }" />
+        <tr class="mcmodder-table-empty" v-show="!currentData.length" />
         <tr
           v-for="index in renderingRowArray"
           :data-index="index"
           :class="{
             'mcmodder-table-pointerover-tr': index === hoveringIndex,
-            'mcmodder-table-unsaved-tr': currentData[index].edited && Object.keys(currentData[index].edited).length,
-            'selected': currentData[index].selected
+            'mcmodder-table-unsaved-tr':
+              currentData[index].edited && Object.keys(currentData[index].edited).length,
+            selected: currentData[index].selected,
           }"
           @pointerenter="rowOnPointerenter(index)"
         >
@@ -47,21 +39,30 @@
             :data-key="key"
             :class="{
               'mcmodder-table-pointerover-td': key === hoveringKey,
-              'mcmodder-table-unsaved-td': currentData[index].edited?.[key]
+              'mcmodder-table-unsaved-td': currentData[index].edited?.[key],
             }"
             @pointerenter="unitOnPointerenter(index, key)"
             @pointerleave="unitOnPointerleave(index, key)"
             @dblclick="onDblclick(index, key)"
           >
             <div
-              v-if="editingIndex !== index || editingKey !== key" v-html="renderUnit(currentData[index], key)" />
-            <div v-else ref="inputContainer" class="mcmodder-table-input" @keydown="onInputKeydown" @focusout="onInputFocusout">
+              v-if="editingIndex !== index || editingKey !== key"
+              v-html="renderUnit(currentData[index], key)"
+            />
+            <div
+              v-else
+              ref="inputContainer"
+              class="mcmodder-table-input"
+              @keydown="onInputKeydown"
+              @focusout="onInputFocusout"
+            >
               <NumberInput
                 v-if="inputNodeData?.type === InputType.NUMBER"
                 ref="input"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value"
-                :range="inputNodeData.range",
+                :range="inputNodeData.range"
+                ,
                 :onSuccessfulChange="inputNodeData.onSuccessfulChange"
               />
               <TextInput
@@ -85,22 +86,32 @@
 </template>
 
 <script setup lang="ts" generic="T extends TableAcceptable">
-import { computed, nextTick, onMounted, ref, type ShallowRef, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { TableUtils } from '../../../table/Table.ts';
-import { Utils } from '../../../Utils.ts';
-import ContextMenu from '../ContextMenu.vue';
-import { McmodderEditableTable } from '../../../table/EditableTable.ts';
-import { Command } from '../../../table/command/Command.ts';
-import { InputType } from '../../../config/ConfigUtils.ts';
-import { EditCommand } from '../../../table/command/EditCommand.ts';
-import NumberInput from '../input/NumberInput.vue';
-import TextInput from '../input/TextInput.vue';
-import { InsertRowCommand } from '../../../table/command/InsertRowCommand.ts';
-import { PasteCommand } from '../../../table/command/PasteCommand.ts';
-import { DeleteRowCommand } from '../../../table/command/DeleteRowCommand.ts';
-import { DeleteMultipleRowCommand } from '../../../table/command/DeleteMultipleRowCommand.ts';
-import ProgressBar from '../ProgressBar.vue';
-import type { TableProps } from '../../../types/props';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  type ShallowRef,
+  shallowRef,
+  triggerRef,
+  useTemplateRef,
+  watch,
+} from "vue";
+import { TableUtils } from "../../../table/Table.ts";
+import { Utils } from "../../../Utils.ts";
+import ContextMenu from "../ContextMenu.vue";
+import { McmodderEditableTable } from "../../../table/EditableTable.ts";
+import { Command } from "../../../table/command/Command.ts";
+import { InputType } from "../../../config/ConfigUtils.ts";
+import { EditCommand } from "../../../table/command/EditCommand.ts";
+import NumberInput from "../input/NumberInput.vue";
+import TextInput from "../input/TextInput.vue";
+import { InsertRowCommand } from "../../../table/command/InsertRowCommand.ts";
+import { PasteCommand } from "../../../table/command/PasteCommand.ts";
+import { DeleteRowCommand } from "../../../table/command/DeleteRowCommand.ts";
+import { DeleteMultipleRowCommand } from "../../../table/command/DeleteMultipleRowCommand.ts";
+import ProgressBar from "../ProgressBar.vue";
+import type { TableProps } from "../../../types/props";
 
 const props = defineProps<TableProps<T>>();
 
@@ -124,7 +135,9 @@ const classLoadingOverlayFaded = ref(false);
 const contextMenu = useTemplateRef("contextMenu");
 
 const editable = ref(false);
-const editConfigsInitializer: ShallowRef<EditOptionsInitializer<T> | undefined> = shallowRef(props.editConfigs);
+const editConfigsInitializer: ShallowRef<EditOptionsInitializer<T> | undefined> = shallowRef(
+  props.editConfigs,
+);
 const editConfigs = shallowRef<EditConfigs<T>>();
 const unsaved = ref(false);
 const selectedRowCount = ref(0);
@@ -153,64 +166,74 @@ Object.entries(props.rowOptions).forEach(([key, value]) => {
 const rowOptions = rowOptionsConstructor as RowOptions<T>;
 
 function bindEvents() {
-  window.addEventListener("scroll", Utils.animationThrottle(() => {
-    onScroll();
-  }), {
-    passive: true
-  });
-  window.addEventListener("resize", Utils.animationThrottle(() => {
-    updateScreenContainableRows();
-  }), {
-    passive: true
-  });
+  window.addEventListener(
+    "scroll",
+    Utils.animationThrottle(() => {
+      onScroll();
+    }),
+    {
+      passive: true,
+    },
+  );
+  window.addEventListener(
+    "resize",
+    Utils.animationThrottle(() => {
+      updateScreenContainableRows();
+    }),
+    {
+      passive: true,
+    },
+  );
   refreshAll();
 
-  $(document.body).keydown(e => {
-    // 撤销 Ctrl+Z
-    if (Utils.isKeyMatch(McmodderEditableTable.undoKey, e) && !e.shiftKey) {
-      e.preventDefault();
-      undo();
-    } 
+  $(document.body)
+    .keydown((e) => {
+      // 撤销 Ctrl+Z
+      if (Utils.isKeyMatch(McmodderEditableTable.undoKey, e) && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
 
-    // 重做 Ctrl+Y (Ctrl+Shift+Z)
-    else if (
-      Utils.isKeyMatch(McmodderEditableTable.redoKey, e) ||
-      Utils.isKeyMatch(McmodderEditableTable.redoKey2, e)
-    ) {
-      e.preventDefault();
-      redo();
-    }
+      // 重做 Ctrl+Y (Ctrl+Shift+Z)
+      else if (
+        Utils.isKeyMatch(McmodderEditableTable.redoKey, e) ||
+        Utils.isKeyMatch(McmodderEditableTable.redoKey2, e)
+      ) {
+        e.preventDefault();
+        redo();
+      }
 
-    // 保存 Ctrl+S
-    else if (Utils.isKeyMatch(McmodderEditableTable.saveKey, e)) {
-      e.preventDefault();
-      saveAll();
-    }
+      // 保存 Ctrl+S
+      else if (Utils.isKeyMatch(McmodderEditableTable.saveKey, e)) {
+        e.preventDefault();
+        saveAll();
+      }
 
-    // 全选 Ctrl+A
-    else if (Utils.isKeyMatch(McmodderEditableTable.selectAllKey, e)) {
-      e.preventDefault();
-      selectAll(!e.shiftKey);
-    } 
+      // 全选 Ctrl+A
+      else if (Utils.isKeyMatch(McmodderEditableTable.selectAllKey, e)) {
+        e.preventDefault();
+        selectAll(!e.shiftKey);
+      }
 
-    // 复制 Ctrl+C
-    else if (Utils.isKeyMatch(McmodderEditableTable.copyKey, e)) {
-      e.preventDefault();
-      copyRow(getSelection());
-    } 
-    
-    // 选中行
-    else if (e.key === "Shift") {
-      if (editable.value) {
-        isShiftKeyPressed.value = true;
-        if (hoveringIndex.value !== null) {
-          switchSelectState(hoveringIndex.value);
+      // 复制 Ctrl+C
+      else if (Utils.isKeyMatch(McmodderEditableTable.copyKey, e)) {
+        e.preventDefault();
+        copyRow(getSelection());
+      }
+
+      // 选中行
+      else if (e.key === "Shift") {
+        if (editable.value) {
+          isShiftKeyPressed.value = true;
+          if (hoveringIndex.value !== null) {
+            switchSelectState(hoveringIndex.value);
+          }
         }
       }
-    }
-  }).keyup(e => {
-    if (e.key === "Shift") isShiftKeyPressed.value = false;
-  });
+    })
+    .keyup((e) => {
+      if (e.key === "Shift") isShiftKeyPressed.value = false;
+    });
 }
 
 function gotoHandler(e: Event) {
@@ -225,7 +248,8 @@ function gotoHandler(e: Event) {
 }
 
 function updateScreenContainableRows() {
-  screenContainableRows.value = Math.ceil(window.innerHeight / rowHeight.value) + TableUtils.ROW_EXPAND;
+  screenContainableRows.value =
+    Math.ceil(window.innerHeight / rowHeight.value) + TableUtils.ROW_EXPAND;
 }
 
 function getTbody() {
@@ -244,7 +268,7 @@ function calculateRenderableRows(): TableRowRange {
 
   return {
     l: Math.min(dataLength - 1, Math.max(0, L)),
-    r: Math.min(dataLength, R)
+    r: Math.min(dataLength, R),
   };
 }
 
@@ -270,10 +294,15 @@ function searchData(key: keyof T | null, value: any) {
 }
 
 function scrollTo(index: number) {
-  $("html").get(0).scrollTo({
-    top: Utils.getAbsolutePos(getTbody()).y + calculateRowHeightTopOffset(index) - window.screen.height / 2,
-    behavior: "smooth"
-  });
+  $("html")
+    .get(0)
+    .scrollTo({
+      top:
+        Utils.getAbsolutePos(getTbody()).y +
+        calculateRowHeightTopOffset(index) -
+        window.screen.height / 2,
+      behavior: "smooth",
+    });
 }
 
 function onScroll() {
@@ -297,12 +326,13 @@ function onScroll() {
 
   // 保存行高以便实现虚拟列表
   nextTick(() => {
-    const newRowHeight = $(getTbody()).find(`[data-index=${ newRows.l }]`).get(0)?.getBoundingClientRect()?.height ?? TableUtils.ROW_HEIGHT_DEFAULT;
+    const newRowHeight =
+      $(getTbody()).find(`[data-index=${newRows.l}]`).get(0)?.getBoundingClientRect()?.height ??
+      TableUtils.ROW_HEIGHT_DEFAULT;
     if (newRowHeight !== rowHeight.value) {
       rowHeight.value = newRowHeight;
       updateScreenContainableRows();
-    }
-    else {
+    } else {
       renderingRows.value.l = newRows.l;
       renderingRows.value.r = newRows.r;
     }
@@ -314,7 +344,7 @@ function onScroll() {
 
 function setAllData(data: TableDataList<T>) {
   empty();
-  currentData.value = data.map(e => ({ content: e }));
+  currentData.value = data.map((e) => ({ content: e }));
 }
 
 onMounted(() => {
@@ -323,10 +353,10 @@ onMounted(() => {
   bindEvents();
   refreshAll();
   initContextMenu();
-})
+});
 
 function getAllData() {
-  return currentData.value.map(data => data.content);
+  return currentData.value.map((data) => data.content);
 }
 
 function getData(index: number) {
@@ -347,12 +377,12 @@ function getAllRowData() {
 
 function appendData(data: T) {
   currentData.value.push({
-    content: data
+    content: data,
   });
 }
 
 function appendDataList(dataList: TableDataList<T>) {
-  dataList.forEach(data => {
+  dataList.forEach((data) => {
     appendData(data);
   });
 }
@@ -388,25 +418,28 @@ function getElementIndex(target?: EventTarget | Element | JQuery | null) {
 }
 
 function getRowElement(index: number) {
-  if (isIndexRendering(index)) return $(getTbody()).find(`[data-index=${ index }]`);
+  if (isIndexRendering(index)) return $(getTbody()).find(`[data-index=${index}]`);
   return $();
 }
 
 function getUnitElement(index: number, key: string) {
-  return getRowElement(index).find(`[data-key=${ key }]`);
+  return getRowElement(index).find(`[data-key=${key}]`);
 }
 
 function renderUnit(data: TableRowData<T>, key: string) {
   const rawContent = (data.edited as any)?.[key] ?? (data.content as any)[key];
   const displayRule = rowOptions[key].displayRule;
   let content;
-  if ((!displayRule || displayRule.length < 2) && (rawContent === undefined || rawContent === null)) {
+  if (
+    (!displayRule || displayRule.length < 2) &&
+    (rawContent === undefined || rawContent === null)
+  ) {
     content = null;
   } else {
     content = displayRule?.(rawContent, data.content) ?? rawContent;
   }
   if (content === undefined || content === null) {
-    return '<span class="text-muted">∅</span>'
+    return '<span class="text-muted">∅</span>';
   }
   return content;
 }
@@ -418,7 +451,7 @@ function refreshAll() {
   emit("refresh");
   nextTick(() => {
     onScroll();
-  })
+  });
 }
 
 function empty() {
@@ -473,14 +506,15 @@ watch(
     }
     editable.value = true;
     const result: Partial<EditOptionsInitializer<T>> = {};
-    (Object.entries(editConfigsInitializer.value)).forEach(([key, value]) => {
+    Object.entries(editConfigsInitializer.value).forEach(([key, value]) => {
       result[key as keyof T] = McmodderEditableTable.parseEditConfigInitializer(value);
     });
     editConfigs.value = result as unknown as EditConfigs<T>; // doge
-  }, {
-    immediate: true
-  }
-)
+  },
+  {
+    immediate: true,
+  },
+);
 
 function execute(command: Command<T>) {
   if (!editable.value) {
@@ -511,7 +545,7 @@ function getEditorData(index: number, key: keyof T) {
 function getEditorRowData(index: number) {
   const rowData = getRowData(index);
   const content = Utils.simpleDeepCopy(rowData.content);
-  Object.keys(rowData.edited || {}).forEach(key => {
+  Object.keys(rowData.edited || {}).forEach((key) => {
     (content as any)[key] = rowData.edited![key];
   });
   return content;
@@ -556,7 +590,7 @@ function deleteMultipleRow(selection: TableRowSelection) {
   // 循环n次deleteRow，时间复杂度是O(n^2)，这里采用O(n)的优化版方案
   const deletedData: TableDataMap<T> = {};
   const tempData: any = currentData;
-  selection.forEach(i => {
+  selection.forEach((i) => {
     if (currentData.value[i].selected) selectedRowCount.value--;
     deletedData[i] = Object.assign({}, currentData.value[i].content);
     tempData[i] = null;
@@ -595,7 +629,7 @@ function insertRowWithDataMap(dataMap: TableDataMap<T>) {
 
 function createDefaultRowData() {
   const result: Partial<T> = {};
-  (Object.keys(editConfigs.value!) as (keyof EditConfigs<T>)[]).forEach(key => {
+  (Object.keys(editConfigs.value!) as (keyof EditConfigs<T>)[]).forEach((key) => {
     const editConfig = editConfigs.value![key];
     if (!editConfig.optional) (result[key] as unknown) = editConfigs.value![key].value;
   });
@@ -605,7 +639,9 @@ function createDefaultRowData() {
 function insertRow(index: number, newData?: T) {
   if (!newData) newData = createDefaultRowData();
   if (index < 0 || index > currentData.value.length) return;
-  currentData.value.splice(index, 0, {content: Utils.simpleDeepCopy(newData)});
+  currentData.value.splice(index, 0, {
+    content: Utils.simpleDeepCopy(newData),
+  });
   refreshAll();
   unsaved.value = true;
 }
@@ -613,15 +649,22 @@ function insertRow(index: number, newData?: T) {
 function insertMultipleRowWithArray(index: number, dataList: TableDataList<T>) {
   const l = currentData.value.slice(0, index);
   const r = currentData.value.slice(index);
-  currentData.value = l.concat(Utils.simpleDeepCopy(dataList.map(e => ({
-    content: Utils.simpleDeepCopy(e)
-  })))).concat(r);
+  currentData.value = l
+    .concat(
+      Utils.simpleDeepCopy(
+        dataList.map((e) => ({
+          content: Utils.simpleDeepCopy(e),
+        })),
+      ),
+    )
+    .concat(r);
   refreshAll();
   unsaved.value = true;
 }
 
 function insertMultipleRowWithDataMap(dataMap: TableDataMap<T>) {
-  let i = 0, j = 0;
+  let i = 0,
+    j = 0;
   let total = currentData.value.length + Object.keys(dataMap).length;
   let newData: any[] = new Array(total).fill(null).map(() => ({}));
   let deletedRowIndex = dataMapToSelection(dataMap);
@@ -629,8 +672,7 @@ function insertMultipleRowWithDataMap(dataMap: TableDataMap<T>) {
     if (deletedRowIndex[j] == k) {
       newData[k].content = Utils.simpleDeepCopy(dataMap[k]);
       j++;
-    }
-    else newData[k] = currentData.value[i++];
+    } else newData[k] = currentData.value[i++];
   }
   currentData.value = newData;
   refreshAll();
@@ -638,9 +680,9 @@ function insertMultipleRowWithDataMap(dataMap: TableDataMap<T>) {
 }
 
 function saveAll() {
-  currentData.value.forEach(data => {
+  currentData.value.forEach((data) => {
     if (!data.edited) return;
-    (Object.keys(data.edited) as (keyof T)[]).forEach(key => {
+    (Object.keys(data.edited) as (keyof T)[]).forEach((key) => {
       if (data.edited && data.edited[key]) {
         data.content[key] = data.edited[key];
       }
@@ -694,7 +736,8 @@ function rowOnPointerenter(index: number) {
   if (prevHoverIndex.value != undefined) {
     if (index === prevHoverIndex.value) return;
     let dir = index > prevHoverIndex.value ? 1 : -1;
-    for (let i = prevHoverIndex.value + dir; i != index; i += dir) { // 补间
+    for (let i = prevHoverIndex.value + dir; i != index; i += dir) {
+      // 补间
       switchSelectState(i);
     }
   }
@@ -731,7 +774,9 @@ function onDblclick(index: number, key: keyof T) {
   editingKey.value = key;
 
   const inputData = currentData.value[index];
-  const value = inputData.edited?.hasOwnProperty(key) ? inputData.edited[key] : inputData.content[key];
+  const value = inputData.edited?.hasOwnProperty(key)
+    ? inputData.edited[key]
+    : inputData.content[key];
   if (!editConfigs.value!.hasOwnProperty(key)) {
     throw new Error("Unexpected data key.");
   }
@@ -739,28 +784,28 @@ function onDblclick(index: number, key: keyof T) {
   const typedKey = key as keyof EditConfigs<T>;
   const editConfig = editConfigs.value![typedKey] as TableInputOption;
   const nonNullValue = value ?? editConfig.value;
-  computeInputNode(typedKey, nonNullValue, editConfig, info => {
-    execute(new EditCommand(ctx, index, key, info.final));
+  computeInputNode(typedKey, nonNullValue, editConfig, (info) => {
+    execute(new EditCommand(ctx, index, key, info.final as T[typeof key]));
     onInputFocusout();
   });
   nextTick(() => {
     $(inputContainer.value![0]).children("input").focus();
-  })
+  });
 }
 
 const inputNodeData = shallowRef<{
-  type: InputType,
-  title: string,
-  value: any,
-  range?: InputValueNumericRange,
-  onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>
+  type: InputType;
+  title: string;
+  value: any;
+  range?: InputValueNumericRange;
+  onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>;
 }>();
 
 function computeInputNode(
   key: keyof EditConfigs<T>,
   value: unknown,
   inputData: TableInputOption,
-  onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>
+  onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>,
 ) {
   const displayName = inputData.customName || rowOptions[key].name || String(key);
   if (inputData.type === InputType.NUMBER) {
@@ -769,14 +814,14 @@ function computeInputNode(
       title: displayName,
       value: value as number,
       range: inputData.range as InputValueNumericRange | undefined,
-      onSuccessfulChange
+      onSuccessfulChange,
     };
   } else {
     inputNodeData.value = {
       type: inputData.type,
       title: displayName,
       value: value as string,
-      onSuccessfulChange
+      onSuccessfulChange,
     };
   }
 }
@@ -786,20 +831,18 @@ function onInputKeydown(e: KeyboardEvent) {
   if (e.key === "Enter") {
     e.preventDefault();
     self.blur();
-  }
-  else if (e.key === "Escape") {
+  } else if (e.key === "Escape") {
     e.preventDefault();
     self.value = getEditedValue() as string;
     self.blur();
-  }
-  else if (e.key === "Shift") {
+  } else if (e.key === "Shift") {
     e.stopPropagation();
   }
 }
 
 function onInputFocusout() {
   editingIndex.value = null;
-  editingKey.value = null; 
+  editingKey.value = null;
 }
 
 const ctx: TableContext<T> = {
@@ -818,8 +861,8 @@ const ctx: TableContext<T> = {
   deleteMultipleRow,
   copyRow,
   pasteRow,
-  dataMapToSelection
-}
+  dataMapToSelection,
+};
 
 function isPointerOnAnyRow() {
   return hoveringIndex.value !== null;
@@ -834,67 +877,68 @@ function isCopyboardEmpty() {
 }
 
 function initContextMenu() {
-  contextMenu.value!.addItem({
-    key: "newRow",
-    text: "新建行",
-    displayRule: _e => editable.value && !currentData.value.length, 
-    callback: _e => execute(new InsertRowCommand(ctx, 0))
-  })
-  .addItem({
-    key: "insertRowUpper",
-    text: "在此行上方插入行",
-    displayRule: _e => editable.value && isPointerOnAnyRow(), 
-    callback: e => execute(new InsertRowCommand(ctx, getElementIndex(e?.target)))
-  })
-  .addItem({
-    key: "insertRowLower",
-    text: "在此行下方插入行",
-    displayRule: _e => editable.value && isPointerOnAnyRow(),
-    callback: e => execute(new InsertRowCommand(ctx, getElementIndex(e?.target) + 1))
-  })
-  .addItem({
-    key: "copyRow",
-    text: "复制行",
-    displayRule: _e => editable.value && isPointerOnAnyRow(), 
-    callback: e => copyRow([getElementIndex(e.target)])
-  })
-  .addItem({
-    key: "copyMultipleRow",
-    text: "复制所有选中行",
-    shortcut: McmodderEditableTable.copyKey,
-    displayRule: _e => editable.value && hasSelection(), 
-    callback: _e => copyRow(getSelection())
-  })
-  .addItem({
-    key: "pasteRowUpper",
-    text: "粘贴在其上方",
-    displayRule: _e => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(), 
-    callback: e => execute(new PasteCommand(ctx, getElementIndex(e?.target)))
-  })
-  .addItem({
-    key: "pasteRowLower",
-    text: "粘贴在其下方",
-    displayRule: _e => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(), 
-    callback: e => execute(new PasteCommand(ctx, getElementIndex(e?.target) + 1))
-  })
-  .addItem({
-    key: "deleteRow",
-    text: "删除该行",
-    displayRule: _e => editable.value && isPointerOnAnyRow(), 
-    callback: e => execute(new DeleteRowCommand(ctx, getElementIndex(e?.target)))
-  })
-  .addItem({
-    key: "deleteMultipleRow",
-    text: "删除所有选中行",
-    displayRule: _e => editable.value && hasSelection(), 
-    callback: _e => execute(new DeleteMultipleRowCommand(ctx, getSelection()))
-  });
+  contextMenu
+    .value!.addItem({
+      key: "newRow",
+      text: "新建行",
+      displayRule: (_e) => editable.value && !currentData.value.length,
+      callback: (_e) => execute(new InsertRowCommand(ctx, 0)),
+    })
+    .addItem({
+      key: "insertRowUpper",
+      text: "在此行上方插入行",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow(),
+      callback: (e) => execute(new InsertRowCommand(ctx, getElementIndex(e?.target))),
+    })
+    .addItem({
+      key: "insertRowLower",
+      text: "在此行下方插入行",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow(),
+      callback: (e) => execute(new InsertRowCommand(ctx, getElementIndex(e?.target) + 1)),
+    })
+    .addItem({
+      key: "copyRow",
+      text: "复制行",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow(),
+      callback: (e) => copyRow([getElementIndex(e.target)]),
+    })
+    .addItem({
+      key: "copyMultipleRow",
+      text: "复制所有选中行",
+      shortcut: McmodderEditableTable.copyKey,
+      displayRule: (_e) => editable.value && hasSelection(),
+      callback: (_e) => copyRow(getSelection()),
+    })
+    .addItem({
+      key: "pasteRowUpper",
+      text: "粘贴在其上方",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(),
+      callback: (e) => execute(new PasteCommand(ctx, getElementIndex(e?.target))),
+    })
+    .addItem({
+      key: "pasteRowLower",
+      text: "粘贴在其下方",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow() && !isCopyboardEmpty(),
+      callback: (e) => execute(new PasteCommand(ctx, getElementIndex(e?.target) + 1)),
+    })
+    .addItem({
+      key: "deleteRow",
+      text: "删除该行",
+      displayRule: (_e) => editable.value && isPointerOnAnyRow(),
+      callback: (e) => execute(new DeleteRowCommand(ctx, getElementIndex(e?.target))),
+    })
+    .addItem({
+      key: "deleteMultipleRow",
+      text: "删除所有选中行",
+      displayRule: (_e) => editable.value && hasSelection(),
+      callback: (_e) => execute(new DeleteMultipleRowCommand(ctx, getSelection())),
+    });
 }
 
 const emit = defineEmits<{
-  edit: [],
-  refresh: []
-}>()
+  edit: [];
+  refresh: [];
+}>();
 
 defineExpose({
   searchData,
@@ -932,7 +976,6 @@ defineExpose({
   root: root.value!,
   ctx,
   contextMenu,
-  selectedRowCount
-})
-
+  selectedRowCount,
+});
 </script>

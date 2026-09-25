@@ -13,10 +13,10 @@
 </template>
 
 <script setup lang="ts">
-import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
-import type { AutoLinkOptionProps } from '../../../types/props';
-import { Values } from '../../../Values';
-import KeyDisplay from '../KeyDisplay';
+import type { AutoLinkOptionEmitPayload } from "../../../types/emits";
+import type { AutoLinkOptionProps } from "../../../types/props";
+import { Values } from "../../../Values";
+import KeyDisplay from "../KeyDisplay";
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkAuthorEntry>>();
 
@@ -29,5 +29,4 @@ const dataTextFull = fullName;
 const dataOriginalTitle = fullName;
 
 const emit = defineEmits<AutoLinkOptionEmitPayload>();
-
 </script>

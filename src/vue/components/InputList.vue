@@ -4,12 +4,12 @@
     class="mcmodder-input-list"
     :class="{
       'expand-upward': expandUpward,
-      'faded': classFaded,
-      'editable': onModifySuggestion
+      faded: classFaded,
+      editable: onModifySuggestion,
     }"
     :style="{
       left: cssPos.left,
-      top: cssPos.top
+      top: cssPos.top,
     }"
     v-show="!classHidden"
   >
@@ -18,7 +18,7 @@
       :style="{
         'min-width': cssPos['min-width'],
         'max-width': cssPos['max-width'],
-        'max-height': cssPos['max-height']
+        'max-height': cssPos['max-height'],
       }"
     >
       <a
@@ -79,28 +79,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
-import { Utils } from '../../Utils';
-import { Values } from '../../Values';
-import type { ConfigRepository } from '../../config/ConfigRepository';
-import Pinyin from 'pinyin-match';
-import MatchedText from './MatchedText';
+import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
+import { Utils } from "../../Utils";
+import { Values } from "../../Values";
+import type { ConfigRepository } from "../../config/ConfigRepository";
+import Pinyin from "pinyin-match";
+import MatchedText from "./MatchedText";
 
 const intlCollator = new Intl.Collator("zh");
-const loadSuggestionFromConfig = <
-  T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
-  K extends string = string
->(configs: ConfigRepository, key: K, defaultValue = Values.defaultInputSuggestion[key] ?? [], item: T = "inputList" as T) => () => {
-  return configs.get(item, key) ?? defaultValue;
-};
-const saveSuggestionToConfig = <
-  T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> = "inputList",
-  K extends string = string
->(configs: ConfigRepository, key: K, item: T = "inputList" as T) => (list: InputSuggestion[]) => {
-  const simplified = list.map(e => typeof e === "string" ? e : { value: e.value, alias: e.alias });
-  configs.set(item, key, simplified);
-  return true;
-}
+const loadSuggestionFromConfig =
+  <
+    T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> =
+      "inputList",
+    K extends string = string,
+  >(
+    configs: ConfigRepository,
+    key: K,
+    defaultValue = Values.defaultInputSuggestion[key] ?? [],
+    item: T = "inputList" as T,
+  ) =>
+  () => {
+    return configs.get(item, key) ?? defaultValue;
+  };
+const saveSuggestionToConfig =
+  <
+    T extends KeysOfType<Required<AppStorage>, Record<string, InputSimplifiedSuggestion[]>> =
+      "inputList",
+    K extends string = string,
+  >(
+    configs: ConfigRepository,
+    key: K,
+    item: T = "inputList" as T,
+  ) =>
+  (list: InputSuggestion[]) => {
+    const simplified = list.map((e) =>
+      typeof e === "string" ? e : { value: e.value, alias: e.alias },
+    );
+    configs.set(item, key, simplified);
+    return true;
+  };
 
 const selectionValue = computed(() => {
   const val = valueRef.value;
@@ -113,12 +130,8 @@ const selectionValue = computed(() => {
   }
   const vals = val.split(delimiter.value);
   const [idx, innerPos] = getSectionIndex(vals, pos, delimiter.value);
-  return idx >= 0 ?
-    isCompletely.value ?
-    vals[idx] :
-    vals[idx].slice(0, innerPos) :
-  "";
-})
+  return idx >= 0 ? (isCompletely.value ? vals[idx] : vals[idx].slice(0, innerPos)) : "";
+});
 
 const suggestedList = computed<InputRatedSuggestion[]>(() => {
   selected.value = 0;
@@ -137,25 +150,27 @@ const suggestedList = computed<InputRatedSuggestion[]>(() => {
   }
 
   const suggestedList: InputRatedSuggestion[] = [];
-  suggestionList.value.forEach(entry => {
+  suggestionList.value.forEach((entry) => {
     const rate: InputSuggestionRate = {
       score: 0,
-      ranges: { alias: {} }
+      ranges: { alias: {} },
     };
-    [entry.value, ...(entry.alias ?? [])].map(e => e.toLowerCase()).forEach((value, index) => {
-      const range = Pinyin.match(value, content);
-      if (range) {
-        range[1]++; // 闭区间改成左闭右开
-        if (index === 0) {
-          rate.ranges!.value = range;
-        } else {
-          rate.ranges!.alias[index - 1] = range;
+    [entry.value, ...(entry.alias ?? [])]
+      .map((e) => e.toLowerCase())
+      .forEach((value, index) => {
+        const range = Pinyin.match(value, content);
+        if (range) {
+          range[1]++; // 闭区间改成左闭右开
+          if (index === 0) {
+            rate.ranges!.value = range;
+          } else {
+            rate.ranges!.alias[index - 1] = range;
+          }
+          const posFactor = range[0] === 0 ? 2 : 1;
+          const matchLength = range[1] - range[0];
+          rate.score! += 0.01 + (posFactor * matchLength) / value.length;
         }
-        const posFactor = range[0] === 0 ? 2 : 1;
-        const matchLength = range[1] - range[0];
-        rate.score! += 0.01 + posFactor * matchLength / value.length;
-      }
-    });
+      });
     suggestedList.push({ ...entry, ...rate });
   });
 
@@ -166,13 +181,11 @@ const suggestedList = computed<InputRatedSuggestion[]>(() => {
   } else {
     selectable.value = false;
   }
-  return suggestedList
-  .filter(e => e.score)
-  .sort((a, b) => b.score! - a.score!);
-})
+  return suggestedList.filter((e) => e.score).sort((a, b) => b.score! - a.score!);
+});
 
 interface Props extends InputListOption {
-  inputNode: HTMLInputElement | HTMLTextAreaElement
+  inputNode: HTMLInputElement | HTMLTextAreaElement;
 }
 
 const alwaysShowAllSuggestions = ref(false);
@@ -192,12 +205,12 @@ function setOption(option: Props) {
   suggestionManager.value = option.suggestionManager;
 
   onInitSuggestion.value = pick(
-    manager => loadSuggestionFromConfig(manager.configs, manager.configKey),
-    manager => manager.onInitSuggestion
+    (manager) => loadSuggestionFromConfig(manager.configs, manager.configKey),
+    (manager) => manager.onInitSuggestion,
   );
   onModifySuggestion.value = pick(
-    manager => saveSuggestionToConfig(manager.configs, manager.configKey),
-    manager => manager.onModifySuggestion
+    (manager) => saveSuggestionToConfig(manager.configs, manager.configKey),
+    (manager) => manager.onModifySuggestion,
   );
 
   updatePos();
@@ -212,7 +225,7 @@ const isCompletely = ref(false);
 const selectable = ref(false);
 // let isFocused = false;
 const canCreateNew = ref(false);
-const rectRef = shallowRef<DOMRect>()
+const rectRef = shallowRef<DOMRect>();
 const listHeight = ref(0);
 const classFaded = ref(false);
 const classHidden = ref(true);
@@ -232,51 +245,49 @@ const expandUpward = computed(() => {
     return true;
   }
   return false;
-})
+});
 
 const cssPos = computed(() => {
   if (!anchorElement.value) {
     return {
-      "left": 0,
-      "top": 0,
-      "min-width": "0px"
+      left: 0,
+      top: 0,
+      "min-width": "0px",
     };
   }
 
   const { x: absPosX, y: absPosY } = Utils.getAbsolutePos(anchorElement.value);
-  
+
   const rect = rectRef.value!;
   const left = absPosX;
-  const top = expandUpward.value ?
-    absPosY - listHeight.value - 4 :
-    absPosY + rect.height;
+  const top = expandUpward.value ? absPosY - listHeight.value - 4 : absPosY + rect.height;
 
   const minWidth = rect.width;
   const maxWidth = innerWidth - rect.left - 16;
-  const maxHeight = expandUpward.value ?
-    rect.top - Values.headerContainerHeight - 16 :
-    innerHeight - rect.bottom - 16;
+  const maxHeight = expandUpward.value
+    ? rect.top - Values.headerContainerHeight - 16
+    : innerHeight - rect.bottom - 16;
 
   return {
     left: left + "px",
     top: top + "px",
     "min-width": minWidth + "px",
     "max-width": maxWidth + "px",
-    "max-height": Math.min(maxHeight, 300) + "px"
+    "max-height": Math.min(maxHeight, 300) + "px",
   };
-})
+});
 
 watch(
   () => suggestedList.value,
-  length => {
+  (length) => {
     if (!selectable.value || !length) {
       return;
     }
     nextTick(() => {
       listHeight.value = listRef.value!.getBoundingClientRect().height;
     });
-  }
-)
+  },
+);
 
 watch(
   () => selectable.value,
@@ -286,8 +297,7 @@ watch(
       setTimeout(() => {
         classFaded.value = false;
       }, 0);
-    }
-    else if (oldValue && !newValue) {
+    } else if (oldValue && !newValue) {
       classFaded.value = true;
       setTimeout(() => {
         if (!selectable.value) {
@@ -295,8 +305,8 @@ watch(
         }
       }, 200);
     }
-  }
-)
+  },
+);
 
 function updateValueRef(e: Event) {
   if (e instanceof KeyboardEvent && e.isComposing) {
@@ -307,13 +317,13 @@ function updateValueRef(e: Event) {
 }
 
 function onInputFocus() {
-  suggestionList.value = onInitSuggestion.value?.()
-  .map(e => {
-    if (typeof e === "string") {
-      e = { value: e };
-    }
-    return e;
-  }) ?? [];
+  suggestionList.value =
+    onInitSuggestion.value?.().map((e) => {
+      if (typeof e === "string") {
+        e = { value: e };
+      }
+      return e;
+    }) ?? [];
   // isFocused = true;
 }
 
@@ -322,12 +332,11 @@ function onInputClick() {
 }
 
 function onInputKeydown(e: Event) {
-  if (e instanceof KeyboardEvent && selectable.value && (
-    e.key === "ArrowUp" ||
-    e.key === "ArrowDown" ||
-    e.key === "Tab" ||
-    e.key === "Enter"
-  )) {
+  if (
+    e instanceof KeyboardEvent &&
+    selectable.value &&
+    (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Tab" || e.key === "Enter")
+  ) {
     e.preventDefault();
   }
 }
@@ -342,15 +351,13 @@ function onInputKeyup(e: Event) {
       selected.value = suggestedList.value.length - (canCreateNew.value ? 0 : 1);
     }
     scrollToSelectedNode();
-  }
-  else if (selectable.value && e.key === "ArrowDown") {
+  } else if (selectable.value && e.key === "ArrowDown") {
     selected.value++;
     if (selected.value >= suggestedList.value.length + (canCreateNew.value ? 1 : 0)) {
       selected.value = 0;
     }
     scrollToSelectedNode();
-  }
-  else if (selectable.value && (e.key === "Tab" || e.key === "Enter")) {
+  } else if (selectable.value && (e.key === "Tab" || e.key === "Enter")) {
     const node = getSelectedOptionNode();
     if (node.length) {
       e.preventDefault();
@@ -360,8 +367,7 @@ function onInputKeyup(e: Event) {
         onOptionClick(suggestedList.value[selected.value].value);
       }
     }
-  }
-  else {
+  } else {
     updateValueRef(e);
   }
 }
@@ -379,12 +385,12 @@ const inputEvents = {
   keydown: onInputKeydown,
   keyup: onInputKeyup,
   blur: onInputBlur,
-  input: updateValueRef
+  input: updateValueRef,
 } as const;
 
 function onNewOptionClick() {
   const value = selectionValue.value;
-  if (suggestionList.value.filter(e => e.value === value).length) {
+  if (suggestionList.value.filter((e) => e.value === value).length) {
     Utils.commonMsg("当前输入的内容已经存在于候选列表~", false);
     return;
   }
@@ -404,7 +410,7 @@ function onOptionClick(val: string) {
 }
 
 function onDeleteClick(e: PointerEvent, val: string) {
-  suggestionList.value = suggestionList.value.filter(e => e.value != val);
+  suggestionList.value = suggestionList.value.filter((e) => e.value != val);
   if (onModifySuggestion.value!(suggestionList.value)) {
     Utils.commonMsg("成功从候选列表中移除选中项~");
   } else {
@@ -418,36 +424,42 @@ function onEditAliasClick(e: PointerEvent, val: string) {
     console.warn("候选按钮无对应值。");
     return;
   }
-  const entry = suggestionList.value.filter(e => Utils.escapeHTML(e.value) === val)[0];
+  const entry = suggestionList.value.filter((e) => Utils.escapeHTML(e.value) === val)[0];
   const alias = entry.alias ? entry.alias.join("; ") : "";
-  Utils.createModal({
-    html: `
+  Utils.createModal(
+    {
+      html: `
       <p>在此处修改选中项的内容与快捷名称...（使用 ';' 分隔多个快捷名称）</p>
-      <input class="form-control" id="mcmodder-input-newtext" value="${ Utils.escapeHTML(val) }"/>
-      <input class="form-control" id="mcmodder-input-alias" value="${ Utils.escapeHTML(alias) }"/>
+      <input class="form-control" id="mcmodder-input-newtext" value="${Utils.escapeHTML(val)}"/>
+      <input class="form-control" id="mcmodder-input-alias" value="${Utils.escapeHTML(alias)}"/>
     `,
-    showCancelButton: true,
-    confirmButtonText: "保存",
-    cancelButtonText: "取消",
-    preConfirm: () => {
-      const newText = $("#mcmodder-input-newtext").val() as string;
-      const newAlias = $("#mcmodder-input-alias").val() as string;
-      entry.value = newText;
-      if (!newAlias) {
-        delete entry.alias;
-      } else {
-        entry.alias = newAlias.split(";").map(e => e.trim()).filter(e => e);
-      }
-      triggerRef(suggestionList);
-      if (onModifySuggestion.value!(suggestionList.value)) {
-        Utils.commonMsg("成功更新选中项的快捷名称~");
-      } else {
-        Utils.commonMsg("更新失败...", false);
-      }
-    }
-  }, {
-    focus: () => {}
-  });
+      showCancelButton: true,
+      confirmButtonText: "保存",
+      cancelButtonText: "取消",
+      preConfirm: () => {
+        const newText = $("#mcmodder-input-newtext").val() as string;
+        const newAlias = $("#mcmodder-input-alias").val() as string;
+        entry.value = newText;
+        if (!newAlias) {
+          delete entry.alias;
+        } else {
+          entry.alias = newAlias
+            .split(";")
+            .map((e) => e.trim())
+            .filter((e) => e);
+        }
+        triggerRef(suggestionList);
+        if (onModifySuggestion.value!(suggestionList.value)) {
+          Utils.commonMsg("成功更新选中项的快捷名称~");
+        } else {
+          Utils.commonMsg("更新失败...", false);
+        }
+      },
+    },
+    {
+      focus: () => {},
+    },
+  );
   e.stopPropagation();
 }
 
@@ -457,24 +469,28 @@ function onOptionPointerenter(index: number) {
 
 const pick = <T extends Function>(
   fromConfig: (manager: SuggestionConfigManager) => T,
-  fromCallback: (manager: SuggestionCallbackManager) => T | undefined
+  fromCallback: (manager: SuggestionCallbackManager) => T | undefined,
 ) => {
   const manager = suggestionManager.value!;
   if ("configs" in manager) {
     return fromConfig(manager);
   }
   return fromCallback(manager);
-}
+};
 
 function getTitle(entry: InputSuggestion) {
   let res = entry.value;
   if (entry.alias !== undefined) {
-    res += ` (${ entry.alias.join("; ") })`;
+    res += ` (${entry.alias.join("; ")})`;
   }
   return res;
 }
 
-function getSectionIndex(vals: string[], pos: number, delimiter: string): [idx: number, innerPos: number] {
+function getSectionIndex(
+  vals: string[],
+  pos: number,
+  delimiter: string,
+): [idx: number, innerPos: number] {
   for (let i = 0, j = 0; i < vals.length; j += vals[i++].length + delimiter.length) {
     if (pos >= j && pos < j + vals[i].length + delimiter.length) {
       return [i, pos - j];
@@ -508,13 +524,11 @@ function setSelectionValue(content: string, isContinuously = false) {
     if (isContinuously && isLast) {
       val += delimiter.value;
     }
-  }
-  else {
+  } else {
     if (pos !== null) {
       const suffix = content.slice(pos);
       val = content + suffix;
-    }
-    else {
+    } else {
       val = content;
     }
   }
@@ -533,13 +547,13 @@ function setSelectionValue(content: string, isContinuously = false) {
 }
 
 function getOptionNode(index: number) {
-  return $(listRef.value!).find(`[data-index=${ index }]`);
+  return $(listRef.value!).find(`[data-index=${index}]`);
 }
 
 function scrollToSelectedNode() {
   getOptionNode(selected.value).get(0).scrollIntoView({
     behavior: "smooth",
-    block: "nearest"
+    block: "nearest",
   });
 }
 
@@ -558,7 +572,6 @@ defineExpose({
   setOption,
   inputEvents,
   updatePos,
-  expandUpward
-})
-
+  expandUpward,
+});
 </script>
