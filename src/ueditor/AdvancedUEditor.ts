@@ -145,14 +145,9 @@ export class AdvancedUEditor extends UEditor {
 
     this.addTool("mcmodder-tool-spacing", "中英间添加空格", () => this.performSpacingPage());
 
-    let itemSourceList: ItemList = [];
-    this.configs.getSettings("jsonDatabase")?.forEach(fileName => {
-      itemSourceList = itemSourceList.concat(this.configs.get("mcmodderJsonStorage", fileName) ?? []);
-    });
     this.autoLinkFrame = $('<div class="mcmodder-autolink-frame">');
     this.autoLink = createApp(AutoLink, {
-      editor: this,
-      itemSourceList
+      editor: this
     }).mount(this.autoLinkFrame.get(0)) as InstanceType<typeof AutoLink>;
 
     // 快速提交

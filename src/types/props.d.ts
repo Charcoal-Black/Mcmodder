@@ -1,3 +1,5 @@
+import type { IDBRepository } from "../jsonframe/repository/IDBRepository"
+
 export interface AutoLinkOptionProps<T extends AutoLinkBaseEntry> {
   parent: import("../Mcmodder").Mcmodder,
   entry: T,
@@ -36,6 +38,8 @@ export interface GenericJsonFrameProps<T extends TableAcceptable> extends JsonFr
   configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>,
   allowedKeys: string[],
   opts?: {
+    gmStorageRepo?: () => GMStorageRepository<T>,
+    idbRepo?: () => IDBRepository<T>,
     parseText?: (text: string) => {
       success: number,
       fail: number,

@@ -1,13 +1,12 @@
 import type { ConfigRepository } from "../../config/ConfigRepository";
-import { Mcmodder } from "../../Mcmodder";
-import type { ItemRepository } from "./ItemRepository";
+import type { AppRepository } from "./AppRepository";
 
-export class GMStorageRepository<T extends object> implements ItemRepository<T> {
+export class GMStorageRepository<T extends object> implements AppRepository<T> {
   private readonly configs: ConfigRepository;
   private readonly configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>;
 
-  constructor(parent: Mcmodder, configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>) {
-    this.configs = parent.configRepository;
+  constructor(configs: ConfigRepository, configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>) {
+    this.configs = configs;
     this.configName = configName;
   }
 

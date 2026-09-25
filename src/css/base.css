@@ -2324,7 +2324,7 @@ body .top-main .info .more-info .top_content a:hover,
   background-color: var(--mcmodder-color-background);
   border-radius: calc(var(--mcmodder-width-radius) * .5);
   font-size: 14px;
-  box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
+  box-shadow: 0px 2px 5px var(--mcmodder-color-box-shadow);
   opacity: 1;
   transition: opacity 0.2s ease-out 0s, transform 0.2s cubic-bezier(.18,.89,.32,1.28) 0s;
 }
@@ -2552,7 +2552,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   background-color: var(--mcmodder-color-background);
   backdrop-filter: blur(10px);
   z-index: 1001;
-  box-shadow: 0px 2px 5px var(--mcmodder-color-background-dark2);
+  box-shadow: 0px 2px 5px var(--mcmodder-color-box-shadow);
   border-radius: calc(var(--mcmodder-width-radius) * .5);
   /* 和下拉菜单的高度预测功能冲突了，依旧 TODO */
   /* transition: opacity 0.2s ease-out 0s, transform 0.2s ease-in-out 0s; */
@@ -2599,6 +2599,9 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   color: var(--mcmodder-color-text-dark2);
   margin-left: 5px;
 }
+.mcmodder-input-option .text .alias span:not(:first-child)::before {
+  content: "; ";
+}
 .mcmodder-input-extraoptions {
   display: none;
   margin-left: auto;
@@ -2612,6 +2615,13 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 }
 .mcmodder-input-option.selected .mcmodder-input-extraoptions {
   display: block;
+}
+.mcmodder-input-option mark,
+.edit-autolink-list mark {
+  padding: 0;
+  color: var(--mcmodder-color-accent-dark2);
+  background: inherit;
+  font-weight: bold;
 }
 .mcmodder-collapsible-container {
   border: 1px solid var(--mcmodder-color-primary);
@@ -2704,14 +2714,14 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-horizontal-divider {
   position: absolute;
   height: 100%;
-  background-color: var(--mcmodder-color-primary);
+  background-color: var(--mcmodder-color-background-dark2);
   left: 50%;
   width: 10px;
   cursor: col-resize;
   top: 0;
 }
 .mcmodder-horizontal-divider:hover {
-  background-color: var(--mcmodder-color-primary-dark1);
+  background-color: var(--mcmodder-color-background-dark3);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -2725,7 +2735,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   background-color: var(--mcmodder-color-background-dark1);
   /* backdrop-filter: blur(5px); */
   overflow: clip;
-  box-shadow: 0 0 50px var(--mcmodder-color-text-dark2);
+  box-shadow: 0 0 50px var(--mcmodder-color-box-shadow);
 }
 .mcmodder-horizontal-flex-left {
   left: 0;

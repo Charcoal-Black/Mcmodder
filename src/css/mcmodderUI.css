@@ -329,7 +329,7 @@ body .edui-default .edui-bubble .edui-popup-content {
   animation: fadeIn .3s ease-out forwards, var(--mcmodder-animation-shinyborder);
   border: 2px solid;
   position: relative;
-  box-shadow: 0 0 10px #8888;
+  box-shadow: 0 0 10px var(--mcmodder-color-box-shadow);
   background-color: var(--mcmodder-color-background);
 }
 .swiper-wrapper.page-ul {

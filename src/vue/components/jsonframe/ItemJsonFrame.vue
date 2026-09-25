@@ -4,16 +4,19 @@
     :id="id"
     :parent="parent"
     :config-name="configName"
-    :allowed-keys="allowedKeys"
+    :allowed-keys="indexedKeys"
     :rowOptions="rowOptions"
     :edit-configs="editConfigs"
     :attr="{
       class: 'table jsonframe-table'
     }"
     :opts="{
+      idbRepo,
       parseText,
       more
     }"
+    @rename="onRename"
+    @delete="onDelete"
   />
   <Teleport :to="importContainer">
     <div class="edit-autolink-frame" ref="classSearchFrame">
@@ -109,6 +112,7 @@ import { EditRowCommand } from '../../../table/command/EditRowCommand.ts';
 import GenericTable from '../table/GenericTable.vue';
 import Pagination from '../Pagination.vue';
 import type { JsonFrameProps } from '../../../types/props';
+import { ItemIDBRepository } from '../../../jsonframe/repository/ItemIDBRepository.ts';
 
 const props = withDefaults(defineProps<JsonFrameProps & {
   importContainer?: HTMLDivElement,
@@ -123,9 +127,7 @@ const props = withDefaults(defineProps<JsonFrameProps & {
 });
 
 const configName = "mcmodderJsonStorage";
-const allowedKeys = ["id", "itemType", "registerName", "metadata", "smallIcon", "largeIcon", "name", "englishName", 
-  "creativeTabName", "branch", "type", "jumpTo", "jumpParent", "generalTo", "generalParent", "generalNum", 
-  "OredictList", "harvestTools", "maxStackSize", "maxDurability"];
+const indexedKeys = ["id", "registerName", "metadata", "name", "englishName", "creativeTabName", "branch", "OredictList"];
 const rowOptions = {
   itemType: ["类型", (type, item) => {
     return props.parent.utils.getItemTypeHTML(item.classID, type).prop("outerHTML");
@@ -232,7 +234,6 @@ const classSearchFrame = useTemplateRef("classSearchFrame");
 const fileTable = useTemplateRef("fileTable");
 
 const maxPage = ref(1);
-const linking = props.parent.configRepository.getSettingsWritableRef("jsonDatabase");
 
 let inferRequestQueue: InferItemListRequestQueue | undefined;
 let detailedRequestQueue: DetailedItemListRequestQueue | undefined;
@@ -378,6 +379,11 @@ async function openClassSearchFrame() {
   });
   $(".jsonframe-import-container").append(props.importContainer);
   logger.value!.scrollToBottom();
+}
+
+// @override
+function idbRepo() {
+  return new ItemIDBRepository();
 }
 
 // @override
@@ -735,7 +741,7 @@ async function performClassSearch(classID: number, typeID: number) {
   const rawName = `${classID}-${className}-${classEname}-${typeID}-${(new Date()).toLocaleString()}-${itemList.length}-Original.json`;
   const fileName = Utils.regulateFileName(rawName);
   logger.value!.success(`成功加载全部 ${maxNumber.toLocaleString()} 中的 ${itemList.length.toLocaleString()} 个物品资料，并保存于 ${fileName}。`);
-  await jsonFrame.value!.itemRepository.write(fileName, itemList);
+  await jsonFrame.value!.appRepository.write(fileName, itemList);
   await jsonFrame.value!.updateSelection();
 }
 
@@ -965,21 +971,53 @@ function onFullExportClick() {
   swal.close();
 }
 
+const configs = computed(() => props.parent.configRepository);
+
+const jsonDatabase = configs.value.getSettingsRef("jsonDatabase_v2");
+
+const repoIndex = configs.value.getSettingsRef("itemRepository", 0 as 0 | 1);
+
+const linkings = computed(() => {
+  if (jsonDatabase.value === undefined) {
+    return [];
+  }
+  const files = jsonDatabase.value[repoIndex.value];
+  return files ?? [];
+})
+
 const isFileLinked: ComputedRef<boolean> = computed(() => {
   if (!jsonFrame.value) {
     return false;
   }
-  return linking.value.includes(jsonFrame.value.activeFileName);
+  return linkings.value.includes(jsonFrame.value.activeFileName);
 })
+
+function onRename(oldName: string, newName: string) {
+  let files = linkings.value;
+  files = files.filter(e => e !== oldName);
+  files.push(newName);
+  commitLinkings(jsonDatabase, files);
+}
+
+function onDelete(filename: string) {
+  const files = linkings.value.filter(name => name !== filename);
+  commitLinkings(jsonDatabase, files);
+}
 
 function onChangeLinkState() {
   const name = jsonFrame.value!.activeFileName;
+  let files = linkings.value;
   if (isFileLinked.value) {
-    const index = linking.value.indexOf(name);
-    linking.value.splice(index, 1);
+    const index = linkings.value.indexOf(name);
+    files.splice(index, 1);
   } else {
-    linking.value.push(name);
+    files.push(name);
   }
+  commitLinkings(jsonDatabase, files);
+}
+
+function commitLinkings(jsonDatabase: ComputedRef<Record<0 | 1, string[]> | undefined>, files: string[]) {
+  configs.value.setSettings("jsonDatabase_v2", { ...jsonDatabase.value, [repoIndex.value]: [...files] });
 }
 
 function more() {

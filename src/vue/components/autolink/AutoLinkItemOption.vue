@@ -5,11 +5,16 @@
       <span class="item-type" v-html="itemTypeHTML" />
       <span class="item-id mcmodder-slim-dark">{{ itemId }}</span>
       <span v-if="classFullName" class="item-modabbr">[{{ itemAbbr }}]</span>
-      <span class="item-name">{{ itemName }}</span>
-      <span v-if="itemEnglishName" class="item-ename">{{ itemEnglishName }}</span>
+      <span class="item-name">
+        <MatchedText :text="itemName" :ranges="entry.searchTag.ranges?.name" />
+      </span>
+      <span v-if="itemEnglishName" class="item-ename">
+        <MatchedText :text="itemEnglishName" :ranges="entry.searchTag.ranges?.englishName" />
+      </span>
     </a>
-    <span v-if="index < 10" class="item-shortcut"
-      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
+    <span v-if="index < 10" class="item-shortcut">
+      <KeyDisplay :key-data="{ altKey: true, key: index.toString() }" />
+    </span>
   </div>
 </template>
 
@@ -18,6 +23,8 @@ import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
 import { Utils } from '../../../Utils';
 import { Values } from '../../../Values';
+import KeyDisplay from '../KeyDisplay';
+import MatchedText from '../MatchedText';
 
 const { parent, entry } = defineProps<AutoLinkOptionProps<AutoLinkItemEntry>>();
 

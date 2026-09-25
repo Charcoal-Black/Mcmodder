@@ -155,10 +155,14 @@ const rowOptions = rowOptionsConstructor as RowOptions<T>;
 function bindEvents() {
   window.addEventListener("scroll", Utils.animationThrottle(() => {
     onScroll();
-  }));
+  }), {
+    passive: true
+  });
   window.addEventListener("resize", Utils.animationThrottle(() => {
     updateScreenContainableRows();
-  }));
+  }), {
+    passive: true
+  });
   refreshAll();
 
   $(document.body).keydown(e => {

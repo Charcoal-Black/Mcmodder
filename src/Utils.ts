@@ -174,6 +174,10 @@ export class Utils {
     return value;
   }
 
+  static isClamp(value: number, min = 0, max = 1) {
+    return value >= min && value <= max;
+  }
+
   static versionCompare(v1: string, v2: string) {
     const p1 = v1.split(".").map(Number);
     const p2 = v2.split(".").map(Number);
@@ -403,6 +407,17 @@ export class Utils {
     });
   }
 
+  static base642Blob(base64: string, defaultMimeType = "application/octet-stream") {
+    const mimeType = Utils.getBase64MimeType(base64) ?? defaultMimeType;
+    const base64Data = Utils.removeBase64ImgPrefix(base64)!;
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mimeType });
+  }
+
   static blobToText(blob: Blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -412,14 +427,23 @@ export class Utils {
     });
   }
 
-  static appendBase64ImgPrefix(v?: string) {
-    if (v && v.slice(0, 11) !== "data:image/") return "data:image/png;base64," + v;
+  static appendBase64ImgPrefix(v?: string, defaultMimeType?: string) {
+    const mimeType = defaultMimeType ?? "image/png";
+    if (v && v.slice(0, 11) !== "data:image/") return `data:${ mimeType };base64,${ v }`;
     return v;
   }
 
   static removeBase64ImgPrefix(v?: string) {
     if (v && v.slice(0, 11) === "data:image/") return v.split(";base64,")[1];
     return v;
+  }
+
+  static getBase64MimeType(v?: string) {
+    if (v === undefined) return undefined;
+    if (!v.startsWith("data:")) return undefined;
+    const pos = v?.indexOf(";base64,");
+    if (pos < 0) return undefined;
+    return v.slice(5, pos);
   }
 
   static saveFile(fileName: string, content: string) {
@@ -735,6 +759,9 @@ export class Utils {
     return list.join(" + ");
   }
 
+  /**
+   * 在 Vue 组件中，请优先使用 `KeyDisplay` 子组件
+   */
   static keyToHTML(e: Key) {
     const list = Utils.keyToRawList(e);
     const isMac = Utils.isMac();
@@ -803,6 +830,63 @@ export class Utils {
     }
   }
 
+  // private static readonly segmenter = typeof Intl.Segmenter === "function" ? 
+  //   new Intl.Segmenter("zh-Hans", {
+  //     granularity: "word"
+  //   }) : undefined;
+
+  // static tokenize(text: string, withRange?: false): string[];
+  // static tokenize(text: string, withRange: true): [string, [number, number]][];
+  // static tokenize<V extends boolean | undefined = false>(text: string, withRange: V = undefined as V) {
+  //   type VT = [string, [number, number]];
+  //   type VF = string;
+  //   const lowerCase = text.toLowerCase();
+  //   const cnTokens: (VT | VF)[] = [];
+
+  //   // 分词
+  //   if (Utils.segmenter !== undefined) {
+  //     for (const { index, segment, isWordLike } of Utils.segmenter.segment(lowerCase)) {
+  //       if (!isWordLike || segment.length === 2) { // 二元组已被下文操作覆盖
+  //         continue;
+  //       }
+  //       if (withRange) {
+  //         cnTokens.push([segment, [index, index + segment.length]] );
+  //       } else {
+  //         cnTokens.push(segment);
+  //       }
+  //     }
+  //   }
+
+  //   // 二元组
+  //   const reg = /[\p{Script=Han}]+/gu;
+  //   if (withRange) {
+  //     for (const run of lowerCase.matchAll(reg)) {
+  //       const index = run.index;
+  //       const substr = run[0];
+  //       for (let i = 0; i < substr.length - 1; i++) {
+  //         cnTokens.push([substr.slice(i, i + 2), [index + i, index + i + 2]]);
+  //       }
+  //     }
+  //   } else {
+  //     for (const substr of lowerCase.match(reg) ?? []) {
+  //       for (let i = 0; i < substr.length - 1; i++) {
+  //         cnTokens.push(substr.slice(i, i + 2));
+  //       }
+  //     }
+  //   }
+
+  //   // 拼音转换
+  //   const transform = (token: VT | VF, style: IPinyinStyle) => {
+  //     const text = withRange ? token[0] : token as string;
+  //     const py = pinyin(text, { style }).join("");
+  //     return withRange ? [py, token[1]] : py;
+  //   }
+  //   const pinyinFull = cnTokens.map(token => transform(token, "normal"));
+  //   const pinyinInit = cnTokens.map(token => transform(token, "first_letter"));
+
+  //   return [...cnTokens, ...pinyinFull, ...pinyinInit] as V extends true ? VT[] : VF[];
+  // }
+
   static debounce = (func: Function, wait: number) => {
     let timeout: number;
     return function (this: any, ...args: any[]) {
@@ -846,7 +930,7 @@ export class Utils {
     if (id) style.attr("id", id);
   }
 
-  static loadStyle(loc: Element, content?: string | null, href?: string | null, type?: string | null, id?: string) {
+  static loadStyle(loc: HTMLElement, content?: string | null, href?: string | null, type?: string | null, id?: string) {
     if (id && loc.ownerDocument.getElementById(id)) {
       return new Promise<void>(resolve => {
         resolve();
@@ -865,7 +949,7 @@ export class Utils {
     });
   }
 
-  static addScript(loc: Element, content: string | null, src?: string, type?: string) {
+  static addScript(loc: HTMLElement, content: string | null, src?: string, type?: string) {
     let script = document.createElement("script");
     script.type = type ? type : "text/JavaScript";
     if (content) script.innerHTML = content;
@@ -876,7 +960,7 @@ export class Utils {
     loc.appendChild(script);
   }
 
-  static loadScript(loc: Element, content?: string | null, src?: string | null, type?: string | null, id?: string) {
+  static loadScript(loc: HTMLElement, content?: string | null, src?: string | null, type?: string | null, id?: string) {
     if (id && loc.ownerDocument.getElementById(id)) {
       return new Promise<void>(resolve => {
         resolve();
@@ -892,6 +976,10 @@ export class Utils {
       script.onerror = () => reject();
       loc.appendChild(script);
     });
+  }
+
+  static loadScripts(loc: HTMLElement, srcList: string[], type?: string | null, id?: string) {
+    return Promise.all(srcList.map(src => this.loadScript(loc, null, src, type, id)));
   }
 
   static getStartTime(d: number | Date, num = 1) {

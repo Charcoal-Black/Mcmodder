@@ -6,16 +6,17 @@
       <span class="item-name">{{ data.name }}</span>
       <span v-if="data.alias" class="item-ename">{{ data.alias }}</span>
     </a>
-    <span v-if="index < 10" class="item-shortcut"
-      v-html="Utils.keyToHTML({ altKey: true, key: index.toString() })" />
+    <span v-if="index < 10" class="item-shortcut">
+      <KeyDisplay :key-data="{ altKey: true, key: index.toString() }" />
+    </span>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AutoLinkOptionEmitPayload } from '../../../types/emits';
 import type { AutoLinkOptionProps } from '../../../types/props';
-import { Utils } from '../../../Utils';
 import { Values } from '../../../Values';
+import KeyDisplay from '../KeyDisplay';
 
 const { entry } = defineProps<AutoLinkOptionProps<AutoLinkAuthorEntry>>();
 

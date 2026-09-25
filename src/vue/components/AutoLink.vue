@@ -2,7 +2,7 @@
   <div class="edit-autolink-frame">
     <form>
       <div class="input-group edit-autolink-search">
-        <input ref="keyInput" class="form-control" name="key" value="" placeholder="搜索模组与资料.." maxlength="255" @click="onInputClick" @keydown="onKeydown">
+        <input ref="keyInput" class="form-control" name="key" value="" placeholder="搜索模组与资料.." maxlength="255" autocomplete="off" @click="onInputClick" @keydown="onKeydown">
         <button ref="submitButton" class="btn btn-dark" type="submit" :class="{ disabled: isPending }" :disabled="isPending" @click="onSearchButtonClick">搜索</button>
       </div>
     </form>
@@ -70,7 +70,7 @@
         :on-successful-change="info => configs.setSettings('autolinkStyleSpace', info.final)"
       />
     </div>
-    <div class="edit-autolink-source" v-show="itemSourceList.length">
+    <div class="edit-autolink-source" v-show="localItemCount">
       <CheckboxInput ref="sourceInputLocal" title="本地搜索" id="edit-autolink-source-local" with-label
         :value="configs.getSettings('autolinkSourceLocal') ?? false"
         :on-successful-change="info => configs.setSettings('autolinkSourceLocal', info.final)"
@@ -93,6 +93,10 @@ import AutoLinkItemOption from './autolink/AutoLinkItemOption.vue';
 import AutoLinkAuthorOption from './autolink/AutoLinkAuthorOption.vue';
 import AutoLinkOredictOption from './autolink/AutoLinkOredictOption.vue';
 import AutoLinkClassOption from './autolink/AutoLinkClassOption.vue';
+import { ItemIDBRepository } from '../../jsonframe/repository/ItemIDBRepository.ts';
+import type { ItemRepository } from '../../jsonframe/repository/ItemRepository.ts';
+import { ItemGMStorageRepository } from '../../jsonframe/repository/ItemGMStorageRepository.ts';
+import Pinyin from 'pinyin-match';
 
 const AUTOLINK_KEYWORD_MAXLENGTH = 10;
 
@@ -103,13 +107,48 @@ const styles = [
 ] as const;
 
 interface Props {
-  editor: any,
-  itemSourceList: ItemList
+  editor: any
 }
 
-const { editor, itemSourceList } = defineProps<Props>();
+const { editor } = defineProps<Props>();
 const parent = shallowRef<Mcmodder>(editor.parent);
 const configs = computed(() => parent.value.configRepository);
+
+const itemRepository = computed<ItemRepository<number | string>>(() => {
+  const repo = configs.value.getSettings("itemRepository") ?
+    new ItemIDBRepository() :
+    new ItemGMStorageRepository(configs.value);
+  repo.init();
+  return repo;
+})
+
+const localItems = shallowRef<Item[]>([]);
+
+const jsonDatabase = configs.value.getSettingsRef("jsonDatabase_v2");
+
+const repoIndex = configs.value.getSettingsRef("itemRepository", 0 as 0 | 1);
+
+const linkings = computed(() => {
+  if (jsonDatabase.value === undefined) {
+    return [];
+  }
+  const files = jsonDatabase.value[repoIndex.value];
+  return files ?? [];
+})
+
+watch(
+  () => linkings.value,
+  async files => {
+    const allItems = await Promise.all(files.map(filename => itemRepository.value.readSearchText(filename)));
+    allItems.forEach(items => localItems.value.push(...items.filter(item => item.id)));
+    localItemCount.value = localItems.value.length;
+    triggerRef(localItems);
+  }, {
+    immediate: true
+  }
+)
+
+const localItemCount = ref(0);
 
 const keyInput = useTemplateRef("keyInput");
 const submitButton = useTemplateRef("submitButton");
@@ -137,7 +176,7 @@ const style = computed({
 })
 const selected = ref(-1);
 const isPending = ref(false);
-const enableSearchSourceSettings = ref(false);
+// const enableSearchSourceSettings = ref(false);
 const shouldHideSelectedContentStyle = ref(true);
 const searchResultEntries = shallowRef<AutoLinkEntries>([]);
 
@@ -159,10 +198,6 @@ const {
 watch(
   () => editor,
   () => parent.value = editor.parent
-);
-watch(
-  () => itemSourceList,
-  () => enableSearchSourceSettings.value = !!itemSourceList.length
 );
 watch(
   () => searchResultEntries.value,
@@ -253,6 +288,10 @@ function onSearch() {
   });
 }
 
+async function performLocalSearch() {
+  return localItems.value.map(item => evaluateItemMatchRate(item, undefined, searchKeywords.value));
+}
+
 async function performOnlineSearch() {
   let resp = await parent.value.utils.createRequest({
     url: `${ parent.value.hostname }/object/UEAutolink/`,
@@ -274,7 +313,7 @@ async function performOnlineSearch() {
   let data = JSON.parse(resp.responseText);
   if (data.state) {
     Utils.commonMsg(Values.errorMessage[data.state], false);
-    return;
+    return [];
   }
   return parseOnlineSearchResult(data.html);
 }
@@ -333,7 +372,7 @@ function parseOnlineSearchItemResult(index: number, element: Element): AutoLinkI
     creativeTabName: creativeTabName
   };
 
-  return evaluateItemMatchRate(item, searchKeywords.value, (30 - index) / 6);
+  return evaluateItemMatchRate(item, (30 - index) / 6, searchKeywords.value);
 }
 
 function parseOnlineSearchClassResult(index: number, link: HTMLAnchorElement, type: "class" | "modpack"): AutoLinkClassEntry {
@@ -404,12 +443,20 @@ function parseOnlineSearchResult(raw: string) {
   return searchResult;
 }
 
+const searchResultIDSet = {
+  item: new Set,
+  class: new Set,
+  modpack: new Set,
+  author: new Set,
+  oredict: new Set
+} as Record<AutoLinkEntryType, Set<string | number>>;
+
 async function performSearch() {
   if (isPending.value) return;
   isPending.value = true;
     
   let searchLocal: boolean, searchOnline: boolean;
-  if (!itemSourceList.length) {
+  if (!localItemCount.value) {
     searchLocal = false;
     searchOnline = true;
   } else {
@@ -424,28 +471,32 @@ async function performSearch() {
     return;
   }
 
+  const searchPromises: Promise<AutoLinkEntries>[] = [];
+
   // 本地搜索
   if (searchLocal && searchKeywords.value) {
-    itemSourceList.forEach(item => {
-      if (item.id) searchResultEntries.value.push(evaluateItemMatchRate(item, searchKeywords.value)); // 只有已被导入百科的物品才会被搜索
-    });
+    searchPromises.push(performLocalSearch());
   }
 
   // 联网搜索
   if (searchOnline) {
-    // ID去重，替代concat
-    const localResultIDs: (string | number)[] = searchResultEntries.value.map(item => {
-      return (item as (AutoLinkItemEntry | AutoLinkOredictEntry)).data.id;
-    });
-    const onlineResult = await performOnlineSearch();
-    if (onlineResult) {
-      for (const item of onlineResult) {
-        if (!(localResultIDs.includes((item as (AutoLinkItemEntry | AutoLinkOredictEntry)).data.id))) {
-          searchResultEntries.value.push(item);
-        }
-      }
-    }
+    searchPromises.push(performOnlineSearch());
   }
+
+  // 批量请求并对 ID 去重
+  Object.values(searchResultIDSet).forEach(set => set.clear());
+  const searchResultsList = await Promise.all(searchPromises);
+  searchResultsList.forEach(results => {
+    results.forEach(result => {
+      const type = result.type;
+      const id = result.data.id;
+      const set = searchResultIDSet[type];
+      if (!set.has(id)) {
+        set.add(id);
+        searchResultEntries.value.push(result);
+      }
+    })
+  })
 
   // 矿物词典/物品标签附加
   if (searchText.value.charAt(0) === "#") {
@@ -468,7 +519,62 @@ async function performSearch() {
   });
 }
 
-function evaluateItemMatchRate(item: Item, keywords: string[], baseMatchScore = 0): AutoLinkItemEntry {
+const bonusFields = ["name", "englishName", "registerName", "className", "classEname"] as const;
+
+const bonusFieldFactors = [2, 1, 1, 1, 0.5] as const;
+
+const prefixFactor = 2;
+
+// 关键词匹配
+function evaluateKeywords(item: Item, keywords: string[]) {
+  let totalScore = 0;
+  let isAbsoluteMatches = false;
+  let isModMatches = false;
+  const ranges: Partial<Record<typeof bonusFields[number], [number, number][]>> = {};
+  keywords.forEach(keyword => {
+    if (Number(keyword) === item.id) {
+      totalScore += 50;
+      isAbsoluteMatches = true;
+    }
+    keyword = keyword.toLowerCase();
+
+    bonusFields.forEach((field, index) => {
+      const factor = bonusFieldFactors[index];
+      const content = item[field]?.toLowerCase();
+      if (content === undefined) {
+        return;
+      }
+      const range = Pinyin.match(content, keyword);
+      if (range === false) {
+        return;
+      }
+      range[1]++; // 闭区间改成左闭右开
+      let rangeList = ranges[field];
+      if (rangeList === undefined) {
+        rangeList = [];
+        ranges[field] = rangeList;
+      }
+      rangeList.push(range);
+      const matchLength = range[1] - range[0];
+      const posBonus = factor * (range[0] === 0 ? prefixFactor : 1);
+      totalScore += posBonus * (1 + 2 * matchLength / content.length);
+    });
+
+    // 模组缩写要求完全匹配，此时直接视为 mod-matches
+    if (keyword === item.classAbbr?.toLowerCase()) {
+      isModMatches = true;
+      totalScore += 0.01;
+    }
+  });
+  return {
+    totalScore,
+    isAbsoluteMatches,
+    isModMatches,
+    ranges
+  };
+}
+
+function evaluateItemMatchRate(item: Item, baseMatchScore = 0, keywords?: string[]): AutoLinkItemEntry {
   let totalScore = 0;
   const tag: AutoLinkSearchTag = {
     matchScore: /* item.searchTag?.matchScore || */ baseMatchScore,
@@ -479,29 +585,18 @@ function evaluateItemMatchRate(item: Item, keywords: string[], baseMatchScore = 
     isModDependenceMatches: false
   };
 
-  // 关键词匹配
-  keywords.forEach(keyword => {
-    if (Number(keyword) === item.id) {
-      totalScore += 50;
-      tag.isAbsoluteMatches = true;
-      return Object.assign(item, tag);
-    }
-    keyword = keyword.toLowerCase();
-    let pos: number;
-    pos = item.name.toLowerCase().indexOf(keyword) ?? -1;
-    if (pos >= 0) totalScore += (pos === 0 ? 4 : 2) * (1 + 2 * keyword.length / item.name.length);
-    pos = item.englishName?.toLowerCase().indexOf(keyword) ?? -1;
-    if (pos >= 0) totalScore += (pos === 0 ? 2 : 1) * (1 + 2 * keyword.length / item.englishName!.length);
-    pos = item.className?.toLowerCase().indexOf(keyword) ?? -1;
-    if (pos >= 0) totalScore += (pos === 0 ? 2 : 1) * (1 + 2 * keyword.length / item.className!.length);
-    pos = item.classEname?.toLowerCase().indexOf(keyword) ?? -1;
-    if (pos >= 0) totalScore += (pos === 0 ? 1 : 0.5) * (1 + 2 * keyword.length / item.className!.length);
-    // 模组缩写要求完全匹配，此时直接视为 mod-matches
-    if (keyword === item.classAbbr?.toLowerCase()) {
-      tag.isModMatches = true;
-      totalScore += 0.01;
-    }
-  });
+  if (keywords !== undefined) {
+    const {
+      totalScore: keywordMatchScore,
+      isAbsoluteMatches,
+      isModMatches,
+      ranges
+    } = evaluateKeywords(item, keywords);
+    totalScore += keywordMatchScore;
+    tag.isAbsoluteMatches = isAbsoluteMatches;
+    tag.isModMatches = isModMatches;
+    tag.ranges = ranges;
+  }
 
   // 至少匹配到一个关键词才会出现在检索结果
   if (totalScore) {
@@ -559,12 +654,12 @@ const searchTagClassMap = {
   isModExpansionMatches: "searchtag-mod-expansion-matches",
   isModMatches: "searchtag-mod-matches",
   isModVanilla: "searchtag-vanilla"
-} satisfies Record<keyof Omit<AutoLinkSearchTag, "matchScore">, string>;
+} satisfies Record<keyof Omit<AutoLinkSearchTag, "matchScore" | "ranges">, string>;
 
 function getOptionClassList(index: number, searchTag: AutoLinkSearchTag) {
   const result = (Object.entries(searchTag) as [keyof typeof searchTag, boolean][])
     .filter(([key, value]) => key !== "matchScore" && value)
-    .map(([key, _value]) => searchTagClassMap[key as Exclude<typeof key, "matchScore">]);
+    .map(([key, _value]) => searchTagClassMap[key as Exclude<typeof key, "matchScore" | "ranges">]);
   if (index === selected.value) {
     result.push("selected");
   }

@@ -76,7 +76,7 @@ export class AdminInit extends Init {
 
           if (!this.triggered.has("模组区内容审核")) {
             const verifyWindowElement = this.verifyWindow.get(0);
-            $(window).scroll(Utils.animationThrottle(() => {
+            window.addEventListener("scroll", Utils.animationThrottle(() => {
               const top = document.scrollingElement?.scrollTop;
               const bottom = this.verifyContainer!.prop("scrollHeight") as number;
               if (top != undefined) {
@@ -94,7 +94,9 @@ export class AdminInit extends Init {
                 }
                 prevHeight = height;
               }
-            }));
+            }), {
+              passive: true
+            });
             $(document).on("click", ".mcmodder-verify-locate", _e => {
               if (verifyID === undefined) {
                 Utils.commonMsg("待审项 ID 获取失败...", false);

@@ -59,9 +59,9 @@
 import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from 'vue';
 import { Utils } from '../../../Utils';
 import { Permission } from '../../../config/ConfigUtils';
-import { IndexedDBRepository } from '../../../jsonframe/repository/IndexedDBRepository';
+import { IDBRepository } from '../../../jsonframe/repository/IDBRepository.ts';
 import { GMStorageRepository } from '../../../jsonframe/repository/GMStorageRepository';
-import type { ItemRepository } from '../../../jsonframe/repository/ItemRepository';
+import type { AppRepository } from '../../../jsonframe/repository/AppRepository.ts';
 import { Values } from '../../../Values';
 import GenericTable from '../table/GenericTable.vue';
 import type { GenericJsonFrameProps } from '../../../types/props';
@@ -77,12 +77,13 @@ const activeFileName = ref("");
 const isFixedMenuVisible = ref(false);
 const hasRearranged = ref(false);
 const selectionList = ref<string[]>([]);
-const itemRepository: ItemRepository<T> =
-  props.parent.configRepository.getSettings("itemRepository") ?
-  new IndexedDBRepository(props.configName, props.allowedKeys) :
-  new GMStorageRepository(props.parent, props.configName);
 const cssMenuWidth = ref("100%");
 const cssMenuTopOffset = ref("50px");
+
+const appRepository: AppRepository<T> =
+  props.parent.configRepository.getSettings("itemRepository") ?
+  props.opts?.idbRepo?.() ?? new IDBRepository(props.configName, props.allowedKeys) :
+  props.opts?.gmStorageRepo?.() ?? new GMStorageRepository(configs.value, props.configName);
 
 onMounted(() => {
   addTool("importLocal", "从本地导入JSON", () => true, e => {
@@ -115,12 +116,16 @@ onMounted(() => {
       updateFixedMenu();
       isFixedMenuVisible.value = false;
     }
-  }));
+  }), {
+    passive: true
+  });
   window.addEventListener("resize", Utils.animationThrottle(() => {
     updateFixedMenu();
-  }));
+  }), {
+    passive: true
+  });
 
-  itemRepository.init().then(() => updateSelection());
+  appRepository.init().then(() => updateSelection());
 })
 
 function addTool(
@@ -186,7 +191,7 @@ async function importFromText(text: string, saveAs: string) {
   const { success, fail, result } = props.opts?.parseText?.(text) ?? parseText(text);
   if (success) {
     const purified = result!.map(e => purifyData(e));
-    await itemRepository.write(saveAs, purified);
+    await appRepository.write(saveAs, purified);
     await updateSelection();
     Utils.commonMsg(`已读取并保存为 ${ saveAs }，其中 ${ success } 条解析成功，${ fail } 条解析失败。`);
   }
@@ -224,7 +229,7 @@ function updateFixedMenu() {
 }
 
 async function updateSelection() {
-  const selection = await itemRepository.listFilename();
+  const selection = await appRepository.listFilename();
   selectionList.value = selection.filter(Boolean);
 }
 
@@ -240,12 +245,12 @@ function fileExistedInquire(fileName: string) {
 }
 
 async function newJson(fileName: string, content: T[]) {
-  let storages = await itemRepository.listFilename();
+  let storages = await appRepository.listFilename();
   if (storages.includes(fileName)) return new Promise(resolve => {
     fileExistedInquire(fileName)
     .then(isConfirm => {
       if (isConfirm.value) {
-        itemRepository
+        appRepository
         .write(fileName, content)
         .then(() => resolve(true));
       }
@@ -253,19 +258,19 @@ async function newJson(fileName: string, content: T[]) {
     });
   });
   else {
-    await itemRepository.write(fileName, content);
+    await appRepository.write(fileName, content);
     return true;
   }
 }
 
 async function loadJson(fileName: string) {
-  table.value!.setAllData(await itemRepository.read(fileName) ?? []);
+  table.value!.setAllData(await appRepository.read(fileName) ?? []);
   hasRearranged.value = false;
 }
 
 async function newUnnamedJson() {
   const regulated = getUniqueRegulatedFileName("Unnamed.json");
-  await itemRepository.createFile(regulated);
+  await appRepository.createFile(regulated);
   await updateSelection();
   Utils.commonMsg(`创建了新的文件 ${ regulated } ~`);
 }
@@ -276,7 +281,7 @@ async function saveEdit() {
     return;
   }
   table.value!.saveAll();
-  await itemRepository.write(activeFileName.value, table.value!.getAllData());
+  await appRepository.write(activeFileName.value, table.value!.getAllData());
   Utils.commonMsg("所有改动均已保存~");
 }
 
@@ -291,14 +296,11 @@ async function rename() {
       const newName = getUniqueRegulatedFileName(input.val().trim());
       if (name === newName) return;
       
-      const fileData = await itemRepository.read(name);
-      await itemRepository.deleteFile(name);
-      await itemRepository.write(newName, fileData);
+      const fileData = await appRepository.read(name);
+      await appRepository.deleteFile(name);
+      await appRepository.write(newName, fileData);
 
-      let database: string[] = configs.value.getSettings("jsonDatabase") || [];
-      database = database.filter(e => e != name);
-      database.push(newName);
-      configs.value.setSettings("jsonDatabase", database);
+      emit("rename", name, newName);
 
       Utils.commonMsg("文件重命名成功~");
       activeFileName.value = newName;
@@ -346,6 +348,7 @@ async function tryDeleteJson(fileName: string) {
   const { value: isConfirm } = await fileDeleteInquire(fileName);
   if (isConfirm) {
     await deleteJson(fileName);
+    emit("delete", fileName);
     Utils.commonMsg(`成功删除 ${fileName} ~`);
     updateSelection();
     return true;
@@ -354,9 +357,7 @@ async function tryDeleteJson(fileName: string) {
 }
 
 async function deleteJson(fileName: string) {
-  await itemRepository.deleteFile(activeFileName.value);
-  let linking: string[] = configs.value.getSettings("jsonDatabase") || [];
-  configs.value.setSettings("jsonDatabase", linking.filter(name => name != fileName));
+  await appRepository.deleteFile(fileName);
 }
 
 function reset() {
@@ -378,13 +379,15 @@ function onRefresh() {
 
 const emit = defineEmits<{
   edit: [],
-  refresh: []
+  refresh: [],
+  rename: [ newName: string, oldName: string ],
+  delete: [ filename: string ]
 }>();
 
 defineExpose({
   table,
   activeFileName,
-  itemRepository,
+  appRepository,
   isAvailableFileName,
   importFromText,
   updateSelection,

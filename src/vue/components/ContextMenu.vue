@@ -28,10 +28,9 @@
             @click="onItemClick(i)"
           >
             <a v-html="item.text"></a>
-            <span class="item-shortcut-left"
-              v-if="item.shortcut"
-              v-html="Utils.keyToHTML(item.shortcut)"
-            ></span>
+            <span class="item-shortcut-left" v-if="item.shortcut">
+              <KeyDisplay :key-data="item.shortcut" />
+            </span>
           </li>
         </template>
       </ul>
@@ -42,6 +41,7 @@
 
 import { onMounted, ref, useTemplateRef } from "vue";
 import { Utils } from "../../Utils";
+import KeyDisplay from "./KeyDisplay";
 
 let contextmenuEvent: PointerEvent | undefined;
 let activeState = false;

@@ -33,15 +33,18 @@
       >
         <span class="text">
           <span v-if="entry.html && entry.noEscape" v-html="entry.html" />
+          <span v-else-if="entry.html !== undefined" v-text="entry.html"></span>
           <span v-else>
-            {{ entry.html ?? entry.value }}
+            <MatchedText :text="entry.value" :ranges="[entry.ranges?.value]" />
           </span>
           <span class="item-ename" v-if="entry.html === undefined && entry.showValue">
             &nbsp;
             {{ entry.value }}
           </span>
           <span class="alias" v-if="entry.alias !== undefined">
-            {{ entry.alias.join("; ") }}
+            <span v-for="(alias, aliasIndex) in entry.alias">
+              <MatchedText :text="alias" :ranges="[entry.ranges?.alias[aliasIndex]]" />
+            </span>
           </span>
         </span>
         <span class="mcmodder-input-extraoptions" v-if="onModifySuggestion">
@@ -80,6 +83,8 @@ import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch 
 import { Utils } from '../../Utils';
 import { Values } from '../../Values';
 import type { ConfigRepository } from '../../config/ConfigRepository';
+import Pinyin from 'pinyin-match';
+import MatchedText from './MatchedText';
 
 const intlCollator = new Intl.Collator("zh");
 const loadSuggestionFromConfig = <
@@ -115,7 +120,7 @@ const selectionValue = computed(() => {
   "";
 })
 
-const suggestedList = computed(() => {
+const suggestedList = computed<InputRatedSuggestion[]>(() => {
   selected.value = 0;
   const content = selectionValue.value.toLowerCase();
   if (alwaysShowAllSuggestions.value) {
@@ -130,17 +135,30 @@ const suggestedList = computed(() => {
     canCreateNew.value = false;
     return [];
   }
+
   const suggestedList: InputRatedSuggestion[] = [];
   suggestionList.value.forEach(entry => {
-    let matchScore = 0;
-    [entry.value, ...(entry.alias ?? [])].map(e => e.toLowerCase()).forEach(value => {
-      const pos = value.indexOf(content);
-      if (pos >= 0) {
-        matchScore += 0.01 + (pos === 0 ? 2 : 1) * content.length / value.length;
+    const rate: InputSuggestionRate = {
+      score: 0,
+      ranges: { alias: {} }
+    };
+    [entry.value, ...(entry.alias ?? [])].map(e => e.toLowerCase()).forEach((value, index) => {
+      const range = Pinyin.match(value, content);
+      if (range) {
+        range[1]++; // 闭区间改成左闭右开
+        if (index === 0) {
+          rate.ranges!.value = range;
+        } else {
+          rate.ranges!.alias[index - 1] = range;
+        }
+        const posFactor = range[0] === 0 ? 2 : 1;
+        const matchLength = range[1] - range[0];
+        rate.score! += 0.01 + posFactor * matchLength / value.length;
       }
     });
-    suggestedList.push(Object.assign(entry, { matchScore }));
+    suggestedList.push({ ...entry, ...rate });
   });
+
   canCreateNew.value = !!(onModifySuggestion.value && selectionValue.value);
   selected.value = 0;
   if (suggestedList.length) {
@@ -149,8 +167,8 @@ const suggestedList = computed(() => {
     selectable.value = false;
   }
   return suggestedList
-  .filter(e => e.matchScore)
-  .sort((a, b) => b.matchScore! - a.matchScore!);
+  .filter(e => e.score)
+  .sort((a, b) => b.score! - a.score!);
 })
 
 interface Props extends InputListOption {

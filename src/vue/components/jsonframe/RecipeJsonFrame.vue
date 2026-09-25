@@ -4,7 +4,7 @@
     :id="id"
     :parent="parent"
     :config-name="configName"
-    :allowed-keys="allowedKeys"
+    :allowed-keys="indexedKeys"
     :rowOptions="rowOptions"
     :edit-configs="editConfigs"
     :attr="{
@@ -41,7 +41,7 @@ import type { JsonFrameProps } from '../../../types/props';
 const props = defineProps<JsonFrameProps>();
 
 const configName = "mcmodderRecipeJsonStorage";
-const allowedKeys = ["in_id", "out_id", "in_num", "out_num", "in_chance", "out_chance", "power_num", "gui_id"];
+const indexedKeys = ["in_id", "out_id", "in_num", "out_num", "in_chance", "out_chance", "power_num", "gui_id"];
 const rowOptions = {
   gui_id: "GUI",
   input: ["输入", itemInputDisplay],

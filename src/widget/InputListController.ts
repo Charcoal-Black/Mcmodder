@@ -38,6 +38,13 @@ export class InputListController {
       ...this.opt
     });
 
+    window.addEventListener("resize", Utils.animationThrottle(() => {
+      this.app.updatePos();
+    }), {
+      passive: true,
+      ...this.opt
+    });
+
     for (const [key, event] of Object.entries(this.app.inputEvents)) {
       window.addEventListener(key, e => {
         const target = e.composedPath()[0] as InputListBindElement;

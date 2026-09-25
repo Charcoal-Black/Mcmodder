@@ -4,6 +4,10 @@ type KeysOfType<T, P> = {
   [K in keyof T]-?: T[K] extends P ? K : never
 }[keyof T];
 
+type IndexedType<T extends object, K extends number | string | symbol = number> = T & { _primaryKey: K };
+
+type IDBInsertType<T extends object> = T & { _filename: string };
+
 interface RGB {
   readonly r: number;
   readonly g: number;
@@ -183,7 +187,7 @@ interface Settings {
   myProfiles: string,
   guiLocker: number,
   shapelessLocker: boolean,
-  jsonDatabase: string[],
+  jsonDatabase_v2: Record<0 | 1, string[]>
   markdownIt: boolean,
   htmlEditor: boolean,
   editorVertical: boolean,
@@ -198,7 +202,8 @@ interface Settings {
   // 以下为旧版遗留
   templateList?: Template[],
   useNotoSans?: boolean,
-  almanacsList?: Almanacs[]
+  almanacsList?: Almanacs[],
+  jsonDatabase?: string[]
 }
 
 interface Item {
@@ -308,6 +313,12 @@ interface UnpurifiedItem extends Item {
   CreativeTabName?: string;
 }
 
+interface ItemIcon {
+  itemPrimaryKey: number,
+  smallIcon?: Blob;
+  largeIcon?: Blob;
+}
+
 interface Class {
   id: number;
   name: string;
@@ -340,6 +351,8 @@ interface AutoLinkSearchTag {
   isModExpansionMatches?: boolean;
   /** 前置模组是否匹配 */
   isModDependenceMatches?: boolean;
+  /** 成功匹配的字段与匹配范围 */
+  ranges?: Partial<Record<keyof Item, [number, number][]>>
 }
 type AutoLinkEntryType = "item" | "class" | "modpack" | "author" | "oredict";
 interface AutoLinkBaseEntry {
@@ -697,9 +710,14 @@ interface InputSuggestion {
   noEscape?: boolean;
 }
 type InputSimplifiedSuggestion = InputSuggestion | string;
-interface InputRatedSuggestion extends InputSuggestion {
-  matchScore: number;
+interface InputSuggestionRate {
+  score?: number;
+  ranges?: {
+    value?: [number, number];
+    alias: Record<number, [number, number]>;
+  }
 }
+interface InputRatedSuggestion extends InputSuggestion, InputSuggestionRate {}
 
 type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
 

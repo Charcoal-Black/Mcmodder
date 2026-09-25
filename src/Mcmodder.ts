@@ -778,7 +778,7 @@ export class Mcmodder {
     // TODO: 取消锁定导航栏
 
     if (this.isV4 /* && this.configRepository.getSettings("mcmodderUI") */) {
-      $(window).resize(Utils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
+      window.addEventListener("scroll", Utils.animationThrottle((_e: JQueryEventObject) => { // 个人目录不会超出屏幕右边界
         const header = $(".header-user").get(0).getBoundingClientRect();
         const menuWidth = 400;
         if (header.x + header.width / 2 + menuWidth / 2 >= window.innerWidth - Values.headerContainerHeight) {
@@ -786,7 +786,10 @@ export class Mcmodder {
         } else {
           $(".header-panel").removeClass("mcmodder-header-panel-fixed");
         }
-      })).resize();
+      }), {
+        passive: true
+      })
+      window.dispatchEvent(new Event("resize"));
     }
 
     if (this.isV4 && this.configRepository.getSettings("customAdvancements")) { // 更新自定义成就
@@ -891,7 +894,9 @@ export class Mcmodder {
       this.screenAttachedFrame.forEach(e => {
         e.node.style.top = Math.max(0, window.scrollY - e.parentPosY + Values.headerContainerHeight) + "px";
       });
-    }, 16));
+    }, 16), {
+      passive: true
+    });
 
     this.updateItemTooltip();
     document.addEventListener("pointerover", e => {

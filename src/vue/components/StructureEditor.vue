@@ -97,10 +97,14 @@ async function loadScripts() {
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.three);
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeOrbitControls);
   await Utils.loadScript(document.head, null, Values.assets.mcmod.js.threeTween);
-  Utils.loadScript(document.head, 'import{EXGridHelper}from"/static/public/plug/three/three.ex-grid-helper.js";window.structure_enchanted_grid_helper=function(r,e,t,i,d){return new EXGridHelper(r,e,t,i,d)}', null, "module");
+  const gridHelper = (import.meta.glob('../../js/structureGridHelper.js', { query: "?raw", eager: true })
+    ['../../js/structureGridHelper.js'] as { default: string }).default;
+  Utils.loadScript(document.head, gridHelper, null, "module");
   Utils.loadScript(document.body, `comment_container = ${ parent.configRepository.getSettings("structureSelected") || "36016" };`);
-  await Utils.loadScript(document.body, null, Values.assets.mcmod.js.structureBrowser);
-  await Utils.loadScript(document.body, null, Values.assets.mcmod.js.item);
+  await Utils.loadScripts(document.body, [
+    Values.assets.mcmod.js.structureBrowser,
+    Values.assets.mcmod.js.item
+  ]);
 }
 
 onMounted(async () => {
@@ -174,7 +178,6 @@ onMounted(async () => {
       textures: blocktype.face,
       itemID: blocktype.id
     });
-    // <div class="radio"><input id="previewMode" name="mode" type="radio" checked="1"><label for="previewMode">预览模式</label></div><div class="radio"><input id="editMode" name="mode" type="radio"><label for="editMode">编辑模式</label></div>
   });
   blockListTable.value!.refreshAll();
   /* structure_browser.cube_list.forEach(cube => {

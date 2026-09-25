@@ -26,7 +26,7 @@ export class ConfigRepository {
     return this.parent.storageBuffer.storageRef[item]!;
   }
 
-  triggerRef<
+  triggerRefByItem<
     T extends keyof AppStorage
   >(item: T) {
     triggerRef(this.getStorageRef(item));
@@ -73,16 +73,18 @@ export class ConfigRepository {
 
   getRef<
     T extends keyof AppStorage,
-    K extends keyof AppStorage[T]
-  >(item: T, key: K) {
+    K extends keyof AppStorage[T],
+    V = undefined
+  >(item: T, key: K, defaultValue: V = undefined as V) {
     const ref = this.getStorageRef(item);
-    return computed(() => (ref.value)?.[key]);
+    return computed(() => (ref.value)?.[key] ?? defaultValue);
   }
 
   getSettingsRef<
-    K extends keyof Settings
-  >(key: K) {
-    return this.getRef("mcmodderSettings", key);
+    K extends keyof Settings,
+    V = undefined
+  >(key: K, defaultValue: V = undefined as V) {
+    return this.getRef("mcmodderSettings", key, defaultValue);
   }
 
   getAsNumberList<
@@ -132,7 +134,7 @@ export class ConfigRepository {
     GM_setValue(item, JSON.stringify(obj));
     if (this.parent.storageBuffer.isCacheable(item)) {
       (this.getStorageRef(item).value as Required<AppStorage>[T])[key] = value as Required<AppStorage>[T][K];
-      this.triggerRef(item);
+      this.triggerRefByItem(item);
     }
   }
 
