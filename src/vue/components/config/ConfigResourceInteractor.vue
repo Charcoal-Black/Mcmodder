@@ -9,7 +9,7 @@
         ref="table"
         :id="`mcmodder-config-table-${id}`"
         :parent="parent"
-        :rowOptions="rowOptions"
+        :column-options="columnOptions"
       />
       <slot />
     </template>

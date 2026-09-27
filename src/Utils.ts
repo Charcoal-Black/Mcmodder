@@ -15,21 +15,28 @@ export interface ThemeColorSet {
   tc2: string;
 }
 
+/**
+ * 全局工具类：承载无状态的静态工具函数，以及依赖 `Mcmodder` 实例上下文的辅助方法。
+ * 静态方法多为纯函数或宿主 DOM 操作；实例方法通过 `parent`/`configs` 访问全局上下文与配置。
+ */
 export class Utils {
   private readonly parent: Mcmodder;
   readonly configs: ConfigRepository;
 
+  /** @param parent 全局上下文 `Mcmodder` 实例 */
   constructor(parent: Mcmodder) {
     this.parent = parent;
     this.configs = new ConfigRepository(parent);
   }
 
   private static m_isMac: boolean | undefined;
+  /** 判断当前是否为 macOS（结果缓存，避免重复读取 UA） */
   static isMac() {
     return (this.m_isMac ??= navigator.userAgent.includes("Macintosh"));
   }
 
   private static m_isMobileClient: boolean | undefined;
+  /** 判断当前是否为移动端客户端（匹配 Mobi/Android/iPhone，结果缓存） */
   static isMobileClient() {
     return (this.m_isMobileClient ??= !!(
       navigator.userAgent.match(/Mobi/i) ||
@@ -38,6 +45,7 @@ export class Utils {
     ));
   }
 
+  /** 打开 QQ 互联的 OAuth 登录窗口 */
   static toQzoneLogin() {
     window.open(
       `${Values.hostname}/plugs/loginConnect/qqConnect/oauth/index.php`,
@@ -46,6 +54,7 @@ export class Utils {
     );
   }
 
+  /** 弹出统一样式的消息提示（优先使用百科的 `common_msg`，否则回退到 `swal`） */
   static commonMsg(message: string, isok: boolean = true, title: string = "") {
     const defaultTitle = isok ? "提示" : "错误";
     if (typeof common_msg === "function") {
@@ -63,6 +72,10 @@ export class Utils {
     }
   }
 
+  /**
+   * 基于 SweetAlert2 创建模态框，并支持事件拦截：
+   * 当捕获阶段的事件发生在模态框内部时，阻止其继续向外冒泡并交由对应的回调处理。
+   */
   static createModal(
     option: SweetAlertOption,
     interceptEvents: Record<string, (ev: Event) => unknown> = {},
@@ -173,6 +186,7 @@ export class Utils {
     });
   }
 
+  /** 转发到百科原生的 `showTaskTip`，弹出任务/成就提示 */
   static showTaskTip(
     imageUrl: string,
     title: string,
@@ -184,6 +198,7 @@ export class Utils {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
+  /** 从配置中读取主/副主题色，返回 `{ tc1, tc2 }` */
   static getThemeColors = (configs: ConfigRepository): ThemeColorSet => {
     return {
       tc1: configs.getSettings("themeColor1")!,
@@ -191,16 +206,19 @@ export class Utils {
     };
   };
 
+  /** 将 `value` 限制在 `[min, max]` 区间内 */
   static clamp(value: number, min = 0, max = 1) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
   }
 
+  /** 判断 `value` 是否落在 `[min, max]` 区间内 */
   static isClamp(value: number, min = 0, max = 1) {
     return value >= min && value <= max;
   }
 
+  /** 比较两个点分版本号：`v1>v2` 返回 1，`v1<v2` 返回 -1，相等返回 0 */
   static versionCompare(v1: string, v2: string) {
     const p1 = v1.split(".").map(Number);
     const p2 = v2.split(".").map(Number);
@@ -213,6 +231,7 @@ export class Utils {
     return 0;
   }
 
+  /** 校验 `version` 是否受指定 `loaderID` 支持（支持列表为空视为全支持，`>=` 前缀表示最低版本） */
   static validateVersionForLoaderID(version: string, loaderID: string) {
     const list = Values.loaderSupportVersions[
       loaderID as keyof typeof Values.loaderSupportVersions
@@ -224,6 +243,7 @@ export class Utils {
     );
   }
 
+  /** 将 `loaderName` 映射为 loaderID 后，校验 `version` 是否受支持 */
   static validateVersionForLoaderName(version: string, loaderName: string) {
     return this.validateVersionForLoaderID(
       version,
@@ -231,15 +251,18 @@ export class Utils {
     );
   }
 
+  /** 简易深拷贝（JSON 序列化实现，不保留函数/原型等） */
   static simpleDeepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
   }
 
+  /** 复杂深拷贝（当前实现同 `simpleDeepCopy`，TODO 待完善） */
   static complexDeepCopy<T>(obj: T) {
     // TODO ...
     return Utils.simpleDeepCopy(obj);
   }
 
+  /** 就地删除对象中值为 `undefined`/`null`/`NaN` 的属性 */
   static deleteEmptyProperties(obj: object) {
     let val;
     (Object.keys(obj) as (keyof typeof obj)[]).forEach((key) => {
@@ -249,6 +272,7 @@ export class Utils {
     });
   }
 
+  /** 生成 `[l, r]` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
   static createRange(l: number, r: number, step = 1) {
     if (!Number.isInteger(l) || !Number.isInteger(r)) {
       throw new Error("端点必须是整数。");
@@ -262,6 +286,13 @@ export class Utils {
     return Array.from({ length: (r - l) / step }, (_, i) => i * step + l);
   }
 
+  /**
+   * 生成用户资料摘要（用户组/等级/编辑数与字节数/登录到期状态），以 ` · ` 连接，可返回纯文本或 HTML。
+   *
+   * @param target 用户 UID 或已取到的 `Profile` 对象；传 UID 时内部通过 `configs.getAllProfile` 查询。
+   * @param showLv 是否在摘要中追加等级（`Lv.X`）。
+   * @param plainText 为 true 时返回纯文本；为 false 时返回 HTML（登录到期状态会渲染为带样式的提示）。
+   */
   getProfileAbstract(target: number | Profile, showLv = false, plainText = false) {
     const profile = typeof target === "number" ? this.configs.getAllProfile(target) : target;
     if (!Object.keys(profile).length) {
@@ -280,6 +311,7 @@ export class Utils {
     return content.join(" · ");
   }
 
+  /** 按 id 取出交互数据并立即清除该条目；id 为空时返回 undefined */
   getInteract(id: string | null) {
     if (id === null || id === undefined) return undefined;
     const result = this.configs.get("mcmodderInteracts", id);
@@ -287,12 +319,14 @@ export class Utils {
     return result;
   }
 
+  /** 将交互数据写入一个随机 id 的条目，并返回该 id */
   setInteract(value: unknown) {
     const id = Utils.randStr(8);
     this.configs.set("mcmodderInteracts", id, value);
     return id;
   }
 
+  /** 播放提示音（默认升级音效） */
   static playsound(url = Values.assets.mcmod.level.levelup) {
     const task_audio = document.createElement("audio");
     task_audio.setAttribute("muted", "muted");
@@ -300,6 +334,7 @@ export class Utils {
     task_audio.play();
   }
 
+  /** 将形如 `rgb(r,g,b)` 的字符串转换为 `#rrggbb` */
   static rgbToHex(s: string) {
     return (
       "#" +
@@ -313,6 +348,7 @@ export class Utils {
     );
   }
 
+  /** 获取指定小数位精度的数字格式化器（`Intl.NumberFormat`） */
   static getPrecisionFormatter(minDigit = 0, maxDigit = 2) {
     return Intl.NumberFormat("en-US", {
       minimumFractionDigits: minDigit,
@@ -320,6 +356,7 @@ export class Utils {
     });
   }
 
+  /** 将毫秒时长格式化为易读字符串（如 `1m 23s`），负值返回 `-` */
   static getFormattedTime(t: number) {
     if (t < 0) return `-`;
     if (t < 1e3) return `${t}ms`;
@@ -330,6 +367,7 @@ export class Utils {
     return `${Math.floor(t / 8.64e7)}d`;
   }
 
+  /** 将时长格式化为中文相对时间（如 `3天前`/`5分钟后`），差值小于 1s 返回 `刚刚` */
   static getFormattedChineseTime(t: number) {
     let a;
     const b = t < 0 ? "前" : "后";
@@ -344,6 +382,7 @@ export class Utils {
     return a + b;
   }
 
+  /** 将数字缩写为带 k/M/G/T 单位的字符串 */
   static getFormattedNumber(n: number) {
     if (n >= 1e12) return (n / 1e12).toFixed(Number(n % 1e12 !== 0)) + "T";
     if (n >= 1e9) return (n / 1e9).toFixed(Number(n % 1e9 !== 0)) + "G";
@@ -352,6 +391,7 @@ export class Utils {
     return n.toString();
   }
 
+  /** 拼接模组完整名称：`[abbr] name (ename)`；接受三个字符串参数或一个 `Class` 对象 */
   static getClassFullName(name: string, ename: string, abbr: string): string;
   static getClassFullName(data: Class): string | undefined;
   static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: Class]) {
@@ -366,6 +406,7 @@ export class Utils {
     return res;
   }
 
+  /** 解析模组完整名称，拆分为 `{ className, classEname, classAbbr }` */
   static parseClassFullName(fullName: string): ClassName {
     let abbr = "",
       name = "",
@@ -396,6 +437,7 @@ export class Utils {
     };
   }
 
+  /** 拼接物品完整名称：`name (ename)`，无英文名时仅返回名称 */
   static getItemFullName(name: string, ename?: string | null) {
     let res = name.trim();
     const trimedEname = ename?.trim();
@@ -403,6 +445,7 @@ export class Utils {
     return res;
   }
 
+  /** 解析物品完整名称，拆分为 `{ name, englishName }` */
   static parseItemFullName(fullName: string) {
     const pos = fullName.lastIndexOf(" (");
     const name = pos >= 0 ? fullName.slice(0, pos) : fullName;
@@ -410,6 +453,7 @@ export class Utils {
     return { name, englishName };
   }
 
+  /** 下载图片 URL 并转为 Base64 DataURL，失败返回 null */
   static async imageURL2base64(url: string) {
     try {
       const response = await fetch(url);
@@ -421,6 +465,7 @@ export class Utils {
     }
   }
 
+  /** 将 Blob 读取为 Base64 DataURL 字符串 */
   static async blob2Base64(blob: Blob) {
     return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -434,6 +479,7 @@ export class Utils {
     });
   }
 
+  /** 将 Base64 DataURL 转换为 Blob，优先按前缀识别 MIME 类型 */
   static base642Blob(base64: string, defaultMimeType = "application/octet-stream") {
     const mimeType = Utils.getBase64MimeType(base64) ?? defaultMimeType;
     const base64Data = Utils.removeBase64ImgPrefix(base64)!;
@@ -445,6 +491,7 @@ export class Utils {
     return new Blob([bytes], { type: mimeType });
   }
 
+  /** 将 Blob 读取为文本 */
   static blobToText(blob: Blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -454,17 +501,20 @@ export class Utils {
     });
   }
 
+  /** 若字符串缺少 DataURL 前缀，则补上 `data:<mime>;base64,`（默认 image/png） */
   static appendBase64ImgPrefix(v?: string, defaultMimeType?: string) {
     const mimeType = defaultMimeType ?? "image/png";
     if (v && v.slice(0, 11) !== "data:image/") return `data:${mimeType};base64,${v}`;
     return v;
   }
 
+  /** 去除 DataURL 前缀，仅保留 Base64 内容 */
   static removeBase64ImgPrefix(v?: string) {
     if (v && v.slice(0, 11) === "data:image/") return v.split(";base64,")[1];
     return v;
   }
 
+  /** 从 DataURL 中提取 MIME 类型，非 DataURL 返回 undefined */
   static getBase64MimeType(v?: string) {
     if (v === undefined) return undefined;
     if (!v.startsWith("data:")) return undefined;
@@ -473,6 +523,7 @@ export class Utils {
     return v.slice(5, pos);
   }
 
+  /** 触发浏览器下载，保存文本内容为文件 */
   static saveFile(fileName: string, content: string) {
     const blob = new Blob([content]);
     const link = document.createElement("a");
@@ -482,10 +533,19 @@ export class Utils {
     URL.revokeObjectURL(link.href);
   }
 
+  /** 延迟 `ms` 毫秒的异步等待 */
   static sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
   }
 
+  /**
+   * 高亮指定 jQuery 节点：添加 `mcmodder-mark-<color>` 类，可滚动到视口并在超时后移除高亮。
+   *
+   * @param jQueryNode 要高亮的目标节点。
+   * @param color 高亮颜色，限 `gold`/`pink`/`aqua`/`greenyellow` 之一。
+   * @param timeout 高亮持续毫秒数；`0`（默认）表示不自动移除。
+   * @param scrollIntoView 是否先将节点平滑滚动到视口中央。
+   */
   static highlight(jQueryNode: JQuery, color = "gold", timeout = 0, scrollIntoView = false) {
     const validColor = ["gold", "pink", "aqua", "greenyellow"];
     if (!validColor.includes(color)) {
@@ -502,6 +562,7 @@ export class Utils {
     if (timeout > 0) setTimeout(() => jQueryNode.removeClass(className), timeout);
   }
 
+  /** 从 URL 中提取指定类型路径下的标识（字符串，如 `item/123.html` → `123`） */
   static abstractLastFromURL(url: string, typeList: string | string[]) {
     if (!url || !typeList) return "";
     if (!(typeList instanceof Array)) typeList = [typeList];
@@ -515,10 +576,12 @@ export class Utils {
     return res ?? "";
   }
 
+  /** 从 URL 中提取指定类型路径下的数字 ID（如 `item/123.html` → 123） */
   static abstractIDFromURL(url: string, typeList: string | string[]) {
     return Number(Utils.abstractLastFromURL(url, typeList));
   }
 
+  /** 按物品 ID 生成图标 URL（宽度限 32/36/128/144，`ver` 用于缓存版本号） */
   static getImageURLByItemID(id: number, width = 32, ver = 0) {
     const validSize = [32, 36, 128, 144];
     if (!validSize.includes(width)) {
@@ -529,26 +592,32 @@ export class Utils {
     return `https://i.mcmod.cn/item/icon/${width}x${width}/${Math.floor(id / 1e4)}/${id}.png?v=${ver}`;
   }
 
+  /** 生成物品资料页 URL */
   static getItemURL(id: number) {
     return `${Values.hostname}/item/${id}.html`;
   }
 
+  /** 生成物品类型列表页 URL */
   static getItemTypeURL(classID: number, typeID: number) {
     return `${Values.hostname}/item/list/${classID}-${typeID}.html`;
   }
 
+  /** 生成模组页 URL */
   static getClassURL(id: number) {
     return `${Values.hostname}/class/${id}.html`;
   }
 
+  /** 生成矿物词典/物品标签页 URL */
   static getOredictURL(oredict: string) {
     return `${Values.hostname}/oredict/${oredict}-1.html`;
   }
 
+  /** 生成用户个人中心页 URL */
   static getCenterURL(id: number) {
     return `https://center.mcmod.cn/${id}/`;
   }
 
+  /** 生成新窗口打开的目标 `<a>` 元素，文本缺省为 URL 本身 */
   static URLToAnchor(url: string, text?: string) {
     return $("<a>")
       .attr({
@@ -558,12 +627,14 @@ export class Utils {
       .text(text ?? url);
   }
 
+  /** 将版本号数组转为字符串（`[1,1,x]` 统一显示为「远古版本」） */
   static versionArrayToString(arr: number[]) {
     if (arr[0] === 1 && arr[1] === 1) return "远古版本"; // 远古版本统一视为 1.1.0
     if (!arr[2]) arr = arr.slice(0, 2);
     return arr.join(".");
   }
 
+  /** 将 `#rrggbb`/`#rrggbbaa`/`#rgb`/`#rgba` 颜色字符串解析为 RGB/RGBA 对象，格式错误抛出异常 */
   static colorToRGB(color: string): RGB | RGBA {
     const colorFormatError = new Error("颜色代码的格式不正确。");
     const colorParseError = new Error("颜色代码解析失败。");
@@ -601,6 +672,7 @@ export class Utils {
     }
   }
 
+  /** 解析 `rgb(...)`/`rgba(...)` 字符串为 RGB/RGBA 对象，无法匹配时返回 null */
   static parseRGB(str: string): RGB | RGBA | null {
     if (/rgb\([0-9]{1,3},\s[0-9]{1,3},\s[0-9]{1,3}\)/.test(str)) {
       const numList = str.match(/[0-9]{1,3}/g)!.map(Number);
@@ -622,6 +694,7 @@ export class Utils {
     }
   }
 
+  /** 将 RGB/RGBA 对象转为 `#rrggbb`/`#rrggbbaa` 字符串 */
   static RGBToColor(rgb: RGB) {
     const a = (rgb as RGBA).a;
     let dec = (rgb.r << 16) + (rgb.g << 8) + rgb.b;
@@ -629,6 +702,7 @@ export class Utils {
     return "#" + dec.toString(16).padStart(a != undefined ? 8 : 6, "0");
   }
 
+  /** 将 RGB/RGBA 对象转为 HSL/HSLA 对象（h 为 0-360 度，s/l 为 0-100） */
   static RGBToHSL(rgb: RGB): HSL | HSLA {
     const r = rgb.r / 255;
     const g = rgb.g / 255;
@@ -670,6 +744,7 @@ export class Utils {
     return { h, s, l };
   }
 
+  /** 将 HSL/HSLA 对象转为 RGB/RGBA 对象 */
   static HSLToRGB(hsl: HSL): RGB | RGBA {
     const h = hsl.h;
     const s = hsl.s / 100;
@@ -719,15 +794,18 @@ export class Utils {
     return { r: r, g: g, b: b };
   }
 
+  /** 将颜色字符串或 RGB 对象转为 HSL 对象 */
   static colorToHSL(color: string | RGB) {
     const rgb = typeof color === "string" ? this.colorToRGB(color) : color;
     return this.RGBToHSL(rgb);
   }
 
+  /** 将 HSL 对象转为 `#rrggbb` 字符串 */
   static HSLToColor(hsl: HSL) {
     return this.RGBToColor(this.HSLToRGB(hsl));
   }
 
+  /** 按比例调整颜色明度：`ratio<1` 变暗，`ratio>1` 向纯色方向提亮 */
   static adjustColorBrightness = (color: string | RGB, ratio: number) => {
     const hsl = Utils.colorToHSL(color);
     let lightness = hsl.l;
@@ -740,6 +818,7 @@ export class Utils {
     });
   };
 
+  /** 反转颜色明度（lightness 取 100-l） */
   static reverseColorBrightness = (color: string | RGB) => {
     const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
@@ -749,6 +828,7 @@ export class Utils {
     });
   };
 
+  /** 设置颜色的明度为指定 lightness 值（自动限制在 0-100） */
   static setColorBrightness = (color: string | RGB, lightness: number) => {
     const hsl = Utils.colorToHSL(color);
     return this.HSLToColor({
@@ -758,6 +838,7 @@ export class Utils {
     });
   };
 
+  /** 设置颜色的透明度（alpha 自动限制在 0-1），返回 `#rrggbbaa` */
   static setColorAlpha(color: string, alpha: number) {
     const rgb = this.colorToRGB(color);
     return this.RGBToColor({
@@ -768,6 +849,7 @@ export class Utils {
     } as RGBA);
   }
 
+  /** 生成跨平台 Ctrl 组合键：macOS 用 metaKey，其余用 ctrlKey */
   static getXplatCtrlCombinationKey(keyCode: number | string | Key): Key {
     if (typeof keyCode === "string") {
       keyCode = keyCode.toUpperCase().charCodeAt(0);
@@ -783,6 +865,7 @@ export class Utils {
     return keyCode;
   }
 
+  /** 将 Key 对象拆解为修饰键+主键的字符串序列（如 `["Ctrl","Shift","C"]`） */
   static keyToRawList(e: Key) {
     // if (!(e instanceof Object)) e = JSON.parse(e);
     if (!e.key && !e.keyCode) return [];
@@ -804,6 +887,7 @@ export class Utils {
     return k;
   }
 
+  /** 将 Key 对象渲染为 `Ctrl + C` 形式的文本，空键返回「未指定」 */
   static keyToString(e: Key) {
     const list = Utils.keyToRawList(e);
     if (!list.length) return "未指定";
@@ -840,6 +924,7 @@ export class Utils {
     return HTMLList.join("");
   }
 
+  /** 判断按键 `b` 是否与 `a` 匹配（修饰键必须全满足，keyCode 忽略大小写差异） */
   static isKeyMatch(a: Key, b: Key) {
     // b需要匹配a
     if (!Object.keys(a).length) return false;
@@ -857,6 +942,7 @@ export class Utils {
     return true;
   }
 
+  /** 判断按键 `b` 是否与配置中名为 `a` 的快捷键匹配 */
   isKeyMatchConfig(a: KeysOfType<Settings, Key>, b: Key) {
     const config = this.configs.getSettings(a);
     if (config === undefined) {
@@ -865,6 +951,7 @@ export class Utils {
     return Utils.isKeyMatch(config, b);
   }
 
+  /** 生成指定长度的随机字符串（字母数字+下划线） */
   static randStr(l = 32) {
     const t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
     const n = t.length;
@@ -880,12 +967,14 @@ export class Utils {
     '"': "&quot;",
     "'": "&#039;",
   };
+  /** 转义 HTML 特殊字符，防止注入 */
   static escapeHTML(str: string | number) {
     return str
       .toString()
       .replace(/[&<>"']/g, (char) => Utils.escapeHTMLMap[char as keyof typeof Utils.escapeHTMLMap]);
   }
 
+  /** 获取元素相对文档的绝对坐标（含滚动偏移） */
   static getAbsolutePos(node: Element) {
     const rect = node.getBoundingClientRect();
     return {
@@ -951,6 +1040,7 @@ export class Utils {
   //   return [...cnTokens, ...pinyinFull, ...pinyinInit] as V extends true ? VT[] : VF[];
   // }
 
+  /** 防抖包装：`wait` 毫秒内重复调用只执行最后一次 */
   static debounce = <T extends (...args: never[]) => void>(func: T, wait: number) => {
     let timeout: ReturnType<typeof setTimeout>;
     return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
@@ -961,6 +1051,7 @@ export class Utils {
     };
   };
 
+  /** 节流包装：`wait` 毫秒内最多执行一次 */
   static throttle = <T extends (...args: never[]) => void>(func: T, wait: number) => {
     let lastTime = 0;
     return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
@@ -972,6 +1063,7 @@ export class Utils {
     };
   };
 
+  /** 基于 `requestAnimationFrame` 的节流：每帧最多执行一次 */
   static animationThrottle = <T extends (...args: never[]) => void>(func: T) => {
     let isTicking = false;
     return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
@@ -985,12 +1077,28 @@ export class Utils {
     };
   };
 
+  /**
+   * 向指定文档的 head 注入 `<style>`，可用 `id` 去重。
+   *
+   * @param value 要注入的 CSS 文本。
+   * @param id 样式标签的 id；若该 id 已存在则跳过注入。
+   * @param doc 目标文档（默认当前 document，如编辑器 iframe 可传其 `document`）。
+   */
   static addStyle(value: string, id = "", doc = document) {
     if (id && doc.getElementById(id)) return;
     const style = $('<style type="text/css">').appendTo($("head", doc)).html(value);
     if (id) style.attr("id", id);
   }
 
+  /**
+   * 按 `href` 或内联 `content` 加载样式表，返回加载完成/失败的 Promise，可用 `id` 去重。
+   *
+   * @param loc 挂载 `<link>` 的宿主元素。
+   * @param content 内联 CSS 内容（与 `href` 二选一）。
+   * @param href 外部样式表地址（与 `content` 二选一）。
+   * @param type 样式类型（默认 `"text/css"`）。
+   * @param id 标签 id；若目标文档中已存在该 id 则直接 resolve。
+   */
   static loadStyle(
     loc: HTMLElement,
     content?: string | null,
@@ -1016,6 +1124,14 @@ export class Utils {
     });
   }
 
+  /**
+   * 向指定位置注入 `<script>`（内联 `content` 或外部 `src`），不等待加载结果。
+   *
+   * @param loc 挂载 `<script>` 的宿主元素。
+   * @param content 内联脚本内容（与 `src` 二选一）。
+   * @param src 外部脚本地址（与 `content` 二选一，以 async 方式加载）。
+   * @param type 脚本类型（默认 `"text/JavaScript"`）。
+   */
   static addScript(loc: HTMLElement, content: string | null, src?: string, type?: string) {
     const script = document.createElement("script");
     script.type = type ? type : "text/JavaScript";
@@ -1027,6 +1143,15 @@ export class Utils {
     loc.appendChild(script);
   }
 
+  /**
+   * 按 `src` 或内联 `content` 加载脚本，返回加载完成/失败的 Promise，可用 `id` 去重。
+   *
+   * @param loc 挂载 `<script>` 的宿主元素。
+   * @param content 内联脚本内容（与 `src` 二选一）。
+   * @param src 外部脚本地址（与 `content` 二选一）。
+   * @param type 脚本类型（默认 `"text/JavaScript"`）。
+   * @param id 标签 id；若目标文档中已存在该 id 则直接 resolve。
+   */
   static loadScript(
     loc: HTMLElement,
     content?: string | null,
@@ -1051,31 +1176,45 @@ export class Utils {
     });
   }
 
+  /**
+   * 并行加载多个外部脚本，全部完成后 resolve。
+   *
+   * @param loc 挂载 `<script>` 的宿主元素。
+   * @param srcList 待加载的外部脚本地址列表。
+   * @param type 脚本类型（默认 `"text/JavaScript"`）。
+   * @param id 标签 id（多个脚本共享同一 id，先到先得）。
+   */
   static loadScripts(loc: HTMLElement, srcList: string[], type?: string | null, id?: string) {
     return Promise.all(srcList.map((src) => this.loadScript(loc, null, src, type, id)));
   }
 
+  /** 获取 0 点的毫秒时间戳，`num` 为相对天数偏移（正数向后，负数向前） */
   static getStartTime(d: number | Date, num = 1) {
     if (typeof d === "number") d = new Date(d);
     return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
   }
 
+  /** 格式化为 `YYYY-M-D` 日期字符串 */
   static getFormattedDate(date = new Date()) {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   }
 
+  /** 格式化为 `YYYY年M月D日` 中文日期字符串 */
   static getFormattedChineseDate(date = new Date()) {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   }
 
+  /** 格式化为 `HH:MM:SS` 24 小时制时间字符串 */
   static getFormatted24hTime(date = new Date()) {
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
   }
 
+  /** 格式化为 `YYYY-M-D HH:MM:SS` 日期时间字符串 */
   static getFormattedDateTime(date = new Date()) {
     return `${this.getFormattedDate(date)} ${this.getFormatted24hTime(date)}`;
   }
 
+  /** 将字节数格式化为 B/KiB/MiB/GiB，保留两位小数 */
   static getFormattedSize = (size: number | string) => {
     size = Number(size) || 0;
     const f = (e: number) => Utils.getPrecisionFormatter().format(e);
@@ -1085,6 +1224,7 @@ export class Utils {
     else return f(size / 1073741824) + " GiB";
   };
 
+  /** 将含 Minecraft 格式化代码（`§`）的字符串渲染为带样式的 HTML，并把 `%s` 占位符标为 `<code>` */
   static getFormattedCodeDecoratedHTML = (str: string) => {
     const res = $("<span>");
     if (str.indexOf("\u00a7") >= 0) {
@@ -1159,6 +1299,7 @@ export class Utils {
     return res.prop("outerHTML");
   };
 
+  /** 计算并记录本次请求的调度时间戳（按 `minimumRequestInterval` 限速；队列过长时返回 -1） */
   updateRequestTime() {
     const minimumRequestInterval = Math.max(
       this.configs.getSettings("minimumRequestInterval")!,
@@ -1175,6 +1316,10 @@ export class Utils {
     return lastRequestTime;
   }
 
+  /**
+   * 发送限速请求的全局入口：
+   * 按 `updateRequestTime` 排定延迟后发出，记录日志；遇到 `yxd_token` 校验响应时写入 cookie 并自动重发。
+   */
   createRequest(
     config: GmXmlhttpRequestOption<"text", unknown>,
   ): Promise<GmResponseEvent<"text", unknown>> {
@@ -1225,6 +1370,7 @@ export class Utils {
     });
   }
 
+  /** 将字符串中的 `\uXXXX` 转义序列还原为对应字符 */
   static unicode2Character(s: string) {
     let chineseStr = "";
     const l = s.length;
@@ -1241,11 +1387,13 @@ export class Utils {
     return chineseStr;
   }
 
+  /** 将 `YYYY-MM-DD HH:MM:SS` 格式字符串解析为本地时间戳 */
   static customDateStringToTimestamp(str: string) {
     const [year, month, day, hour, minute, second] = str.split(/[- :]/).map(Number);
     return new Date(year, month - 1, day, hour, minute, second).getTime();
   }
 
+  /** 清除正文中的百科格式化占位符（如 `[h1=]`） */
   static clearContextFormatter(e: string) {
     e = " " + e;
     const r = Values.ignoredContextFormatters;
@@ -1273,17 +1421,20 @@ export class Utils {
     return e.replace(" ", "");
   }
 
+  /** 计算清除格式化占位符后正文的 UTF-8 字节长度 */
   static getContextLength(e: string) {
     const encoder = new TextEncoder();
     const r = Utils.clearContextFormatter(e);
     return encoder.encode(r).length;
   }
 
+  /** 判断元素是否通过 `display: none` 隐藏 */
   static isNodeHidden(node: Element | JQuery) {
     if ($(node).css("display") === "none") return true;
     return false;
   }
 
+  /** 将按钮置为加载中状态（禁用并追加 spinner 图标） */
   static setButtonLoadingState(node: Element | JQuery) {
     $(node)
       .addClass("disabled")
@@ -1291,10 +1442,12 @@ export class Utils {
       .append(`<i class="fa fa-pulse fa-spinner">`);
   }
 
+  /** 取消按钮的加载中状态（恢复可用并移除 spinner 图标） */
   static cancelButtonLoadingState(node: Element | JQuery) {
     $(node).removeClass("disabled").removeAttr("disabled").find("i:last-child").remove();
   }
 
+  /** 净化文件名：将非法字符与空格替换为下划线，并截断到 255 字符 */
   static regulateFileName(name: string) {
     return name
       .replace(/[\\/:*?"<>|]/g, "_")
@@ -1302,6 +1455,13 @@ export class Utils {
       .substring(0, 255);
   }
 
+  /**
+   * 为节点绑定点击复制到剪贴板的事件，复制成功后弹出提示。
+   *
+   * @param node 要绑定复制事件的节点（同时会加上 `mcmodder-copyable` 类）。
+   * @param typeName 被复制内容的类型名，用于提示文案（如「物品名称」）。
+   * @param copyData 要复制的内容；若不传则复制节点的 `textContent`。可传函数以在点击时惰性取值。
+   */
   static addClickCopyEvent(
     node: JQuery,
     typeName: string,
@@ -1315,6 +1475,7 @@ export class Utils {
     });
   }
 
+  /** 同时更新「名称→ID」与「ID→名称」两个映射表 */
   updateClassNameIDMap(className: string, classID: string) {
     const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
     const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
@@ -1324,16 +1485,19 @@ export class Utils {
     GM_setValue("idClassNameMap", JSON.stringify(idClassNameMap));
   }
 
+  /** 由模组 ID 查询其名称 */
   getClassNameByClassID(classID: string | number) {
     const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
     return idClassNameMap[classID.toString()];
   }
 
+  /** 由模组名称查询其 ID */
   getClassIDByClassName(className: string) {
     const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
     return classNameIDMap[className];
   }
 
+  /** 按模组 ID 与物品类型 ID/文本查找对应的物品类型数据 */
   getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
     const matchedTypeList = this.parent.itemTypeList?.filter(
       (entry) =>
@@ -1343,6 +1507,7 @@ export class Utils {
     return matchedTypeList?.length ? matchedTypeList[0] : undefined;
   }
 
+  /** 生成物品类型的图标 HTML（按 `classID`+`itemType` 查找，或直接传入 `ItemType`） */
   getItemTypeHTML(
     ...args:
       [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]
@@ -1360,6 +1525,7 @@ export class Utils {
     return iconFont;
   }
 
+  /** 刷新页面上所有 `data-toggle="tooltip"` 元素的 tooltip */
   static updateAllTooltip() {
     return $().tooltip
       ? $('[data-toggle="tooltip"]').tooltip({
@@ -1369,6 +1535,7 @@ export class Utils {
       : null;
   }
 
+  /** 按 ID 抓取物品资料页并解析为 `Item`，失败返回 undefined */
   async getItemByID(id: string | number) {
     id = Number(id);
     const resp = await this.createRequest({
@@ -1384,6 +1551,7 @@ export class Utils {
     return Utils.parseItemDocument(doc);
   }
 
+  /** 按 ID 抓取物品编辑页并解析为 `Item`，未登录或失败返回 undefined */
   async getDetailedItemByID(id: string | number) {
     if (!this.parent.currentUID) return;
     id = Number(id);
@@ -1399,6 +1567,7 @@ export class Utils {
     return Utils.parseItemEditorDocument(doc);
   }
 
+  /** 从物品资料页 DOM 中解析物品信息为 `Item` */
   static parseItemDocument($doc: JQuery = $(document)) {
     const keywords = $doc.find("meta[name=keywords]").attr("content").split(",");
     const itemRow = $doc.find(".item-row").first();
@@ -1431,6 +1600,7 @@ export class Utils {
     return res;
   }
 
+  /** 从模组页 DOM 中解析模组信息，返回节点与 `classData` */
   static parseClassDocument($doc: JQuery = $(document)) {
     const name = $doc.find(".class-title h3");
     const ename = $doc.find(".class-title h4");
@@ -1448,6 +1618,7 @@ export class Utils {
     };
   }
 
+  /** 将 `Item` 转换为物品编辑页提交所需的数据结构 */
   static async itemToEditorData(item: Item): Promise<McmodItemEditorData> {
     const res = { "item-data": {} } as DeepPartial<McmodItemEditorData>;
     const data = res["item-data"]! as Partial<McmodItemEditorInnerData>;
@@ -1478,6 +1649,7 @@ export class Utils {
     return res as McmodItemEditorData;
   }
 
+  /** 从物品编辑页 DOM 中解析完整物品信息为 `Item` */
   static parseItemEditorDocument($doc: JQuery = $(document)) {
     const headScript = $doc.find("head > script").last().html().split(";");
     const bodyScript = $doc.find("body > script").last().html();

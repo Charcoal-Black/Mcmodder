@@ -127,7 +127,7 @@ const configResourceInteractorProps = [
     parent: props.parent,
     id: "mcmodderSplashList_v2",
     name: "已记录的闪烁标语",
-    rowOptions: {
+    columnOptions: {
       time: ["时间", (data: number) => (data ? new Date(data).toLocaleString() : "未知")],
       content: "记录内容",
       num: ["次数", TableUtils.DISPLAYRULE_NUMBER],
@@ -146,7 +146,7 @@ const configResourceInteractorProps = [
     parent: props.parent,
     id: "modDependences_v2",
     name: "已记录的模组前置信息",
-    rowOptions: {
+    columnOptions: {
       id: ["模组编号", TableUtils.DISPLAYRULE_LINK_CLASS],
       children: ["记录内容", TableUtils.DISPLAYRULE_LINK_CLASS_ARRAY],
     },
@@ -164,7 +164,7 @@ const configResourceInteractorProps = [
     parent: props.parent,
     id: "modExpansions_v2",
     name: "已记录的模组拓展信息",
-    rowOptions: {
+    columnOptions: {
       id: ["模组编号", TableUtils.DISPLAYRULE_LINK_CENTER],
       children: ["记录内容", TableUtils.DISPLAYRULE_LINK_CLASS_ARRAY],
     },
@@ -181,7 +181,7 @@ const configResourceInteractorProps = [
     parent: props.parent,
     id: "rankData",
     name: "已保存的贡献榜数据",
-    rowOptions: {
+    columnOptions: {
       date: ["日期", TableUtils.DISPLAYRULE_DATE_SEC_ZH],
       byteTop1: [
         "字数榜首",

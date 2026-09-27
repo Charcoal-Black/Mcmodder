@@ -11,40 +11,102 @@ import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import AutoLink from "../vue/components/AutoLink.vue";
 import TextComparator from "../vue/components/TextComparator.vue";
 
+/** 挂载在选项栏上的复选框：容器 `<span>` 与其 Vue 组件实例，便于直接改显隐或读值 */
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
 
+/**
+ * UEditor 的增强版：在基类之上追加一批编辑体验向的特性 —— Markdown 源码双向编辑、工具栏加工具、
+ * 编辑量统计、自动链接面板、纵向排列、格式化代码颜色等。
+ *
+ * # 为什么仍然不用 Vue 组件
+ * 与基类同理：编辑器本体是百科的原生 iframe，其 UI 由百科创建、类名与全局对象高度耦合。
+ * 只有「外挂面板」部分（自动链接、选项栏复选框、文本对比器）才用 Vue 挂载，
+ * 它们是独立挂载的节点，不接管编辑器本身。
+ *
+ * # 初始化时序（重要，改动前务必读）
+ * 基类 {@link UEditor} 的 `init` 是**异步**的（`editor.ready` 回调 + `setTimeout(0)`），
+ * 而本类有些字段（`toolBar`、`mdEditorOption` 等）必须在 `init` 之后才能赋值，
+ * 但构造函数又必须同步跑完（父类构造函数会把 `init` 挂到回调上，无法 override）。
+ *
+ * 因此这里用 **`pending` + `isFrameReady` 两个标志位**做「双向握手」：
+ * - 若基类 `init` 先跑完 → 在覆写的 {@link init} 里置 `isFrameReady = true` 并触发 `advinit()`；
+ * - 若子类构造函数先跑完（`init` 尚未就绪）→ `pending` 保持 true，等基类 `init` 来触发。
+ *
+ * 两条路径最终都只保证 `advinit()` **被调用一次**。
+ * 另有一层早退保护：`advinit` 开头会检查关键 DOM 引用是否齐全，防止在编辑器半初始化时炸掉。
+ *
+ * 之所以要在意，是因为本目录历史上出过多次「编辑器初始化失败」的 Bug，
+ * 基本都源于某个字段在 `advinit` 执行时还没被赋值。
+ */
 export class AdvancedUEditor extends UEditor {
+  /** 百科原生的工具条容器（`.edit-tools`），增强工具插在它旁边 */
   editToolsBar?: JQuery;
+  /** 选项栏：装各种开关复选框 */
   optionBar?: JQuery;
+  /** 增强工具栏：装 `addTool` 添加的按钮 */
   toolBar?: JQuery;
+  /** Markdown 编辑器的外层容器（`#mcmodder-mdeditor`） */
   mdEditorOuterContainer?: JQuery;
+  /** Markdown 编辑器的挂载点（CodeMirror 实际渲染于此） */
   mdEditorContainer?: JQuery;
+  /** Markdown 编辑器实例 */
   mdEditor?: CodeMirror.Editor;
+  /** HTML 源代码编辑器的外层容器（`#mcmodder-htmleditor`） */
   htmlEditorOuterContainer?: JQuery;
+  /** HTML 源代码编辑器的挂载点 */
   htmlEditorContainer?: JQuery;
+  /** HTML 源代码编辑器实例 */
   htmlEditor?: CodeMirror.Editor;
+  /** HTML → Markdown 转换器（用于首次把已有正文灌进 md 编辑器） */
   turndownSurvice?: TurndownService;
+  /** 「Markdown 编辑器」开关 */
   protected mdEditorOption?: ContainerComponentPair;
+  /** 「源代码编辑器」开关 */
   protected htmlEditorOption?: ContainerComponentPair;
+  /** 「纵向排列」开关 */
   protected verticalOption?: ContainerComponentPair;
+  /** 「实用工具」开关 */
   protected toolkitOption?: ContainerComponentPair;
+  /** 打开页面时正文的字节数（编辑量的基准） */
   protected originalTextLength: number;
+  /** 当前正文的字节数 */
   protected currentTextLength: number;
+  /** 编辑器被锁定时为 `current - original`，否则与 `original` 同步 */
   protected changedTextLength: number;
+  /** 编辑量统计栏 */
   statsBar?: JQuery;
+  /** 统计栏中显示当前字节数的节点 */
   currentTextNode?: JQuery;
+  /** 统计栏中显示字节变化量的节点 */
   changedTextNode?: JQuery;
+  /** 统计栏的「轻触刷新」按钮（正文过大时自动统计被关闭，靠它手动触发） */
   refreshTextNode?: JQuery;
+  /** HTML 编辑器标题栏的「轻触刷新」按钮 */
   refreshHtmlNode?: JQuery;
+  /** 是否为 Modrinth 日志编辑页（此类页面正文以 Markdown 存储，需强制开启 md 编辑器） */
   protected isModrinthVer: boolean;
+  /** 超过该字节数就停止实时统计，改由用户手动刷新 */
   protected autoUpdateEditorStatsThreshold: number;
+  /** 自动链接面板的挂载点 */
   autoLinkFrame?: JQuery;
+  /** 自动链接组件实例 */
   autoLink?: InstanceType<typeof AutoLink>;
+  /** 模板面板（惰性初始化，见 {@link templateObserver}） */
   template = new TemplateFrame(this);
+  /** 重入锁：防止原生编辑器与 HTML 编辑器互相触发 change 造成死循环 */
   private contentLock = false;
+  /** 构造期间为 true，表示「等待基类 init 来触发 advinit」 */
   private pending = true;
+  /** 基类 init 完成后为 true */
   private isFrameReady = false;
 
+  /**
+   * 监听百科的 SweetAlert 弹窗：模板面板的 `swal` 弹窗由用户操作触发而非初始化时存在，
+   * 因此只能在弹窗出现的瞬间才 {@link TemplateFrame.init} 模板数据。
+   *
+   * @warning 判定条件同时校验了弹窗 class 与标题文案（`PublicLangData.editor.template.title`），
+   * 二者缺一不可；改动标题或 swal 的 class 都会让模板面板静默失效。
+   */
   private readonly templateObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       const className = (mutation?.addedNodes[0] as HTMLElement)?.className;
@@ -58,17 +120,31 @@ export class AdvancedUEditor extends UEditor {
     }
   });
 
+  /**
+   * 先交给基类完成 DOM 解包（必须如此，本类后续逻辑依赖 `$outerFrame` 等引用），
+   * 再置位 `isFrameReady` 并补触发 `advinit`，详见类注释中的「双向握手」。
+   *
+   * @param editor 百科的原生编辑器实例。
+   */
   constructor(editor: UEditor, parent: Mcmodder) {
     super(editor, parent);
     this.originalTextLength = this.currentTextLength = this.changedTextLength = 0;
     this.autoUpdateEditorStatsThreshold = this.configs.getSettings("editorStats") ?? 1e4;
     this.isModrinthVer = new URLSearchParams(window.location.search).has("mrid");
+    // 基类 init 已跑完（极少见，说明 iframe 早已就绪）时在此直接补一次 advinit
     if (this.isFrameReady) {
       this.pending = false;
       this.advinit();
     }
   }
 
+  /**
+   * 往增强工具栏里加一个按钮。按钮初始为隐藏，需由对应的选项开关（`readyToolkit` 等）控制显隐。
+   *
+   * @param id 按钮的 DOM id，供其他代码用 `#id` 直接操作。
+   * @param text 按钮文案。
+   * @param callback 点击回调。
+   */
   private addTool(id: string, text: string, callback: () => unknown) {
     $('<button class="btn btn-sm">')
       .attr("id", id)
@@ -87,6 +163,24 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /**
+   * 增强特性的真正的初始化入口：铺设工具栏/选项栏/两个源码编辑器，挂载 Vue 面板，
+   * 绑定各类事件，并按用户配置回填各开关的初始状态。
+   *
+   * # 顺序为什么重要
+   * 本方法内部对顺序有硬性依赖，**调整前请先确认调用点**：
+   * 1. 先建容器（`editToolsBar`/`optionBar`/`toolBar`/两个编辑器外壳），
+   *    因为后面的 {@link addTool} 与 {@link addOption} 都要往 `toolBar`/`optionBar` 里挂载；
+   * 2. 再建工具按钮与 `AutoLink` 组件 —— `AutoLink` 需要 `this` 作为 prop 传入，
+   *    因此它必须等父类 `init` 完成（即 `this.$outerFrame` 等可用）后才能创建；
+   * 3. 事件绑定放在容器就绪之后，避免委托到尚未插入 DOM 的节点上；
+   * 4. **各 `addOption` 必须在对应容器创建之后**，且最后的「按配置回填开关」必须在其之后，
+   *    否则 `option[1].setCurrentValue` 会因为组件还没挂载而失效；
+   * 5. `setCurrentValue` 会反过来触发 `ready*` 系列，那些方法又会读 `mdEditorContainer` 等字段，
+   *    所以字段赋值必须早于这一步 —— 这也是整个方法只在初始化末尾集中回填配置的原因。
+   *
+   * 若关键 DOM 引用缺失则直接返回，宁可什么都不做也不要让编辑器崩掉。
+   */
   private advinit() {
     if (!this.$outerFrame || !this.$innerFrame || !this.document || !this.$document) return;
 
@@ -287,6 +381,14 @@ export class AdvancedUEditor extends UEditor {
     if (this.configs.getSettings("anonymousUknowtoomuch")) this.anonymiseUknowtoomuch();
   }
 
+  /**
+   * 在选项栏加一个开关复选框。
+   *
+   * @param title 开关显示的标题。
+   * @param id 复选框的 DOM id。
+   * @param onSuccessfulChange 状态变化后的回调（各 `ready*` 方法都通过它接收新状态并持久化配置）。
+   * @returns 容器节点与其组件实例，供外部直接改显隐（`option[0]`）或读值（`option[1]`）。
+   */
   addOption(
     title: string,
     id: string,
@@ -305,6 +407,10 @@ export class AdvancedUEditor extends UEditor {
     ];
   }
 
+  /**
+   * 宽度自适应：在基类撑满 `#edui1` 的基础上，让两个源码编辑器与外层编辑区等高同宽。
+   * 容器高度固定为外层高度减 32px（标题栏高度）。
+   */
   override widthAutoResize() {
     if (!this.$innerFrame) return;
     super.widthAutoResize();
@@ -316,6 +422,10 @@ export class AdvancedUEditor extends UEditor {
     this.htmlEditorContainer?.css("height", innerHeight + "px");
   }
 
+  /**
+   * 计算正文高度：取基类结果与「已展开的源码编辑器实际高度」的最大值，
+   * 避免源码编辑器把外层编辑区撑得比它矮。
+   */
   override autoCalculateHeight() {
     let height = super.autoCalculateHeight();
     if (this.mdEditorOption?.[1].getValue()) {
@@ -327,6 +437,10 @@ export class AdvancedUEditor extends UEditor {
     return height;
   }
 
+  /**
+   * 调整编辑器高度：基类调整外层后，再让两个源码编辑器跟随。
+   * **纵向排列**模式下两个编辑器上下排列、由内容撑高，故清除固定高度；否则锁定为外层高度。
+   */
   override resizeHeight(height: number) {
     if (!this.$innerFrame) return;
     super.resizeHeight(height);
@@ -343,6 +457,12 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /**
+   * 「Markdown 编辑器」开关：按需**惰性创建** CodeMirror 实例，并把当前正文反向转成 Markdown 灌入。
+   * 关闭时只是隐藏编辑器（实例保留），因此再次开启无需重新转换。
+   *
+   * 惰性创建的原因是 CodeMirror 初始化开销不小，且并非所有用户需要。
+   */
   private async readyMarkdownEditor() {
     if (
       !this.$document ||
@@ -425,6 +545,11 @@ export class AdvancedUEditor extends UEditor {
     this.onEditorStateChange();
   }
 
+  /**
+   * 「源代码编辑器」开关：惰性创建 XML 模式的 CodeMirror，并与原生编辑器**双向同步**：
+   * 在源码编辑器里改动会写回 `editor.setContent`，原生编辑器改动则由 {@link syncHtml} 拉回。
+   * 两个方向的同步都靠 {@link contentLock} 互斥，避免互相触发造成循环。
+   */
   private async readyHtmlEditor() {
     if (!this.htmlEditorContainer || !this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
@@ -468,6 +593,9 @@ export class AdvancedUEditor extends UEditor {
     this.onEditorStateChange();
   }
 
+  /**
+   * 任一源码编辑器开关变化后的收尾：决定「纵向排列」开关是否可用，并重算尺寸与统计。
+   */
   private onEditorStateChange() {
     const md = this.mdEditorOption?.[1].getValue();
     const html = this.htmlEditorOption?.[1].getValue();
@@ -480,6 +608,9 @@ export class AdvancedUEditor extends UEditor {
     this.updateEditorStats();
   }
 
+  /**
+   * 「纵向排列」开关：给外层加/去 `vertical` 类（样式表据此把编辑器与源码编辑器改为上下排布）
+   */
   private readyVerticalEditor() {
     const c = this.verticalOption?.[1].getValue();
     if (c) {
@@ -491,6 +622,9 @@ export class AdvancedUEditor extends UEditor {
     this.heightAutoResize();
   }
 
+  /**
+   * 「实用工具」开关：控制三个正文加工工具按钮的显隐（工具始终已创建）
+   */
   private readyToolkit() {
     const c = this.toolkitOption?.[1].getValue();
     if (c) {
@@ -501,6 +635,15 @@ export class AdvancedUEditor extends UEditor {
     this.configs.setSettings("editorToolkit", c);
   }
 
+  /**
+   * 「Markdown → HTML」：把 md 编辑器的内容渲染进正文。
+   *
+   * 渲染后还要做若干**针对百科编辑器的适配与体检**：
+   * - 把渲染出的 `h1`~`h6` 反向转成 `[hN=标题]` 占位符（百科正文以这种标记表达标题）；
+   * - `code`/`blockquote` 是百科不支持的标签，给它们描红并提示用户手动调整；
+   * - `pre` 剥掉标签只留文本，未指定语言的提醒补语言；
+   * - 统一 `ul` 列表的缩进类，并把 `li` 里的裸文本包成 `<p>`（百科只接受 `li > p` 结构）。
+   */
   performMarkdownIt() {
     // 预处理
     // this.mdEditor.find("p > br").remove();
@@ -562,6 +705,10 @@ export class AdvancedUEditor extends UEditor {
     this.updateEditorStats();
   }
 
+  /**
+   * 「修复 br 换行」：百科正文的 `<br>` 无法表达段落结构（粘贴正文时常见），
+   * 此处把含 `<br>` 的段落按 `<br>` 切成多个段落。
+   */
   performBrFix() {
     if (!this.$body) return;
     const p = this.$body.find("p");
@@ -596,6 +743,9 @@ export class AdvancedUEditor extends UEditor {
     Utils.commonMsg(`${count} 处 br 换行问题已被修复~`);
   }
 
+  /**
+   * 「移除无效链接」：把没有 `href` 的 `<a>`（粘贴残留的空链接）还原成纯文本。
+   */
   performLinkFix() {
     if (!this.$body) return;
     let count = 0;
@@ -617,6 +767,15 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /**
+   * 「中英间添加空格」：用 pangu 批量处理正文。
+   *
+   * pangu 会把 `[icon:名=数量,文本]` 这类**自定义标记**也当作普通文本切开、破坏其语义，
+   * 因此处理前先把每个标记替换成临时的 `<a class="mcmodder-tempnode">`（属性里存好各字段，
+   * 并记录标记原本的前后是否已有空格），pangu 处理完再把临时节点换回原文。
+   *
+   * 期间会临时把 `<body>` 设为不可编辑，因为 pangu 会跳过可编辑容器的子元素。
+   */
   async performSpacingPage() {
     if (!this.window || !this.head || !this.body || !this.$body) return;
     await Utils.loadScript(this.head, null, Values.assets.js.pangu, null, "mcmodder-script-pangu");
@@ -714,13 +873,18 @@ export class AdvancedUEditor extends UEditor {
         });
 
         this.body!.contentEditable = "true";
-      }, 1e2);
+      }, 1e2); // pangu.spacingPage 并不是同步方法，强制延迟 100ms 以保证执行时 pangu 已完成空格插入
   }
 
+  /** 编辑器是否处于锁定（他人正在编辑）状态 */
   isEditorLocked() {
     return $(".edit-user-alert.locked").length ? true : false;
   }
 
+  /**
+   * 往百科的文字颜色选择器底部插入一批「格式化代码颜色」色块。
+   * 借助 UEditor 既有的色块样式，插入的就是普通 `<a data-color>`，无需改动百科自身逻辑。
+   */
   colorpickerInit() {
     const colorpicker = $(".edui-colorpicker tbody");
 
@@ -749,6 +913,10 @@ export class AdvancedUEditor extends UEditor {
     }); */
   }
 
+  /**
+   * 刷新统计栏：显示当前字节数，以及相对打开页面时的字节变化量（增删量，正数为加、负数为删，
+   * 删多了染成警示色）。`t` 取统计栏里的特定几个节点，仅在确有变化时显示。
+   */
   updateTextLengthDisplay() {
     if (
       !this.currentTextNode ||
@@ -768,11 +936,19 @@ export class AdvancedUEditor extends UEditor {
     else t.hide();
   }
 
+  /** 记录当前字节数并刷新统计栏 */
   updateCurrentTextLength(length: number) {
     this.currentTextLength = length;
     this.updateTextLengthDisplay();
   }
 
+  /**
+   * 求出「打开页面时」的字节数，作为编辑量基准。
+   *
+   * 编辑器未被锁定时无从比较，直接把当前值当作基准（相当于变化量为 0）。
+   * 被锁定（他人正在编辑）时，正文里已含对方的改动，无法从当前内容反推原文，
+   * 于是**另外请求一次历史版本页面**，取其正文来计算基准，同时挂一个文本对比器让用户看清差异。
+   */
   async updateOriginalTextLength() {
     if (!this.changedTextNode || !this.$body) return;
     if (!this.isEditorLocked()) {
@@ -820,6 +996,10 @@ export class AdvancedUEditor extends UEditor {
     // this.updateEditorStats();
   }
 
+  /**
+   * 判断某个节点是否计入字节统计：排除空节点、编辑菜单、锚点链接、`<script>`，
+   * 以及那行固定样式的居中说明文字（这些都是编辑器的界面元素而非用户正文）。
+   */
   isNodeCountableForBytes(node: HTMLElement) {
     if (!node.textContent) return false;
     if (node.className === "common-text-menu") return false;
@@ -832,6 +1012,13 @@ export class AdvancedUEditor extends UEditor {
     return true;
   }
 
+  /**
+   * 内容变化后的统一处理：重算高度（仅非全屏时，全屏下改高度会抖），
+   * 并在正文未超过阈值时**节流**地重算字节数与同步 HTML 源码。
+   *
+   * 超过 {@link autoUpdateEditorStatsThreshold} 时停止自动统计（逐字重算 + 美化 HTML 开销太大），
+   * 改为显示「轻触刷新」按钮交由用户手动触发。
+   */
   override updateEditorStats() {
     if (!this.isEditorFullScreen()) this.heightAutoResize();
     if (this.currentTextLength <= this.autoUpdateEditorStatsThreshold) {
@@ -845,6 +1032,7 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /** 统计栏「轻触刷新」：正文过大时由用户手动重算字节数 */
   private manualTriggerStatsUpdate() {
     if (this.currentTextLength > this.autoUpdateEditorStatsThreshold) {
       this.calculateBytes();
@@ -852,6 +1040,7 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /** HTML 编辑器「轻触刷新」：正文过大时由用户手动重新拉取源码 */
   private manualTriggerHtmlUpdate() {
     if (this.currentTextLength > this.autoUpdateEditorStatsThreshold) {
       this.syncHtml();
@@ -859,6 +1048,7 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /** 统计当前正文的字节数（`<pre>` 代码块内的内容不计入） */
   private calculateBytes() {
     let contextLength = 0;
     if (this.body)
@@ -871,6 +1061,10 @@ export class AdvancedUEditor extends UEditor {
     this.updateCurrentTextLength(contextLength);
   }
 
+  /**
+   * 把当前正文同步到 HTML 源代码编辑器（经 `html_beautify` 美化，便于手改）。
+   * 同步期间上锁，防止 `setValue` 触发的 change 再写回原生编辑器。
+   */
   private syncHtml() {
     if (this.htmlEditor && !this.contentLock) {
       this.contentLock = true;
@@ -881,6 +1075,10 @@ export class AdvancedUEditor extends UEditor {
     }
   }
 
+  /**
+   * 「我知道了」：覆写百科的 `uknowtoomuch` 命令，把选中文本包进
+   * `<span class="uknowtoomuch">` 存进正文（原本只弹提示、不留内容）。
+   */
   anonymiseUknowtoomuch() {
     baidu.editor.commands.uknowtoomuch.execCommand = function () {
       editor.selection.getRange().select();
@@ -891,6 +1089,7 @@ export class AdvancedUEditor extends UEditor {
     };
   }
 
+  /** 在 swal 弹窗里挂载并初始化自动链接面板 */
   showAutoLinkList() {
     Utils.createModal(
       {
@@ -908,6 +1107,12 @@ export class AdvancedUEditor extends UEditor {
     this.autoLink?.init();
   }
 
+  /**
+   * 编辑器 iframe 内的快捷键总入口。
+   *
+   * 先转交百科侧的快速提交处理（`bindFastSubmit` 由 {@link GeneralEditInit} 按配置装填），
+   * 再叠加本脚本的按键：快速链接面板；PgUp/PgDn 临时折叠展开左侧菜单（松开即恢复）。
+   */
   fastSubmitOverride(e: JQueryKeyEventObject) {
     bindFastSubmit(e);
     if (this.parent.utils.isKeyMatchConfig("keybindFastLink", e)) {

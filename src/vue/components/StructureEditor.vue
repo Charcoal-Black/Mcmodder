@@ -33,7 +33,7 @@
       ref="blockListTable"
       :parent="parent"
       :attr="{ id: 'block-selector' }"
-      :rowOptions="blockListRowOptions"
+      :column-options="blockListcolumnOptions"
     />
   </div>
 </template>
@@ -57,7 +57,7 @@ let blocktype = -1;
 
 const blockListTable = useTemplateRef("blockListTable");
 
-const blockListRowOptions = {
+const blockListcolumnOptions = {
   op: [
     "操作",
     (_, row) => {
@@ -83,7 +83,7 @@ const blockListRowOptions = {
     },
   ],
   itemID: ["对应资料ID", TableUtils.DISPLAYRULE_LINK_ITEM],
-} as RowOptionsInitializer<StructureEditorBlocktype>;
+} as ColumnOptionsInitializer<StructureEditorBlocktype>;
 
 function onInputChange(e: Event) {
   const target = e.composedPath()[0];

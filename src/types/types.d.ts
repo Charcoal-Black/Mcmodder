@@ -34,17 +34,26 @@ interface HSLA extends HSL {
   readonly a: number;
 }
 
+/**
+ * 调色盘：一组「颜色名 → 颜色值」的映射。
+ * 颜色名是最终 CSS 变量的组成部分（如 `background` ⇒ `--mcmodder-color-background`），
+ * 颜色值一般为 `#rrggbb` 等字符串，由 `StyleLoader.applyPaletteModifier` 负责展开。
+ */
 type Palette = Record<string, string>;
 
+/** 颜色转换器：接收当前颜色与（可选）档号，返回处理后的新颜色。档号供多档修饰区分不同层级（如 `dark1~dark4`） */
 type PaletteConverter = (color: string, tier?: number) => string;
 
+/** 一种修饰：`converter` 为颜色转换函数；`maxTier` 表示要展开几档（设了才传入档号 `tier`） */
 interface PaletteModifier {
   maxTier?: number;
   converter: PaletteConverter;
 }
 
+/** 一个修饰步骤：修饰名 → 修饰定义。修饰名会作为前缀追加进变量名（如 `dark`/`transparent`） */
 type PaletteModifierStep = Record<string, PaletteModifier>;
 
+/** 修饰表：按序排列的修饰步骤数组，驱动 `applyPaletteModifier` 的递归展开 */
 type PaletteModifierSchedule = PaletteModifierStep[];
 
 type Template = {
@@ -563,17 +572,27 @@ interface AdvancementProgression {
   progress: number;
 }
 
+/** 表格行的数据形状：一行即一个普通对象（键 = 数据字段，值任意）。泛型 T 是字段名到字段类型的映射 */
 // 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
 // eslint-disable-next-line
 type TableAcceptable = Record<string, any>;
-interface RowOption<T> {
+/** 单列配置：`name` 是表头文案；`displayRule` 决定该展示列如何把（可能多个）字段渲染成 HTML/文本 */
+interface ColumnOption<T> {
   readonly name: string;
   readonly displayRule?: TableDisplayRule<T>;
 }
-type RowOptions<T> = Record<string, RowOption<T>>;
-type RowOptionInitializer<T> = string | [string, TableDisplayRule<T>];
-type RowOptionsInitializer<T> = Record<string, RowOptionInitializer<T>>;
+/** 所有列的配置表：键 = 展示列名（通常与数据字段同名），值 = 该列配置 */
+type ColumnOptions<T> = Record<string, ColumnOption<T>>;
+/** 单列初始化器：只给表头名的字符串，或「表头名 + 展示规则」的二元组 */
+type ColumnOptionInitializer<T> = string | [string, TableDisplayRule<T>];
+/** 列配置初始化表：交给组件后由 `TableUtils.parseColumnOptionsInitializer` 逐一归一化 */
+type ColumnOptionsInitializer<T> = Record<string, ColumnOptionInitializer<T>>;
 
+/**
+ * 归一化后的编辑配置：键 = 数据字段。
+ * 两个映射部分的交叉类型表达「该字段是否允许缺省」——
+ * 值为 `undefined` 的字段被划入带 `optional: true` 的一边，其余字段走另一边。
+ */
 type EditConfigs<T> = {
   [P in keyof T as T[P] extends undefined ? P : never]: TableInputOption & {
     optional: true;
@@ -581,6 +600,10 @@ type EditConfigs<T> = {
 } & {
   [P in keyof T as T[P] extends undefined ? never : P]: TableInputOption;
 }; // Record<keyof T, InputOption>;
+/**
+ * 单个字段的编辑配置初始化器（归一化前的各种简写形态）：
+ * 空值（只读）、`InputType` 数值、`InputLimit`/`InputOption`/`TableInputOption` 对象、`{ readonly: true }`。
+ */
 type EditOptionInitializer =
   | null
   | undefined
@@ -589,29 +612,49 @@ type EditOptionInitializer =
   | InputOption
   | TableInputOption
   | { readonly: true };
+/** 全部字段的编辑配置初始化表 */
 type EditOptionsInitializer<T> = Record<keyof T, EditOptionInitializer>;
 
+/**
+ * 组件内部的一行数据包装：
+ * - `content` —— 原始数据对象（只读展示以它为准）；
+ * - `selected` —— 是否被选中；
+ * - `edited` —— 尚未保存的字段改动（双击编辑后暂存于此，`saveAll` 时写回 `content`）。
+ */
 interface TableRowData<T> {
   content: T;
   selected?: boolean;
   edited?: Partial<T>;
 }
 
+/** 「行索引 → 行数据」映射，是各编辑命令 execute 的返回值 / undo 的入参，用于成批记录改动 */
 type TableDataMap<T extends TableAcceptable> = Record<number, T>;
+/** 被选中行的行索引集合（升序） */
 type TableRowSelection = number[];
+/** 行数据列表（一整个表格的数据体） */
 type TableDataList<T extends TableAcceptable> = T[];
 
+/** 虚拟滚动当前渲染区间的左右闭区间边界（数据行索引） */
 interface TableRowRange {
   l: number;
   r: number;
 }
 
+/**
+ * 展示规则：把某展示列的原始值与（可选的）整行数据渲染成可展示内容。
+ * 输入 `unit` 即列值的原始数据，`row` 为该字段所在整行（便于一个展示列综合多个字段）；
+ * 返回 HTML/文本/数字，返回 `null`/`undefined` 时组件显示「∅」。
+ */
 // 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
 type TableDisplayRule<T> = (
   unit: any, // eslint-disable-line
   row: Partial<T>,
 ) => JQuery | string | number | null | undefined;
 
+/**
+ * 表格的「命令执行上下文」：`GenericTable` 暴露给各 `Command` 的操作面。
+ * 命令只调用这些方法、不直接接触组件内部状态，从而让 execute/undo/redo 可回放。
+ */
 interface TableContext<T extends TableAcceptable> {
   empty: () => void;
   showLoading: () => void;
@@ -637,15 +680,25 @@ type DataParser<TData extends TableAcceptable> = (key: string, value: unknown) =
 type TimerDataGetter = () => number;
 type TimerDataFormatter = (t: number) => string;
 
+/**
+ * 候选列表的「输入元素」：候选列表真正**读写文本**的那个 input / textarea。
+ * 与「交互元素」区分开是为了复用——同一个按钮/容器可以只是被点击才弹出列表，
+ * 而文本的读写、选区维护、补全替换都发生在另一个隐藏的 input 上
+ * （典型用例见 `DropdownMenuInput.vue`：`ref="input"` 负责交互、`ref="valueInput"` 负责输入逻辑）。
+ */
 type InputListBindElement = HTMLInputElement | HTMLTextAreaElement;
+/** 初始化候选列表：在输入框获得焦点时调用，返回本次要使用的候选（可含简写形式） */
 type InputListOnInitSuggestion = () => InputSimplifiedSuggestion[];
+/** 修改候选列表（新增/删除/改名后回调）：接收变更后的完整列表，返回是否保存成功（失败时列表会回滚提示） */
 type InputListOnModifySuggestion = (list: InputSuggestion[]) => boolean;
 
+/** 候选数据提供方式之一：手动指定初始化与修改时的回调函数（只读场景不需 `onModifySuggestion`） */
 interface SuggestionCallbackManager {
   // 手动指定初始化与修改时的回调函数
   onInitSuggestion: InputListOnInitSuggestion;
   onModifySuggestion?: InputListOnModifySuggestion;
 }
+/** 候选数据提供方式之二：给出配置读写器与配置键名，候选列表自动从配置中加载与保存 */
 interface SuggestionConfigManager {
   // 或是：设定好配置提供器和配置键名，组件自动从配置中获取推荐列表
   configs: import("../config/ConfigRepository").ConfigRepository;
@@ -690,9 +743,12 @@ interface Key {
   key?: string;
 }
 
+/** 菜单项显示规则：接收右键事件，返回该项在本次右键下是否应显示 */
 type ContextMenuDisplayRule = (e: PointerEvent) => boolean;
+/** 菜单项回调：接收**打开菜单的那次右键事件**（非点击菜单项的 click），供宿主定位被右键的对象 */
 type ContextMenuCallback = (e: PointerEvent) => void;
 
+/** 右键菜单项：key 标识、text 为 HTML 文案、shortcut 为可选快捷键、displayRule 决定显隐、callback 为点击回调 */
 type ContextMenuItem = {
   key: string;
   text: string;
@@ -700,8 +756,10 @@ type ContextMenuItem = {
   displayRule: ContextMenuDisplayRule;
   callback: ContextMenuCallback;
 };
+/** 全部已注册菜单项（`ContextMenu.items`） */
 type ContextMenuItems = ContextMenuItem[];
 
+/** 宿主传给 `ContextMenu.addItem` 的注册项（与 `ContextMenuItem` 形状一致，此处单列一份表示「注册」语义） */
 type ContextMenuItemOption = {
   key: string;
   text: string;
@@ -714,11 +772,16 @@ type ProgressBarDisplayRule = (val: number, min: number, max: number) => string;
 
 type ItemCustomTypeList = ItemType[];
 
+/** 数值输入的范围 `[min, max]`，两端可为 null 表示不设上限/下限（供 `NumberInput` 校验） */
 type InputValueNumericRange = [number | null, number | null];
+/** 数值输入的范围 `[min, max]`（两端必有值） */
 type InputValueFiniteNumericRange = [number, number];
+/** 枚举值集合：值 → 显示文案（用于下拉类输入） */
 type InputValueSet = Record<number, string>;
+/** 输入范围：数值区间或枚举值集合 */
 type InputValueRange = InputValueNumericRange | InputValueSet;
 
+/** 单条候选：`value` 为真正被匹配与写回的文本；`html` 为自定义展示（存在时以 `v-html`/`v-text` 渲染，不做匹配高亮） */
 interface InputSuggestion {
   html?: string;
   value: string;
@@ -726,7 +789,9 @@ interface InputSuggestion {
   alias?: string[];
   noEscape?: boolean;
 }
+/** 候选的简写形式：允许直接写字符串（等价于 `{ value }`），`onInitSuggestion` 返回时会统一规范化 */
 type InputSimplifiedSuggestion = InputSuggestion | string;
+/** 候选的匹配评分与命中范围：`ranges` 记录各字段被命中的 `[start, end)` 区间（下标以小写后的文本为准） */
 interface InputSuggestionRate {
   score?: number;
   ranges?: {
@@ -734,10 +799,13 @@ interface InputSuggestionRate {
     alias: Record<number, [number, number]>;
   };
 }
+/** 参与展示的候选 = 原始候选 + 本次匹配算出的评分与命中范围（`suggestedList` 中的元素） */
 interface InputRatedSuggestion extends InputSuggestion, InputSuggestionRate {}
 
+/** 输入成功变更的回调：收到校验结果 `InputValidInfo<T>`（其中 `final` 是规范后的最终值） */
 type InputSuccessfulChangeCallBack<T> = (info: InputValidInfo<T>) => void;
 
+/** 所有 `input/*` 组件通过 `defineExpose` 暴露给宿主的统一操作面 */
 interface InputControlRef<T> {
   getInstance(): HTMLElement;
   getValue(): T;
@@ -754,12 +822,14 @@ interface InputOption extends InputLimit {
   readonly value: unknown;
 }
 
+/** 表格字段的编辑选项：在 `InputOption` 之上增加自定义显示名、只读与可选标记 */
 interface TableInputOption extends InputOption {
   readonly customName?: string;
   readonly readonly?: boolean;
   readonly optional?: boolean;
 }
 
+/** 输入校验结果：`isok` 是否通过；`final` 为通过后规范化的最终值，`msg` 为失败原因（如越界） */
 interface InputValidInfo<T> {
   readonly msg?: string;
   readonly isok: boolean;

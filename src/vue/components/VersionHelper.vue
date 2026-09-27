@@ -30,7 +30,7 @@
         ref="table"
         :parent="parent"
         :attr="{ id: 'mcmodder-version-menu' }"
-        :rowOptions="rowOptions"
+        :column-options="columnOptions"
       />
     </fieldset>
   </div>
@@ -50,7 +50,7 @@ interface Props {
 
 const { parent } = defineProps<Props>();
 
-const rowOptions = {
+const columnOptions = {
   fileID: "文件ID",
   releaseType: [
     "发布状态",
@@ -86,7 +86,7 @@ const rowOptions = {
         return `<a href="/class/version/add/${Utils.abstractLastFromURL(window.location.href, "version")}/?mrid=${data.mrid}&fileid=${data.fileID}&ver=${parseMRFileName(data.displayName)}&mcver=${data.gameVersions}&date=${data.releaseTime.valueOf()}" target="_blank">补全日志</a>`;
     },
   ],
-} satisfies RowOptionsInitializer<GameVersionCompareEntry>;
+} satisfies ColumnOptionsInitializer<GameVersionCompareEntry>;
 const captchaAttemptMaxLimit = 2;
 const captchaAttemptInterval = 5000;
 

@@ -120,6 +120,27 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 自动链接弹窗组件：对百科原生编辑器「自动链接」功能的全面重写。
+ *
+ * # 功能
+ * 根据用户选中的内容或手动输入的关键词，生成指向百科内相应资料的链接文本插入编辑器。
+ * 搜索支持两种来源（由底部「本地搜索 / 联机搜索」复选框控制，对应配置
+ * `autolinkSourceLocal` / `autolinkSourceOnline`）：
+ *
+ * - **联机搜索**：POST `/object/UEAutolink/`，效果与接口都和原生功能几乎完全一致，
+ *   结果可包含模组、整合包、个人作者、开发团队等类型；
+ * - **本地搜索**：在 `itemRepository`（GM Storage / IndexedDB 两种形态，见
+ *   `jsonframe/repository/`）导入的条目上按关键词打分筛选，只包含物品条目
+ *   （模组、整合包、个人作者与开发团队不会出现，这些只在联机搜索时返回）。
+ *
+ * # 交互改进（相比原生）
+ * - 方向键 ↑/↓ 与 Alt+数字 快捷键选择结果；
+ * - 等待后端返回期间展示「加载中」动画（isPending）；
+ * - 更智能的推荐算法（见 `evaluateKeywords` / `evaluateItemMatchRate`）：
+ *   按多个字段加权打分，与当前正在编辑资料同模组（isModMatches）、为前置/附属模组
+ *   （isModDependenceMatches / isModExpansionMatches）或原版物品（isModVanilla）的条目得分更高。
+ */
 import { computed, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
 import { Mcmodder } from "../../Mcmodder";
 import CheckboxInput from "./input/CheckboxInput.vue";
@@ -134,8 +155,10 @@ import type { ItemRepository } from "../../jsonframe/repository/ItemRepository.t
 import { ItemGMStorageRepository } from "../../jsonframe/repository/ItemGMStorageRepository.ts";
 import Pinyin from "pinyin-match";
 
+/** 允许手动输入的关键词数量上限（空格分隔） */
 const AUTOLINK_KEYWORD_MAXLENGTH = 10;
 
+/** 链接文本的三种样式选项（对应 `style` 的 0/1/2） */
 const styles = ["选中的文本", "一半名称 (仅主要名称)", "完整名称 (主要名称+次要名称)"] as const;
 
 interface Props {
@@ -143,9 +166,11 @@ interface Props {
 }
 
 const { editor } = defineProps<Props>();
+/** 宿主编译器实例上的组合根（因挂载时机晚于注入，用 shallowRef 承接） */
 const parent = shallowRef<Mcmodder>(editor.parent);
 const configs = computed(() => parent.value.configRepository);
 
+/** 本地条目仓储：按 `itemRepository` 配置选用 IndexedDB（数值主键）或 GM Storage（字符串主键）形态 */
 const itemRepository = computed<ItemRepository<number | string>>(() => {
   const repo = configs.value.getSettings("itemRepository")
     ? new ItemIDBRepository()
@@ -154,12 +179,16 @@ const itemRepository = computed<ItemRepository<number | string>>(() => {
   return repo;
 });
 
+/** 本地库读出的全部物品条目（跨文件合并、过滤掉无 id 的条目） */
 const localItems = shallowRef<Item[]>([]);
 
+/** 当前 JSON 数据库文件登记表（`{ 0: GM 存储的文件名, 1: IndexedDB 的文件名 }`） */
 const jsonDatabase = configs.value.getSettingsRef("jsonDatabase_v2");
 
+/** 当前选用的仓储形态（与 `itemRepository` 配置联动的响应式副本） */
 const repoIndex = configs.value.getSettingsRef("itemRepository", 0 as 0 | 1);
 
+/** 当前仓储形态下的文件名列表 */
 const linkings = computed(() => {
   if (jsonDatabase.value === undefined) {
     return [];
@@ -168,6 +197,7 @@ const linkings = computed(() => {
   return files ?? [];
 });
 
+// 监听文件名列表变化：逐个文件读取检索面并合并进 localItems（immediate 保证初次即加载）
 watch(
   () => linkings.value,
   async (files) => {
@@ -183,6 +213,7 @@ watch(
   },
 );
 
+/** 本地库条目总数；为 0 时强制走联机搜索 */
 const localItemCount = ref(0);
 
 const keyInput = useTemplateRef("keyInput");
@@ -192,6 +223,11 @@ const sourceInputLocal = useTemplateRef("sourceInputLocal");
 const sourceInputOnline = useTemplateRef("sourceInputOnline");
 const resultFrame = useTemplateRef("resultFrame");
 
+/**
+ * 链接文本样式（0/1/2，对应 `styles`）。
+ * 当无选中文本时（shouldHideSelectedContentStyle），「选中的文本」样式不可用，
+ * 此时读取并回退到用户偏好 `preferredAutolinkStyle`（仅接受 1/2）。
+ */
 const style = computed({
   get: () => {
     if (shouldHideSelectedContentStyle.value) {
@@ -209,21 +245,31 @@ const style = computed({
     }
   },
 });
+/** 当前高亮的候选项下标（-1 表示未选中） */
 const selected = ref(-1);
+/** 是否正在等待搜索请求返回（模板据此展示「加载中」动画） */
 const isPending = ref(false);
 // const enableSearchSourceSettings = ref(false);
+/** 无选中文本时隐藏「选中的文本」这一样式项，并回退到 `preferredAutolinkStyle` */
 const shouldHideSelectedContentStyle = ref(true);
+/** 可展示的搜索结果列表 */
 const searchResultEntries = shallowRef<AutoLinkEntries>([]);
 
+/** Alt+数字 快捷跳转的防抖标记，避免连击 */
 let shortcutPending = false;
 
+/** 结果框是否显示：有搜索词或有结果时显示 */
 const showResultFrame = computed(() => {
   return searchKeywords.value.length || searchResultEntries.value.length;
 });
 
+/** 搜索框原文（未分词） */
 const searchText = ref("");
+/** 按空格切分后的关键词数组（封顶 `AUTOLINK_KEYWORD_MAXLENGTH` 个） */
 const searchKeywords = shallowRef<string[]>([]);
 
+// 从页面导航读取当前正在编辑资料所属模组的全名，并解析出名称/英文名，
+// 供本地搜索时判断「同模组」加权
 const pageClassFullName = $(".common-nav li").eq(4).text().trim();
 const { className: pageClassName, classEname: pageClassEname } =
   Utils.parseClassFullName(pageClassFullName);
@@ -242,6 +288,14 @@ function onSearchButtonClick(e: Event) {
   onSearch();
 }
 
+/**
+ * 点击某条搜索结果：按当前样式拼出链接文本（可带前后空格），插入编辑器并关闭弹窗
+ *
+ * @param type 条目类型
+ * @param id 条目编号
+ * @param textHalf 条目的一半名称，在模式为“一半名称”时作为最终结果插入编辑器
+ * @param textFull 条目的完整名称，在模式为“完整名称”时作为最终结果插入编辑器
+ */
 function onClick(type: AutoLinkEntryType, id: string, textHalf: string, textFull: string) {
   const appendSpace = insertSpace.value!.getValue();
   let content;
@@ -271,6 +325,14 @@ function onInputClick() {
   selected.value = -1;
 }
 
+/**
+ * 搜索框键盘交互：
+ * - ↑/↓：循环移动高亮候选项；
+ * - Enter：未高亮时触发「搜索」按钮，已高亮时点击当前候选项；
+ * - Alt+0~9（候选项 ≤10 时显示）：高亮并延迟 200ms 触发对应项（配 `shortcutPending` 防抖）。
+ *
+ * @param e 键盘事件
+ */
 function onKeydown(e: KeyboardEvent) {
   const code = e.key;
   if (code === "ArrowUp") {
@@ -310,10 +372,12 @@ function onKeydown(e: KeyboardEvent) {
   }, 200);
 }
 
+/** 取编辑器当前选中的内容片段 */
 function getEditorSelectedContent() {
   return editor.editor.selection.getRange().cloneContents();
 }
 
+/** 读取搜索框输入，切分成关键词数组后发起搜索；完成/出错都会复位 isPending */
 function onSearch() {
   searchText.value = keyInput.value!.value.trim();
   searchKeywords.value = searchText.value
@@ -329,12 +393,14 @@ function onSearch() {
     });
 }
 
+/** 本地搜索：对全部本地物品条目按关键词打分，返回条目数组（只在有本地库时调用） */
 async function performLocalSearch() {
   return localItems.value.map((item) =>
     evaluateItemMatchRate(item, undefined, searchKeywords.value),
   );
 }
 
+/** 联机搜索：POST `/object/UEAutolink/`，解析返回的 HTML 列表为条目数组；后端报错时提示并返回空 */
 async function performOnlineSearch() {
   let resp = await parent.value.utils.createRequest({
     url: `${parent.value.hostname}/object/UEAutolink/`,
@@ -361,6 +427,12 @@ async function performOnlineSearch() {
   return parseOnlineSearchResult(data.html);
 }
 
+/**
+ * 解析联机结果中的物品条目：从 `<img>` + `<a>` 还原 Item 字段，并按关键词打分
+ *
+ * @param index 该元素在联机结果中的出现次序
+ * @param element 元素自身
+ * */
 function parseOnlineSearchItemResult(
   index: number,
   element: Element,
@@ -419,6 +491,13 @@ function parseOnlineSearchItemResult(
   return evaluateItemMatchRate(item, (30 - index) / 6, searchKeywords.value);
 }
 
+/**
+ * 解析联机结果中的模组/整合包条目（class / modpack）
+ *
+ * @param index 该元素在联机结果中的出现次序
+ * @param link 元素自身
+ * @param type 条目类型
+ * */
 function parseOnlineSearchClassResult(
   index: number,
   link: HTMLAnchorElement,
@@ -442,6 +521,7 @@ function parseOnlineSearchClassResult(
   };
 }
 
+/** 解析联机结果中的个人作者/开发团队条目 */
 function parseOnlineSearchAuthorResult(
   index: number,
   link: HTMLAnchorElement,
@@ -472,6 +552,12 @@ function parseOnlineSearchAuthorResult(
   };
 }
 
+/**
+ * 解析联机结果中的非物品条目（模组/整合包/作者），按其 `data-type` 分流
+ *
+ * @param index 联机结果中该元素的出现次序
+ * @param element 元素自身
+ */
 function parseOnlineSearchNonItemResult(
   index: number,
   element: Element,
@@ -484,6 +570,7 @@ function parseOnlineSearchNonItemResult(
   else if (type === "author") return parseOnlineSearchAuthorResult(index, link, type);
 }
 
+/** 解析联机搜索返回的 HTML：提取结果列表的每个 `<li>`，逐项分派给对应的解析函数 */
 function parseOnlineSearchResult(raw: string) {
   const html = $("<div>").html(raw).find(".edit-autolink-list li");
   const searchResult: AutoLinkEntries = [];
@@ -499,6 +586,7 @@ function parseOnlineSearchResult(raw: string) {
   return searchResult;
 }
 
+/** 本地 + 联机结果合并时按类型分桶去重的 ID 集合 */
 const searchResultIDSet = {
   item: new Set(),
   class: new Set(),
@@ -507,6 +595,14 @@ const searchResultIDSet = {
   oredict: new Set(),
 } as Record<AutoLinkEntryType, Set<string | number>>;
 
+/**
+ * 搜索主流程：
+ * 1. 依据本地库是否有数据决定搜索来源（无本地数据则强制联机）；
+ * 2. 清空上次结果；输入为空则直接返回；
+ * 3. 并行发起本地/联机搜索，合并结果并按类型去重（联机结果在后，覆盖不了先入的本地条目）；
+ * 4. 搜索词以 `#` 开头时附带一条矿物词典/物品标签条目；
+ * 5. 过滤掉零分条目，按 `matchScore` 降序排列。
+ */
 async function performSearch() {
   if (isPending.value) return;
   isPending.value = true;
@@ -575,13 +671,23 @@ async function performSearch() {
     });
 }
 
+/** 参与加权的字段（与 `bonusFieldFactors` 一一对应） */
 const bonusFields = ["name", "englishName", "registerName", "className", "classEname"] as const;
 
+/** 各字段的加权系数：名称 > 英文名/注册名/模组名 > 模组英文名 */
 const bonusFieldFactors = [2, 1, 1, 1, 0.5] as const;
 
+/** 前缀命中（命中位置在字段开头）的额外倍率 */
 const prefixFactor = 2;
 
-// 关键词匹配
+/**
+ * 关键词匹配打分：
+ * - 关键词等于条目 ID 时 +50 并标记 isAbsoluteMatches；
+ * - 对每个加权字段做拼音/大小写不敏感匹配，命中得分 =
+ *   字段系数 × (是否前缀命中 ? prefixFactor : 1) × (1 + 命中长度占比)；
+ * - 关键词等于模组缩写的（不区分大小写）直接视为同模组命中（isModMatches）。
+ * 返回总分（0 表示一个关键词都没命中，该条目将被过滤）及命中标记与范围。
+ */
 function evaluateKeywords(item: Item, keywords: string[]) {
   let totalScore = 0;
   let isAbsoluteMatches = false;
@@ -630,6 +736,17 @@ function evaluateKeywords(item: Item, keywords: string[]) {
   };
 }
 
+/**
+ * 计算单个物品条目的匹配度并组装结果条目。
+ * 仅在至少命中一个关键词时继续加权：
+ * - 原版物品（classID === 1）+8；
+ * - 同模组（isModMatches）+20，前置/附属模组各 +15；
+ * - 未知 classID 时退化为按模组名/英文名字符串比较判断同模组。
+ *
+ * @param item 该条目的物品信息
+ * @param baseMatchScore 用于联机结果（把后端排序折算成分数）
+ * @param keywords 根据关键词打分时所需要基于的关键词列表，为 undefined 时跳过本地打分
+ */
 function evaluateItemMatchRate(
   item: Item,
   baseMatchScore = 0,
@@ -712,6 +829,7 @@ function evaluateItemMatchRate(
   } as AutoLinkItemEntry;
 }
 
+/** 命中标记 → CSS 类名，用于给搜索结果列表项挂不同标签样式 */
 const searchTagClassMap = {
   isAbsoluteMatches: "searchtag-absolute-matches",
   isModDependenceMatches: "searchtag-mod-dependence-matches",
@@ -720,6 +838,12 @@ const searchTagClassMap = {
   isModVanilla: "searchtag-vanilla",
 } satisfies Record<keyof Omit<AutoLinkSearchTag, "matchScore" | "ranges">, string>;
 
+/**
+ * 由条目的命中标记计算其 `<li>` 的 class 列表（命中标签 + 选中态）
+ *
+ * @param index 条目在搜索结果中的出现次序
+ * @param searchTag 条目的命中标记
+ */
 function getOptionClassList(index: number, searchTag: AutoLinkSearchTag) {
   const result = (Object.entries(searchTag) as [keyof typeof searchTag, boolean][])
     .filter(([key, value]) => key !== "matchScore" && value)
@@ -730,6 +854,7 @@ function getOptionClassList(index: number, searchTag: AutoLinkSearchTag) {
   return result;
 }
 
+/** 弹窗打开时由 `AdvancedUEditor.showAutoLinkList` 调用：聚焦搜索框，若编辑器有选中文本则以之为关键词自动搜索 */
 function init() {
   keyInput.value!.focus();
   const content = getEditorSelectedContent();
@@ -739,6 +864,7 @@ function init() {
   }
 }
 
+/** 交由 SweetAlert 弹窗捕获并转发的事件（此处的 keydown 输入会给到搜索框） */
 const interceptEvents = {
   keydown: (ev: Event) => {
     if (ev.target === keyInput.value && ev instanceof KeyboardEvent) {

@@ -15,7 +15,7 @@
         )
       "
     />
-    <GenericTable ref="table" :parent="parent" :rowOptions="rowOptions" />
+    <GenericTable ref="table" :parent="parent" :column-options="columnOptions" />
   </div>
 </template>
 
@@ -34,7 +34,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const rowOptions = {
+const columnOptions = {
   createTime: ["保存时间", TableUtils.DISPLAYRULE_TIME_MILLISEC],
   lastSubmitTime: ["待审项提交时间", TableUtils.DISPLAYRULE_TIME_MILLISEC],
   title: [
@@ -55,7 +55,7 @@ const rowOptions = {
     <button class="btn btn-sm mcmodder-presubmit-delete">删除</button>
   `,
   ],
-} satisfies RowOptionsInitializer<PreSubmission>;
+} satisfies ColumnOptionsInitializer<PreSubmission>;
 
 const tableRef = useTemplateRef("table");
 

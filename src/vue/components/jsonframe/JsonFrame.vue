@@ -53,7 +53,7 @@
         ref="table"
         :parent="parent"
         :attr="attr"
-        :rowOptions="rowOptions"
+        :column-options="columnOptions"
         :edit-configs="editConfigs"
         @edit="onEdit"
         @refresh="onRefresh"

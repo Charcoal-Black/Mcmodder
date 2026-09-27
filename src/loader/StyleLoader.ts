@@ -2,7 +2,50 @@ import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
 
+/**
+ * 样式加载器：把若干张「调色盘」展开为 `--mcmodder-color-*` CSS 变量，
+ * 再与 `src/css/*.css` 的静态样式一起注入宿主页面，并处理圆角比例、
+ * 夜间模式切换与首屏遮罩等收尾工作。
+ *
+ * # 调色盘系统（本文件的核心）
+ * 调色盘（`Palette`）只是「名字 → 颜色」的映射，但页面实际需要的是一族衍生色：
+ * 同一个语义色（如 `primary`）要额外派生出 `dark1`/`dark2`/`light`/`background`/
+ * `transparent1`/`transparent2` 等变体，亮色与夜间两套还方向相反。为此引入
+ * `PaletteModifierSchedule`（修饰表）：按序排列若干「修饰步骤」，每个步骤内若干
+ * 「修饰」（如 `dark`/`light`/`transparent`）各带一个颜色转换函数 `converter` 与
+ * 可选的 `maxTier`（展开几档）。`applyPaletteModifier` 据此把调色盘递归展开成一组
+ * CSS 自定义属性，变量名形如 `--mcmodder-color-{名字}-{修饰串}{档号}`。
+ *
+ * - `converter` 收一个可选 `tier`（档号）：多档修饰用它区分 `dark1~dark4` 等
+ *   不同深浅，单档修饰（未设 `maxTier`）则收不到该参数；
+ * - 多档修饰：变量名追加「修饰名+档号」，如 `dark1`、`transparent2`；
+ * - 单档修饰：变量名追加修饰名本身，如 `light`、`background`、`universal`；
+ * - 每个步骤都会先「原样穿透」一次（不加修饰进入下一步），保证每个名字最终都产出
+ *   一个不带修饰的基础变量（如 `--mcmodder-color-primary`）。
+ *
+ * 亮色变量写入 `:root`，夜间变量写入 `:root.dark`；`base.css` 等全局样式里通过
+ * `var(--mcmodder-color-*)` 取色，从而随 `<html>` 上的 `dark` 类自动切换。
+ */
 export class StyleLoader {
+  /**
+   * 把一张调色盘按修饰表展开成 CSS 自定义属性声明（多行文本）。
+   *
+   * # 递归展开算法
+   * 从 `stepIndex = 0` 出发，持有「当前颜色」与「前缀列表」（初始为 `[名字]`）：
+   * 1. 若已走完所有步骤（`!schedule[stepIndex]`），输出一行
+   *    `--mcmodder-color-{前缀.join("-")}: {当前颜色};` 并返回（递归终点）；
+   * 2. 否则先「原样穿透」：不改变颜色与前缀，直接进入下一 `stepIndex`；
+   * 3. 再遍历当前步骤的每个修饰（按 `Object.keys` 顺序）：
+   *    - 设 `maxTier` 时：对 `1..maxTier` 每一档，前缀追加 `修饰名+档号`，
+   *      颜色经 `converter(当前颜色, 档号)` 变换后进入下一步骤；
+   *    - 未设 `maxTier` 时：前缀追加修饰名，颜色经 `converter(当前颜色)` 变换后进入下一步骤。
+   * 于是基础色、各档修饰、各修饰间的组合都会被逐一枚举。
+   *
+   * @param palette 待展开的调色盘（名字 → 初始颜色）。
+   * @param schedule 修饰表；传空数组 `[]` 则每个名字只产出基础变量。
+   * @returns 多行 CSS 变量声明，形如
+   *          `--mcmodder-color-primary: #xxx;`、`--mcmodder-color-primary-dark2: #xxx;`。
+   */
   static applyPaletteModifier(palette: Palette, schedule: PaletteModifierSchedule) {
     // 递归大手子
     const work = (
@@ -54,6 +97,25 @@ export class StyleLoader {
     return result.join("\n");
   }
 
+  /**
+   * 组装并注入整套样式（组合根启动阶段调用，见 `Mcmodder` 构造流程）。
+   *
+   * # 流程
+   * 1. 用 `import.meta.glob` 读入 `src/css/*.css` 原始文本；
+   * 2. 定义基础调色盘（background/text 亮暗两套）、主题调色盘（由主题色 `tc1`/`tc2`
+   *    派生 primary/accent/danger/success/warning）、CodeMirror 语法高亮调色盘、
+   *    高亮标记色，各自调用 `applyPaletteModifier` 展开成亮色与夜间两套变量；
+   * 3. 定义「其他杂色」的亮/夜两套调色盘（背景透明、文字阴影、链接、态度、
+   *    加载平台、版本标记、分类状态等固定色板），直接以 `[]` 修饰表产出基础变量；
+   * 4. 将上述变量并入 `:root`（亮色）与 `:root.dark`（夜间）两个选择器，
+   *    并根据用户配置开关拼接 `base`/`mcmodderUI`/`tableThemeColor`/`tableLeftAlign`/
+   *    `tabSelectorInfo`/`splitScreenOnVerify`/`codemirrorCss`/`aprilFools` 等静态 CSS；
+   * 5. 合并结果存入 `parent.css` 并通过 `Utils.addStyle` 注入 `<head>`；
+   * 6. 写入 `--mcmodder-ratio-radius` 圆角比例变量，调用 `parent.updateNightMode()`
+   *    应用当前主题，最后给防闪烁遮罩写入淡入动画并移除遮罩，完成首屏渲染。
+   *
+   * @param parent 组合根 `Mcmodder` 实例（取用 `configRepository`、`styleColors`、`css` 等）。
+   */
   static async run(parent: Mcmodder) {
     const configs = parent.configRepository;
     const module = import.meta.glob("../css/*.css", {

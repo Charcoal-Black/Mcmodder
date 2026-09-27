@@ -6,8 +6,19 @@ import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 import UpdateReminder from "../../vue/components/UpdateReminder.vue";
 
+/**
+ * 自动检查更新：抓取发布帖（BBS 主题 20483），比对更新日志里的最新版本号，
+ * 有新版就弹出更新说明并提供下载链接。
+ */
 export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
   override readonly priority = 10;
+
+  /**
+   * 检查更新。
+   *
+   * 固定间隔 1 小时；整个请求包在 try/catch 里，失败只提示不抛，
+   * 避免一次网络抖动就让整轮轮询中断。
+   */
   override async run(list: ScheduleRequestUtils) {
     list.create(Date.now() + 60 * 60 * 1000, "autoCheckUpdate", 0);
     try {
@@ -18,6 +29,15 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
     }
   }
 
+  /**
+   * 抓取并解析发布帖。
+   *
+   * 论坛返回的页面标题被复用来表达三种非正常状态，逐一处理后 `return`：
+   * - 「页面重载开启」—— 论坛在拦爬虫，100ms 后重试；
+   * - 「CC check」—— 触发了人机验证，本功能静默禁用 24 小时。
+   *
+   * 版本号从发布帖里切 `Mcmodder v… --` 得到。
+   */
   private async check(list: ScheduleRequestUtils) {
     const resp = await this.parent.utils.createRequest({
       url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",

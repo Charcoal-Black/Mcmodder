@@ -3,9 +3,22 @@ import { Utils } from "../../Utils";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
+/**
+ * 自动查询待审项：定期遍历自己管理的模组区，统计待审数量。
+ *
+ * 视当前所在页面分两种呈现：
+ * - 已在审核后台：在模组下拉菜单里把有待审的模组标黄并挂上「N 个待审！」；
+ * - 在别的页面：弹窗告知总数，确认后新标签页打开审核后台。
+ */
 export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
   override readonly priority = 2;
 
+  /**
+   * 查询所有管理区域的待审数。
+   *
+   * 排期为「当前时间 + `autoVerifyDelay` 小时」（该配置是启用开关兼延迟），
+   * **排期在函数最开头**，即使用户管理模组列表为空、后续提前 return，任务也仍在续期。
+   */
   override async run(list: ScheduleRequestUtils) {
     const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
     if (!autoVerifyDelay) {
@@ -65,6 +78,13 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
     }
   }
 
+  /**
+   * 逐个查询管理模组区的待审数并汇总。
+   *
+   * @param adminModList 自己管理的模组 id 列表。
+   * @param inVerifyPage 当前是否就在审核页面上 —— 只有在页面上时才需要标记下拉菜单。
+   * @returns 待审总数；请求返回状态异常时返回 `-1`（以区别于「真的是 0 个」）。
+   */
   private async work(adminModList: string[], inVerifyPage: boolean) {
     let total = 0;
 

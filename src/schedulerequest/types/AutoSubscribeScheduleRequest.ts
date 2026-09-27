@@ -3,8 +3,22 @@ import { Utils } from "../../Utils";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
+/**
+ * 关注列表提醒：定时遍历已关注的模组，发现「编辑记录」或「短评」有新动静时开标签页提醒。
+ *
+ * 这是本目录里唯一**不使用 `await` 串行**的任务：为了不阻塞轮询，用 `setTimeout` 每秒推进一个模组。
+ */
 export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
   override readonly priority = 100;
+
+  /**
+   * 检查关注列表中所有模组的更新。
+   *
+   * 排期为「当前时间 + `subscribeDelay` 小时」；配置关闭则直接 return 不排期，任务停摆。
+   *
+   * 提醒的判定方式是「与上次记录的 id/时间比较」，记录分别存在
+   * `latestEditTime`（编辑历史最后一条的时间戳）与 `latestComment`（短评楼层 id）里。
+   */
   run(list: ScheduleRequestUtils) {
     const subscribeDelay = this.configs.getSettings("subscribeDelay");
     if (!subscribeDelay) {

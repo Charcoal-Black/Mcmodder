@@ -5,7 +5,7 @@
     :parent="parent"
     :config-name="configName"
     :allowed-keys="indexedKeys"
-    :rowOptions="rowOptions"
+    :column-options="columnOptions"
     :edit-configs="editConfigs"
     :attr="{
       class: 'table jsonframe-table',
@@ -18,7 +18,7 @@
       <GenericTable
         ref="guiBoundTable"
         :parent="parent"
-        :rowOptions="guiBoundRowOptions"
+        :column-options="guiBoundcolumnOptions"
         :edit-configs="guiBoundEditConfigs"
         @edit="onEditGuiBound"
       />
@@ -51,12 +51,12 @@ const indexedKeys = [
   "power_num",
   "gui_id",
 ];
-const rowOptions = {
+const columnOptions = {
   gui_id: "GUI",
   input: ["输入", itemInputDisplay],
   output: ["输出", itemOutputDisplay],
   power_text: ["额外数据", TableUtils.DISPLAYRULE_ARRAY],
-} satisfies RowOptionsInitializer<Recipe>;
+} satisfies ColumnOptionsInitializer<Recipe>;
 const editConfigs = {
   in_id: null,
   out_id: null,
@@ -71,7 +71,7 @@ const editConfigs = {
 const jsonFrame = useTemplateRef("jsonFrame");
 const guiBoundTable = useTemplateRef("guiBoundTable");
 
-const guiBoundRowOptions = {
+const guiBoundcolumnOptions = {
   guiID: ["GUI 注册名", TableUtils.DISPLAYRULE_MONOSPACE],
   mcmodID: "对应百科 ID",
   img: [
@@ -80,7 +80,7 @@ const guiBoundRowOptions = {
       return data.mcmodID ? `<img src="//i.mcmod.cn/gui/bg/${data.mcmodID}.gif"><img>` : "-";
     },
   ],
-} satisfies RowOptionsInitializer<RecipeJsonFrameGuiBound>;
+} satisfies ColumnOptionsInitializer<RecipeJsonFrameGuiBound>;
 const guiBoundEditConfigs = {
   guiID: null,
   mcmodID: InputType.NUMBER,

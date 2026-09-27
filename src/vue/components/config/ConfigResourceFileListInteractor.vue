@@ -3,7 +3,7 @@
     :parent="parent"
     :id="id"
     :name="name"
-    :rowOptions="{
+    :column-options="{
       fileName: '文件名',
       size: ['数据大小', TableUtils.DISPLAYRULE_SIZE],
     }"

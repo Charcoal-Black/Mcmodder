@@ -4,11 +4,20 @@ import { Values } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
+/**
+ * 自动签到：每天零点后向 `center.mcmod.cn` 的签到接口发一次 POST，弹窗告知结果；
+ * 顺带检查「建号周年纪念」。
+ */
 export class AutoCheckinScheduleRequest extends ScheduleRequestType {
   override readonly priority = 10;
 
+  /** 周年勋章颜色索引，0~4 对应微型红/黄/绿/蓝心勋章 */
   private static readonly badgeNameMap = ["", "红", "黄", "绿", "蓝"] as const;
 
+  /**
+   * 周年蛋糕的蜡烛点阵：`candleMap[周年数][第 i 个位置]`，1 表示该位置点蜡烛。
+   * 取 `0~9` 的行，`0` 行是 1 周年的单根蜡烛。
+   */
   private static readonly candleMap = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 1, 0, 0, 0, 0],
@@ -22,6 +31,7 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
   ] as const;
 
+  /** 与 {@link candleMap} 各点位对应的 CSS 偏移（`top`, `left`，px） */
   private static readonly candlePos = [
     [10, 55],
     [16, 30],
@@ -34,6 +44,13 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
     [40, 55],
   ] as const;
 
+  /**
+   * 执行签到。
+   *
+   * 排期用 `Utils.getStartTime(new Date())`（默认 `num = 1`，即**次日零点**），
+   * 从而实现「每天一次」。
+   * 签到结果以 v4 的普通提示或 v3 的 swal 弹窗两种形式告知。
+   */
   async run(list: ScheduleRequestUtils) {
     list.create(Utils.getStartTime(new Date()), "autoCheckin", this.parent.currentUID);
     const resp = await this.parent.utils.createRequest({
@@ -73,6 +90,12 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
     this.checkAnnualCelebration();
   }
 
+  /**
+   * 建号周年检查：若「今天」正好是注册当天的月/日，且已记录的周年数小于当前年份差，
+   * 则记录周年数并弹出纪念蛋糕（附蜡烛点阵、5 周年内的勋章提示与领取入口）。
+   *
+   * 用「月/日相等 + 记录过的周年数」双重判定，是为了保证每年只提示一次。
+   */
   private checkAnnualCelebration() {
     let yr = this.configs.getProfile("annualCelebration") ?? 0;
     const regTime = new Date(this.configs.getProfile("regTime"));

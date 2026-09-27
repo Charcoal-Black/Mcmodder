@@ -3,8 +3,21 @@ import { Values } from "../../Values";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
 
+/**
+ * 自动提交预编辑项：定期把「预编辑」里暂存的内容正式提交到百科。
+ *
+ * 「预编辑」是编辑前先把内容提交到服务端暂存、由服务端返回正式编辑页的功能
+ * （见 {@link PreSubmitFrame}），因此本任务能直接拿到「待提交 URL + 提交请求体」。
+ */
 export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
   override readonly priority = 200;
+
+  /**
+   * 依次提交所有未出错的预编辑项。
+   *
+   * 排期为「当前时间 + `preSubmitCheckInterval` 小时」；配置关闭则不排期、任务停摆。
+   * 提交的请求体是构造时存下的 `config`（含 rawData 的序列化结果），拿到正式页面前先确认目标未被他人锁定。
+   */
   async run(list: ScheduleRequestUtils) {
     const preSubmitCheckInterval = this.configs.getSettings("preSubmitCheckInterval");
     if (!preSubmitCheckInterval) {
