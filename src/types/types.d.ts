@@ -572,6 +572,15 @@ interface AdvancementProgression {
   progress: number;
 }
 
+interface VerifyContent {
+  row: JQuery;
+  title: string;
+  currentCell: JQuery;
+  previousCell: JQuery;
+  currentText: JQuery;
+  previousText: JQuery;
+}
+
 /** 表格行的数据形状：一行即一个普通对象（键 = 数据字段，值任意）。泛型 T 是字段名到字段类型的映射 */
 // 以后会考虑给 Table 加另外一个泛型参数来限定各列数据类型
 // eslint-disable-next-line

@@ -33,7 +33,7 @@ npm run format   # prettier --write src
 ## Where to change what
 
 - **Page-specific feature** -> new `Init` subclass in `src/init/` (`canRun()` = URL/DOM gate, `run()` = DOM work), registered in `src/loader/InitLoader.ts`. Never put page logic in `src/main.ts`.
-- **SPA-like pages** (center, admin) -> sub-inits in `src/init/center/` dispatched by `MutationObserver`, following `CenterInit`/`AdminInit`.
+- **SPA-like pages** (center, admin) -> sub-inits in `src/init/center/` / `src/init/admin/` dispatched by `MutationObserver`, following `CenterInit`/`AdminInit`. `AdminBaseInit` subclasses are matched by their `h1.title` and called on every navigation to that page: put repeatable rendering in `run()`, and one-time side effects (`window`/`document` listeners, timers) in `firstRun()`.
 - **Editor behavior** -> `GeneralEditInit.canRun()` always returns `false`; `Mcmodder.editorLoad()` instantiates it directly when an editor exists. Host UEditor wrappers live in `src/ueditor/`.
 - **New setting** -> add the key to `Settings` (`src/types/types.d.ts`), register it with an `add*Config` call in `src/loader/ConfigLoader.ts` (id, title, description, default, optional `Permission`), and reuse the matching control in `src/vue/components/input/`.
 - **Persisted state** -> `ConfigRepository` (`getSettings`/`setSettings`, reactive `getSettingsRef`/`get*WritableRef`, number-list variants, `*Profile` per uid, `*Class` per classID). Prefer it over raw `GM_*Value` calls for keys it covers.

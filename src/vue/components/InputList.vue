@@ -343,7 +343,7 @@ watch(
 );
 
 /**
- * 当前展示的候选列表（computed，全局唯一的「匹配 → 过滤 → 排序」入口）。
+ * 通过 watchEffect 计算当前展示的候选列表（全局唯一的「匹配 → 过滤 → 排序」入口）。
  *
  * 求值时顺带维护几个副作用状态：`selected` 复位为 0、`selectable` 决定列表是否应显示、
  * `canCreateNew` 决定是否展示「保存为快捷输入项」。之所以能写在 computed 里，
@@ -355,13 +355,15 @@ watchEffect(() => {
   if (alwaysShowAllSuggestions.value) {
     selectable.value = true;
     selected.value = defaultSelectionProvider.value();
-    return suggestionList.value;
+    suggestedList.value = suggestionList.value;
+    return;
   }
 
   if (!content && hideBeforeInput.value) {
     selectable.value = false;
     canCreateNew.value = false;
-    return [];
+    suggestedList.value = [];
+    return;
   }
 
   const rawSuggestedList: InputRatedSuggestion[] = [];

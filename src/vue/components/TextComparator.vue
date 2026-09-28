@@ -46,13 +46,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef, watch } from "vue";
+import {
+  computed,
+  isRef,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch,
+  type Ref,
+  type ShallowRef,
+} from "vue";
 import { diffChars, diffLines, diffWords } from "diff";
 import DropdownMenuInput from "./input/DropdownMenuInput.vue";
 
 interface Props {
-  textA: JQuery | string;
-  textB: JQuery | string;
+  /**
+   * 编辑前的正文：给出正文节点或纯文本均可。
+   * 也可传入持有二者的 `ShallowRef`——宿主据此可在**组件存活期间**替换正文以就地刷新对比结果，
+   * 无需销毁重建组件（重建会丢失用户已选的对比模式，并残留一个已废弃的组件实例）。
+   */
+  textA: JQuery | string | ShallowRef<JQuery | string>;
+  /** 编辑后的正文，取值方式同 {@link Props.textA}。 */
+  textB: JQuery | string | ShallowRef<JQuery | string>;
 }
 
 const props = defineProps<Props>();
@@ -88,12 +103,14 @@ function getRawContent(l: JQuery) {
   return s;
 }
 
-const textA = computed(() => {
-  return props.textA instanceof Object ? getRawContent(props.textA as JQuery) : props.textA;
-});
-const textB = computed(() => {
-  return props.textB instanceof Object ? getRawContent(props.textB as JQuery) : props.textB;
-});
+/** 取出 prop 的实际取值：解包 `Ref`，DOM 节点则解析为纯文本，字符串原样返回 */
+function resolveText(source: JQuery | string | Ref<JQuery | string>) {
+  const value = isRef(source) ? source.value : source;
+  return value instanceof Object ? getRawContent(value as JQuery) : (value as string);
+}
+
+const textA = computed(() => resolveText(props.textA));
+const textB = computed(() => resolveText(props.textB));
 
 const defaultMode = computed(() => {
   const len1 = textA.value.length;
@@ -104,6 +121,15 @@ const defaultMode = computed(() => {
 });
 
 const currentMode = ref<keyof typeof modes>(defaultMode.value);
+
+/**
+ * 正文被宿主整体替换后（如审核页切换待审项），按新正文长度重新选定默认对比模式，
+ * 避免长正文仍按「按字对比」计算而卡顿。
+ * `defaultMode` 仅依赖正文长度，用户手动切换模式不会改变它，故此处不会覆盖用户的选择。
+ */
+watch(defaultMode, (mode) => {
+  currentMode.value = mode;
+});
 
 // const currentModeName = computed(() => {
 //   return modeName[modes[currentMode.value]];
@@ -187,10 +213,13 @@ watch(
 
 function updateNavPos(shouldSelect = false) {
   const container = resultFrame.value;
-  if (!container || !maxPos.value) {
+  if (!container || !container.ownerDocument || !maxPos.value) {
     return;
   }
   const node = $(container).find(`[data-index=${indexMap[currentPos.value]}]`).get(0);
+  if (!node) {
+    return;
+  }
   // compareResult.value![currentPos.value];
 
   if (shouldSelect) {

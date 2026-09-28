@@ -109,7 +109,7 @@ onMounted(() => {
     defaultSelectionProvider: getValue,
     // 不提供 onModifySuggestion → 候选列表不显示新增 / 删除 / 改名按钮
     suggestionManager: {
-      onInitSuggestion: () => Object.entries(props.range).map(([value, html]) => ({ html, value })),
+      onInitSuggestion: () => Object.entries(props.range).map(([value, text]) => ({ text, value })),
     },
   });
 });
