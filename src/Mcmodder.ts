@@ -583,6 +583,16 @@ export class Mcmodder {
     $(".sidebar-plan .space").last().append(`<br>mcmodder-v${Values.mcmodderVersion}`);
   }
 
+  /**
+   * # 副作用挂载
+   * 这里是少数用 `watch` 监听配置变化驱动全局行为的入口（夜间模式、宽窄屏切换）。
+   * 新增「配置变化 → 全局行为」的关联时，优先考虑在此追加 watch。
+   */
+  private watchRef() {
+    this.configRepository.watchSettingsRef("nightMode", () => this.updateNightMode());
+    this.configRepository.watchSettingsRef("preferredWiderScreen", () => this.updatePageWidth());
+  }
+
   main() {
     if (this.configRepository.getSettings("forceV4") && this.href === `${this.hostname}/`) {
       window.location.href = `${this.hostname}/v4/`;
@@ -1026,6 +1036,7 @@ export class Mcmodder {
       target.remove();
     });
 
+    this.watchRef();
     this.copyright();
     this.updateTitleNode();
   }

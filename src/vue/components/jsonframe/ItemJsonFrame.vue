@@ -1,17 +1,38 @@
 <template>
-  <JsonFrame ref="jsonFrame" :id="id" :parent="parent" :config-name="configName" :allowed-keys="indexedKeys"
-    :column-options="columnOptions" :edit-configs="editConfigs" :attr="{
+  <JsonFrame
+    ref="jsonFrame"
+    :id="id"
+    :parent="parent"
+    :config-name="configName"
+    :allowed-keys="indexedKeys"
+    :column-options="columnOptions"
+    :edit-configs="editConfigs"
+    :attr="{
       class: 'table jsonframe-table',
-    }" :opts="{
+    }"
+    :opts="{
       idbRepo,
       parseText,
       more,
-    }" @rename="onRename" @delete="onDelete" />
+    }"
+    @rename="onRename"
+    @delete="onDelete"
+  />
   <Teleport :to="importContainer">
     <div class="edit-autolink-frame" ref="classSearchFrame">
       <div class="input-group edit-autolink-seach">
-        <input ref="idInput" placeholder="输入模组的百科数字 ID.." class="form-control" @keyup="onClassIDInputKeyup" />
-        <input ref="typeInput" placeholder="输入资料类型 ID.. (留空默认为 1)" class="form-control" @keyup="onTypeIDInputKeyup" />
+        <input
+          ref="idInput"
+          placeholder="输入模组的百科数字 ID.."
+          class="form-control"
+          @keyup="onClassIDInputKeyup"
+        />
+        <input
+          ref="typeInput"
+          placeholder="输入资料类型 ID.. (留空默认为 1)"
+          class="form-control"
+          @keyup="onTypeIDInputKeyup"
+        />
         <Button ref="submitButton" :on-click="onSubmitButtonClick">执行</Button>
       </div>
       <Logger ref="logger" :parent="parent" />
@@ -19,20 +40,28 @@
       <div class="edit-autolink-style">
         <div class="checkbox">
           <input :id="`jsonframe_${id}-importclass-infer`" name="infer" type="checkbox" />
-          <label :for="`jsonframe_${id}-importclass-infer`">访问潜在资料 -
+          <label :for="`jsonframe_${id}-importclass-infer`"
+            >访问潜在资料 -
             在一轮资料列表获取完毕后，考虑到同一类资料通常是在同一个批次中批量添加的，脚本会试图访问那些可能仍然属于目标模组区域，但是未出现在现有资料列表中的物品资料
             ID。这种方法能够应对综合子资料数量大于 100
-            的情况，以及访问到部分隐藏分类中的资料。</label>
+            的情况，以及访问到部分隐藏分类中的资料。</label
+          >
         </div>
         <div class="checkbox">
           <input :id="`jsonframe_${id}-importclass-geticon`" name="geticon" type="checkbox" />
-          <label :for="`jsonframe_${id}-importclass-geticon`">保存物品图标 - 读取的同时获取物品的小图标和大图标，并以 Base64 格式保存进 JSON
-            文件里。启用该项配置会显著增大输出文件体积；若不启用，则在显示物品图标时会实时从百科获取图标。</label>
+          <label :for="`jsonframe_${id}-importclass-geticon`"
+            >保存物品图标 - 读取的同时获取物品的小图标和大图标，并以 Base64 格式保存进 JSON
+            文件里。启用该项配置会显著增大输出文件体积；若不启用，则在显示物品图标时会实时从百科获取图标。</label
+          >
         </div>
         <div class="checkbox">
           <input :id="`jsonframe_${id}-importclass-getall`" name="getall" type="checkbox" />
-          <label :for="`jsonframe_${id}-importclass-getall`">保存完整数据 -
-            读取一个资料的全部数据（包括图标、注册名、物品标签等所有可以在编辑页访问的数据）。启用该项配置会忽略“保存物品图标”的配置。确切来说，脚本会通过逐一访问所有物品的编辑页来获取这些数据。<strong>启用此项将会向服务器发送大量请求，使用前请务必妥善配置脚本“最短发包间隔”！！</strong></label>
+          <label :for="`jsonframe_${id}-importclass-getall`"
+            >保存完整数据 -
+            读取一个资料的全部数据（包括图标、注册名、物品标签等所有可以在编辑页访问的数据）。启用该项配置会忽略“保存物品图标”的配置。确切来说，脚本会通过逐一访问所有物品的编辑页来获取这些数据。<strong
+              >启用此项将会向服务器发送大量请求，使用前请务必妥善配置脚本“最短发包间隔”！！</strong
+            ></label
+          >
         </div>
       </div>
       <span class="mcmodder-getitemlist-result"></span>
@@ -40,9 +69,17 @@
   </Teleport>
   <Teleport :to="bbsFilelistContainer">
     <div class="edit-autolink-frame" @click="onDownloadClick">
-      <GenericTable ref="fileTable" :parent="parent" :column-options="jsonApplicationColumnOptions" />
-      <Pagination :parent="parent" :current-page="1" :max-page="maxPage"
-        :callback="(page) => onPaginationCallback(page)" />
+      <GenericTable
+        ref="fileTable"
+        :parent="parent"
+        :column-options="jsonApplicationColumnOptions"
+      />
+      <Pagination
+        :parent="parent"
+        :current-page="1"
+        :max-page="maxPage"
+        :callback="(page) => onPaginationCallback(page)"
+      />
     </div>
   </Teleport>
   <Teleport :to="exportContainer">
@@ -69,13 +106,20 @@
     <div class="text-muted" style="font-size: 14px">
       <hr />
       <p align="center">
-        <button id="jsonframe-autolink" class="btn" :disabled="!jsonFrame?.activeFileName" @click="onChangeLinkState">
+        <button
+          id="jsonframe-autolink"
+          class="btn"
+          :disabled="!jsonFrame?.activeFileName"
+          @click="onChangeLinkState"
+        >
           <template v-if="isFileLinked">移出自动链接数据库</template>
           <template v-else>加入自动链接数据库</template>
         </button>
       </p>
       <p class="text-muted jsonframe-export-text">
-        在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong>**已拥有百科内资料 ID 的物品中**</strong>搜索~
+        在编辑页使用自动链接（本地优先搜索）时，资料会从所有已添加的 JSON 资料列表中<strong
+          >**已拥有百科内资料 ID 的物品中**</strong
+        >搜索~
       </p>
       <!-- <hr>
       <p align="center">
@@ -297,8 +341,9 @@ onMounted(() => {
             }
 
             result.push({
-              html: `<span style="color: ${Utils.escapeHTML(entry.color)};"><span class="iconfont icon">${typeHTML
-                }</span> ${Utils.escapeHTML(entry.typeID)} - ${Utils.escapeHTML(entry.text)}</span>`,
+              html: `<span style="color: ${Utils.escapeHTML(entry.color)};"><span class="iconfont icon">${
+                typeHTML
+              }</span> ${Utils.escapeHTML(entry.typeID)} - ${Utils.escapeHTML(entry.text)}</span>`,
               value: entry.typeID.toString(),
               noEscape: true,
             });

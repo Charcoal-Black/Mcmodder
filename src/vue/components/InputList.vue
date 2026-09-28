@@ -176,7 +176,7 @@ const suggestedList = computed<InputRatedSuggestion[]>(() => {
   const content = selectionValue.value.toLowerCase();
   if (alwaysShowAllSuggestions.value) {
     selectable.value = true;
-    selected.value = 0;
+    selected.value = defaultSelectionProvider.value();
     return suggestionList.value;
   }
 
@@ -232,6 +232,8 @@ interface Props extends InputListOption {
 
 /** 忽略输入内容，直接展示全部候选（显示成按钮的下拉菜单用法） */
 const alwaysShowAllSuggestions = ref(false);
+/** 当 {@link alwaysShowAllSuggestions} 启用时，提供默认候选序号的回调 */
+const defaultSelectionProvider = ref(() => 0 as number);
 /** 定位锚点；缺省为输入元素本身（下拉菜单会把它指向那个可见的按钮） */
 const anchorElement = shallowRef<HTMLElement>();
 /** 多段输入的分隔符：补全只替换光标所在段落 */
@@ -255,6 +257,7 @@ const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
 function setOption(option: Props) {
   inputRef.value = option.inputNode;
   alwaysShowAllSuggestions.value = option.alwaysShowAllSuggestions ?? false;
+  defaultSelectionProvider.value = option.defaultSelectionProvider ?? (() => 0);
   anchorElement.value = option.anchorElement ?? option.inputNode;
   delimiter.value = option.delimiter;
   hideBeforeInput.value = option.hideBeforeInput ?? false;

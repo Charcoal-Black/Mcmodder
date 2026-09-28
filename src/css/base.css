@@ -1720,12 +1720,18 @@ body .top-main .pulldown .arrow {
   display: flex;
   gap: var(--mcmodder-width-padding-3);
   margin-bottom: 0.2em;
+  overflow-x: auto;
 }
-.mcmodder-text-stats > span {
+.mcmodder-text-stats .stats-num > span,
+.mcmodder-text-stats .stats-opt {
   font-size: 14px;
   background-color: var(--mcmodder-color-background);
   margin-right: 0.5em;
   text-wrap: nowrap;
+}
+.mcmodder-text-stats .stats-num {
+  display: flex;
+  overflow-x: auto;
 }
 .mcmodder-text-stats .stats-opt {
   margin-left: auto;
@@ -1746,6 +1752,22 @@ body .top-main .pulldown .arrow {
 }
 .mcmodder-text-stats .stats-opt > a:hover {
   background-color: var(--mcmodder-color-background-dark1);
+}
+.mcmodder-text-stats .stats-opt > .mcmodder-dropdown-container {
+  display: flex;
+  margin: 0;
+}
+.mcmodder-text-stats .stats-opt > .mcmodder-dropdown-container > .mcmodder-dropdown-button {
+  width: 100px;
+  height: 100%;
+}
+.mcmodder-scroll-indicator-horizontal {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+.mcmodder-scroll-indicator-vertical {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
 }
 .common-rowlist-block .title,
 .common-imglist-block .title,

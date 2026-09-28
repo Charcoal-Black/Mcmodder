@@ -105,6 +105,8 @@ onMounted(() => {
     anchorElement: inputRef.value!,
     // 枚举选择是「列出全部」而非「按输入过滤」，不做拼音匹配
     alwaysShowAllSuggestions: true,
+    // 将下拉列表的默认选项设置为当前内存态的对应数值
+    defaultSelectionProvider: getValue,
     // 不提供 onModifySuggestion → 候选列表不显示新增 / 删除 / 改名按钮
     suggestionManager: {
       onInitSuggestion: () => Object.entries(props.range).map(([value, html]) => ({ html, value })),

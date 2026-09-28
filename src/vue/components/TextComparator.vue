@@ -1,30 +1,36 @@
 <template>
   <div ref="root" id="mcmodder-text-area" v-show="del_num || ins_num">
     <div class="mcmodder-text-stats">
-      <span class="stats-del" v-show="del_num">
-        <span class="mcmodder-slim-danger">
-          删除: <strong v-text="del_num.toLocaleString()" /> 处 (<strong
-            v-text="del_byte.toLocaleString()"
-          />
-          字节)
+      <span class="stats-num">
+        <span class="stats-del" v-show="del_num">
+          <span class="mcmodder-slim-danger">
+            删除: <strong v-text="del_num.toLocaleString()" /> 处 (<strong
+              v-text="del_byte.toLocaleString()"
+            />
+            字节)
+          </span>
         </span>
-      </span>
-      <span class="stats-ins" v-show="ins_num">
-        <span class="mcmodder-slim-dark">
-          新增: <strong v-text="ins_num.toLocaleString()" /> 处 (<strong
-            v-text="ins_byte.toLocaleString()"
-          />
-          字节)
+        <span class="stats-ins" v-show="ins_num">
+          <span class="mcmodder-slim-dark">
+            新增: <strong v-text="ins_num.toLocaleString()" /> 处 (<strong
+              v-text="ins_byte.toLocaleString()"
+            />
+            字节)
+          </span>
         </span>
-      </span>
-      <span class="mcmodder-jsdiff-nodiffbytes" v-show="defaultMode !== 'diffChars'">
-        *正文过长，将{{ defaultModeName }}而非{{ modeName["diffChars"] }}，以节省性能~
       </span>
       <span class="stats-opt">
         <span class="stats-opt-nav">
           {{ (currentPos + 1).toLocaleString() }} /
           {{ maxPos.toLocaleString() }}
         </span>
+        <DropdownMenuInput
+          title="对比模式"
+          :value="defaultMode"
+          :range="modeName"
+          :on-successful-change="onModeChange"
+        >
+        </DropdownMenuInput>
         <a class="prev" v-show="maxPos >= 1" @click="onPrevClick">↑</a>
         <a class="next" v-show="maxPos >= 1" @click="onNextClick">↓</a>
       </span>
@@ -42,6 +48,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef, watch } from "vue";
 import { diffChars, diffLines, diffWords } from "diff";
+import DropdownMenuInput from "./input/DropdownMenuInput.vue";
 
 interface Props {
   textA: JQuery | string;
@@ -81,24 +88,6 @@ function getRawContent(l: JQuery) {
   return s;
 }
 
-const defaultMode = computed<TextCompareMode>(() => {
-  const len1 = textA.value.length;
-  const len2 = textB.value.length;
-  if (len1 + len2 > 5e4) return "diffLines";
-  if (len1 + len2 > 1.5e4) return "diffWords";
-  return "diffChars";
-});
-
-const defaultModeName = computed(() => {
-  return modeName[defaultMode.value];
-});
-
-const modeName: Record<TextCompareMode, string> = {
-  diffLines: "按行对比",
-  diffWords: "按词对比",
-  diffChars: "按字对比",
-} as const;
-
 const textA = computed(() => {
   return props.textA instanceof Object ? getRawContent(props.textA as JQuery) : props.textA;
 });
@@ -106,9 +95,35 @@ const textB = computed(() => {
   return props.textB instanceof Object ? getRawContent(props.textB as JQuery) : props.textB;
 });
 
+const defaultMode = computed(() => {
+  const len1 = textA.value.length;
+  const len2 = textB.value.length;
+  if (len1 + len2 > 5e4) return 0;
+  if (len1 + len2 > 1.5e4) return 1;
+  return 2;
+});
+
+const currentMode = ref<keyof typeof modes>(defaultMode.value);
+
+// const currentModeName = computed(() => {
+//   return modeName[modes[currentMode.value]];
+// })
+
+const modes = {
+  0: "diffLines",
+  1: "diffWords",
+  2: "diffChars",
+} as const;
+
+const modeName: Record<keyof typeof modes, string> = {
+  0: "按行对比",
+  1: "按词对比",
+  2: "按字对比",
+} as const;
+
 const diff = computed(() => {
-  const mode = defaultMode.value;
-  const result = JsDiff[mode](textA.value, textB.value); // 避免正文对比耗费过长的时间
+  const mode = currentMode.value;
+  const result = JsDiff[modes[mode]](textA.value, textB.value); // 避免正文对比耗费过长的时间
   for (const _i in result) {
     // 移除项前移
     const i = Number(_i);
@@ -132,17 +147,20 @@ const indexMap: (number | undefined)[] = [];
 watch(
   () => diff.value,
   () => {
-    let cur = 0;
-    indexMap.length = maxPos.value;
+    del_num.value = 0;
+    del_byte.value = 0;
+    ins_num.value = 0;
+    ins_byte.value = 0;
+    indexMap.length = 0;
     diff.value.forEach((diff, index) => {
       if (diff.removed) {
         del_num.value++;
         del_byte.value += new TextEncoder().encode(diff.value).length;
-        indexMap[cur++] = index;
+        indexMap.push(index);
       } else if (diff.added) {
         ins_num.value++;
         ins_byte.value += new TextEncoder().encode(diff.value).length;
-        indexMap[cur++] = index;
+        indexMap.push(index);
       }
     });
 
@@ -206,6 +224,12 @@ function onNextClick() {
   currentPos.value++;
   if (currentPos.value >= maxPos.value) {
     currentPos.value = 0;
+  }
+}
+
+function onModeChange(info: InputValidInfo<number>) {
+  if (info.isok) {
+    currentMode.value = info.final as keyof typeof modes;
   }
 }
 </script>

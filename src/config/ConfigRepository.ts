@@ -1,4 +1,11 @@
-import { computed, triggerRef, type ComputedRef, type ShallowRef } from "vue";
+import {
+  computed,
+  triggerRef,
+  watch,
+  type ComputedRef,
+  type ShallowRef,
+  type WatchCallback,
+} from "vue";
 import type { Mcmodder } from "../Mcmodder";
 import type { StorageBuffer } from "../StorageBuffer";
 import { GM_getValue, GM_setValue } from "$";
@@ -46,8 +53,8 @@ export class ConfigRepository {
    * 取某个缓存键对应的 `shallowRef`，是响应式读取的底层依赖。
    *
    * 仅对 `StorageBuffer.addCacheableItem` 注册过的键有效，否则抛错。
-   * 返回值使用非空断言：若该键从未被写入（ref 尚未创建），访问 `.value` 会出错，
-   * 使用时请确保该键已通过 `set`/`setAll` 写入过，或在注册时已有默认值兜底。
+   * 注册后该键的 `shallowRef` 必定存在，但其初始值可能为 undefined（`AppStorage` 中多数键是可选的，
+   * 键从未落盘时即如此），使用时请通过 `getRef` 等方法并配合 `defaultValue` 兜底。
    *
    * @param item 缓存键名（`AppStorage` 的键，如 `"mcmodderSettings"`）。
    * @returns 该键对应的 `ShallowRef<Required<AppStorage>[T]>`。
@@ -58,7 +65,7 @@ export class ConfigRepository {
     if (!isCacheable) {
       throw new Error(`配置 ${item} 尚未缓存...`);
     }
-    return this.parent.storageBuffer.storageRef[item]! as ShallowRef<Required<AppStorage>[T]>;
+    return this.parent.storageBuffer.storageRef[item] as ShallowRef<AppStorage[T]>;
   }
 
   /**
@@ -132,13 +139,19 @@ export class ConfigRepository {
    * @param key 字段名。
    * @param defaultValue 字段缺失时的回退值。
    */
-  getRef<T extends keyof AppStorage, K extends keyof AppStorage[T], V = undefined>(
+  getRef<T extends keyof AppStorage, K extends keyof Required<AppStorage>[T], V = undefined>(
     item: T,
     key: K,
     defaultValue: V = undefined as V,
   ) {
     const ref = this.getStorageRef(item);
-    return computed(() => ref.value?.[key] ?? defaultValue);
+    return computed(() => {
+      const value = ref.value;
+      if (value === undefined) {
+        return defaultValue;
+      }
+      return (value as Required<AppStorage>[T])[key];
+    });
   }
 
   /** 以 `computed` 读取一个设置项（等价于 `getRef("mcmodderSettings", key, defaultValue)`） */
@@ -189,7 +202,7 @@ export class ConfigRepository {
   ) {
     const ref = this.getStorageRef(item);
     return computed(() => {
-      const value = ref.value?.[key];
+      const value = (ref.value as Required<AppStorage>[T] | undefined)?.[key];
       if (typeof value === "string") {
         return value.replaceAll(" ", "").split(",").map(Number);
       }
@@ -335,9 +348,9 @@ export class ConfigRepository {
    */
   delete<
     T extends KeysOfType<Required<AppStorage>, Record<string, any>>,
-    K extends keyof NonNullable<AppStorage[T]>,
+    K extends keyof Required<AppStorage>[T],
   >(item: T, key: K) {
-    const obj = JSON.parse(GM_getValue(item) ?? "{}"); // as NonNullable<AppStorage[T]>;
+    const obj = JSON.parse(GM_getValue(item) ?? "{}"); // as Required<AppStorage>[T];
     delete obj[key];
     GM_setValue(item, JSON.stringify(obj));
   }
@@ -364,6 +377,35 @@ export class ConfigRepository {
   }
 
   /**
+   * 监听某个缓存键下某个字段的变化（响应式）。
+   *
+   * 内部走 `getRef` 派生的 `computed`，故仅适用于缓存键（未缓存键会在 `getStorageRef` 抛错）。
+   * 监听为惰性求值：注册时不会立即触发，`callback` 仅在该字段后续发生变化时调用。
+   *
+   * @param item 缓存键名。
+   * @param key 字段名。
+   * @param callback Vue `watch` 的回调，签名为 `(newValue, oldValue, onCleanup) => void`；
+   *                 字段不存在时 `newValue` 为 undefined。
+   * @returns `watch` 的停止句柄，调用其 `stop()` 即可取消监听。
+   */
+  watchRef<T extends keyof AppStorage, K extends keyof Required<AppStorage>[T]>(
+    item: T,
+    key: K,
+    callback: WatchCallback<Required<AppStorage>[T][K] | undefined>,
+  ) {
+    const ref = this.getRef(item, key);
+    return watch(() => ref.value, callback);
+  }
+
+  /** 监听一个设置项的变化（等价于 `watchRef("mcmodderSettings", key, callback)`） */
+  watchSettingsRef<K extends keyof Settings>(
+    key: K,
+    callback: WatchCallback<Settings[K] | undefined>,
+  ) {
+    return this.watchRef("mcmodderSettings", key, callback);
+  }
+
+  /**
    * 判断某个 UID 是否已缓存该用户的资料（`userProfile` 中是否存在该 id 的记录，不校验内容完整性）。
    *
    * @param uid 用户 UID，默认当前登录用户。
@@ -371,7 +413,7 @@ export class ConfigRepository {
   doesProfileDataExist(uid = this.parent.currentUID) {
     const rawData = GM_getValue("userProfile");
     if (!rawData) return false;
-    const profiles: Record<string, Profile> = JSON.parse(rawData);
+    const profiles: Record<string, string> = JSON.parse(rawData);
     return Object.prototype.hasOwnProperty.call(profiles, uid);
   }
 

@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { GM_getValue, GM_setValue } from "$";
+import { GM_getValue } from "$";
 import { computed } from "vue";
 import { Mcmodder } from "../../../Mcmodder";
 import { Utils } from "../../../Utils.ts";
@@ -69,9 +69,9 @@ async function onDownload() {
     let success = 0;
     if (resp.mcmodder_settings) {
       try {
-        const obj1 = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
-        const obj2 = JSON.parse(resp.mcmodder_settings);
-        GM_setValue("mcmodderSettings", JSON.stringify(Object.assign({}, obj1, obj2)));
+        const local = configs.value.getAll("mcmodderSettings") ?? {};
+        const remote = JSON.parse(resp.mcmodder_settings) as Settings;
+        configs.value.setAll("mcmodderSettings", { ...local, ...remote });
         success++;
       } catch (e) {
         Utils.commonMsg(String(e), false);
@@ -79,16 +79,17 @@ async function onDownload() {
     }
     if (resp.user_profile) {
       try {
-        const obj1 = JSON.parse(GM_getValue("userProfile") || "{}");
-        const obj2 = JSON.parse(resp.user_profile);
-        GM_setValue("userProfile", JSON.stringify(Object.assign({}, obj1, obj2)));
+        const local = configs.value.getAll("userProfile") ?? {};
+        const remote = JSON.parse(resp.user_profile) as Record<string, string>;
+        configs.value.setAll("userProfile", { ...local, ...remote });
         success++;
       } catch (e) {
         Utils.commonMsg(String(e), false);
       }
     }
     if (resp.template_list) {
-      GM_setValue("templateList", resp.template_list);
+      // 云端模板为已序列化字符串，而 `setAll` 会再次序列化，故需先解析
+      configs.value.setAll("templateList", JSON.parse(resp.template_list) as Template[]);
       success++;
     }
     if (success > 0) {

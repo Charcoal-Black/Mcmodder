@@ -10,19 +10,14 @@ type DefaultProvider<T extends keyof AppStorage> = () => AppStorage[T];
  * # 实现思路
  * - 每个可缓存键在 `storageRef` 中对应一个 `ShallowRef<AppStorage[T]>`；`isDisabled` 记录该键是否
  *   已被 `addCacheableItem` 登记（存在即视为可缓存）。
- * - `addCacheableItem(key)` 注册键时：读一次 GM 现值 → 若存在则建 ref 包裹 → 监听
- *   `GM_addValueChangeListener`，当**其他标签页**（`remote === true`）写入时把新值解析回 ref。
+ * - `addCacheableItem(key)` 注册键时：读一次 GM 现值 → 建 ref 包裹（现值缺失时回退到
+ *   `defaultProvider`）→ 监听 `GM_addValueChangeListener`，当**其他标签页**（`remote === true`）
+ *   写入时把新值解析回 ref（远端删键时写入 undefined）。
  * - 本标签页自身的写入由 `ConfigRepository.set`/`setAll` 直接更新 ref，不经过该监听器。
- *
- * # 注意事项
- * - `storageRef` 是一个「可能缺键」的记录（`isCacheable` 只说明已登记，不保证 ref 一定已创建），
- *   因此 `ConfigRepository.getStorageRef` 用了非空断言。
- * - `addCacheableItem` 目前只在能读到 GM 现值时才创建 ref（见该方法 `@warning`），键从未初始化时
- *   对应 ref 会缺失。
  */
 export class StorageBuffer {
   readonly parent: Mcmodder;
-  /** 可缓存键 → `shallowRef` 的映射（`isCacheable` 只说明已登记，键可能尚未创建 ref） */
+  /** 可缓存键 → `shallowRef` 的映射（已登记的键必有 ref，但其值可能为 undefined） */
   readonly storageRef: /* {
     [T in keyof AppStorage as AppStorage[T] extends Record<string, any> ? T : never]: { [K in keyof AppStorage[T]]: ShallowRef<AppStorage[T][K]> }
   } & */ {
@@ -77,13 +72,11 @@ export class StorageBuffer {
   /**
    * 注册一个可缓存键：读取 GM 现值并建 `shallowRef`，同时监听跨标签页写入。
    *
-   * @warning 疑似缺陷：仅当 `GM_getValue(key)` 解析成功（非 undefined）时才会创建 ref；对从未
-   * 初始化过的键，即使传了 `defaultProvider` 也不会创建 ref（`JSON.parse(undefined)` 抛异常后
-   * `data` 保持 undefined，跳过建 ref 分支）。因此存储键的初始值必须由 `ConfigRepository.setAll`
-   * 或 `ConfigUtils` 的默认值写入先行落盘，`defaultProvider` 目前基本不生效。
+   * 注册后该键的 ref 必定存在；现值与 `defaultProvider` 都缺省时 ref 的值为 undefined，
+   * 因此为非对象类型的键（如数组）应显式传入 `defaultProvider`。
    *
    * @param key 要缓存的存储键名。
-   * @param defaultProvider 可选的默认值工厂（见上述 warning）。
+   * @param defaultProvider 可选的默认值工厂。
    * @returns this，便于链式调用注册多个键。
    */
   addCacheableItem<
@@ -91,23 +84,26 @@ export class StorageBuffer {
   >(key: T, defaultProvider?: DefaultProvider<T>) {
     let data;
     try {
-      data = JSON.parse(GM_getValue(key)) as AppStorage[T] | undefined;
+      const raw = GM_getValue(key);
+      if (raw === undefined) {
+        data = undefined;
+      } else {
+        data = JSON.parse(raw) as AppStorage[T] | undefined;
+      }
     } catch (e) {
       console.error("缓存项初始化失败: " + e);
     }
 
-    if (data !== undefined) {
-      (this.storageRef[key] as ShallowRef<AppStorage[T]>) = shallowRef(
-        data ?? defaultProvider?.() ?? {},
-      ) as ShallowRef<AppStorage[T]>;
-    }
+    (this.storageRef[key] as ShallowRef<AppStorage[T]>) = shallowRef(
+      data ?? defaultProvider?.(),
+    ) as ShallowRef<AppStorage[T]>;
 
     this.isDisabled[key] = false;
 
     GM_addValueChangeListener(key, (_key, _oldValue, newValue, remote) => {
       if (this.isDisabled[key] || !remote) return;
       // this.disableItem(key);
-      this.storageRef[key]!.value = JSON.parse(newValue);
+      this.storageRef[key]!.value = newValue !== undefined ? JSON.parse(newValue) : newValue;
       // this.enableItem(key);
     });
 

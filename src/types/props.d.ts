@@ -81,6 +81,8 @@ export interface InputListOption {
   anchorElement?: HTMLElement;
   /** 忽略输入内容，直接展示全部候选（不做匹配过滤，`DropdownMenuInput` 用此模式） */
   alwaysShowAllSuggestions?: boolean;
+  /** 当 {@link alwaysShowAllSuggestions} 启用时，提供默认候选序号的回调 */
+  defaultSelectionProvider?: () => number;
   /** 多段输入的分隔符（如审核理由用的「；」）：补全只替换光标所在的那一段，其余段落保持不变 */
   delimiter?: string;
   /** 输入为空时不弹出列表 */

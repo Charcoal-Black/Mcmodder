@@ -64,7 +64,7 @@ type Template = {
 };
 
 interface AppStorage {
-  mcmodderSettings: Settings;
+  mcmodderSettings?: Settings;
   userProfile?: Record<string, string>;
   mcmodderSplashList_v2?: string;
   templateList?: Template[];

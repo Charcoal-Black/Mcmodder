@@ -1481,8 +1481,8 @@ export class Utils {
     const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
     classNameIDMap[className] = classID;
     idClassNameMap[classID] = className;
-    GM_setValue("classNameIDMap", JSON.stringify(classNameIDMap));
-    GM_setValue("idClassNameMap", JSON.stringify(idClassNameMap));
+    this.configs.setAll("classNameIDMap", classNameIDMap);
+    this.configs.setAll("idClassNameMap", idClassNameMap);
   }
 
   /** 由模组 ID 查询其名称 */
