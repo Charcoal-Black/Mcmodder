@@ -1,23 +1,23 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import monkey from 'vite-plugin-monkey';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import monkey from "vite-plugin-monkey";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
     monkey({
-      entry: 'src/main.ts',
+      entry: "src/main.ts",
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
         version: "2.2.2",
         description: "Mcmodder",
         license: "AGPL-3.0",
-        icon: 'https://www.mcmod.cn/static/public/images/favicon.ico',
-        namespace: 'http://www.mcmod.cn/',
-        "run-at": 'document-start',
-        match: ['https://*.mcmod.cn/*'],
+        icon: "https://www.mcmod.cn/static/public/images/favicon.ico",
+        namespace: "http://www.mcmod.cn/",
+        "run-at": "document-start",
+        match: ["https://*.mcmod.cn/*"],
         exclude: [
           "https://api.mcmod.cn/*",
           "https://www.mcmod.cn/v2/*",
@@ -25,18 +25,18 @@ export default defineConfig({
           "https://www.mcmod.cn/tools/*/*",
           "https://*.mcmod.cn/ueditor/*",
           "https://www.mcmod.cn/script/*",
-          "https://www.mcmod.cn/item/aspects/*"
+          "https://www.mcmod.cn/item/aspects/*",
         ],
         grant: [
-          'unsafeWindow',
-          'GM_cookie',
-          'GM_registerMenuCommand',
-          'GM_openInTab',
-          'GM_setValue',
-          'GM_getValue',
-          'GM_deleteValue',
-          'GM_addValueChangeListener',
-          'GM_xmlhttpRequest',
+          "unsafeWindow",
+          "GM_cookie",
+          "GM_registerMenuCommand",
+          "GM_openInTab",
+          "GM_setValue",
+          "GM_getValue",
+          "GM_deleteValue",
+          "GM_addValueChangeListener",
+          "GM_xmlhttpRequest",
         ],
         connect: [
           "mcmod.cn",
@@ -46,7 +46,7 @@ export default defineConfig({
           "hub.gitmirror.com",
           "supabase.co",
           "fastly.jsdelivr.net",
-          "cdn.jsdelivr.net"
+          "cdn.jsdelivr.net",
         ],
         require: [
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
@@ -57,8 +57,8 @@ export default defineConfig({
           "https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js",
           "https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2",
           "https://cdn.jsdelivr.net.cn/npm/three@0.160.0/build/three.min.js",
-          "https://cdn.jsdelivr.net.cn/npm/opentype.js@1.3.4/dist/opentype.min.js"
-        ]
+          "https://cdn.jsdelivr.net.cn/npm/opentype.js@1.3.4/dist/opentype.min.js",
+        ],
       },
       build: {
         cssSideEffects: (css) => {
@@ -68,14 +68,14 @@ export default defineConfig({
           (document.head || document.documentElement).appendChild(style);
         },
         externalGlobals: {
-          "codemirror": "CodeMirror",
-          "turndown": "TurndownService",
+          codemirror: "CodeMirror",
+          turndown: "TurndownService",
           "js-beautify": "html_beautify",
           "@supabase/supabase-js": "supabase",
-          "three": "THREE",
-          "opentype.js": "opentype"
-        }
-      }
-    })
-  ]
+          three: "THREE",
+          "opentype.js": "opentype",
+        },
+      },
+    }),
+  ],
 });

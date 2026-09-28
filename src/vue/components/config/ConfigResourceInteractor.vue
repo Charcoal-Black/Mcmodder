@@ -1,13 +1,13 @@
 <template>
   <Collapsible :on-click="onClick">
     <template #header>
-      <span class="name" v-html="name" />
-      <span class="size" v-html="Utils.getFormattedSize(GM_getValue(id)?.length)" />
+      <span class="name" v-text="name" />
+      <span class="size" v-text="Utils.getFormattedSize(GM_getValue(id)?.length)" />
     </template>
     <template #content>
       <GenericTable
-        ref="table"
         :id="`mcmodder-config-table-${id}`"
+        ref="table"
         :parent="parent"
         :column-options="columnOptions"
       />

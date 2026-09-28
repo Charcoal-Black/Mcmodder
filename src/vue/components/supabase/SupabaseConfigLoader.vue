@@ -1,12 +1,12 @@
 <template>
-  <Button :on-click="onUpload">
+  <ButtonWithSpinner :on-click="onUpload">
     <i class="fa fa-cloud-upload" />
     保存所有配置数据至云端
-  </Button>
-  <Button :on-click="onDownload">
+  </ButtonWithSpinner>
+  <ButtonWithSpinner :on-click="onDownload">
     <i class="fa fa-cloud-download" />
     从云端同步所有配置数据
-  </Button>
+  </ButtonWithSpinner>
 </template>
 
 <script setup lang="ts">
@@ -14,7 +14,7 @@ import { GM_getValue } from "$";
 import { computed } from "vue";
 import { Mcmodder } from "../../../Mcmodder";
 import { Utils } from "../../../Utils.ts";
-import Button from "../Button.vue";
+import ButtonWithSpinner from "../ButtonWithSpinner.vue";
 
 interface Props {
   parent: Mcmodder;

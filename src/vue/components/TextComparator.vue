@@ -1,8 +1,8 @@
 <template>
-  <div ref="root" id="mcmodder-text-area" v-show="del_num || ins_num">
+  <div v-show="del_num || ins_num" id="mcmodder-text-area" ref="root">
     <div class="mcmodder-text-stats">
       <span class="stats-num">
-        <span class="stats-del" v-show="del_num">
+        <span v-show="del_num" class="stats-del">
           <span class="mcmodder-slim-danger">
             删除: <strong v-text="del_num.toLocaleString()" /> 处 (<strong
               v-text="del_byte.toLocaleString()"
@@ -10,7 +10,7 @@
             字节)
           </span>
         </span>
-        <span class="stats-ins" v-show="ins_num">
+        <span v-show="ins_num" class="stats-ins">
           <span class="mcmodder-slim-dark">
             新增: <strong v-text="ins_num.toLocaleString()" /> 处 (<strong
               v-text="ins_byte.toLocaleString()"
@@ -31,12 +31,12 @@
           :on-successful-change="onModeChange"
         >
         </DropdownMenuInput>
-        <a class="prev" v-show="maxPos >= 1" @click="onPrevClick">↑</a>
-        <a class="next" v-show="maxPos >= 1" @click="onNextClick">↓</a>
+        <a v-show="maxPos >= 1" class="prev" @click="onPrevClick">↑</a>
+        <a v-show="maxPos >= 1" class="next" @click="onNextClick">↓</a>
       </span>
     </div>
-    <div ref="resultFrame" id="mcmodder-text-result">
-      <template v-for="(data, index) in diff">
+    <div id="mcmodder-text-result" ref="resultFrame">
+      <template v-for="(data, index) in diff" :key="index">
         <del v-if="data.removed" :data-index="index">{{ data.value }}</del>
         <ins v-else-if="data.added" :data-index="index">{{ data.value }}</ins>
         <template v-else>{{ data.value }}</template>

@@ -4,10 +4,10 @@
       <span v-if="type !== InputType.CHECKBOX"> {{ configOption.title }}: </span>
       <CheckboxInput
         v-if="type === InputType.CHECKBOX"
+        :id="id"
         :title="title"
         :value="value"
         :on-successful-change="onConfigSuccessfulChange"
-        :id="id"
         :with-label="true"
       />
       <TextInput
@@ -60,7 +60,9 @@
       />
       <slot name="afterInput" />
     </div>
-    <p class="text-muted" v-html="description" />
+    <!-- 设置项描述内含 <del>/<code>/<a> 等排版标签，无法用纯文本渲染；内容来自 ConfigLoader 自身的静态配置，已过 sanitizeHTML -->
+    <!-- eslint-disable-next-line vue/no-v-html -- 入参为 useSanitizedHTML 清洗后的结果 -->
+    <p class="text-muted" v-html="safeDescription" />
     <slot name="afterItem" />
   </div>
 </template>
@@ -77,6 +79,7 @@ import SliderInput from "../input/SliderInput.vue";
 import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 import DropdownTextInput from "../input/DropdownTextInput.vue";
 import KeybindInput from "../input/KeybindInput.vue";
+import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
 import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 
 interface Props {
@@ -116,12 +119,12 @@ const opt = computed(() => {
       suggestion.map((e) => {
         if (typeof e === "string" && e === data.value) {
           e = {
-            html: e,
+            text: e,
             value: e,
           };
         }
         if (typeof e === "object" && e.value === data.value) {
-          e.html += " (默认)";
+          e.text += " (默认)";
         }
         return e;
       });
@@ -174,4 +177,7 @@ const description = computed(() => {
   let appendix = list.length ? `（${list.join("；")}）` : ``;
   return `${configOption.value.description}${appendix}`;
 });
+
+/** `description` 含排版标签，绑定 `v-html` 前统一过一遍 sanitizeHTML */
+const safeDescription = useSanitizedHTML(() => description.value);
 </script>

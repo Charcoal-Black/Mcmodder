@@ -11,16 +11,16 @@
         </p>
       </div>
       <input
-        ref="fetchCF"
         id="mcmodder-fetch-version-cf"
+        ref="fetchCF"
         class="form-control"
         placeholder="输入 CFID 以查询..."
         @focus="onFetchCFFocus"
         @focusout="onFetchCFFocusout"
       />
       <input
-        ref="fetchMR"
         id="mcmodder-fetch-version-mr"
+        ref="fetchMR"
         class="form-control"
         placeholder="输入 MRID 以查询..."
         @focus="onFetchMRFocus"

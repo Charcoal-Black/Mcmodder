@@ -1,7 +1,7 @@
 <template>
   <div :class="className">
     <div v-if="!data.length" class="empty" />
-    <div v-else v-for="index in range" class="block">
+    <div v-for="index in range" v-else :key="index" class="block">
       <div class="title">{{ data[index] }}</div>
       <div class="text">{{ data[index + 1] }}</div>
     </div>

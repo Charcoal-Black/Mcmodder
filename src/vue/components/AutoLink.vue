@@ -38,6 +38,7 @@
         <div v-else class="title">搜索结果:</div>
         <li
           v-for="(entry, index) in searchResultEntries"
+          :key="entry.data.id"
           :class="getOptionClassList(index, entry.searchTag)"
         >
           <AutoLinkClassOption
@@ -76,41 +77,41 @@
     </div>
     <div v-show="showResultFrame" class="title">链接文本:</div>
     <div v-show="showResultFrame" class="edit-autolink-style">
-      <template v-for="(text, index) in styles">
-        <div class="radio" v-show="!(index === 0 && shouldHideSelectedContentStyle)">
+      <template v-for="(text, index) in styles" :key="index">
+        <div v-show="!(index === 0 && shouldHideSelectedContentStyle)" class="radio">
           <input
             :id="`edit-autolink-style-text-${index}`"
+            v-model.number="style"
             name="edit-autolink-style-text"
             :value="index"
             type="radio"
-            v-model.number="style"
           />
           <label :for="`edit-autolink-style-text-${index}`">{{ text }}</label>
         </div>
       </template>
       <br />
       <CheckboxInput
+        id="edit-autolink-style-space"
         ref="insertSpace"
         title="在链接前后加空格"
-        id="edit-autolink-style-space"
         with-label
         :value="configs.getSettings('autolinkStyleSpace') ?? false"
         :on-successful-change="(info) => configs.setSettings('autolinkStyleSpace', info.final)"
       />
     </div>
-    <div class="edit-autolink-source" v-show="localItemCount">
+    <div v-show="localItemCount" class="edit-autolink-source">
       <CheckboxInput
+        id="edit-autolink-source-local"
         ref="sourceInputLocal"
         title="本地搜索"
-        id="edit-autolink-source-local"
         with-label
         :value="configs.getSettings('autolinkSourceLocal') ?? false"
         :on-successful-change="(info) => configs.setSettings('autolinkSourceLocal', info.final)"
       />
       <CheckboxInput
+        id="edit-autolink-source-online"
         ref="sourceInputOnline"
         title="联机搜索"
-        id="edit-autolink-source-online"
         with-label
         :value="configs.getSettings('autolinkSourceOnline') ?? false"
         :on-successful-change="(info) => configs.setSettings('autolinkSourceOnline', info.final)"

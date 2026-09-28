@@ -116,7 +116,8 @@ export class TemplateFrame {
       })
       .addItem({
         key: "delete",
-        text: `<span class="mcmodder-slim-danger">删除</span>`,
+        text: "删除",
+        classList: "mcmodder-slim-danger",
         displayRule: (e) => this.isValidSelection(e),
         callback: (e) => this.delete(this.getCurrentSelection(e).attr("data-tag")),
       });

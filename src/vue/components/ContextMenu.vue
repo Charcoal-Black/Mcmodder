@@ -1,5 +1,6 @@
 <template>
   <div
+    v-show="!classHidden"
     ref="root"
     class="mcmodder-contextmenu"
     :class="{
@@ -7,7 +8,6 @@
       'expand-left': classExpandLeft,
       faded: classFaded,
     }"
-    v-show="!classHidden"
     :style="{
       left: cssX + 'px',
       top: cssY + 'px',
@@ -18,8 +18,8 @@
     <div class="mcmodder-contextmenu-inner">
       <div class="arrow" />
       <ul>
-        <li class="empty" v-if="activeIndexLength === 0">当前无可用选项...</li>
-        <template v-for="(item, i) in visibleItems">
+        <li v-if="activeIndexLength === 0" class="empty">当前无可用选项...</li>
+        <template v-for="(item, i) in visibleItems" :key="item.key">
           <li
             :class="{ selected: selected === i }"
             @pointerenter="onItemPointerenter(i)"
@@ -27,8 +27,11 @@
             @pointerleave="onItemPointerleave(i)"
             @click="onItemClick(i)"
           >
-            <a v-html="item.text"></a>
-            <span class="item-shortcut-left" v-if="item.shortcut">
+            <a>
+              <span v-if="item.classList" :class="item.classList">{{ item.text }}</span>
+              <template v-else>{{ item.text }}</template>
+            </a>
+            <span v-if="item.shortcut" class="item-shortcut-left">
               <KeyDisplay :key-data="item.shortcut" />
             </span>
           </li>

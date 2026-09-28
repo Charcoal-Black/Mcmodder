@@ -10,6 +10,7 @@
         </li>
         <li
           v-for="[uid, profile] in myProfiles"
+          :key="uid"
           :class="{ 'profile-selected': profile.uuid === uuid }"
         >
           <div class="profile-option" @click="onClick($event, uid, profile)">

@@ -1,7 +1,7 @@
 <template>
   <ConfigResourceInteractor
-    :parent="parent"
     :id="id"
+    :parent="parent"
     :name="name"
     :column-options="{
       fileName: '文件名',

@@ -1,7 +1,7 @@
 <template>
   <div class="mcmodder-progress" :class="{ hidden: isVisible }">
     <div class="mcmodder-progress-bar" :style="{ width: cssBarWidth }" />
-    <div class="mcmodder-progress-per" v-html="htmlPerContent" />
+    <div class="mcmodder-progress-per" v-text="htmlPerContent" />
   </div>
 </template>
 
@@ -20,6 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
   value: 0,
   min: 0,
   max: 1,
+  displayRule: undefined,
 });
 
 const DISPLAYRULE_PERCENT: ProgressBarDisplayRule = (val, min, max) =>

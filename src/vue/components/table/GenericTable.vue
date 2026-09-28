@@ -1,14 +1,15 @@
+<!-- eslint-disable vue/no-v-html -- 表格 v-html 为历史遗留，难以避免，但是未来可能会改进 -->
 <template>
   <div
-    class="mcmodder-table-container"
-    ref="root"
-    v-bind="attr"
     v-show="showTable"
+    ref="root"
+    class="mcmodder-table-container"
+    v-bind="attr"
     @click="gotoHandler"
   >
     <div
-      class="mcmodder-table-loading-overlay"
       v-show="showLoadingOverlay"
+      class="mcmodder-table-loading-overlay"
       :class="{ faded: classLoadingOverlayFaded }"
     >
       <div class="mcmodder-table-loading-container">
@@ -18,13 +19,14 @@
     </div>
     <table class="mcmodder-table">
       <thead>
-        <th v-for="option in columnOptions" v-html="option.name" />
+        <th v-for="(option, index) in columnOptions" :key="index" v-html="option.name" />
       </thead>
       <tbody>
         <tr class="mcmodder-table-margin-top" :style="{ height: cssMarginTopHeight + 'px' }" />
-        <tr class="mcmodder-table-empty" v-show="!currentData.length" />
+        <tr v-show="!currentData.length" class="mcmodder-table-empty" />
         <tr
           v-for="index in renderingRowArray"
+          :key="index"
           :data-index="index"
           :class="{
             'mcmodder-table-pointerover-tr': index === hoveringIndex,
@@ -36,6 +38,7 @@
         >
           <td
             v-for="key in Object.keys(columnOptions)"
+            :key="key"
             :data-key="key"
             :class="{
               'mcmodder-table-pointerover-td': key === hoveringKey,
@@ -63,14 +66,14 @@
                 :value="inputNodeData.value"
                 :range="inputNodeData.range"
                 ,
-                :onSuccessfulChange="inputNodeData.onSuccessfulChange"
+                :on-successful-change="inputNodeData.onSuccessfulChange"
               />
               <TextInput
-                ref="input"
                 v-if="inputNodeData?.type === InputType.TEXT"
+                ref="input"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value"
-                :onSuccessfulChange="inputNodeData.onSuccessfulChange"
+                :on-successful-change="inputNodeData.onSuccessfulChange"
               />
             </div>
           </td>
@@ -728,7 +731,7 @@ function deleteMultipleRow(selection: TableRowSelection) {
     deletedData[i] = Object.assign({}, currentData.value[i].content);
     tempData[i] = null;
   });
-  currentData.value = tempData.filter((e: any) => e);
+  currentData.value = tempData.value.filter((e: any) => e);
   refreshAll();
   unsaved.value = true;
   return deletedData;

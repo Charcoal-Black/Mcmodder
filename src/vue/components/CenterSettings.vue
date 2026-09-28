@@ -5,9 +5,9 @@
   </div>
 
   <div class="center-content">
-    <template v-for="key in visibleConfigData">
+    <template v-for="key in visibleConfigData" :key="key">
       <ConfigInteractor :id="key" :cfgutils="cfgutils" :configs="configs">
-        <template #afterInput v-if="key === 'autoCheckUpdate'">
+        <template v-if="key === 'autoCheckUpdate'" #afterInput>
           <button
             id="mcmodder-update-check-manual"
             class="btn"
@@ -15,19 +15,19 @@
           >
             立即检查更新
           </button>
-          <Timer
+          <Countdown
             :parent="parent"
             :data-getter="
               TimerUtils.DATAGETTER_SCHEDULE('autoCheckUpdate', null, parent.scheduleRequestUtils)
             "
           />
         </template>
-        <template #afterInput v-else-if="key === 'useSupabase'">
+        <template v-else-if="key === 'useSupabase'" #afterInput>
           <span v-show="configs.getSettingsRef('useSupabase').value">
             <SupabaseAuthBinder :parent="parent" />
           </span>
         </template>
-        <template #afterItem v-if="key === 'useSupabase'">
+        <template v-if="key === 'useSupabase'" #afterItem>
           <div v-show="configs.getSettingsRef('useSupabase').value">
             <SupabaseConfigLoader :parent="parent" />
           </div>
@@ -43,11 +43,11 @@
 
   <div class="center-content mcmodder-storage">
     <ul>
-      <li v-for="props in configResourceInteractorProps">
-        <ConfigResourceInteractor v-bind="props" />
+      <li v-for="cfgProps in configResourceInteractorProps" :key="cfgProps.id">
+        <ConfigResourceInteractor v-bind="cfgProps" />
       </li>
-      <li v-for="props in configResourceFileListInteractorProps">
-        <ConfigResourceFileListInteractor v-bind="props" />
+      <li v-for="cfgProps in configResourceFileListInteractorProps" :key="cfgProps.id">
+        <ConfigResourceFileListInteractor v-bind="cfgProps" />
       </li>
     </ul>
   </div>
@@ -59,13 +59,13 @@
     </p>
     <div class="setting-item" style="display: flex; gap: 8px; align-items: center">
       <input
+        v-model="splashInput"
         type="text"
         class="form-control"
         placeholder="输入自定义闪烁标语内容..."
         style="max-width: 400px; display: inline-block"
-        v-model="splashInput"
       />
-      <Button :on-click="submitSplash">提交投稿</Button>
+      <ButtonWithSpinner :on-click="submitSplash">提交投稿</ButtonWithSpinner>
     </div>
   </div>
 
@@ -84,14 +84,14 @@ import { Values } from "../../Values";
 import { InputType } from "../../config/ConfigUtils";
 import { TableUtils } from "../../table/Table.ts";
 import ConfigInteractor from "./config/ConfigInteractor.vue";
-import Timer from "./Timer.vue";
-import { TimerUtils } from "../../widget/Timer.ts";
+import Countdown from "./Countdown.vue";
+import { TimerUtils } from "../../widget/TimerUtils.ts";
 import SupabaseConfigLoader from "./supabase/SupabaseConfigLoader.vue";
 import ConfigResourceInteractor from "./config/ConfigResourceInteractor.vue";
 import { Utils } from "../../Utils.ts";
 import ConfigResourceFileListInteractor from "./config/ConfigResourceFileListInteractor.vue";
 import SupabaseAuthBinder from "./supabase/SupabaseAuthBinder.vue";
-import Button from "./Button.vue";
+import ButtonWithSpinner from "./ButtonWithSpinner.vue";
 import type {
   ConfigResourceFileListInteractorProps,
   ConfigResourceInteractorProps,

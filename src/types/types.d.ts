@@ -748,12 +748,19 @@ type ContextMenuDisplayRule = (e: PointerEvent) => boolean;
 /** 菜单项回调：接收**打开菜单的那次右键事件**（非点击菜单项的 click），供宿主定位被右键的对象 */
 type ContextMenuCallback = (e: PointerEvent) => void;
 
-/** 右键菜单项：key 标识、text 为 HTML 文案、shortcut 为可选快捷键、displayRule 决定显隐、callback 为点击回调 */
+/** 右键菜单项 */
 type ContextMenuItem = {
+  /** 唯一标识 */
   key: string;
+  /** 要应用到文字上的 CSS class */
+  classList?: string | string[];
+  /** 菜单项文案 */
   text: string;
+  /** 可选快捷键 */
   shortcut?: Key;
+  /** 用户打开菜单项时，用于决定显隐而触发的回调 */
   displayRule: ContextMenuDisplayRule;
+  /** 点击触发的回调 */
   callback: ContextMenuCallback;
 };
 /** 全部已注册菜单项（`ContextMenu.items`） */
@@ -762,6 +769,7 @@ type ContextMenuItems = ContextMenuItem[];
 /** 宿主传给 `ContextMenu.addItem` 的注册项（与 `ContextMenuItem` 形状一致，此处单列一份表示「注册」语义） */
 type ContextMenuItemOption = {
   key: string;
+  classList?: string | string[];
   text: string;
   shortcut?: Key;
   displayRule: ContextMenuDisplayRule;
@@ -781,9 +789,9 @@ type InputValueSet = Record<number, string>;
 /** 输入范围：数值区间或枚举值集合 */
 type InputValueRange = InputValueNumericRange | InputValueSet;
 
-/** 单条候选：`value` 为真正被匹配与写回的文本；`html` 为自定义展示（存在时以 `v-html`/`v-text` 渲染，不做匹配高亮） */
+/** 单条候选：`value` 为真正被匹配与写回的文本；`text` 为自定义展示（存在时以 `v-text` 渲染，不做匹配高亮） */
 interface InputSuggestion {
-  html?: string;
+  text?: string;
   value: string;
   showValue?: boolean;
   alias?: string[];

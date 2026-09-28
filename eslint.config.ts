@@ -1,26 +1,42 @@
 // @ts-check
 
-import js from '@eslint/js';
-import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
-import prettierConfig from 'eslint-config-prettier';
+import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
+import tseslint from "typescript-eslint";
+import prettierConfig from "eslint-config-prettier";
+import vue from "eslint-plugin-vue";
 
 export default defineConfig([
   {
-    files: ['**/*.{js,ts}'],
+    files: ["**/*.{js,ts}"],
+    ignores: ["dist/*"],
     extends: [js.configs.recommended, tseslint.configs.recommended],
   },
   {
-    files: [
-      "src/widget/Splash3D.ts",
-      "src/main.ts"
-    ], // 祖传代码，重构前豁免
+    files: ["src/**/*.vue"],
+    extends: [vue.configs["flat/recommended"]],
+    languageOptions: {
+      // <script lang="ts"> 交给 TS 解析器，模板则由 vue-eslint-parser 处理
+      parserOptions: { parser: tseslint.parser },
+    },
+    rules: {
+      "vue/multi-word-component-names": [
+        "error",
+        {
+          ignores: ["Countdown", "Collapsible", "Pagination"],
+        },
+      ],
+      "vue/component-name-in-template-casing": ["error", "PascalCase"],
+    },
+  },
+  {
+    files: ["src/widget/Splash3D.ts", "src/main.ts"], // 祖传代码，重构前豁免
     rules: {
       "no-empty": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-this-alias": "off"
-    }
+      "@typescript-eslint/no-this-alias": "off",
+    },
   },
   {
     files: [
@@ -35,18 +51,15 @@ export default defineConfig([
       "src/config/ConfigRepository.ts", // TS 自身限制，难以避免 any
     ],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off"
-    }
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   },
   {
-    files: [
-      "src/Mcmodder.ts",
-      "src/init/EditorInit.ts"
-    ],
+    files: ["src/Mcmodder.ts", "src/init/EditorInit.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      "no-constant-condition": "off" // mcmodderSettings.mcmodderUI = true
-    }
+      "no-constant-condition": "off", // mcmodderSettings.mcmodderUI = true
+    },
   },
-  prettierConfig
+  prettierConfig,
 ]);

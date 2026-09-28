@@ -8,7 +8,7 @@
         <a class="page-link" @click="setPage(regulatedPage - 1)">前页</a>
       </li>
     </template>
-    <li class="page-item" :class="{ active: regulatedPage === i }" v-for="i in pageRange">
+    <li v-for="i in pageRange" :key="i" class="page-item" :class="{ active: regulatedPage === i }">
       <a class="page-link" @click="setPage(i)">{{ i.toLocaleString() }}</a>
     </li>
     <template v-if="regulatedPage < maxPage">
@@ -37,19 +37,20 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from "vue";
-import { Mcmodder } from "../../Mcmodder";
-import { Utils } from "../../Utils";
+import { Mcmodder } from "../../Mcmodder.ts";
+import { Utils } from "../../Utils.ts";
 import NumberInput from "./input/NumberInput.vue";
 
 interface Props {
   parent: Mcmodder;
   attr?: object;
-  maxPage: number;
+  maxPage?: number;
   callback: (page: number) => void;
-  currentPage: number;
+  currentPage?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  attr: undefined,
   maxPage: 1,
   currentPage: 1,
 });

@@ -1,11 +1,11 @@
 <template>
-  <span class="mcmodder-timer" v-html="html" />
+  <span class="mcmodder-timer" v-text="text" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { Mcmodder } from "../../Mcmodder";
-import { TimerUtils } from "../../widget/Timer";
+import { TimerUtils } from "../../widget/TimerUtils";
 
 interface Props {
   parent: Mcmodder;
@@ -23,7 +23,7 @@ const dataGetter =
   typeof props.dataGetter === "number"
     ? TimerUtils.DATAGETTER_CONSTANT(props.dataGetter)
     : props.dataGetter;
-const html = ref("");
+const text = ref("");
 let intervalID: number | undefined;
 
 onMounted(() => {
@@ -39,6 +39,6 @@ onUnmounted(() => {
 
 function update() {
   let time = dataGetter();
-  html.value = time ? props.dataFormatter(time - Date.now()) : "-";
+  text.value = time ? props.dataFormatter(time - Date.now()) : "-";
 }
 </script>

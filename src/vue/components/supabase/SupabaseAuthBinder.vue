@@ -1,6 +1,6 @@
 <template>
-  <Button ref="button" id="mcmodder-auth-manual" class="btn" :on-click="onButtonClick"
-    >立即认证</Button
+  <ButtonWithSpinner id="mcmodder-auth-manual" ref="button" class="btn" :on-click="onButtonClick"
+    >立即认证</ButtonWithSpinner
   >
   <span>当前已绑定: </span>
   <span v-if="!uid || !name" class="mcmodder-auth-user text-muted">?</span>
@@ -17,7 +17,7 @@
 import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { Mcmodder } from "../../../Mcmodder.ts";
 import { Utils } from "../../../Utils.ts";
-import Button from "../Button.vue";
+import ButtonWithSpinner from "../ButtonWithSpinner.vue";
 
 interface Props {
   parent: Mcmodder;

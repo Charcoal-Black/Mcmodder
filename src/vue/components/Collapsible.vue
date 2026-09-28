@@ -1,6 +1,6 @@
 <template>
   <div class="mcmodder-collapsible-container" :class="{ expanded: classExpanded }">
-    <div class="mcmodder-collapsible-header" @click="onClick">
+    <div class="mcmodder-collapsible-header" @click="onCollapsibleClick">
       <slot name="header" />
     </div>
     <div class="mcmodder-collapsible-content">
@@ -20,7 +20,7 @@ const props = defineProps<Props>();
 
 const classExpanded = ref(false);
 
-function onClick(e: PointerEvent) {
+function onCollapsibleClick(e: PointerEvent) {
   classExpanded.value = !classExpanded.value;
   props.onClick?.(e);
 }

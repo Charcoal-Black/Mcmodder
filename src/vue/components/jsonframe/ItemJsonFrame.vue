@@ -1,7 +1,7 @@
 <template>
   <JsonFrame
-    ref="jsonFrame"
     :id="id"
+    ref="jsonFrame"
     :parent="parent"
     :config-name="configName"
     :allowed-keys="indexedKeys"
@@ -19,7 +19,7 @@
     @delete="onDelete"
   />
   <Teleport :to="importContainer">
-    <div class="edit-autolink-frame" ref="classSearchFrame">
+    <div ref="classSearchFrame" class="edit-autolink-frame">
       <div class="input-group edit-autolink-seach">
         <input
           ref="idInput"
@@ -33,9 +33,11 @@
           class="form-control"
           @keyup="onTypeIDInputKeyup"
         />
-        <Button ref="submitButton" :on-click="onSubmitButtonClick">执行</Button>
+        <ButtonWithSpinner ref="submitButton" :on-click="onSubmitButtonClick"
+          >执行</ButtonWithSpinner
+        >
       </div>
-      <Logger ref="logger" :parent="parent" />
+      <LogPanel ref="logPanel" :parent="parent" />
       <div class="title">导入设置:</div>
       <div class="edit-autolink-style">
         <div class="checkbox">
@@ -135,10 +137,10 @@ import { computed, type ComputedRef, onMounted, ref, useTemplateRef } from "vue"
 import { InputType } from "../../../config/ConfigUtils.ts";
 import { TableUtils } from "../../../table/Table.ts";
 import { Utils } from "../../../Utils.ts";
-import Logger from "../logger.vue";
+import LogPanel from "../LogPanel.vue";
 import JsonFrame from "./JsonFrame.vue";
 import { InputListController } from "../../../widget/InputListController.ts";
-import Button from "../Button.vue";
+import ButtonWithSpinner from "../ButtonWithSpinner.vue";
 import { InferItemListRequestQueue } from "../../../requestqueue/InferRequestQueue.ts";
 import { DetailedItemListRequestQueue } from "../../../requestqueue/DetailedItemRequestQueue.ts";
 import { GM_openInTab } from "$";
@@ -296,7 +298,7 @@ const jsonApplicationColumnOptions = {
 } satisfies ColumnOptionsInitializer<ItemJsonFrameApplication>;
 
 const jsonFrame = useTemplateRef("jsonFrame");
-const logger = useTemplateRef("logger");
+const logger = useTemplateRef("logPanel");
 const idInput = useTemplateRef("idInput");
 const typeInput = useTemplateRef("typeInput");
 const classSearchFrame = useTemplateRef("classSearchFrame");
@@ -341,7 +343,7 @@ onMounted(() => {
             }
 
             result.push({
-              html: `<span style="color: ${Utils.escapeHTML(entry.color)};"><span class="iconfont icon">${
+              text: `<span style="color: ${Utils.escapeHTML(entry.color)};"><span class="iconfont icon">${
                 typeHTML
               }</span> ${Utils.escapeHTML(entry.typeID)} - ${Utils.escapeHTML(entry.text)}</span>`,
               value: entry.typeID.toString(),

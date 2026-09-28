@@ -5,7 +5,7 @@
       立即检测所有预编辑项
     </button>
     <span class="text-muted btn-sm">距离下次检测: </span>
-    <Timer
+    <Countdown
       :parent="parent"
       :data-getter="
         TimerUtils.DATAGETTER_SCHEDULE(
@@ -25,8 +25,8 @@ import { Mcmodder } from "../../Mcmodder";
 import GenericTable from "./table/GenericTable.vue";
 import { TableUtils } from "../../table/Table.ts";
 import { Values } from "../../Values.ts";
-import Timer from "./Timer.vue";
-import { TimerUtils } from "../../widget/Timer.ts";
+import Countdown from "./Countdown.vue";
+import { TimerUtils } from "../../widget/TimerUtils.ts";
 import { Utils } from "../../Utils.ts";
 
 interface Props {

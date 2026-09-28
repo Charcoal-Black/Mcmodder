@@ -1,11 +1,11 @@
 <template>
   <div
+    v-show="profiles.length"
     class="mcmodder-favuser"
     :class="[
       ['star', 'pin', 'heart'][configs.getSettings('favUserDisplayStyle') ?? 0],
       ...[deleteMode ? 'delete-mode' : undefined],
     ]"
-    v-show="profiles.length"
   >
     <div class="title">
       最近串门
@@ -17,6 +17,7 @@
       <div class="content">
         <a
           v-for="[uid, profile] in profiles"
+          :key="uid"
           class="user"
           :class="[
             [userFavList.includes(uid) ? 'user-fav' : 'user-recent'],

@@ -1,5 +1,5 @@
 <template>
-  <div ref="root" class="mcmodder-logger mcmodder-monospace" v-once />
+  <div v-once ref="root" class="mcmodder-logger mcmodder-monospace" />
 </template>
 
 <script setup lang="ts">

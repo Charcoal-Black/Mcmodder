@@ -108,7 +108,7 @@ export class ConfigLoader {
         "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf",
         [
           {
-            html: "Noto Sans SC",
+            text: "Noto Sans SC",
             value:
               "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf",
             showValue: true,

@@ -1,7 +1,7 @@
 import { createApp } from "vue";
 import { Utils } from "../Utils";
-import Timer from "../vue/components/Timer.vue";
-import { TimerUtils } from "../widget/Timer";
+import Countdown from "../vue/components/Countdown.vue";
+import { TimerUtils } from "../widget/TimerUtils.ts";
 import { Init } from "./Init";
 
 export class CommentInit extends Init {
@@ -13,11 +13,11 @@ export class CommentInit extends Init {
     target.find(".comment-reply-row-time").each((_, node) => {
       const published = Date.parse(node.textContent);
       const container = $("<span>").appendTo(node).get(0);
-      createApp(Timer, {
+      createApp(Countdown, {
         parent: this.parent,
         dataGetter: published,
         dataFormatter: TimerUtils.DATAFORMATTER_ZH,
-      }).mount(container) as InstanceType<typeof Timer>;
+      }).mount(container) as InstanceType<typeof Countdown>;
       container.insertAdjacentText("beforebegin", " (");
       container.insertAdjacentText("afterend", ")");
     });

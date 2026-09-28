@@ -1,5 +1,6 @@
 <template>
   <div
+    v-show="!classHidden"
     ref="list"
     class="mcmodder-input-list"
     :class="{
@@ -11,7 +12,6 @@
       left: cssPos.left,
       top: cssPos.top,
     }"
-    v-show="!classHidden"
   >
     <div
       class="mcmodder-input-list-innerframe"
@@ -23,6 +23,7 @@
     >
       <a
         v-for="(entry, i) in suggestedList"
+        :key="i"
         class="mcmodder-input-option"
         :class="{ selected: selected === i }"
         :title="getTitle(entry)"
@@ -32,22 +33,22 @@
         @click="onOptionClick(entry.value)"
       >
         <span class="text">
-          <span v-if="entry.html && entry.noEscape" v-html="entry.html" />
-          <span v-else-if="entry.html !== undefined" v-text="entry.html"></span>
+          <span v-if="entry.text && entry.noEscape" v-text="entry.text" />
+          <span v-else-if="entry.text !== undefined" v-text="entry.text"></span>
           <span v-else>
             <MatchedText :text="entry.value" :ranges="[entry.ranges?.value]" />
           </span>
-          <span class="item-ename" v-if="entry.html === undefined && entry.showValue">
+          <span v-if="entry.text === undefined && entry.showValue" class="item-ename">
             &nbsp;
             {{ entry.value }}
           </span>
-          <span class="alias" v-if="entry.alias !== undefined">
-            <span v-for="(alias, aliasIndex) in entry.alias">
+          <span v-if="entry.alias !== undefined" class="alias">
+            <span v-for="(alias, aliasIndex) in entry.alias" :key="aliasIndex">
               <MatchedText :text="alias" :ranges="[entry.ranges?.alias[aliasIndex]]" />
             </span>
           </span>
         </span>
-        <span class="mcmodder-input-extraoptions" v-if="onModifySuggestion">
+        <span v-if="onModifySuggestion" class="mcmodder-input-extraoptions">
           <a
             class="mcmodder-input-editalias"
             tabindex="-1"
@@ -65,10 +66,10 @@
         </span>
       </a>
       <a
+        v-show="canCreateNew"
         class="mcmodder-input-option mcmodder-input-new"
         :class="{ selected: selected === suggestedList.length }"
         :data-index="suggestedList.length"
-        v-show="canCreateNew"
         @pointerenter="onOptionPointerenter(suggestedList.length)"
         @click="onNewOptionClick"
       >
@@ -79,7 +80,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  ref,
+  shallowRef,
+  triggerRef,
+  useTemplateRef,
+  watch,
+  watchEffect,
+} from "vue";
 import { Utils } from "../../Utils";
 import { Values } from "../../Values";
 import type { ConfigRepository } from "../../config/ConfigRepository";
@@ -164,64 +174,7 @@ const selectionValue = computed(() => {
   return idx >= 0 ? (isCompletely.value ? vals[idx] : vals[idx].slice(0, innerPos)) : "";
 });
 
-/**
- * 当前展示的候选列表（computed，全局唯一的「匹配 → 过滤 → 排序」入口）。
- *
- * 求值时顺带维护几个副作用状态：`selected` 复位为 0、`selectable` 决定列表是否应显示、
- * `canCreateNew` 决定是否展示「保存为快捷输入项」。之所以能写在 computed 里，
- * 是因为它依赖 `valueRef` / `selectionStart` / `suggestionList` 等响应式源——任何一次输入变化都会触发重算。
- */
-const suggestedList = computed<InputRatedSuggestion[]>(() => {
-  selected.value = 0;
-  const content = selectionValue.value.toLowerCase();
-  if (alwaysShowAllSuggestions.value) {
-    selectable.value = true;
-    selected.value = defaultSelectionProvider.value();
-    return suggestionList.value;
-  }
-
-  if (!content && hideBeforeInput.value) {
-    selectable.value = false;
-    canCreateNew.value = false;
-    return [];
-  }
-
-  const suggestedList: InputRatedSuggestion[] = [];
-  suggestionList.value.forEach((entry) => {
-    const rate: InputSuggestionRate = {
-      score: 0,
-      ranges: { alias: {} },
-    };
-    [entry.value, ...(entry.alias ?? [])]
-      .map((e) => e.toLowerCase())
-      .forEach((value, index) => {
-        // index 0 是候选本体，其余下标对应各 alias（ranges 里以 alias 的下标存储）
-        const range = Pinyin.match(value, content);
-        if (range) {
-          range[1]++; // 闭区间改成左闭右开
-          if (index === 0) {
-            rate.ranges!.value = range;
-          } else {
-            rate.ranges!.alias[index - 1] = range;
-          }
-          // 命中越靠前、占比越大，分数越高；每个命中字段另有 0.01 的底分，避免短串被长串碾压
-          const posFactor = range[0] === 0 ? 2 : 1;
-          const matchLength = range[1] - range[0];
-          rate.score! += 0.01 + (posFactor * matchLength) / value.length;
-        }
-      });
-    suggestedList.push({ ...entry, ...rate });
-  });
-
-  canCreateNew.value = !!(onModifySuggestion.value && selectionValue.value);
-  selected.value = 0;
-  if (suggestedList.length) {
-    selectable.value = true;
-  } else {
-    selectable.value = false;
-  }
-  return suggestedList.filter((e) => e.score).sort((a, b) => b.score! - a.score!);
-});
+const suggestedList = shallowRef<InputRatedSuggestion[]>([]);
 
 /** `setOption` 的入参：在 `InputListOption` 之外必须显式给出**当前绑定的是哪个输入元素** */
 interface Props extends InputListOption {
@@ -388,6 +341,65 @@ watch(
     }
   },
 );
+
+/**
+ * 当前展示的候选列表（computed，全局唯一的「匹配 → 过滤 → 排序」入口）。
+ *
+ * 求值时顺带维护几个副作用状态：`selected` 复位为 0、`selectable` 决定列表是否应显示、
+ * `canCreateNew` 决定是否展示「保存为快捷输入项」。之所以能写在 computed 里，
+ * 是因为它依赖 `valueRef` / `selectionStart` / `suggestionList` 等响应式源——任何一次输入变化都会触发重算。
+ */
+watchEffect(() => {
+  selected.value = 0;
+  const content = selectionValue.value.toLowerCase();
+  if (alwaysShowAllSuggestions.value) {
+    selectable.value = true;
+    selected.value = defaultSelectionProvider.value();
+    return suggestionList.value;
+  }
+
+  if (!content && hideBeforeInput.value) {
+    selectable.value = false;
+    canCreateNew.value = false;
+    return [];
+  }
+
+  const rawSuggestedList: InputRatedSuggestion[] = [];
+  suggestionList.value.forEach((entry) => {
+    const rate: InputSuggestionRate = {
+      score: 0,
+      ranges: { alias: {} },
+    };
+    [entry.value, ...(entry.alias ?? [])]
+      .map((e) => e.toLowerCase())
+      .forEach((value, index) => {
+        // index 0 是候选本体，其余下标对应各 alias（ranges 里以 alias 的下标存储）
+        const range = Pinyin.match(value, content);
+        if (range) {
+          range[1]++; // 闭区间改成左闭右开
+          if (index === 0) {
+            rate.ranges!.value = range;
+          } else {
+            rate.ranges!.alias[index - 1] = range;
+          }
+          // 命中越靠前、占比越大，分数越高；每个命中字段另有 0.01 的底分，避免短串被长串碾压
+          const posFactor = range[0] === 0 ? 2 : 1;
+          const matchLength = range[1] - range[0];
+          rate.score! += 0.01 + (posFactor * matchLength) / value.length;
+        }
+      });
+    rawSuggestedList.push({ ...entry, ...rate });
+  });
+
+  canCreateNew.value = !!(onModifySuggestion.value && selectionValue.value);
+  selected.value = 0;
+  if (rawSuggestedList.length) {
+    selectable.value = true;
+  } else {
+    selectable.value = false;
+  }
+  suggestedList.value = rawSuggestedList.filter((e) => e.score).sort((a, b) => b.score! - a.score!);
+});
 
 /**
  * 同步输入元素的当前值与光标位置。

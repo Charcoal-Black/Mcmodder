@@ -12,13 +12,13 @@
           top: cssMenuTopOffset,
         }"
       >
-        <select class="jsonframe-select" v-model="activeFileName">
+        <select v-model="activeFileName" class="jsonframe-select">
           <option value="">选择一个JSON文件</option>
-          <option v-for="filename in selectionList" :value="filename">
+          <option v-for="filename in selectionList" :key="filename" :value="filename">
             {{ filename }}
           </option>
         </select>
-        <template v-for="tool in tools">
+        <template v-for="tool in tools" :key="tool.id">
           <label
             v-if="tool.labelAttr"
             v-show="tool.displayCondition"

@@ -11,7 +11,7 @@
     <template v-if="profile.expirationDate">
       <span v-if="profile.expirationDate > Date.now()">
         登录信息
-        <Timer :parent="parent" :data-getter="profile.expirationDate" />
+        <Countdown :parent="parent" :data-getter="profile.expirationDate" />
         后过期
       </span>
       <span v-else class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Mcmodder } from "../../Mcmodder";
-import Timer from "./Timer.vue";
+import Countdown from "./Countdown.vue";
 
 interface Props {
   parent: Mcmodder;

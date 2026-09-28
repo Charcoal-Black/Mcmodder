@@ -1,5 +1,5 @@
 import { HorizontalDraggableFrame } from "../widget/draggable/HorizontalDraggableFrame";
-import { TimerUtils } from "../widget/Timer";
+import { TimerUtils } from "../widget/TimerUtils.ts";
 import { Utils } from "../Utils";
 import { Init } from "./Init";
 import { RelationCompareFrame } from "../widget/compare/RelationCompareFrame";
@@ -8,7 +8,7 @@ import { OredictCompareFrame } from "../widget/compare/OredictCompareFrame";
 import { MainText } from "../widget/MainText";
 import { InputListController } from "../widget/InputListController";
 import { createApp } from "vue";
-import Timer from "../vue/components/Timer.vue";
+import Countdown from "../vue/components/Countdown.vue";
 import TextComparator from "../vue/components/TextComparator.vue";
 
 type ParsedOpinion = [number, number, number, number];
@@ -57,7 +57,7 @@ export class AdminInit extends Init {
             "#mcmodder-check-verification",
           );
           const text = $("<span>").appendTo(title).get(0);
-          createApp(Timer, {
+          createApp(Countdown, {
             parent: this.parent,
             dataGetter: TimerUtils.DATAGETTER_SCHEDULE(
               "autoCheckVerify",

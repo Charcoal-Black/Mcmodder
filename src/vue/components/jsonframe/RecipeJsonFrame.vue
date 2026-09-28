@@ -1,7 +1,7 @@
 <template>
   <JsonFrame
-    ref="jsonFrame"
     :id="id"
+    ref="jsonFrame"
     :parent="parent"
     :config-name="configName"
     :allowed-keys="indexedKeys"

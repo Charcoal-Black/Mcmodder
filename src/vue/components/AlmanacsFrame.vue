@@ -3,7 +3,7 @@
     <i class="icon"></i>
     <span class="title">今日运势</span>
     <a href="/tools/almanacs" target="_blank"></a>
-    <span class="date badge" v-if="date">
+    <span v-if="date" class="date badge">
       {{ formattedChineseDate }}
     </span>
     <div class="more">
