@@ -163,6 +163,21 @@ export class Values {
 
   static readonly mcmodderVersion = GM_info.script.version || "Unknown";
   static readonly MAX_REQUEST_COUNT = 10000;
+  /**
+   * 已排定时刻允许领先当前时间的最大倍数（以 {@link MAX_REQUEST_COUNT} 为单位）。
+   *
+   * `lastRequestTime` 是持久化在 `mcmodderSettings` 里的全局发包游标，会跨刷新、跨重装、跨标签页
+   * 沿用。一旦它异常地领先当前时间（例如由旧版本留下的畸形数据、云端同步覆盖了本地设置等），
+   * 新排进来的请求就会各自等上几小时，直接把整条发包队列堵死 —— 表现为「装上脚本后长时间不请求」，
+   * 积压再在恢复后一并涌出。
+   *
+   * 读到的值领先得比这还多，就认定它已不可信，直接丢弃并以当前时间重新起算，而不是照着它继续排期。
+   *
+   * @warning 该阈值必须**严格大于** {@link MAX_REQUEST_COUNT} 对应的队列上限，否则恢复逻辑会先把
+   *   所有超限情形吃掉，令 `Utils.updateRequestTime` 的排队上限形同虚设。
+   *   2 表示「领先超过两倍上限」才判定为脏数据，与上限之间留有充足间隔。
+   */
+  static readonly REQUEST_SCHEDULE_MAX_DRIFT_FACTOR = Values.MAX_REQUEST_COUNT * 2;
   static readonly MAX_RECIPE_LENGTH = 100;
   /**
    * 跨标签页弹窗广播的过期时长（毫秒）：无人可见的标签页所发记录保留这么久，

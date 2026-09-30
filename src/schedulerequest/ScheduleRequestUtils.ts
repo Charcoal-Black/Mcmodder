@@ -134,10 +134,10 @@ export class ScheduleRequestUtils {
    * 查找某任务当前**最早**的那条待办。
    *
    * @param todo 任务 id。
-   * @param userID 按用户过滤；`undefined`/`0` 表示不限用户。
+   * @param userID 按用户过滤；`undefined`/`null`/`0` 表示不限用户。
    * @returns 最早的一条待办，不存在时返回 undefined。
    */
-  find(todo: keyof ScheduleRequestTypes, userID?: number | null) {
+  find(todo: keyof ScheduleRequestTypes, userID?: number | null): ScheduleRequest | undefined {
     const scheduleRequestList = this.get();
     return scheduleRequestList
       .filter((e) => e.todo === todo && (!userID || e.userID === userID))
@@ -190,7 +190,7 @@ export class ScheduleRequestUtils {
    */
   check() {
     let scheduleRequestList = this.get();
-    const now = new Date().getTime();
+    const now = Date.now();
     const todoList = scheduleRequestList.filter(
       (e) =>
         e.time <= now &&

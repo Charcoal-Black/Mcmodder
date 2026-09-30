@@ -20,7 +20,7 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
    */
   override async run(list: ScheduleRequestUtils) {
     const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
-    if (!autoVerifyDelay) {
+    if (!autoVerifyDelay || autoVerifyDelay < 1e-2) {
       return;
     }
     list.create(

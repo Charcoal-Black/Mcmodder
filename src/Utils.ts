@@ -1299,17 +1299,28 @@ export class Utils {
     return res.prop("outerHTML");
   };
 
-  /** 计算并记录本次请求的调度时间戳（按 `minimumRequestInterval` 限速；队列过长时返回 -1） */
+  /**
+   * 计算并记录本次请求的调度时间戳（按 `minimumRequestInterval` 限速；队列过长时返回 null）
+   *
+   * @returns 排定的发包时刻；返回 null 表示队列已超出上限，本次请求**不应**被发出，
+   *   调用方必须据此放弃派发（见 {@link createRequest}）。
+   */
   updateRequestTime() {
     const minimumRequestInterval = Math.max(
       this.configs.getSettings("minimumRequestInterval")!,
       500,
     );
-    const now = new Date().getTime();
+    const now = Date.now();
     let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
+    // 持久化的游标可能因旧版本数据、云端同步覆盖等而异常领先当前时间；此时照着它排期会把
+    // 整条发包队列堵死，故直接丢弃、以当前时间重新起算
+    if (lastRequestTime > now + minimumRequestInterval * Values.REQUEST_SCHEDULE_MAX_DRIFT_FACTOR) {
+      console.warn("已排定时刻异常领先当前时间，发包排期将重新起算。");
+      lastRequestTime = now;
+    }
     if (lastRequestTime > now + minimumRequestInterval * Values.MAX_REQUEST_COUNT) {
-      console.warn("Scheduled requests have exceeded the maximum limit. New request is ignored.");
-      return -1;
+      console.warn("已入队的请求数量超限，新的请求被忽略。");
+      return null;
     }
     if (now > lastRequestTime) lastRequestTime = now;
     this.configs.setSettings("lastRequestTime", lastRequestTime + minimumRequestInterval);
@@ -1319,12 +1330,22 @@ export class Utils {
   /**
    * 发送限速请求的全局入口：
    * 按 `updateRequestTime` 排定延迟后发出，记录日志；遇到 `yxd_token` 校验响应时写入 cookie 并自动重发。
+   *
+   * @warning 队列超出 {@link Values.MAX_REQUEST_COUNT} 上限时，本请求直接以失败告终、**不会发包**
+   *   （此前是把旧的队满哨兵值 `-1` 交给 `setTimeout`，负延迟被当作 0 处理，反而使限速彻底失效）。
+   *   对本就无法降级重试的调用方而言失败与「不关心结果」无异；但计划任务与队列必须让失败
+   *   可见地冒泡，否则会留下一条已排期、实则永远不会落地的待办。
    */
   createRequest(
     config: GmXmlhttpRequestOption<"text", unknown>,
   ): Promise<GmResponseEvent<"text", unknown>> {
     const lastRequestTime = this.updateRequestTime(),
-      now = new Date().getTime();
+      now = Date.now();
+    if (lastRequestTime === null) {
+      const errorMsg = "排队的请求已超出上限，本次请求被丢弃（详见控制台）。";
+      Utils.commonMsg(errorMsg, false);
+      return Promise.reject(new Error(errorMsg));
+    }
     return new Promise((resolve) => {
       setTimeout(() => {
         config.onload = (resp) => {

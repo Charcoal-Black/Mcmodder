@@ -156,7 +156,7 @@ export class VerifyPageInit extends Init {
       });
 
       // 快捷切换时间段
-      const t0 = Number(new Date().getTime() / 1e3);
+      const t0 = Number(Date.now() / 1e3);
       const param = window.location.href.split("verify.html?")[1]?.split("&page=")[0];
       const daytime = 24 * 60 * 60;
       $(".verify-list-search-area").append(
