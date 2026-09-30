@@ -39,9 +39,10 @@ npm run format   # prettier --write src
 - **Persisted state** -> `ConfigRepository` (`getSettings`/`setSettings`, reactive `getSettingsRef`/`get*WritableRef`, number-list variants, `*Profile` per uid, `*Class` per classID). Prefer it over raw `GM_*Value` calls for keys it covers.
 - **Reactive/storage-cached keys** -> register with `StorageBuffer.addCacheableItem` in `src/loader/StorageBufferLoader.ts`; global config-to-behavior watchers (night mode, page width) live in `Mcmodder.watchRef()`.
 - **Batch, pausable network work** -> `src/requestqueue/*`; **scheduled tasks** (auto check-in, update check, pre-edit polling) -> `src/schedulerequest/*`.
+- **Notification that must appear in a visible tab exactly once** (currently the auto-verify reminder) -> `src/modal/*`. Add a `ModalType` subclass under `src/modal/types/`, register it in `ModalTypeTypes` (`src/types/types.d.ts`), and trigger it with `Mcmodder.modalBroadcaster.send("newVerification", payload)`. Payload must be plain JSON data: the class (and thus `preConfirm`/`interceptEvents` callbacks) is rebuilt in the receiving tab. `Utils.createModal` stays for modals bound to the current page's own interaction.
 - **JSON import/export** -> pluggable `AppRepository<T>` backends in `src/jsonframe/repository/` (GM storage vs Dexie/IndexedDB, switched by the `itemRepository` setting); UI in `src/vue/components/jsonframe/`.
 - **Vue components** -> not an SPA: mount ad hoc into host DOM nodes with `createApp(Component, { parent: mcmodder })`; components take a `parent: Mcmodder` prop. `src/vue/mount.ts` (`mountVueApp`, Shadow DOM isolation) exists but has no call sites yet. Read the vendored skills under `.agents/skills/` (`vue-best-practices`, `vue-debug-guides`, ...) before Vue work.
-- **Plain-DOM widgets** -> `src/widget/*` (`MainText`, draggable/compare frames, logger, `Splash3D`, `Swiper`). **Editable tables** -> `src/table/*`, command/undo pattern (`Command` + `src/table/command/`). **GTCEu integration** -> `src/integration/`.
+- **Plain-DOM widgets** -> `src/widget/*` (`MainText`, draggable/compare frames, logger, `Splash3D`, `Swiper`, `toast/RequestToastBroadcaster` for the cross-tab request toasts). **Editable tables** -> `src/table/*`, command/undo pattern (`Command` + `src/table/command/`). **GTCEu integration** -> `src/integration/`.
 - **Global CSS** -> `src/css/*.css`, collected by `src/loader/StyleLoader.ts` into the `--mcmodder-*` palette plus one injected `<style>`. Component CSS is auto-collected by the `cssSideEffects` hook into `<style data-mcmodder-vue-css>`.
 
 ## Key files
@@ -51,6 +52,8 @@ npm run format   # prettier --write src
 - `src/loader/*` — `ConfigLoader`, `StyleLoader`, `StorageBufferLoader`, `AdvancementLoader`, `ScheduleRequestLoader`, `MenuCommandLoader`, `InitLoader`.
 - `src/config/` — `ConfigUtils` (option registration) and `ConfigRepository` (typed GM-storage facade).
 - `src/StorageBuffer.ts` — GM key -> Vue `shallowRef` cache with cross-tab sync via `GM_addValueChangeListener`.
+- `src/modal/` — cross-tab modal broadcast: `ModalType` base, `ModalBroadcaster` (single-slot GM Storage channel, `Values.MODAL_BROADCAST_EXPIRE` TTL), `types/NewVerificationModal`; receiver side is `ModalBroadcastInit` in `src/init/`.
+- `src/widget/toast/RequestToastBroadcaster.ts` — cross-tab request toasts: every dispatched `Utils.createRequest` appends a `RequestToastRecord` to a GM Storage array and shows an iziToast on every visible tab (`Values.REQUEST_TOAST_*`); unlike `src/modal/` it does **not** claim or dedupe across tabs, only locally by record id. Receiver side is `RequestToastInit` in `src/init/`.
 - `src/types/types.d.ts` — global types: `AppStorage`, `Settings`, `Profile`, `Class`, `Item`, `KeysOfType`, `IndexedType`, table types; `src/types/props.d.ts` / `emits.d.ts` hold component contracts.
 - `src/Values.ts` — constants: hostname, asset URLs, menu commands, defaults.
 

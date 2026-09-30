@@ -15,11 +15,13 @@ import { ItemListInit } from "../init/ItemListInit";
 import { ItemPageInit } from "../init/ItemPageInit";
 import { JsonHelperInit } from "../init/JsonHelperInit";
 import { MessageInit } from "../init/MessagePageInit";
+import { ModalBroadcastInit } from "../init/ModalBroadcastInit";
 import { ModlistInit } from "../init/ModlistInit";
 import { OredictPageInit } from "../init/OredictPageInit";
 import { PostPageInit } from "../init/PostPageInit";
 import { QueuePageInit } from "../init/QueuePageInit";
 import { RankInit } from "../init/RankInit";
+import { RequestToastInit } from "../init/RequestToastInit";
 import { SandboxInit } from "../init/SandboxInit";
 import { StructureEditorInit } from "../init/StructureEditorInit";
 import { TabEditInit } from "../init/TabEditInit";
@@ -31,6 +33,8 @@ import { Mcmodder } from "../Mcmodder";
 export class InitLoader {
   static run(parent: Mcmodder, list: Init[]) {
     list.push(
+      new ModalBroadcastInit(parent),
+      new RequestToastInit(parent),
       new HomePageInit(parent),
       new TabEditInit(parent),
       new ItemEditorInit(parent),

@@ -10,6 +10,8 @@ import { StorageBufferLoader } from "./loader/StorageBufferLoader";
 import { StyleLoader } from "./loader/StyleLoader";
 import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
+import { ModalBroadcaster } from "./modal/ModalBroadcaster";
+import { RequestToastBroadcaster } from "./widget/toast/RequestToastBroadcaster";
 import { AdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { UEditor } from "./ueditor/UEditor";
 import { Utils, type ThemeColorSet } from "./Utils";
@@ -41,6 +43,8 @@ export class Mcmodder {
   advutils: AdvancementUtils;
   scheduleRequestUtils: ScheduleRequestUtils;
   storageBuffer: StorageBuffer;
+  modalBroadcaster: ModalBroadcaster;
+  requestToastBroadcaster: RequestToastBroadcaster;
   initList: Init[] = [];
   readonly isV4: boolean;
   readonly isMac: boolean;
@@ -88,6 +92,9 @@ export class Mcmodder {
 
     this.storageBuffer = new StorageBuffer(this);
     StorageBufferLoader.run(this.storageBuffer);
+
+    this.modalBroadcaster = new ModalBroadcaster(this);
+    this.requestToastBroadcaster = new RequestToastBroadcaster(this);
 
     this.utils = new Utils(this);
     this.configRepository = this.utils.configs;

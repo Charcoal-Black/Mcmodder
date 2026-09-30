@@ -36,6 +36,8 @@ declare global {
   }
   var swal: SweetAlertStatic;
 
+  var iziToast: any;
+
   /* Turndown */
   var turndownPluginGfm: any;
 

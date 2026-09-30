@@ -164,6 +164,30 @@ export class Values {
   static readonly mcmodderVersion = GM_info.script.version || "Unknown";
   static readonly MAX_REQUEST_COUNT = 10000;
   static readonly MAX_RECIPE_LENGTH = 100;
+  /**
+   * 跨标签页弹窗广播的过期时长（毫秒）：无人可见的标签页所发记录保留这么久，
+   * 期间任意标签页变为可见即补弹，超时则丢弃（避免陈旧通知在很久之后突然弹出）。
+   */
+  static readonly MODAL_BROADCAST_EXPIRE = 60 * 1000;
+  /**
+   * 跨标签页请求提示通道的记录条数上限：GM Storage 中的记录数组最多保留这么多条，
+   * 超出时从最旧的开始丢弃（防止长时间挂机后无上限增长）。
+   */
+  static readonly REQUEST_TOAST_BUFFER_SIZE = 50;
+  /**
+   * 跨标签页请求提示记录的过期时长（毫秒）：写入与补弹时都会剔除比这更旧的记录，
+   * 避免切回标签页时弹出早已过时的请求。
+   */
+  static readonly REQUEST_TOAST_EXPIRE = 60 * 1000;
+  /** 本标签页从隐藏变为可见时，最多补弹多少条积压的请求提示（其余丢弃） */
+  static readonly REQUEST_TOAST_FLUSH_COUNT = 15;
+  /**
+   * 本标签页「已处理记录 id」集合的容量：只增不删的数组每次写入都会把全部记录重新送达，
+   * 靠这个集合做本地去重，容量取略大于 {@link Values.REQUEST_TOAST_BUFFER_SIZE} 即可。
+   */
+  static readonly REQUEST_TOAST_DEDUP_SIZE = 100;
+  /** 单条请求提示的自动消失时长（毫秒） */
+  static readonly REQUEST_TOAST_TIMEOUT = 5 * 1000;
 
   static get headerContainerHeight() {
     return $(".top-main, .header-container, #top").get(0)?.getBoundingClientRect()?.height || 50;

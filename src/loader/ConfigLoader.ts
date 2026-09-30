@@ -456,6 +456,22 @@ export class ConfigLoader {
         750,
         [500, null],
       )
+      .addDropdownConfig(
+        "requestMonitorPosition",
+        "网络请求监控位置",
+        "记录脚本发出的所有网络请求的时间戳与基本信息，并在指定的位置展示，便于实时监控与调试。设置为“关闭”以禁用此特性。",
+        0,
+        {
+          0: "关闭",
+          1: "右下角",
+          2: "上方",
+          3: "左上角",
+          4: "右上角",
+          5: "左下角",
+          6: "下方",
+          7: "中央",
+        },
+      )
       .addCheckboxConfig("lieqi", "猎奇仙人", "猎奇猎奇猎奇！！！")
       .addKeybindConfig(
         "keybindFastLink",

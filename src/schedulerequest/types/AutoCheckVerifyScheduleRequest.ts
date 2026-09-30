@@ -1,4 +1,3 @@
-import { GM_openInTab } from "$";
 import { Utils } from "../../Utils";
 import { ScheduleRequestType } from "../ScheduleRequestType";
 import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
@@ -8,7 +7,7 @@ import { ScheduleRequestUtils } from "../ScheduleRequestUtils";
  *
  * 视当前所在页面分两种呈现：
  * - 已在审核后台：在模组下拉菜单里把有待审的模组标黄并挂上「N 个待审！」；
- * - 在别的页面：弹窗告知总数，确认后新标签页打开审核后台。
+ * - 在别的页面：经 {@link ModalBroadcaster} 广播「有新待审项」弹窗，确认后新标签页打开审核后台。
  */
 export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
   override readonly priority = 2;
@@ -57,18 +56,8 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
           $("[data-page=pageVerifyMod]").click();
         }
       } else {
-        const { value } = await swal.fire({
-          type: "warning",
-          title: "有新待审项",
-          text: `当前所管理的模组共有 ${total} 个待审项，请尽快处理~`,
-          showCancelButton: true,
-          confirmButtonText: "前往后台",
-          cancelButtonText: "稍后提醒",
-          allowOutsideClick: false,
-        });
-        if (value) {
-          GM_openInTab("https://admin.mcmod.cn/", { active: true });
-        }
+        // 交给跨标签页弹窗广播：本标签页可见则立即弹，否则由可见的标签页补弹，避免后台标签页也弹一次
+        this.parent.modalBroadcaster.send("newVerification", { total: total });
       }
     }
 
