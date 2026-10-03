@@ -8,9 +8,9 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "lint:config": "eslint eslint.config.ts vite.config.ts prettier.config.ts lint-staged.config.ts",
+    "lint:config": "eslint eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",
     "format": "prettier --write src",
-    "format:check": "prettier --check src eslint.config.ts vite.config.ts prettier.config.ts lint-staged.config.ts",
+    "format:check": "prettier --check src eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",
     "verify": "npm run lint && npm run lint:config && npm run format:check",
     "prepare": "husky"
   },

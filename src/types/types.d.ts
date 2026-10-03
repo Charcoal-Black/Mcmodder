@@ -934,7 +934,7 @@ interface McmodClassEditorInnerData {
    *
    * > 开发此模组所使用的引擎或者模组运行原理，包括引擎自身。
    */
-  api?: Record<number, ValueOf<typeof import("../values").Values.loaderID>>;
+  api?: Record<number, ValueOf<typeof import("../Values").Values.loaderID>>;
 
   /**
    * 本模组的 **Mod 作者/开发团队**信息。
@@ -950,7 +950,7 @@ interface McmodClassEditorInnerData {
       {
         name: string;
         /** 作者职位。若为「自动」或「自定义」则缺省。可能带有异常空串，处理时记得清洗 */
-        select?: (keyof typeof import("../values").Values.authorPositionMap | "")[];
+        select?: (keyof typeof import("../Values").Values.authorPositionMap | "")[];
         /** 当作者职位为 `other`（其他）时，提供用户输入的自定义职位名称 */
         custom?: string;
       }
@@ -962,7 +962,7 @@ interface McmodClassEditorInnerData {
         /** 作者在百科内的数字 ID，Number() 后必须为正整数 */
         id: string;
         /** 作者职位。若为「自动」或「自定义」则缺省。可能带有异常空串，处理时记得清洗 */
-        select?: (keyof typeof import("../values").Values.authorPositionMap | "")[];
+        select?: (keyof typeof import("../Values").Values.authorPositionMap | "")[];
         /** 当作者职位为 `other`（其他）时，提供用户输入的自定义职位名称 */
         custom?: string;
       }
@@ -1047,9 +1047,9 @@ interface McmodClassEditorInnerData {
         number,
         {
           /** 指定本协议适用的区域（源码/资产/构建）。若为 `string` 类型，则属于自定义类型 */
-          type: string | (keyof typeof import("../values").Values.licenseTypeName)[];
+          type: string | (keyof typeof import("../Values").Values.licenseTypeName)[];
           /** 协议英文 ID */
-          name: keyof typeof import("../values").Values.licenseName;
+          name: keyof typeof import("../Values").Values.licenseName;
           /** 开源信息链接 */
           link: string;
           /** 开源信息备注 */
@@ -1067,7 +1067,7 @@ interface McmodClassEditorInnerData {
     number,
     {
       /** 链接所指向的站点 ID */
-      title: keyof typeof import("../values").Values.siteMap;
+      title: keyof typeof import("../Values").Values.siteMap;
       /** 链接 URL */
       href: string;
       /**
@@ -1085,8 +1085,8 @@ interface McmodClassEditorInnerData {
    * （意外支持的版本、实际不支持的版本无需添加）。
    */
   mcversion?: Record<
-    ValueOf<keyof typeof import("../values").Values.loaderID>,
-    Record<number, keyof typeof import("../values").Values.mcVersionMap>
+    ValueOf<keyof typeof import("../Values").Values.loaderID>,
+    Record<number, keyof typeof import("../Values").Values.mcVersionMap>
   >;
 
   /**
@@ -1096,7 +1096,7 @@ interface McmodClassEditorInnerData {
    * > - 可选：不安装也可以运行模组，但安装后提供额外的功能。
    * > - 无效：安装后不会有任何效果，或是造成无法启动。
    */
-  "mode-1"?: Record<number, keyof typeof import("../values").Values.modEnvironmentModeMap>;
+  "mode-1"?: Record<number, keyof typeof import("../Values").Values.modEnvironmentModeMap>;
 
   /**
    * 此模组运行的**服务端需求**。*只有第一个键会被读取。*
@@ -1105,7 +1105,7 @@ interface McmodClassEditorInnerData {
    * > - 可选：不安装也可以运行模组，但安装后提供额外的功能。
    * > - 无效：安装后不会有任何效果，或是造成无法启动。
    */
-  "mode-2"?: Record<number, keyof typeof import("../values").Values.modEnvironmentModeMap>;
+  "mode-2"?: Record<number, keyof typeof import("../Values").Values.modEnvironmentModeMap>;
 
   /**
    * > 模组的 **MODID**，大小写敏感，Forge Mod 通常会写在 mcmod.info 或 mods.toml 文件中，
@@ -1138,7 +1138,7 @@ interface McmodClassEditorInnerData {
    *
    * > 此模组所支持的 Minecraft 平台。
    */
-  platform?: Record<number, keyof typeof import("../values").Values.modPlatformMap>;
+  platform?: Record<number, keyof typeof import("../Values").Values.modPlatformMap>;
 
   /**
    * > 此模组**与其他模组的关系**，关系组条件尽量用标准格式，
@@ -1162,7 +1162,7 @@ interface McmodClassEditorInnerData {
         number,
         {
           /** 关联类型。1 = 前置；2 = 拓展；3 = 联动 */
-          type: keyof typeof import("../values").Values.modRelationTypeMap;
+          type: keyof typeof import("../Values").Values.modRelationTypeMap;
           /** 关联的模组数字 ID，Number() 后必须为正整数 */
           id: string;
         }
@@ -1178,7 +1178,7 @@ interface McmodClassEditorInnerData {
    * > - 开源：作者已公开模组源码，并指定了开源许可协议。
    * > - 闭源：已确认无任何可见源码及协议，或作者已声明不会公开模组源码。
    */
-  source?: Record<number, keyof typeof import("../values").Values.modSourceMap>;
+  source?: Record<number, keyof typeof import("../Values").Values.modSourceMap>;
 
   /**
    * 0 = 不确定，1 = 活跃，2 = 半弃坑，3 = 停更。只有第一个键会被读取。
@@ -1188,7 +1188,7 @@ interface McmodClassEditorInnerData {
    * > - 半弃坑：开发成员超过 6 个月但不满 1 年: (没有发布本模组更新文件 或 仅发布了本模组相关更新计划)。
    * > - 停更：开发成员超过1年没有发布本模组更新文件，或明确表示弃坑。
    */
-  status?: Record<number, keyof typeof import("../values").Values.modStatusMap>;
+  status?: Record<number, keyof typeof import("../Values").Values.modStatusMap>;
 
   /**
    * 模组的**简写名称**。

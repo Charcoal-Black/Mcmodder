@@ -5,12 +5,20 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import prettierConfig from "eslint-config-prettier";
 import vue from "eslint-plugin-vue";
+import importPathCasing from "./eslint-local-rules/import-path-casing";
 
 export default defineConfig([
   {
     files: ["**/*.{js,ts}"],
     ignores: ["dist/*"],
     extends: [js.configs.recommended, tseslint.configs.recommended],
+  },
+  {
+    // 大小写校验独立成块：`.vue` 也要覆盖，故不能并入上面的 js/ts 块
+    files: ["**/*.{js,ts,vue}"],
+    ignores: ["dist/*"],
+    plugins: { local: { rules: { "import-path-casing": importPathCasing } } },
+    rules: { "local/import-path-casing": "error" },
   },
   {
     files: ["src/**/*.vue"],
