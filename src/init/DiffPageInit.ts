@@ -24,7 +24,7 @@ export class DiffPageInit extends Init {
         else if (rowText === "模组关系") {
           const prev = row.find("td:nth-child(3) span");
           const next = row.find("td:nth-child(2) span");
-          RelationCompareFrame.performCompare(prev, next);
+          RelationCompareFrame.parseAndPerformCompare(prev, next);
         } else if (rowText === "支持MC版本") {
           const prev = row.find("td:nth-child(3) span");
           const next = row.find("td:nth-child(2) span");
@@ -32,7 +32,7 @@ export class DiffPageInit extends Init {
         } else if (rowText === "矿物词典") {
           const prev = row.find("td:nth-child(3) span");
           const next = row.find("td:nth-child(2) span");
-          OredictCompareFrame.performCompare(prev, next);
+          OredictCompareFrame.parseAndPerformCompare(prev, next);
         }
       });
   }

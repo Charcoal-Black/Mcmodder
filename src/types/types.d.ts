@@ -1,11 +1,41 @@
 declare const unsafeWindow: unknown;
 
+type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;
+
 type KeysOfType<T, P> = {
   [K in keyof T]-?: T[K] extends P ? K : never;
 }[keyof T];
 
+type KeysOfExactType<T, P> = {
+  [K in keyof T]-?: Equal<T[K], P> extends true ? K : never;
+}[keyof T];
+
+type ValueOf<T extends Readonly<Record<PropertyKey, unknown>>> = T[keyof T];
+
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+type ReverseMap<T extends Readonly<PropertyKey, PropertyKey>> = {
+  [K in keyof T as T[K]]: K;
+};
+
+type ElementOf<T extends readonly unknown[]> = T[number];
+
+type ArrayToMap<
+  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  K extends keyof ElementOf<T>,
+> = {
+  [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>;
+};
+
+type ArrayToMap2<
+  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  K extends keyof ElementOf<T>,
+  K2 extends keyof ElementOf<T>,
+> = {
+  [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
 };
 
 type IndexedType<T extends object, K extends number | string | symbol = number> = T & {
@@ -594,6 +624,14 @@ interface VerifyContent {
   previousCell: JQuery;
   currentText: JQuery;
   previousText: JQuery;
+  current: JQuery;
+  previous: JQuery;
+}
+
+interface VerifyCheckResult {
+  error: string[];
+  warning: string[];
+  info: string[];
 }
 
 /** 表格行的数据形状：一行即一个普通对象（键 = 数据字段，值任意）。泛型 T 是字段名到字段类型的映射 */
@@ -732,17 +770,147 @@ interface SuggestionConfigManager {
 type InputListOption = import("./props").InputListOption;
 
 interface McmodItemEditorInnerData {
-  content: string;
-  name: string;
+  /**
+   * HTML 正文。
+   */
+  content?: string;
+
+  /**
+   * 资料封面的 URL。
+   *
+   * > 可上传一张游戏截图作为封面，适用于非“物品/方块”的资料，裁剪比例为16:10，
+   * 上传后会根据图像实际大小自动转换为合适的尺寸 (720x450、480x300、240x150)。不可上传与资料无关或不清晰、边缘有瑕疵的封面。
+   */
+  "cover-data"?: string;
+
+  /**
+   * 本次编辑是否要求**删除封面**。
+   */
+  "cover-delete"?: { 0: "0" | "1" };
+
+  /**
+   * 资料的**主要名称**。新建资料时，通常为必填项。
+   *
+   * > 有汉化则填之，否则填其他语言名。译名需来自官方或大型社区汉化团队，
+   * 不可擅自随意添加，详见编辑帮助中的《主站通用命名规则》。
+   *
+   * @see https://bbs.mcmod.cn/thread-653-1-1.html 《[#4] 主站通用命名规则》
+   */
+  name?: string;
+
+  /**
+   * 资料的**次要名称**。
+   *
+   * > 有汉化则填原名，否则留空。详见编辑帮助中的《主站通用命名规则》。
+   *
+   * @see https://bbs.mcmod.cn/thread-653-1-1.html 《[#4] 主站通用命名规则》
+   */
   ename?: string;
+
+  /**
+   * 资料所属的**资料分类**的名称（*不*是数字 ID）。
+   *
+   * > 相同分类的资料会显示在一起，新分类在提交后会自动创建，分类内若没有资料则会被自动清理。
+   */
   type?: string;
-  category: Record<number, number>;
-  "icon-32x-data": string;
-  "icon-128x-data": string;
-  "is-general-node": string;
-  "is-general-parents": string;
+
+  /**
+   * 资料所属的**资料类型**。键值 Number() 后必须是正整数，代表资料类型的数字 ID。
+   *
+   * > 资料的所属类型。
+   */
+  category?: { 0: string };
+
+  /**
+   * 物品**小图标**的 Base64 编码，带有 MIME 数据。
+   *
+   * > 尺寸统一为 32x32，BUFF/DEBUFF类型允许为 36x36（大/小图标的比例需一致，例如小图标使用 36x36，大图标则需使用 144x144）。
+   * 请到游戏资源文件夹中找原版纹理的透明图标，不允许上传带有背景/比例尺寸不正常/手动截图/模糊的图标。
+   */
+  "icon-32x-data"?: string;
+
+  /**
+   * 是否**锁定小图标**。
+   */
+  "icon-32x-lock"?: { 0: "0" | "1" };
+
+  /**
+   * 本次编辑是否要求**删除小图标**。
+   */
+  "icon-32x-delete"?: { 0: "0" | "1" };
+
+  /**
+   * 物品**大图标**的 Base64 编码，带有 MIME 数据。
+   *
+   * > 尺寸统一为 128x128，BUFF/DEBUFF类型允许为 144x144（大/小图标的比例需一致，例如小图标使用 36x36，大图标则需使用 144x144）。
+   * 请到游戏资源文件夹中找原版纹理的透明图标，不允许上传带有背景/比例尺寸不正常/手动截图/模糊的图标。
+   */
+  "icon-128x-data"?: string;
+
+  /**
+   * 是否**锁定大图标**。
+   */
+  "icon-128x-lock"?: { 0: "0" | "1" };
+
+  /**
+   * 本次编辑是否要求**删除大图标**。
+   */
+  "icon-128x-delete"?: { 0: "0" | "1" };
+
+  /**
+   * 若资料是**综合子资料**，则为 `"1"`，否则为 `"0"`。
+   */
+  "is-general-node"?: "0" | "1";
+
+  /**
+   * 若资料是**综合父资料**，则为 `"1"`，否则为 `"0"`。
+   */
+  "is-general-parents"?: "0" | "1";
+
+  /**
+   * 物品的**采集工具**。`id` 为工具在百科内的数字 ID，Number() 后必须为正整数。
+   *
+   * > 适用于“物品/方块”的资料，非破坏性挖掘最低所需要的工具。
+   */
+  tool?: Record<number, { id: string }>;
+
+  /**
+   * 本物品的所有**矿物词典**或**物品标签**，以单个半角逗号不加空格分隔。
+   *
+   * > 适用于“物品/方块”的资料，可填写 Forge 矿物词典与 1.13+ 的物品标签或其他模组引擎提供的物品通用标识。
+   */
   oredict?: string;
+
+  /**
+   * 本物品的**注册名**。
+   *
+   * > 适用于“物品/方块”、“群系/群落”、“生物/实体”、“BUFF/DEBUFF”、“附魔/魔咒”、“维度/世界”、“自然生成（结构/地物/拼图）”的资料，
+   * 注意是注册名而非变量名，且必须带有 MODID，不能含有空格等非法字符 (例子: minecraft:coal_ore)，重要字段，不确定不要改。
+   */
+  regname?: string;
+
+  /**
+   * 本物品的**最大耐久**。
+   *
+   * *Number() 后必须是介于 [1, 2^31-1] 的整数。*
+   *
+   * > 适用于“物品/方块”的资料，物品的最大耐久度 (即损耗值-Damage 在 1.13+ 变为独立的 NBT 标签)。
+   */
+  damage?: string;
+
+  /**
+   * 本物品的**最大堆叠**（旧也称**最大叠加**），Number() 后必须为正整数。
+   *
+   * > 适用于“物品/方块”的资料，单组最大的堆叠数量。
+   */
   maxstack?: string;
+
+  /**
+   * 本物品的**元数据**。
+   *
+   * > 适用于“物品/方块”的资料，在 1.12 及以下版本物品的 metadata，通常用来区分同类方块 (例如不同颜色的染色玻璃)，重要字段，不确定不要改。
+   */
+  metadata?: string;
 }
 
 interface McmodItemEditorData {
@@ -750,6 +918,373 @@ interface McmodItemEditorData {
   "edit-id": string;
   "class-id": string;
   "item-data": McmodItemEditorInnerData;
+}
+
+interface McmodClassEditorInnerData {
+  /**
+   * 本模组所有参与的活动的英文 ID，以单个半角逗号不加空格分隔。
+   * 例如：`Teacon2026`, `Teaconjiachen`, `ModFestCanival`, `Modoff2Reforged`, `TheModdingTrials`。
+   *
+   * > 选择前请先确认该模组已经参与了指定的活动。
+   */
+  activity?: { 0: string };
+
+  /**
+   * 本模组支持的所有**运作方式**，键名为数值的顺序索引。
+   *
+   * > 开发此模组所使用的引擎或者模组运行原理，包括引擎自身。
+   */
+  api?: Record<number, ValueOf<typeof import("../values").Values.loaderID>>;
+
+  /**
+   * 本模组的 **Mod 作者/开发团队**信息。
+   *
+   * > 编辑时，请先搜索添加现有的作者，搜不到的情况下再新建，否则会出现重复。使用默认前缀会自动根据情况显示“开发团队”、“作者”或“成员”。
+   *
+   * *两个字段的数字索引必须在本字段对象中全局唯一*，索引决定了本模组作者列表的顺序（已有作者和新增作者会在同一个列表中混合显示）。
+   */
+  author?: {
+    /** 新建模组的同时新建的作者。这些作者尚未被正式添加，因此无对应数字 ID，只记录名称信息 */
+    add?: Record<
+      number,
+      {
+        name: string;
+        /** 作者职位。若为「自动」或「自定义」则缺省。可能带有异常空串，处理时记得清洗 */
+        select?: (keyof typeof import("../values").Values.authorPositionMap | "")[];
+        /** 当作者职位为 `other`（其他）时，提供用户输入的自定义职位名称 */
+        custom?: string;
+      }
+    >;
+    /** 已被百科正式收录的作者列表 */
+    link?: Record<
+      number,
+      {
+        /** 作者在百科内的数字 ID，Number() 后必须为正整数 */
+        id: string;
+        /** 作者职位。若为「自动」或「自定义」则缺省。可能带有异常空串，处理时记得清洗 */
+        select?: (keyof typeof import("../values").Values.authorPositionMap | "")[];
+        /** 当作者职位为 `other`（其他）时，提供用户输入的自定义职位名称 */
+        custom?: string;
+      }
+    >;
+  };
+
+  /**
+   * **模组元素**，包括核心元素、世界生成器与杂项。
+   *
+   * > 模组中所包含的元素，核心元素是一个 Mod 最核心的玩法，只能选择一种。详见编辑帮助中的《模组元素定义与优先级》。
+   *
+   * @see https://bbs.mcmod.cn/thread-2704-1-1.html 《[#7] 模组元素定义与优先级》
+   */
+  category?: Record<
+    number,
+    ElementOf<typeof import("../Values.ts").Values.classCategories>["value"]
+  >;
+
+  /**
+   * > 该模组在 CurseForge 中的项目 ID，没有 CurseForge 地址可忽略。
+   *
+   * 多个 ID 以单个半角逗号不加空格分隔，各个 ID 被解析后必须为正整数。
+   */
+  cfprojectid?: string;
+
+  /**
+   * HTML 正文。
+   */
+  content?: string;
+
+  /**
+   * 模组封面的 URL。
+   *
+   * > 上传能够辨识此模组的 LOGO 或游戏截图，边缘不能有影响观感的留白或重要部位被裁剪，裁剪比例为 16:10，
+   * 上传后会根据图像实际大小自动转换为合适的尺寸 (720x450、480x300、240x150)。
+   * 不可上传与模组无关或不清晰、边缘有瑕疵的封面。
+   */
+  "cover-data"?: string;
+
+  /**
+   * 本次编辑是否要求**删除封面**。
+   */
+  "cover-delete"?: { 0: "0" | "1" };
+
+  /**
+   * 模组的**次要名称**。
+   *
+   * > 有汉化则填原名，否则留空。详见编辑帮助中的《主站通用命名规则》。
+   *
+   * @see https://bbs.mcmod.cn/thread-653-1-1.html 《[#4] 主站通用命名规则》
+   */
+  ename?: string;
+
+  /**
+   * > 仅看名称与封面或许无法理解模组的作用，使用**模组简介**来用一句话简要概括这个模组，方便在列表中查看。
+   */
+  intro?: string;
+
+  /**
+   * > 用于为 MC 百科搜索追加的**辅助关键词**，例如模组别名、模组外号、分词。禁止滥用，不清楚用法请留空。
+   *
+   * 以单个半角逗号不加空格分隔。
+   */
+  keys?: string;
+
+  /**
+   * > 如果有特别需要，可使用条件组功能实现精确表达**开源许可协议**。
+   *
+   * > - 源码：源代码。
+   * > - 资产：纹理、音频、模型等内容。
+   * > - 构件：最终生成的模组文件，通常为 jar。
+   *
+   * > 注意：在构件发布站（例如 CurseForge）中声明的协议不能算作源码协议，源码协议以源码所在地为准。
+   */
+  license?: Record<
+    number,
+    {
+      /** 条件组名称，空串显示为「通用」 */
+      title: string;
+      /** 本条件组所含的许可协议列表 */
+      list: Record<
+        number,
+        {
+          /** 指定本协议适用的区域（源码/资产/构建）。若为 `string` 类型，则属于自定义类型 */
+          type: string | (keyof typeof import("../values").Values.licenseTypeName)[];
+          /** 协议英文 ID */
+          name: keyof typeof import("../values").Values.licenseName;
+          /** 开源信息链接 */
+          link: string;
+          /** 开源信息备注 */
+          name: string;
+        }
+      >;
+    }
+  >;
+
+  /**
+   * > 可添加用于导向的正规网站链接，用于导航与考证模组真实性，请勿添加非正规网站的链接。
+   * > 与模组没有直接关联的作者个人链接需要添加至作者页面。
+   */
+  link?: Record<
+    number,
+    {
+      /** 链接所指向的站点 ID */
+      title: keyof typeof import("../values").Values.siteMap;
+      /** 链接 URL */
+      href: string;
+      /**
+       * > 在此处可以填写链接备注（例如：“Forge”、“已失效”等），会在鼠标悬浮时显示。
+       * 请勿添加与前缀相同的冗余备注（例如：CurseForge、GitHub）。
+       */
+      text: string;
+      /** 当 `title` 为 `other`（其他）时，用户输入的自定义站点名称。 */
+      custom: string;
+    }
+  >;
+
+  /**
+   * > 此模组所支持的MC原版版本，选择条件为作者声称支持+实际支持
+   * （意外支持的版本、实际不支持的版本无需添加）。
+   */
+  mcversion?: Record<
+    ValueOf<keyof typeof import("../values").Values.loaderID>,
+    Record<number, keyof typeof import("../values").Values.mcVersionMap>
+  >;
+
+  /**
+   * 此模组运行的**客户端需求**。*只有第一个键会被读取。*
+   *
+   * > - 需装：需要正确安装在对应端上才能运行模组。
+   * > - 可选：不安装也可以运行模组，但安装后提供额外的功能。
+   * > - 无效：安装后不会有任何效果，或是造成无法启动。
+   */
+  "mode-1"?: Record<number, keyof typeof import("../values").Values.modEnvironmentModeMap>;
+
+  /**
+   * 此模组运行的**服务端需求**。*只有第一个键会被读取。*
+   *
+   * > - 需装：需要正确安装在对应端上才能运行模组。
+   * > - 可选：不安装也可以运行模组，但安装后提供额外的功能。
+   * > - 无效：安装后不会有任何效果，或是造成无法启动。
+   */
+  "mode-2"?: Record<number, keyof typeof import("../values").Values.modEnvironmentModeMap>;
+
+  /**
+   * > 模组的 **MODID**，大小写敏感，Forge Mod 通常会写在 mcmod.info 或 mods.toml 文件中，
+   * Fabric Mod 通常会写在 fabric.mod.json 文件中，NeoForge Mod 通常会写在 neoforge.mods.toml 文件中，
+   * 也可以通过物品注册名的前缀获取，重要字段，不确定不要改。
+   *
+   * 多个 ID 以单个半角逗号不加空格分隔。
+   */
+  modid?: string;
+
+  /**
+   * > 填写该模组在 Modrinth 中的项目 ID，没有 Modrinth 地址可忽略。
+   *
+   * 多个 ID 以单个半角逗号不加空格分隔。
+   */
+  mrprojectid?: string;
+
+  /**
+   * 模组的**主要名称**。新建模组时，通常为必填项。
+   *
+   * > 有汉化则填之，否则填其他语言名。译名需来自官方或大型社区汉化团队，
+   * 不可擅自随意添加，详见编辑帮助中的《主站通用命名规则》。
+   *
+   * @see https://bbs.mcmod.cn/thread-653-1-1.html 《[#4] 主站通用命名规则》
+   */
+  name?: string;
+
+  /**
+   * 模组的**支持平台**。Java 版 = 1，基岩版 = 2。*是复选栏，部分模组同时拥有支持双平台的版本。*
+   *
+   * > 此模组所支持的 Minecraft 平台。
+   */
+  platform?: Record<number, keyof typeof import("../values").Values.modPlatformMap>;
+
+  /**
+   * > 此模组**与其他模组的关系**，关系组条件尽量用标准格式，
+   * 例如“1.8 / 1.9”、“1.7.10 ~ 1.12.2”、“> 1.7.10”等（不写条件默认为通用）。
+   *
+   * > - 前置：本模组必须依靠这些前置模组才能启动游戏。
+   * > - 拓展：这些模组向此模组追加了一些东西，可有可无且无法独立运行。
+   * > - 联动：两个模组之间皆可独立存在并启动游戏，且一方为另一方添加了专属的资源或代码（编辑时需注意是否为单向联动）。
+   *
+   * > 模组关系并非由玩家玩法或魔改来判定，而是根据代码层面判定，详见编辑帮助中的《模组关系的定义》。
+   *
+   * @see https://bbs.mcmod.cn/thread-2771-1-1.html 《[#8] 模组关系的定义》
+   */
+  relation?: Record<
+    number,
+    {
+      /** 条件组名称，空串显示为「通用」 */
+      title: string;
+      /** 本条件组所包含的具体关系列表 */
+      list: Record<
+        number,
+        {
+          /** 关联类型。1 = 前置；2 = 拓展；3 = 联动 */
+          type: keyof typeof import("../values").Values.modRelationTypeMap;
+          /** 关联的模组数字 ID，Number() 后必须为正整数 */
+          id: string;
+        }
+      >;
+    }
+  >;
+
+  /**
+   * 0 = 不显示，1 = 开源，2 = 闭源。只有第一个键会被读取。
+   *
+   * > 请选择该模组的**开源状态**。
+   * > - 不显示：不确定是否存在源码及协议、源码可见但设为 ARR、仅有协议、矛盾、无法确认，或是有争议。
+   * > - 开源：作者已公开模组源码，并指定了开源许可协议。
+   * > - 闭源：已确认无任何可见源码及协议，或作者已声明不会公开模组源码。
+   */
+  source?: Record<number, keyof typeof import("../values").Values.modSourceMap>;
+
+  /**
+   * 0 = 不确定，1 = 活跃，2 = 半弃坑，3 = 停更。只有第一个键会被读取。
+   *
+   * > 请选择目前最适合该模组的**官方状态**。
+   * > - 活跃：状态正常，保持更新。
+   * > - 半弃坑：开发成员超过 6 个月但不满 1 年: (没有发布本模组更新文件 或 仅发布了本模组相关更新计划)。
+   * > - 停更：开发成员超过1年没有发布本模组更新文件，或明确表示弃坑。
+   */
+  status?: Record<number, keyof typeof import("../values").Values.modStatusMap>;
+
+  /**
+   * 模组的**简写名称**。
+   *
+   * 实际允许输入：
+   * - ASCII 符号与数字；
+   * - 拉丁字母及其带变音扩展形式；
+   * - 西里尔字母和希腊字母。
+   *
+   * 不允许空格和中文。
+   *
+   * > 模组的通用简称/缩写，只能为字母、符号或数字。
+   * 必须已在社区内频繁使用或由作者提供，例：GT6、TiC2。详见编辑帮助中的《主站通用命名规则》。
+   *
+   * @see https://bbs.mcmod.cn/thread-653-1-1.html 《[#4] 主站通用命名规则》
+   */
+  sname?: string;
+
+  /**
+   * **模组标签**。以单个半角逗号不加空格分隔。
+   *
+   * > 用于方便查找有相同标签的模组。
+   */
+  tag?: string;
+}
+
+interface McmodTabEditorInnerData {
+  /**
+   * 合成表使用的 **GUI**。键值 Number() 后必须是正整数，代表 GUI 的数字 ID。
+   */
+  gui?: string;
+
+  /**
+   * 合成表的**摆放要求**。*只有第一个键会被读取。*
+   *
+   * 注意映射关系，`"0"` 为有序合成，`"1"` 为无序合成。
+   */
+  orderly?: Record<number, "0" | "1">;
+
+  /**
+   * 合成表的**模组要求**，键名为数值的顺序索引，键值 Number() 后必须是正整数，
+   * 代表所要求的模组在百科内的数字 ID。
+   */
+  others?: Record<number, string>;
+
+  /**
+   * 合成表的**原料类型**，键名必须和原料格的编号严格对应（如 2 号原料的索引必须是 2），键值含义如下：
+   * - 若可被解析为正整数，则代表一个独立的物品资料，含义为其在百科内的数字 ID；
+   * - 否则，代表矿物词典/物品标签。
+   */
+  "slot-in-item"?: Record<number, string>;
+
+  /**
+   * 合成表的**原料数量**，键名必须和原料格的编号严格对应（如 2 号原料的索引必须是 2），
+   * 键值必须可被解析为正整数，代表原料数量。
+   */
+  "slot-in-number"?: Record<number, string>;
+
+  /**
+   * 合成表的**原料消耗概率**，键名必须和原料格的编号严格对应（如 2 号原料的索引必须是 2），
+   * 键值必须可被解析为正实数，代表原料消耗概率。
+   */
+  "slot-in-chance"?: Record<number, string>;
+
+  /**
+   * 合成表的**产物类型**，键名必须和产物格的编号严格对应（如 2 号产物的索引必须是 2），
+   * 键值必须可被解析为正整数，代表产物的资料在百科内的数字 ID。*不接受矿物词典/物品标签*，此类字段在试图提交时会被拦截。
+   */
+  "slot-out-item"?: Record<number, string>;
+
+  /**
+   * 合成表的**产物数量**，键名必须和产物格的编号严格对应（如 2 号产物的索引必须是 2），
+   * 键值必须可被解析为正整数，代表原料数量。
+   */
+  "slot-out-number"?: Record<number, string>;
+
+  /**
+   * 合成表的**产物出产概率**，键名必须和产物格的编号严格对应（如 2 号产物的索引必须是 2），
+   * 键值必须可被解析为正实数，代表原料消耗概率。
+   */
+  "slot-out-chance"?: Record<number, string>;
+
+  /**
+   * 合成表的**燃料数量**，键名必须和燃料格的编号严格对应（如 2 号燃料的索引必须是 2），
+   * 键值必须可被解析为正整数，代表燃料数量。
+   */
+  "slot-fuel-number"?: Record<number, string>;
+
+  /** 开始版本 */
+  startver?: string;
+
+  /** 结束版本 */
+  endver?: string;
+
+  /** 备注 */
+  text?: string;
 }
 
 interface ClassName {

@@ -48,10 +48,15 @@ export class OredictCompareFrame {
     }
   }
 
-  static performCompare(prev: JQuery, next: JQuery) {
+  private static convert(data: OredictSet) {
+    return Array.from(data).join(",");
+  }
+
+  static parseAndPerformCompare(prev: JQuery, next: JQuery) {
     const [prevData, prevNodes] = this.parse(prev);
     const [nextData, nextNodes] = this.parse(next);
     this.compare(prevData, nextData, prevNodes, "mcmodder-compare-del");
     this.compare(nextData, prevData, nextNodes, "mcmodder-compare-ins");
+    return OredictCompareFrame.convert(nextData);
   }
 }

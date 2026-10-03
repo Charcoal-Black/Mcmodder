@@ -242,7 +242,9 @@ table th,
   color: var(--mcmodder-color-text);
   text-shadow: 1px 1px 1px var(--mcmodder-color-text-shadow);
 }
-.modlist-filter-block ul:not(.common-class-category) li.main a:hover {
+.modlist-filter-block ul:not(.common-class-category) li.main a:hover,
+.common-center .right .class-info .mcver .platform-block .mcver-menu .dropdown-item:hover,
+.common-center .right .class-info .mcver .platform-block .mcver-menu .dropdown-item:focus {
   color: var(--mcmodder-color-text);
   background-color: var(--mcmodder-color-accent-transparent1);
 }
@@ -310,6 +312,7 @@ body .uknowtoomuch:hover {
 #modfile-list-table a.edit-btn,
 #modfile-list-table a.del-btn,
 .common-center .right .class-info .mcver,
+.common-center .right .class-info .mcver .platform-block .mcver-btn,
 .common-center .right .class-info .class-info-left .author,
 .common-center .right .class-info .infolist,
 .class_block .left .title .text span,
@@ -439,6 +442,10 @@ body .copyleft a:hover,
 .verify-list-list td a.text-muted:hover,
 .message-list li .content-tools li a:hover {
   color: var(--mcmodder-color-accent-dark2) !important;
+}
+a.text-danger:focus,
+a.text-danger:hover {
+  color: var(--mcmodder-color-danger-dark2) !important;
 }
 .result-item .head em,
 .result-item .body em {
@@ -3102,6 +3109,8 @@ h6 small {
 .common-imglist p.null,
 .common-center .class-card .text-block span,
 .common-center .right .class-title h4,
+.common-center .right .class-info .mcver .platform-block .mcver-row i,
+.common-center .right .class-info .mcver .platform-block .mcver-menu .dropdown-item,
 .class-excount .infos .span .t,
 .common-center .maintext .item-aspect a,
 .common-center .maintext .item-aspect li span,

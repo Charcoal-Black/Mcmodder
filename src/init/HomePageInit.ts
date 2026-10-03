@@ -129,7 +129,7 @@ export class HomePageInit extends Init {
       if (v4 && id === 1) {
         $('<span title="Mojang" class="mojang">').appendTo(block);
       }
-      const cover = $(`<a href=${link}>`);
+      const cover = $(`<a href=${link} target="_blank">`);
       if (v4) {
         const coverContainer = $('<div class="cover">').appendTo(block);
         cover.appendTo(coverContainer);

@@ -343,11 +343,11 @@ export class TabEditInit extends Init {
       chanceEditable: false,
       unit: "",
     }));
-    const fuel = {
+    const fuel = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       number: "",
       unit: "",
-    };
+    }));
     const extra = new Array(Values.MAX_RECIPE_LENGTH).fill(null).map(() => ({
       valid: false,
       id: "",
@@ -405,9 +405,9 @@ export class TabEditInit extends Init {
           break;
         }
         case "slot-fuel-number": {
-          fuel.valid = true;
-          fuel.number = value;
-          fuel.unit = unit;
+          fuel[dataId].valid = true;
+          fuel[dataId].number = value;
+          fuel[dataId].unit = unit;
           break;
         }
         case "slot-power-number": {
@@ -579,12 +579,13 @@ export class TabEditInit extends Init {
           .css("cursor", "no-drop");
     }
 
-    if (fuel.valid) {
+    for (const i in fuel) {
+      if (!fuel[i].valid) continue;
       recipeTr = $("<tr>").appendTo(recipeTbody);
       $(`<td class="fuel-head" data-toggle="tooltip" title="燃料">
         <strong>
           <i class="fa fa-fire" />
-          ${fuel.unit}
+          ${i} ${fuel[i].unit}
         </strong>
       </td>`)
         .appendTo(recipeTr)
@@ -599,13 +600,13 @@ export class TabEditInit extends Init {
           "data-part": 1,
           "data-id": 1,
           "data-type": "fuel",
-          "data-multi-id": "slot-out-number",
+          "data-multi-id": "slot-fuel-number",
           "data-multi-name": "item-table-data",
           "data-multi-enable": true,
           class: "form-control slot-text slot-text1",
           placeholder: "1",
         })
-        .val(fuel.number);
+        .val(fuel[i].number);
     }
 
     for (const i in extra) {

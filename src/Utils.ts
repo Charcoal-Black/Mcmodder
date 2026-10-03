@@ -272,6 +272,28 @@ export class Utils {
     });
   }
 
+  static isKeyOfObject<T extends Readonly<Record<PropertyKey, unknown>>>(
+    obj: T,
+    key: PropertyKey,
+  ): key is keyof T {
+    return Object.hasOwn(obj, key);
+  }
+
+  static getKeyValueOfObject<T extends Readonly<Record<PropertyKey, unknown>>>(
+    obj: T,
+    key: PropertyKey,
+  ) {
+    return obj[key] as ValueOf<T> | undefined;
+  }
+
+  static isHTMLElement(node: Node): node is HTMLElement {
+    return node.nodeType === Node.ELEMENT_NODE;
+  }
+
+  static isTextNode(node: Node): node is Text {
+    return node.nodeType === Node.TEXT_NODE;
+  }
+
   /** 生成 `[l, r]` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
   static createRange(l: number, r: number, step = 1) {
     if (!Number.isInteger(l) || !Number.isInteger(r)) {
@@ -625,6 +647,27 @@ export class Utils {
         href: url,
       })
       .text(text ?? url);
+  }
+
+  /**
+   * 将文本节点**替换**为 `<a>` 元素，同时根据原始的内容来设置该元素的内嵌文本与 `href`。
+   * 如果原始内容不符合链接格式，则直接跳过以避免 XSS。
+   *
+   * @param data 如果额外传入该参数，则原始内容将以该参数为准
+   */
+  static textToAnchor(text: Text, data?: string) {
+    const link = data ?? text.data;
+    try {
+      new URL(link);
+    } catch {
+      return;
+    }
+    const anchor = document.createElement("a");
+    anchor.target = "_blank";
+    anchor.href = link;
+    anchor.innerText = link;
+    text.replaceWith(anchor);
+    return anchor;
   }
 
   /** 将版本号数组转为字符串（`[1,1,x]` 统一显示为「远古版本」） */
@@ -1656,7 +1699,7 @@ export class Utils {
     data["content"] = item.content || "";
     data["name"] = item.name;
     if (item.englishName) data["ename"] = item.englishName;
-    data["category"] = { 0: 1 };
+    data["category"] = { 0: "1" };
     data["type"] = item.creativeTabName;
     data["icon-32x-data"] =
       item.smallIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 32)) || "";

@@ -31,6 +31,27 @@ export class Values {
     },
   } as const;
 
+  private static reverseMap<T extends Readonly<Record<PropertyKey, PropertyKey>>>(obj: T) {
+    const reversed: Record<PropertyKey, PropertyKey> = {};
+    (Object.entries(obj) as [PropertyKey, PropertyKey][]).forEach(([a, b]) => {
+      reversed[b] = a;
+    });
+    return reversed as Readonly<ReverseMap<T>>;
+  }
+
+  private static arrayToMap<
+    T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+    K extends keyof ElementOf<T>,
+  >(arr: T, key: K) {
+    return arr.reduce(
+      (acc, item) => {
+        acc[item[key]] = item;
+        return acc;
+      },
+      {} as Record<PropertyKey, Record<PropertyKey, PropertyKey>>,
+    ) as ArrayToMap<T, K>;
+  }
+
   static readonly hostname = window.location.href.startsWith("https://www1.mcmod.cn/")
     ? "https://www1.mcmod.cn"
     : "https://www.mcmod.cn";
@@ -423,6 +444,8 @@ export class Values {
     其他: "10",
   } as const;
 
+  static readonly reversedLoaderID = this.reverseMap(this.loaderID);
+
   static readonly loaderSupportVersions = {
     "1": [
       ">=1.21.4",
@@ -600,6 +623,398 @@ export class Values {
     "6": [">=1.4.2"],
     "5": [">=1.13"],
   } as const;
+
+  static readonly authorPositionMap = {
+    owner: "所有者",
+    programmer: "程序",
+    artist: "美术",
+    sound: "音效",
+    planner: "策划",
+    writer: "文案",
+    builder: "建筑",
+    contributor: "贡献者",
+    mascot: "吉祥物",
+    other: "其他",
+  } as const;
+
+  static readonly reversedAuthorPositionMap = this.reverseMap(this.authorPositionMap);
+
+  static readonly licenseTypeName = {
+    source: "源码",
+    asset: "资产",
+    artifact: "构建",
+  } as const;
+
+  static readonly classCategories = [
+    { index: 0, name: "科技", type: 0, value: "1,1" },
+    { index: 1, name: "魔法", type: 0, value: "1,2" },
+    { index: 2, name: "冒险", type: 0, value: "1,3" },
+    { index: 3, name: "农业", type: 0, value: "1,4" },
+    { index: 4, name: "装饰", type: 0, value: "1,5" },
+    { index: 5, name: "实用", type: 0, value: "1,23" },
+    { index: 6, name: "辅助", type: 0, value: "1,24" },
+    { index: 7, name: "魔改", type: 0, value: "1,21" },
+    { index: 8, name: "LIB", type: 0, value: "1,7" },
+    { index: 9, name: "资源", type: 1, value: "0,8" },
+    { index: 10, name: "世界", type: 1, value: "0,9" },
+    { index: 11, name: "群系", type: 1, value: "0,10" },
+    { index: 12, name: "结构", type: 1, value: "0,35" },
+    { index: 13, name: "生物", type: 1, value: "0,11" },
+    { index: 14, name: "能源", type: 1, value: "0,12" },
+    { index: 15, name: "存储", type: 1, value: "0,13" },
+    { index: 16, name: "物流", type: 1, value: "0,14" },
+    { index: 17, name: "道具", type: 1, value: "0,15" },
+    { index: 18, name: "安全", type: 1, value: "0,6" },
+    { index: 19, name: "红石", type: 1, value: "0,16" },
+    { index: 20, name: "食物", type: 1, value: "0,17" },
+    { index: 21, name: "模型", type: 1, value: "0,18" },
+    { index: 22, name: "关卡", type: 1, value: "0,34" },
+    { index: 23, name: "指南", type: 1, value: "0,19" },
+    { index: 24, name: "破坏", type: 1, value: "0,20" },
+    { index: 25, name: "Meme", type: 1, value: "0,22" },
+    { index: 26, name: "中式", type: 1, value: "0,25" },
+    { index: 27, name: "日式", type: 1, value: "0,26" },
+    { index: 28, name: "西式", type: 1, value: "0,27" },
+    { index: 29, name: "恐怖", type: 1, value: "0,28" },
+    { index: 30, name: "建材", type: 1, value: "0,29" },
+    { index: 31, name: "生存", type: 1, value: "0,30" },
+    { index: 32, name: "指令", type: 1, value: "0,31" },
+    { index: 33, name: "优化", type: 1, value: "0,32" },
+    { index: 34, name: "国创", type: 1, value: "0,33" },
+  ] as const;
+
+  static readonly classCategoryNameMap = this.arrayToMap(this.classCategories, "name");
+
+  static readonly classCategoryValueMap = this.arrayToMap(this.classCategories, "value");
+
+  static readonly licenseName = {
+    ARR: "[ARR] All Rights Reserved（非许可协议）",
+    "BSD-1-Clause": "[BSD-1-Clause] 1-clause BSD License",
+    "AFL-3.0": "[AFL-3.0] Academic Free License v. 3.0",
+    "APL-1.0": "[APL-1.0] Adaptive Public License 1.0",
+    "Apache-2.0": "[Apache-2.0] Apache License, Version 2.0",
+    "Apache-1.1": "[Apache-1.1] Apache Software License, version 1.1",
+    "APSL-2.0": "[APSL-2.0] Apple Public Source License 2.0",
+    "Artistic-1.0-Perl": "[Artistic-1.0-Perl] Artistic License (Perl) 1.0",
+    "Artistic-1.0": "[Artistic-1.0] Artistic License 1.0",
+    "Artistic-2.0": "[Artistic-2.0] Artistic License 2.0",
+    AAL: "[AAL] Attribution Assurance License",
+    "BlueOak-1.0.0": "[BlueOak-1.0.0] Blue Oak Model License",
+    "BSL-1.0": "[BSL-1.0] Boost Software License 1.0",
+    "BSD-2-Clause-Patent": "[BSD-2-Clause-Patent] BSD+Patent",
+    "BSD-3-Clause-Open-MPI": "[BSD-3-Clause-Open-MPI] BSD-3-Clause-Open-MPI",
+    CC0: "[CC0] CC0",
+    "CC-BY-4.0": "[CC-BY-4.0] CC BY 4.0",
+    "CC-BY-SA-4.0": "[CC-BY-SA-4.0] CC BY-SA 4.0",
+    "CC-BY-NC-4.0": "[CC-BY-NC-4.0] CC BY-NC 4.0",
+    "CC-BY-NC-SA-4.0": "[CC-BY-NC-SA-4.0] CC BY-NC-SA 4.0",
+    "CC-BY-ND-4.0": "[CC-BY-ND-4.0] CC BY-ND 4.0",
+    "CC-BY-NC-ND-4.0": "[CC-BY-NC-ND-4.0] CC BY-NC-ND 4.0",
+    "CECILL-2.1": "[CECILL-2.1] Cea Cnrs Inria Logiciel Libre License, version 2.1",
+    "CERN-OHL-P-2.0": "[CERN-OHL-P-2.0] CERN Open Hardware Licence Version 2 – Permissive",
+    "CERN-OHL-S-2.0": "[CERN-OHL-S-2.0] CERN Open Hardware Licence Version 2 – Strongly Reciprocal",
+    "CERN-OHL-W-2.0": "[CERN-OHL-W-2.0] CERN Open Hardware Licence Version 2 – Weakly Reciprocal",
+    "MIT-CMU": "[MIT-CMU] CMU License",
+    "CDDL-1.1": "[CDDL-1.1] COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL)",
+    "CDDL-1.0": "[CDDL-1.0] Common Development and Distribution License 1.0",
+    "CPAL-1.0": "[CPAL-1.0] Common Public Attribution License Version 1.0",
+    "CPL-1.0": "[CPL-1.0] Common Public License Version 1.0",
+    "CATOSL-1.1": "[CATOSL-1.1] Computer Associates Trusted Open Source License 1.1",
+    "CAL-1.0": "[CAL-1.0] Cryptographic Autonomy License",
+    "CUA-OPL-1.0": "[CUA-OPL-1.0] CUA Office Public License",
+    curl: "[curl] curl License",
+    "EPL-1.0": "[EPL-1.0] Eclipse Public License -v 1.0",
+    "EPL-2.0": "[EPL-2.0] Eclipse Public License version 2.0",
+    "eCos-2.0": "[eCos-2.0] eCos License version 2.0",
+    "ECL-1.0": "[ECL-1.0] Educational Community License, Version 1.0",
+    "ECL-2.0": "[ECL-2.0] Educational Community License, Version 2.0",
+    "EFL-1.0": "[EFL-1.0] Eiffel Forum License, version 1",
+    "EFL-2.0": "[EFL-2.0] Eiffel Forum License, Version 2",
+    Entessa: "[Entessa] Entessa Public License Version. 1.0",
+    EUDatagrid: "[EUDatagrid] EU DataGrid Software License",
+    "EUPL-1.2": "[EUPL-1.2] European Union Public Licence, version 1.2",
+    Fair: "[Fair] Fair License",
+    "Frameworx-1.0": "[Frameworx-1.0] Frameworx License 1.0",
+    "AGPL-3.0": "[AGPL-3.0] GNU Affero General Public License version 3",
+    "GPL-3.0": "[GPL-3.0] GNU General Public License version 3",
+    "GPL-2.0": "[GPL-2.0] GNU General Public License version 2",
+    "GPL-1.0": "[GPL-1.0] GNU General Public License, version 1",
+    "LGPL-3.0": "[LGPL-3.0] GNU Lesser General Public License version 3",
+    "LGPL-2.1": "[LGPL-2.1] GNU Lesser General Public License version 2.1",
+    "LGPL-2.0": "[LGPL-2.0] GNU Library General Public License version 2",
+    HPND: "[HPND] Historical Permission Notice and Disclaimer",
+    "IPL-1.0": "[IPL-1.0] IBM Public License Version 1.0",
+    ICU: "[ICU] ICU License",
+    Intel: "[Intel] Intel Open Source License",
+    IPA: "[IPA] IPA Font License",
+    ISC: "[ISC] ISC License",
+    JOSL: "[JOSL] Jabber Open Source License",
+    Jam: "[Jam] JAM License",
+    "LPPL-1.3c": "[LPPL-1.3c] LaTeX Project Public License, Version 1.3c",
+    "BSD-3-Clause-LBNL": "[BSD-3-Clause-LBNL] Lawrence Berkeley National Labs BSD Variant License",
+    "LiLiQ-P-1.1": "[LiLiQ-P-1.1] Licence Libre du Québec – Permissive version 1.1",
+    "LiLiQ-Rplus-1.1": "[LiLiQ-Rplus-1.1] Licence Libre du Québec – Réciprocité forte version 1.1",
+    "LiLiQ-R-1.1": "[LiLiQ-R-1.1] Licence Libre du Québec – Réciprocité version 1.1",
+    LANLBV: "[LANLBV] Los Alamos National Labs BSD-3 Variant",
+    "LPL-1.02": "[LPL-1.02] Lucent Public License Version 1.02",
+    "LPL-1.0": "[LPL-1.0] Lucent Public License, Plan 9, version 1.0",
+    "MS-PL": "[MS-PL] Microsoft Public License",
+    "MS-RL": "[MS-RL] Microsoft Reciprocal License",
+    MirOS: "[MirOS] MirOS Licence",
+    "MIT-0": "[MIT-0] MIT No Attribution License",
+    MCVWL: "[MCVWL] MITRE Collaborative Virtual Workspace License",
+    Motosoto: "[Motosoto] Motosoto Open Source License",
+    "MPL-2.0": "[MPL-2.0] Mozilla Public License 2.0",
+    "MPL-1.1": "[MPL-1.1] Mozilla Public License 1.1",
+    "MPL-1.0": "[MPL-1.0] Mozilla Public License, version 1.0",
+    "MulanPSL-2.0": "[MulanPSL-2.0] Mulan Permissive Software License v2",
+    Multics: "[Multics] Multics License",
+    "NASA-1.3": "[NASA-1.3] NASA Open Source Agreement v1.3",
+    Naumen: "[Naumen] NAUMEN Public License",
+    NOKIA: "[NOKIA] Nokia Open Source License Version 1.0a",
+    "NPOSL-3.0": "[NPOSL-3.0] Non-Profit Open Software License version 3.0",
+    NTP: "[NTP] NTP License",
+    OGTSL: "[OGTSL] Open Group Test Suite License",
+    "OLFL-1.3": "[OLFL-1.3] Open Logistics Foundation License v1.3",
+    "OSL-2.1": "[OSL-2.1] Open Software License 2.1",
+    "OSL-1.0": "[OSL-1.0] Open Software License, version 1.0",
+    "OLDAP-2.8": "[OLDAP-2.8] OpenLDAP Public License Version 2.8",
+    "OSC-1.0": "[OSC-1.0] OSC License 1.0",
+    "OSET-PL-2.1": "[OSET-PL-2.1] OSET Public License version 2.1",
+    "PHP-3.0": "[PHP-3.0] PHP License 3.0",
+    "PHP-3.01": "[PHP-3.01] PHP License 3.01",
+    "Python-2.0": "[Python-2.0] Python License, Version 2",
+    "RPSL-1.0": "[RPSL-1.0] RealNetworks Public Source License Version 1.0",
+    "RPL-1.5": "[RPL-1.5] Reciprocal Public License 1.5",
+    "RPL-1.1": "[RPL-1.1] Reciprocal Public License, version 1.1",
+    "OFL-1.1": "[OFL-1.1] SIL OPEN FONT LICENSE",
+    "SimPL-2.0": "[SimPL-2.0] Simple Public License",
+    SISSL: "[SISSL] Sun Industry Standards Source License",
+    "SPL-1.0": "[SPL-1.0] Sun Public License, Version 1.0",
+    "BSD-2-Clause": "[BSD-2-Clause] 2-Clause BSD License",
+    "BSD-3-Clause": "[BSD-3-Clause] 3-Clause BSD License",
+    "CNRI-Python": "[CNRI-Python] CNRI portion of the multi-part Python License",
+    "EUPL-1.1": "[EUPL-1.1] European Union Public License, version 1.1",
+    MIT: "[MIT] MIT License",
+    NGPL: "[NGPL] Nethack General Public License",
+    "OCLC-2.0": "[OCLC-2.0] OCLC Research Public License 2.0 License",
+    "OSL-3.0": "[OSL-3.0] Open Software License 3.0",
+    PostgreSQL: "[PostgreSQL] PostgreSQL License",
+    "QPL-1.0": "[QPL-1.0] Q Public License Version",
+    RSCPL: "[RSCPL] Ricoh Source Code Public License",
+    Sleepycat: "[Sleepycat] Sleepycat License",
+    "Watcom-1.0": "[Watcom-1.0] Sybase Open Source Licence",
+    "UPL-1.0": "[UPL-1.0] Universal Permissive License Version 1.0",
+    NCSA: "[NCSA] University of Illinois/NCSA Open Source License",
+    Unlicense: "[Unlicense] Unlicense",
+    "VSL-1.0": "[VSL-1.0] Vovida Software License v. 1.0",
+    "W3C-20150513": "[W3C-20150513] W3C® Software and Document license",
+    wxWindows: "[wxWindows] wxWindows Library Licence",
+    Xnet: "[Xnet] X.Net, Inc. License",
+    Zlib: "[Zlib] zlib/libpng License",
+    "Unicode-3.0": "[Unicode-3.0] UNICODE LICENSE V3",
+    "Unicode-DFS-2016":
+      "[Unicode-DFS-2016] Unicode, Inc. License Agreement – Data Files and Software",
+    "UCL-1.0": "[UCL-1.0] Upstream Compatibility License v1.0",
+    WordNet: "[WordNet] WordNet",
+    WTFPL: "[WTFPL] WTFPL License",
+    "0BSD": "[0BSD] Zero-Clause BSD",
+    "ZPL-2.0": "[ZPL-2.0] Zope Public License 2.0",
+    "ZPL-2.1 ": "[ZPL-2.1 ] Zope Public License 2.1",
+    other: "其他",
+  };
+
+  static readonly reversedLicenseMap = this.reverseMap(this.licenseName);
+
+  static readonly siteMap = {
+    official: "官方",
+    curseforge: "CurseForge",
+    modrinth: "Modrinth",
+    mcbbs: "MCBBS",
+    klpbbs: "KLPBBS",
+    minebbs: "MineBBS",
+    mczwlt: "红石中继站",
+    mcbbs_co: "MCBBS纪念版",
+    mcbbs_co_archives: "MCBBS纪念版-帖子存档",
+    sourceforge: "SourceForge",
+    minecraft_forum: "Minecraft Forum",
+    planetminecraft: "Planetminecraft",
+    mcpedl: "MCPEDL",
+    spigotmc: "SpigotMC",
+    wiki: "WIKI",
+    github: "GitHub",
+    gitlab: "GitLab",
+    gitee: "Gitee",
+    gitea: "Gitea",
+    gitpod: "Gitpod",
+    gitcode: "GitCode",
+    bitbucket: "Bitbucket",
+    maven: "Maven",
+    crowdin: "Crowdin",
+    mastodon: "Mastodon",
+    baidupan: "百度网盘",
+    aliyundrive: "阿里云盘",
+    quark: "夸克网盘",
+    weiyun: "微云",
+    lanzouyun: "蓝奏云",
+    hecaiyun: "和彩云",
+    ctyun: "天翼云",
+    cowtransfer: "奶牛快传",
+    google_drive: "Google Drive",
+    onedrive: "OneDrive",
+    dropbox: "Dropbox",
+    mediafire: "MediaFire",
+    bilibili: "B站",
+    weibo: "微博",
+    tieba: "贴吧",
+    zhihu: "知乎",
+    bcy: "半次元",
+    ftb: "FTB",
+    patreon: "Patreon",
+    bmc: "Buy Me a Coffee",
+    kofi: "ko-fi",
+    afdian: "爱发电",
+    kook: "KOOK",
+    discord: "Discord",
+    twitter: "Twitter",
+    youtube: "YouTube",
+    reddit: "Reddit",
+    other: "其他",
+  };
+
+  static readonly reversedSiteMap = this.reverseMap(this.siteMap);
+
+  static readonly mcVersionMap = {
+    "1": "远古版本",
+    "2": "1.2.5",
+    "3": "1.4.7",
+    "4": "1.5.2",
+    "5": "1.6.2",
+    "6": "1.6.4",
+    "7": "1.7.2",
+    "8": "1.7.4",
+    "9": "1.7.5",
+    "10": "1.7.8",
+    "11": "1.7.9",
+    "12": "1.7.10",
+    "13": "1.8",
+    "14": "1.8.8",
+    "15": "1.8.9",
+    "16": "1.9",
+    "17": "1.9.4",
+    "18": "1.10",
+    "19": "1.10.2",
+    "20": "1.11",
+    "21": "1.11.2",
+    "22": "1.3.2",
+    "23": "1.12",
+    "24": "1.12.1",
+    "25": "1.12.2",
+    "26": "1.13",
+    "27": "1.13.2",
+    "28": "1.13.1",
+    "29": "1.14",
+    "30": "1.14.1",
+    "31": "1.14.2",
+    "32": "1.14.3",
+    "33": "1.14.4",
+    "34": "1.10.1",
+    "35": "1.11.1",
+    "36": "1.15",
+    "37": "1.15.1",
+    "38": "1.15.2",
+    "39": "1.16",
+    "40": "1.4.3",
+    "41": "1.16.1",
+    "42": "1.16.2",
+    "43": "1.16.3",
+    "44": "1.16.4",
+    "45": "1.16.5",
+    "46": "1.17",
+    "47": "1.17.1",
+    "48": "1.18",
+    "49": "1.18.1",
+    "50": "1.18.2",
+    "51": "1.4.2",
+    "52": "1.19",
+    "53": "1.19.1",
+    "54": "1.19.2",
+    "55": "1.19.3",
+    "56": "1.20",
+    "57": "1.19.4",
+    "58": "1.20.1",
+    "59": "1.20.2",
+    "60": "1.20.3",
+    "61": "1.20.4",
+    "62": "1.20.5",
+    "63": "1.20.6",
+    "64": "1.21",
+    "65": "1.21.1",
+    "66": "1.21.2",
+    "67": "1.21.3",
+    "68": "1.21.4",
+    "69": "1.21.5",
+    "70": "1.21.6",
+    "71": "1.21.7",
+    "72": "1.21.8",
+    "73": "1.21.9",
+    "74": "1.21.10",
+    "75": "1.21.11",
+    "76": "26.1",
+    "77": "26.1.1",
+    "78": "26.1.2",
+    "79": "26.2",
+    "80": "26.3",
+    "81": "1.5.1",
+    "82": "1.6.1",
+    "83": "1.4.4",
+    "84": "1.4.5",
+    "85": "1.4.6",
+    "86": "26.4",
+  } as const;
+
+  static readonly reversedMcVersionMap = this.reverseMap(this.mcVersionMap);
+
+  static readonly modEnvironmentModeMap = {
+    "0": "待考证",
+    "1": "需装",
+    "2": "可选",
+    "3": "无效",
+  } as const;
+
+  static readonly reversedModEnvironmentModeMap = this.reverseMap(this.modEnvironmentModeMap);
+
+  static readonly modPlatformMap = {
+    "1": "JAVA版 (JAVA Edition)",
+    "2": "基岩版 (Bedrock Edition)",
+  } as const;
+
+  static readonly reversedModPlatformMap = this.reverseMap(this.modPlatformMap);
+
+  static readonly modRelationTypeMap = {
+    "1": "前置",
+    "2": "拓展",
+    "3": "联动",
+  } as const;
+
+  static readonly reversedModRelationTypeMap = this.reverseMap(this.modRelationTypeMap);
+
+  static readonly modSourceMap = {
+    "0": "不显示",
+    "1": "开源",
+    "2": "闭源",
+  } as const;
+
+  static readonly reversedModSourceMap = this.reverseMap(this.modSourceMap);
+
+  static readonly modStatusMap = {
+    "0": "不确定",
+    "1": "活跃",
+    "2": "半弃坑",
+    "3": "停更",
+  } as const;
+
+  static readonly reversedModStatusMap = this.reverseMap(this.modStatusMap);
 
   static readonly searchOption = [
     { reg: /^添加模组/, label: "添加模组", exclude: "中的" },

@@ -1,6 +1,35 @@
+import { Utils } from "../../Utils";
+import { Values } from "../../Values";
+
+/**
+ * ```
+ * [条件组名称]: {
+ *   前置: [模组列表],
+ *   拓展: [模组列表],
+ *   联动: [模组列表],
+ * }
+ * ```
+ */
 type RelationMap = Record<string, Record<string, Set<number>>>;
+
+/**
+ * ```
+ * [模组列表]: {
+ *   [模组 ID]: [描述该模组的 DOM 元素]
+ * }
+ * ```
+ */
 type NodeMap = WeakMap<Set<number>, Record<number, HTMLElement>>;
 
+/**
+ * 为模组关系提供编辑版本对比功能。
+ *
+ * 原始 HTML 范例：
+ * ```html
+ * <p><b class="text-primary">通用</b></p>
+ * <p>[前置] ID:2021 机械动力 (Create)</p>
+ * ```
+ */
 export class RelationCompareFrame {
   private static parse(node: JQuery): [RelationMap, NodeMap] {
     const relations: RelationMap = {};
@@ -68,7 +97,31 @@ export class RelationCompareFrame {
     });
   }
 
-  static performCompare(prev: JQuery, next: JQuery) {
+  private static convert(data: RelationMap) {
+    const result: NonNullable<McmodClassEditorInnerData["relation"]> = {};
+    let index = 0;
+    Object.entries(data).forEach(([title, relations]) => {
+      const list: ValueOf<typeof result> = {
+        title,
+        list: {},
+      };
+      let innerIndex = 0;
+      Object.entries(relations).forEach(([typeName, ids]) => {
+        const typeID = Utils.getKeyValueOfObject(Values.reversedModRelationTypeMap, typeName);
+        if (typeID !== undefined) {
+          ids.forEach((id) => {
+            list.list[innerIndex++] = { type: typeID, id: id.toString() };
+          });
+        } else {
+          console.warn("未知的模组关系类型: " + typeName);
+        }
+      });
+      result[index++] = list;
+    });
+    return result;
+  }
+
+  static parseAndPerformCompare(prev: JQuery, next: JQuery) {
     const [prevData, prevNodes] = this.parse(prev);
     const [nextData, nextNodes] = this.parse(next);
     this.compare(prevData, nextData, prevNodes, [
@@ -79,5 +132,6 @@ export class RelationCompareFrame {
       "mcmodder-compare-ins",
       "mcmodder-compare-diffline",
     ]);
+    return this.convert(nextData);
   }
 }

@@ -11,6 +11,10 @@ import { RelationCompareFrame } from "../../widget/compare/RelationCompareFrame.
 import { MainText } from "../../widget/MainText.ts";
 import TextComparator from "../../vue/components/TextComparator.vue";
 import { AdminBaseInit } from "./AdminBaseInit.ts";
+import { Values } from "../../Values.ts";
+import { ClassEditRules } from "../../editrule/ClassEditRules.ts";
+import { ItemEditRules } from "../../editrule/ItemEditRules.ts";
+import { TabEditRules } from "../../editrule/TabEditRules.ts";
 
 type ParsedOpinion = [number, number, number, number];
 
@@ -26,6 +30,7 @@ export class AdminVerifyInit extends AdminBaseInit {
   private verifyContainer?: JQuery;
   private verifyWindow?: JQuery;
   private verifyFrame?: JQuery;
+  private verifyTable?: JQuery;
   private verifyWindowDivider?: HorizontalDraggableFrame;
   private passButton?: JQuery;
   private refundButton?: JQuery;
@@ -317,10 +322,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     // 初始化按钮
     this.modifyButton();
 
-    const tbody = $(".verify-info-table > tbody");
+    this.verifyTable = $(".verify-info-table");
+    const tbody = this.verifyTable.children("tbody");
     const contents = this.parseVerifyInfoTable(tbody);
 
-    this.modifyTable(contents);
+    this.parseAndModifyTable(contents);
 
     // 表内的正文已被搬运到审核窗内，组件可挂载（或复用）了
     this.mountTextComparator();
@@ -401,127 +407,32 @@ export class AdminVerifyInit extends AdminBaseInit {
   private parseVerifyInfoTable(tbody: JQuery) {
     const contents: Record<string, VerifyContent> = {};
 
+    const pick = (el: JQuery) => {
+      const text = el.find(".verify-copy-text");
+      return text.length === 0 ? el : text;
+    };
+
     tbody.contents().each((_, e) => {
       const row = $(e);
       const rowText = e.firstChild?.textContent;
       if (!rowText) return;
+      const currentCell = row.children("td:nth-child(2)");
+      const previousCell = row.children("td:nth-child(3)");
+
       contents[rowText] = {
         row,
         title: rowText,
-        currentCell: row.children("td:nth-child(2)"),
-        previousCell: row.children("td:nth-child(3)"),
+        currentCell,
+        previousCell,
         currentText: row.children("td:nth-child(2)").find(".verify-copy-text"),
         previousText: row.children("td:nth-child(3)").find(".verify-copy-text"),
+        current: pick(currentCell),
+        previous: pick(previousCell),
       };
     });
 
     return contents;
   }
-
-  /** 将展示待审项详细信息的各行根据标题内容进行二次调整。 */
-  private readonly contentModifier: Record<string, (content: VerifyContent) => void> = {
-    /** 为模组关系提供编辑版本对比功能。 */
-    模组关系: (content) => {
-      RelationCompareFrame.performCompare(content.previousText, content.currentText);
-    },
-
-    /** 为相关链接提供快速跳转链接与编辑版本对比功能。 */
-    相关链接: (content) => {
-      const addLink = (node: JQuery) => {
-        node.find("p").each((_, p) => {
-          const text = p.textContent;
-          const split = text.indexOf("]");
-          const bracket = text.lastIndexOf(" (");
-          const name = text.slice(1, split);
-          const link =
-            bracket === -1 ? text.slice(split + 1).trim() : text.slice(split + 1, bracket).trim();
-          const desc = bracket === -1 ? "" : ` (${text.slice(bracket + 2, -1)})`;
-          p.innerHTML = `[${name}] <a target="_blank" href="${link}">${link}</a>${desc}`;
-        });
-      };
-      addLink(content.previousText);
-      addLink(content.currentText);
-    },
-
-    /** 为支持 MC 版本提供编辑版本对比功能，并检查加载器版本与相对应的所填写的支持版本是否合理。 */
-    支持MC版本: (content) => {
-      PlatformCompareFrame.performCompare(content.previousText, content.currentText);
-    },
-
-    /** 为小图标添加透明底与快捷放缩功能。 */
-    小图标: (content) => this.iconModifier(content),
-    /** 为大图标添加透明底与快捷放缩功能。 */
-    大图标: (content) => this.iconModifier(content),
-
-    /** 为模组添加快速跳转链接。 */
-    来自模组: (content) => {
-      if (this.verifyInfo["操作类型"] !== "资料添加") {
-        return;
-      }
-      const modLink = content.currentCell.children("a").attr("href");
-      this.verifyClassID = Utils.abstractIDFromURL(modLink, "class");
-    },
-
-    /**
-     * 为资料类型添加快速跳转链接。
-     * 若属于模组分区自定义资料类型，则只有在本地记录了该模组分区的自定义资料类型的情况下，
-     * 链接才会被正确添加，否则会直接跳过。
-     */
-    资料类型: (content) => {
-      content.row.children().each((i, e) => {
-        if (i === 0) return;
-        const text = e.textContent;
-        const data = this.parent.utils.getItemTypeData(this.verifyClassID, text);
-        if (data && this.verifyClassID) {
-          e.innerHTML = `<a target="_blank" href="${Utils.getItemTypeURL(
-            this.verifyClassID,
-            data.typeID,
-          )}">${text}</a>`;
-        }
-      });
-    },
-
-    /** 为矿物词典中的各个矿词/标签添加快速跳转与编辑版本对比。 */
-    矿物词典: (content) => {
-      let prev = content.previousCell;
-      let next = content.currentCell;
-      if (content.previousText.length) prev = content.previousText;
-      if (content.currentText.length) next = content.currentText;
-      OredictCompareFrame.performCompare(prev, next);
-    },
-
-    /** 为开源许可中出现的链接文本添加快速跳转。 */
-    开源许可: (content) => {
-      content.row
-        .find("p")
-        .contents()
-        .each((_, e) => {
-          if (e.nodeType === Node.TEXT_NODE) {
-            const text = e as unknown as Text;
-            if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
-              const link = text.data.slice(2, -1);
-              const mid = text.splitText(2);
-              mid.splitText(link.length);
-              const anchor = document.createElement("a");
-              anchor.target = "_blank";
-              anchor.href = link;
-              anchor.innerText = link;
-              mid.replaceWith(anchor);
-            }
-          }
-        });
-    },
-
-    /** 为合成表 GUI 的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
-    合成表可视化: (content) => {
-      content.row.find(".TableContainer").each((_, e) => this.appendImgContainer(e));
-    },
-
-    /** 为模组封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
-    模组封面: (content) => {
-      content.row.find("img").each((_, e) => this.appendImgContainer(e));
-    },
-  };
 
   private iconModifier(content: VerifyContent) {
     content.row.find("img").each((_, _img) => {
@@ -549,15 +460,493 @@ export class AdminVerifyInit extends AdminBaseInit {
     });
   }
 
-  private modifyTable(contents: Record<string, VerifyContent>) {
+  private parseAndModifyTable(contents: Record<string, VerifyContent>) {
+    const data: McmodClassEditorInnerData | McmodItemEditorInnerData | McmodTabEditorInnerData = {};
+    const isClass = this.verifyInfo["操作类型"] === "模组添加";
+    const isItem = this.verifyInfo["操作类型"] === "资料添加";
+    const isTab = this.verifyInfo["操作类型"] === "合成表添加";
+
     Object.values(contents).forEach((content) => {
       const rowText = content.title;
       if (rowText.includes("介绍") || rowText.includes("正文")) {
-        this.modifyMainText(content);
-      } else {
-        this.contentModifier[rowText]?.(content);
+        this.modifyMainText(content, data as McmodClassEditorInnerData | McmodItemEditorInnerData);
+      }
+      if (isClass) {
+        this.classModifiers[rowText]?.(content, data as McmodClassEditorInnerData);
+      } else if (isItem) {
+        this.itemModifiers[rowText]?.(content, data as McmodItemEditorInnerData);
+      } else if (isTab) {
+        this.tabModifiers[rowText]?.(content, data as McmodTabEditorInnerData);
       }
     });
+
+    let result;
+    if (isClass) {
+      result = ClassEditRules.check(data as McmodClassEditorInnerData);
+    } else if (isItem) {
+      result = ItemEditRules.check(data as McmodItemEditorInnerData);
+    } else if (isTab) {
+      result = TabEditRules.check(data as McmodTabEditorInnerData);
+    } else {
+      throw new Error("这操作类型有力气");
+    }
+
+    this.displayCheckResult(result);
+  }
+
+  private parseClassRawText(key: KeysOfExactType<Required<McmodClassEditorInnerData>, string>) {
+    return (content: VerifyContent, data: McmodClassEditorInnerData) => {
+      data[key] = content.current.text().trim();
+    };
+  }
+
+  private parseItemRawText(key: KeysOfExactType<Required<McmodItemEditorInnerData>, string>) {
+    return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      data[key] = content.current.text().trim();
+    };
+  }
+
+  private parseClassCommaSplitedText(
+    key: KeysOfExactType<Required<McmodClassEditorInnerData>, string>,
+  ) {
+    return (content: VerifyContent, data: McmodClassEditorInnerData) => {
+      const tags = content.current
+        .text()
+        .split("/")
+        .map((tag) => tag.trim());
+      data[key] = tags.join(",");
+    };
+  }
+
+  /** 为大/小图标添加透明底与快捷放缩功能。 */
+  private parseItemImage(key: KeysOfExactType<Required<McmodItemEditorInnerData>, string>) {
+    return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      this.iconModifier(content);
+      data[key] = content.current.find("img").attr("src");
+    };
+  }
+
+  private parseItemBooleanText(
+    key: KeysOfExactType<Required<McmodItemEditorInnerData>, { 0: "1" | "0" }>,
+  ) {
+    return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      data[key] = { 0: content.current.text().trim() === "是" ? "1" : "0" };
+    };
+  }
+
+  private readonly classModifiers: Record<
+    string,
+    (content: VerifyContent, data: McmodClassEditorInnerData) => void
+  > = {
+    主要名称: this.parseClassRawText("name"),
+    次要名称: this.parseClassRawText("ename"),
+    缩写名称: this.parseClassRawText("sname"),
+    简介: this.parseClassRawText("intro"),
+
+    /**
+     * 为相关链接提供快速跳转链接。
+     *
+     * 原始 HTML 范例：
+     * ```html
+     * <p>[curseforge] {{ link }}</p>
+     * ```
+     */
+    相关链接: (content, data) => {
+      const addLink = (node: JQuery) => {
+        node.find("p").each((index, p) => {
+          const text = p.textContent;
+          const split = text.indexOf("]");
+          const bracket = text.lastIndexOf(" (");
+          const name = text.slice(1, split);
+          const link =
+            bracket === -1 ? text.slice(split + 1).trim() : text.slice(split + 1, bracket).trim();
+          const desc = bracket === -1 ? "" : ` (${text.slice(bracket + 2, -1)})`;
+          p.innerHTML = `[${name}] <a target="_blank" href="${link}">${link}</a>${desc}`;
+
+          data.link ??= {};
+          const isCustom = !Utils.isKeyOfObject(Values.siteMap, name);
+          data.link![index] = {
+            title: isCustom ? "other" : name,
+            custom: isCustom ? name : "",
+            text: desc,
+            href: link,
+          };
+        });
+      };
+      addLink(content.previous);
+      addLink(content.current);
+    },
+
+    模组元素: (content, data) => {
+      data.category = {};
+      content.current
+        .text()
+        .split("/")
+        .forEach((raw) => {
+          const name = raw.trim();
+          const category = Utils.getKeyValueOfObject(Values.classCategoryNameMap, name);
+          if (category !== undefined) {
+            const { index, value } = category;
+            data.category![index] = value;
+          } else {
+            console.warn("未知的模组元素: " + name);
+          }
+        });
+    },
+
+    模组标签: this.parseClassCommaSplitedText("tag"),
+
+    /** 为支持 MC 版本提供编辑版本对比功能，并检查加载器版本与相对应的所填写的支持版本是否合理。 */
+    支持MC版本: (content) => {
+      PlatformCompareFrame.performCompare(content.previous, content.current);
+    },
+
+    /** 为模组封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
+    模组封面: (content, data) => {
+      const img = content.row.find("img");
+      data["cover-data"] = img.prop("src");
+      img.each((_, e) => this.appendImgContainer(e));
+    },
+
+    删除封面: (content, data) => {
+      data["cover-delete"] = { 0: content.current.text() === "是" ? "1" : "0" };
+    },
+
+    支持平台: (content, data) => {
+      // 不是非常确定多平台具体是如何展示的，因此我们直接 indexOf
+      const text = content.current.text();
+      const platform = {} as Required<McmodClassEditorInnerData>["platform"];
+      if (text.indexOf("JAVA") >= 0) {
+        platform[0] = "1";
+      }
+      if (text.indexOf("基岩") >= 0) {
+        platform[1] = "2";
+      }
+      data.platform = platform;
+    },
+
+    运作方式: (content, data) => {
+      content.current
+        .text()
+        .split("/")
+        .forEach((raw) => {
+          const loader = raw.trim();
+          const id = Utils.getKeyValueOfObject(Values.loaderID, loader);
+          if (id !== undefined) {
+            data.api ??= {};
+            data.api![id] = id;
+          } else {
+            console.warn("未知的运作方式：" + loader);
+          }
+        });
+    },
+
+    /**
+     * 为模组关系提供编辑版本对比功能。
+     *
+     * 原始 HTML 范例：
+     * ```html
+     * <p><b class="text-primary">通用</b></p>
+     * <p>[前置] ID:2021 机械动力 (Create)</p>
+     * ```
+     */
+    模组关系: (content, data) => {
+      data.relation = RelationCompareFrame.parseAndPerformCompare(
+        content.previousText,
+        content.currentText,
+      );
+    },
+
+    MODID: this.parseClassRawText("modid"),
+
+    /**
+     * 原始 HTML 范例：
+     * ```html
+     * <p>客户端: 需装</p>
+     * <p>服务端: 需装</p>
+     * ```
+     */
+    运行环境: (content, data) => {
+      content.current.children().each((_, e) => {
+        const [env, rawOption] = e.textContent.split("：");
+        if (rawOption === undefined) {
+          return;
+        }
+        const option = Utils.getKeyValueOfObject(Values.reversedModEnvironmentModeMap, rawOption);
+        if (option === undefined) {
+          return;
+        }
+        if (env === "客户端") {
+          data["mode-1"] = { [Number(option)]: option };
+        } else if (env === "服务端") {
+          data["mode-2"] = { [Number(option)]: option };
+        }
+      });
+    },
+
+    追加关键词: (content, data) => {
+      const tags = content.current
+        .text()
+        .split("/")
+        .map((tag) => tag.trim());
+      data.tag = tags.join(",");
+    },
+
+    官方状态: (content, data) => {
+      const text = content.current.text().trim();
+      const status = Utils.getKeyValueOfObject(Values.reversedModStatusMap, text);
+      if (status !== undefined) {
+        data.status = { 0: status };
+      } else {
+        console.warn("未知的官方状态: " + text);
+      }
+    },
+
+    开源状态: (content, data) => {
+      const text = content.current.text().trim();
+      const source = Utils.getKeyValueOfObject(Values.reversedModSourceMap, text);
+      if (source !== undefined) {
+        data.source = { 0: source };
+      } else {
+        console.warn("未知的开源状态: " + text);
+      }
+    },
+
+    /**
+     * 为开源许可中出现的链接文本添加快速跳转。
+     *
+     * 现有编辑检查规则尚无涉及开源许可的条目，故暂时跳过解析。
+     *
+     * 原始 HTML 范例（注意&lt;b&gt;标签与方括号之间的一个空格）：
+     * ```html
+     * <p><b class="text-primary">通用</b></p>
+     * <p>声明许可协议为: <b>MIT License</b> 【{{ link }}】</p>
+     * ```
+     */
+    开源许可: (content, data) => {
+      // let title = "";
+      content.row
+        .find("p")
+        .contents()
+        .each((_, e) => {
+          // if (e.nodeType === Node.ELEMENT_NODE && e.tagName === "B") {
+          //   const text = e.textContent;
+          //   if (e.classList.contains("text-primary")) {
+          //     title = text;
+          //     return;
+          //   }
+          // }
+          if (e.nodeType === Node.TEXT_NODE) {
+            const text = e as unknown as Text;
+            if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
+              const link = text.data.slice(2, -1);
+              const mid = text.splitText(2);
+              mid.splitText(link.length);
+              Utils.textToAnchor(mid);
+            }
+          }
+        });
+      data.license = {};
+    },
+
+    /**
+     * 原始 HTML 范例：
+     * ```html
+     * <!-- 百科内已收录的作者，注意多个作者间用 <br> 标签分隔 -->
+     * <a href="//www.mcmod.cn/author/24402.html" target="_blank" class="text-dark">
+     *   <b>重生是希望</b> - <i class="text-muted">RebirthIsHope / Ahrwing</i>
+     * </a> (吉祥物)<br>
+     * <!-- 新增但尚未被收录的作者（编辑成功后会被自动收录），尚未被收录的作者无法被设置次要名称 -->
+     * 花海 (所有者/程序)
+     * ```
+     */
+    "作者/团队": (content, data) => {
+      data.author = { add: {}, link: {} };
+      let index = 0;
+      content.current.get(0).childNodes.forEach((node) => {
+        if (Utils.isTextNode(node)) {
+          let isAdd;
+          let name;
+          let isCustom;
+          const positions: (keyof typeof Values.authorPositionMap)[] = [];
+          const text = node.data;
+          const bracketL = text.lastIndexOf("(");
+          const bracketR = text.lastIndexOf(")");
+          if (bracketL < 0 || bracketR < 0) {
+            console.warn("作者职位定位失败: " + text);
+            return;
+          }
+          const prev = node.previousSibling;
+          if (prev instanceof HTMLAnchorElement) {
+            isAdd = false;
+            name = Utils.abstractIDFromURL(prev.href, "author").toString();
+          } else {
+            isAdd = true;
+            name = text.slice(0, bracketL).trim();
+          }
+          const rawPositions = text.slice(bracketL + 1, bracketR);
+          rawPositions.split("/").forEach((position) => {
+            const id = Utils.getKeyValueOfObject(Values.reversedAuthorPositionMap, position);
+            if (id === undefined) {
+              // 出现了无法被解析的百科原生职位名称，此时认为该职位为自定义
+              isCustom = true;
+            } else {
+              positions.push(id);
+            }
+          });
+          const extras = {
+            ...(isCustom || positions.length === 0 ? undefined : { select: positions }),
+            ...(isCustom ? { custom: rawPositions } : undefined),
+          };
+          if (isAdd) {
+            data.author!.add![index++] = {
+              name,
+              ...extras,
+            };
+          } else {
+            data.author!.link![index++] = {
+              id: name,
+              ...extras,
+            };
+          }
+        }
+      });
+    },
+
+    /** 现有编辑检查规则尚无涉及参与活动的条目，故暂时跳过解析。 */
+    参与活动: (_content, data) => {
+      data.activity = { 0: "" };
+    },
+
+    模组介绍: (content, data) => {
+      data.content = content.current.html();
+    },
+
+    "CurseForge Project ID": this.parseClassCommaSplitedText("cfprojectid"),
+
+    "Modrinth Project ID": this.parseClassCommaSplitedText("mrprojectid"),
+  };
+
+  private readonly itemModifiers: Record<
+    string,
+    (content: VerifyContent, data: McmodItemEditorInnerData) => void
+  > = {
+    主要名称: this.parseItemRawText("name"),
+    次要名称: this.parseItemRawText("ename"),
+    资料分类: this.parseItemRawText("type"),
+    注册名: this.parseItemRawText("regname"),
+    最大叠加: this.parseItemRawText("maxstack"),
+    小图标: this.parseItemImage("icon-32x-data"),
+    大图标: this.parseItemImage("icon-128x-data"),
+    锁定小图标: this.parseItemBooleanText("icon-32x-lock"),
+    锁定大图标: this.parseItemBooleanText("icon-128x-lock"),
+    删除小图标: this.parseItemBooleanText("icon-32x-delete"),
+    删除大图标: this.parseItemBooleanText("icon-128x-delete"),
+
+    /** 为模组添加快速跳转链接。 */
+    来自模组: (content) => {
+      if (this.verifyInfo["操作类型"] !== "资料添加") {
+        return;
+      }
+      const modLink = content.currentCell.children("a").attr("href");
+      this.verifyClassID = Utils.abstractIDFromURL(modLink, "class");
+    },
+
+    /**
+     * 为资料类型添加快速跳转链接。
+     * 若属于模组分区自定义资料类型，则只有在本地记录了该模组分区的自定义资料类型的情况下，
+     * 链接才会被正确添加，否则会直接跳过。
+     */
+    资料类型: (content, data) => {
+      content.row.children().each((i, e) => {
+        if (i === 0) return;
+        const text = e.textContent;
+        const type = this.parent.utils.getItemTypeData(this.verifyClassID, text);
+        if (type && this.verifyClassID) {
+          e.innerHTML = `<a target="_blank" href="${Utils.getItemTypeURL(
+            this.verifyClassID,
+            type.typeID,
+          )}">${text}</a>`;
+          data.category = { 0: type.typeID.toString() };
+        }
+      });
+    },
+
+    /** 为矿物词典中的各个矿词/标签添加快速跳转与编辑版本对比。 */
+    矿物词典: (content, data) => {
+      data["oredict"] = OredictCompareFrame.parseAndPerformCompare(
+        content.previous,
+        content.current,
+      );
+    },
+  };
+
+  private readonly tabModifiers: Record<
+    string,
+    (content: VerifyContent, data: McmodTabEditorInnerData) => void
+  > = {
+    /** 为合成表 GUI 的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
+    合成表可视化: (content) => {
+      content.row.find(".TableContainer").each((_, e) => this.appendImgContainer(e));
+    },
+
+    合成表源数据: (content, data) => {
+      const raw = content.current.text();
+      let recipe;
+      try {
+        recipe = JSON.parse(raw) as {
+          in_iid?: Record<number, string>;
+          in_num?: Record<number, string>;
+          in_chance?: Record<number, string>;
+          out_iid?: Record<number, string>;
+          out_num?: Record<number, string>;
+          out_chance?: Record<number, string>;
+          fuel_num?: Record<number, string>;
+        };
+      } catch (e) {
+        console.warn("合成表解析失败: ", e);
+        return;
+      }
+      data["slot-in-item"] = recipe.in_iid;
+      data["slot-in-number"] = recipe.in_num;
+      data["slot-in-chance"] = recipe.in_chance;
+      data["slot-out-item"] = recipe.out_iid;
+      data["slot-out-number"] = recipe.out_num;
+      data["slot-out-chance"] = recipe.out_chance;
+      data["slot-fuel-number"] = recipe.fuel_num;
+    },
+
+    摆放要求: (content, data) => {
+      const text = content.current.text().trim();
+      if (text === "有序合成") {
+        data.orderly = { 0: "0" };
+      } else if (text === "无序合成") {
+        data.orderly = { 1: "1" };
+      } else {
+        console.warn("未知的摆放要求: " + text);
+      }
+    },
+  };
+
+  /** 查错提示的级别与展示样式，与百科原生编辑页一致。 */
+  private static readonly checkResultClassName = {
+    error: "text-danger",
+    warning: "text-warning",
+    info: "text-info",
+  } as const satisfies Record<keyof VerifyCheckResult, string>;
+
+  /** 根据表格内容来对模组添加类的待审项做出简单的快速查错。 */
+  private displayCheckResult(result: VerifyCheckResult) {
+    const warnContainer = $("<div>").insertBefore(this.verifyTable!);
+    (Object.keys(AdminVerifyInit.checkResultClassName) as (keyof VerifyCheckResult)[]).forEach(
+      (level) => {
+        result[level].forEach((message) => {
+          $(`<p class="${AdminVerifyInit.checkResultClassName[level]}">`)
+            .text(message)
+            .appendTo(warnContainer);
+        });
+      },
+    );
   }
 
   /**
@@ -566,7 +955,10 @@ export class AdminVerifyInit extends AdminBaseInit {
    * 组件只挂载一次（见 {@link mountTextComparator}），此处仅替换它读取的正文节点，
    * 由组件自行重算对比结果——重建组件会丢失用户已选的对比模式，并留下一个废弃的组件实例。
    */
-  private modifyMainText(content: VerifyContent) {
+  private modifyMainText(
+    content: VerifyContent,
+    data: McmodClassEditorInnerData | McmodItemEditorInnerData,
+  ) {
     // 正文对比
     this.verifyFrame!.find(".verify-copy-btn")
       .parent()
@@ -582,6 +974,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.comparatorTexts = { textA, textB };
     new MainText(this.parent, textA);
     new MainText(this.parent, textB);
+    data.content = commonTextB.html();
   }
 
   /**
