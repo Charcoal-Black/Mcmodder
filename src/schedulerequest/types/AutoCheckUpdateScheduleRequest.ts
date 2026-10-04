@@ -39,10 +39,13 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
    * 版本号从发布帖里切 `Mcmodder v… --` 得到。
    */
   private async check(list: ScheduleRequestUtils) {
-    const resp = await this.parent.utils.createRequest({
-      url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
-      method: "GET",
-    });
+    const resp = await this.parent.utils.createRequest(
+      {
+        url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
+        method: "GET",
+      },
+      "检查更新",
+    );
     if (!resp.responseXML) {
       Utils.commonMsg("脚本发布帖打开失败...", false);
       return;

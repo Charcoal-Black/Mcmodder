@@ -123,11 +123,14 @@ export class RankInit extends Init {
       const getRankData = (t: number) => {
         if (this.configs.get("rankData", (t - 24 * 60 * 60).toString())) return; // 一天误差
         this.parent.utils
-          .createRequest({
-            url: `${this.parent.hostname}/rank.html?starttime=${t}&endtime=${t}`,
-            method: "GET",
-            headers: { "Content-Type": "text/html; charset=UTF-8" },
-          })
+          .createRequest(
+            {
+              url: `${this.parent.hostname}/rank.html?starttime=${t}&endtime=${t}`,
+              method: "GET",
+              headers: { "Content-Type": "text/html; charset=UTF-8" },
+            },
+            "获取贡献数据",
+          )
           .then((resp) => {
             const rawData: UserRankRecordData[] = [];
             const d = $("<html>").html(resp.responseText.replaceAll("src=", "data-src="));
