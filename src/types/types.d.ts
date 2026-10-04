@@ -1527,6 +1527,7 @@ type ModalOption<T> = T["option"];
  * - `createdAt` —— 发送时间戳（毫秒），比 {@link Values.REQUEST_TOAST_EXPIRE} 更旧的记录直接丢弃；
  * - `method` —— 已大写的请求方法名，缺省为 `GET`；
  * - `url` —— 请求地址（原样透传，不做转义）。
+ * - `message` —— 请求的附加信息，在启用“网络请求监控”时显示在 URL 旁。
  */
 interface RequestToastRecord {
   id: string;
@@ -1534,6 +1535,7 @@ interface RequestToastRecord {
   createdAt: number;
   method: string;
   url: string;
+  message: string;
 }
 
 interface ScheduleRequestTypes {

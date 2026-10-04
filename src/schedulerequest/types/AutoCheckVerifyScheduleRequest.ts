@@ -100,14 +100,17 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
 
     let menuElements = $();
     for (const id of adminModList) {
-      const resp = await this.parent.utils.createRequest({
-        url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      const resp = await this.parent.utils.createRequest(
+        {
+          url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          },
+          data: $.param({ data: JSON.stringify({ classID: id }) }),
         },
-        data: $.param({ data: JSON.stringify({ classID: id }) }),
-      });
+        "查询待审项数量",
+      );
       const state = JSON.parse(resp.responseText)?.state;
       if (state === undefined || state > 0) {
         console.error("返回状态异常: ", resp);

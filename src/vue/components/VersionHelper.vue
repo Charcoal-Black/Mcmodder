@@ -143,10 +143,13 @@ function onFetchMRFocusout() {
 
 async function autoFillFetchID() {
   // 自动获取 CFID / MRID
-  const resp = await parent.utils.createRequest({
-    url: `${parent.hostname}/class/edit/${document.location.href.split("/version/")[1].split(".html")[0]}/`,
-    method: "GET",
-  });
+  const resp = await parent.utils.createRequest(
+    {
+      url: `${parent.hostname}/class/edit/${document.location.href.split("/version/")[1].split(".html")[0]}/`,
+      method: "GET",
+    },
+    "从编辑页获取 CFID/MRID",
+  );
   if (!resp.responseXML) {
     Utils.commonMsg("CFID/MRID 获取失败...", false);
     return;
@@ -182,11 +185,14 @@ function getCurseForgeFileList(cfid: string) {
   let captchaAttempt = 0;
   let work = (index: number) => {
     parent.utils
-      .createRequest({
-        url: `https://www.curseforge.com/api/v1/mods/${cfid}/files?pageIndex=${index}&pageSize=50&sort=dateCreated&sortDescending=true&removeAlphas=false`,
-        method: "GET",
-        // anonymous: true
-      })
+      .createRequest(
+        {
+          url: `https://www.curseforge.com/api/v1/mods/${cfid}/files?pageIndex=${index}&pageSize=50&sort=dateCreated&sortDescending=true&removeAlphas=false`,
+          method: "GET",
+          // anonymous: true
+        },
+        "从 CF 获取版本列表",
+      )
       .then((resp) => {
         if (resp.responseXML?.title === "Just a moment...") {
           if (captchaAttempt < captchaAttemptMaxLimit) {
@@ -278,11 +284,14 @@ function getModrinthFileList(mrid: string) {
   let fileList: MRGameVersion[] = [];
   let work = () => {
     parent.utils
-      .createRequest({
-        url: `https://api.modrinth.com/v2/project/${mrid}/version`,
-        method: "GET",
-        anonymous: true,
-      })
+      .createRequest(
+        {
+          url: `https://api.modrinth.com/v2/project/${mrid}/version`,
+          method: "GET",
+          anonymous: true,
+        },
+        "从 MR 获取版本列表",
+      )
       .then((resp) => {
         let data = JSON.parse(resp.responseText);
         fileList = fileList.concat(data);

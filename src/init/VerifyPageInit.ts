@@ -255,20 +255,23 @@ export class VerifyPageInit extends Init {
             index = 0;
           const doUrge = (id: number) => {
             this.parent.utils
-              .createRequest({
-                url: `${this.parent.hostname}/action/edit/doUrge/`,
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                  "X-Requested-With": "XMLHttpRequest",
-                  Origin: this.parent.hostname,
-                  Referer: window.location.href,
-                  Priority: "u=0",
-                  Pragma: "no-cache",
-                  "Cache-Control": "no-cache",
+              .createRequest(
+                {
+                  url: `${this.parent.hostname}/action/edit/doUrge/`,
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-Requested-With": "XMLHttpRequest",
+                    Origin: this.parent.hostname,
+                    Referer: window.location.href,
+                    Priority: "u=0",
+                    Pragma: "no-cache",
+                    "Cache-Control": "no-cache",
+                  },
+                  data: $.param({ nVerifyID: id }),
                 },
-                data: $.param({ nVerifyID: id }),
-              })
+                "催审",
+              )
               .then((resp) => {
                 const state = JSON.parse(resp.responseText).state;
                 if (state === 0) {

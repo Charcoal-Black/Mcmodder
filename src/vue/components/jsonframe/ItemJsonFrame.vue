@@ -634,10 +634,13 @@ async function getItemListFromPage(
   let jumpList = [],
     generalList = [],
     repeatedData;
-  let resp = await props.parent.utils.createRequest({
-    url: url,
-    method: "GET",
-  });
+  let resp = await props.parent.utils.createRequest(
+    {
+      url: url,
+      method: "GET",
+    },
+    "从资料列表获取资料",
+  );
   if (!resp.responseXML) return;
   const doc = $(resp.responseXML);
   const table = doc.find(".item-list-table");
@@ -697,11 +700,14 @@ async function getItemListFromPage(
     s = c.attr("data-loop");
     if (s) {
       generalList.push(item.id);
-      resp = await props.parent.utils.createRequest({
-        url: Utils.getItemURL(item.id),
-        method: "GET",
-        anonymous: true,
-      });
+      resp = await props.parent.utils.createRequest(
+        {
+          url: Utils.getItemURL(item.id),
+          method: "GET",
+          anonymous: true,
+        },
+        "获取综合子资料列表",
+      );
       if (!resp.responseXML) return;
       const doc = $(resp.responseXML);
 
@@ -776,10 +782,13 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
   } */
 
   // 获取分支情况
-  const resp = await props.parent.utils.createRequest({
-    url: `${props.parent.hostname}/item/list/${classID}-${typeID}.html`,
-    method: "GET",
-  });
+  const resp = await props.parent.utils.createRequest(
+    {
+      url: `${props.parent.hostname}/item/list/${classID}-${typeID}.html`,
+      method: "GET",
+    },
+    "从物品列表获取分支",
+  );
   if (!resp.responseXML) return [];
   const doc = $(resp.responseXML).find(".item-list-branch-frame");
   if (doc.length) {
@@ -813,11 +822,14 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
 async function performClassSearch(classID: number, typeID: number) {
   // STEP 0: 前置数据收集
   logger.value!.log(`打开模组页 ${classID}`);
-  const resp = await props.parent.utils.createRequest({
-    url: Utils.getClassURL(classID),
-    method: "GET",
-    anonymous: true,
-  });
+  const resp = await props.parent.utils.createRequest(
+    {
+      url: Utils.getClassURL(classID),
+      method: "GET",
+      anonymous: true,
+    },
+    "打开模组页",
+  );
   if (!resp.responseXML) {
     logger.value!.fatal(`打开模组页 ${classID} 失败`);
     return;
@@ -885,10 +897,13 @@ async function performClassSearch(classID: number, typeID: number) {
 async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplication>) {
   ctx.empty();
   ctx.showLoading();
-  let resp = await props.parent.utils.createRequest({
-    url: url,
-    method: "GET",
-  });
+  let resp = await props.parent.utils.createRequest(
+    {
+      url: url,
+      method: "GET",
+    },
+    "从收纳帖获取JSON列表",
+  );
   if (!resp.responseXML) return;
   let doc = $(resp.responseXML);
   if (doc.find("title").text() === "页面重载开启") {
@@ -1014,7 +1029,7 @@ async function getJSONByPage(page: number, table: TableContext<ItemJsonFrameAppl
 
 async function downloadAndImportFile(url: string) {
   // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
-  let resp = await props.parent.utils.createRequest({ url: url });
+  let resp = await props.parent.utils.createRequest({ url: url }, "下载JSON");
   let headers = resp.responseHeaders;
   if (!headers.includes("content-type: application/octet-stream")) {
     Utils.commonMsg("下载失败...", false);

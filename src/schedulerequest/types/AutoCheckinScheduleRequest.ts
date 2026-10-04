@@ -53,22 +53,25 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
    */
   async run(list: ScheduleRequestUtils) {
     list.create(Utils.getStartTime(new Date()), "autoCheckin", this.parent.currentUID);
-    const resp = await this.parent.utils.createRequest({
-      url: "https://center.mcmod.cn/action/doUserCheckIn/",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        Origin: "https://center.mcmod.cn",
-        Referer: window.location.href,
-        Priority: "u=0",
-        Pragma: "no-cache",
-        "Cache-Control": "no-cache",
+    const resp = await this.parent.utils.createRequest(
+      {
+        url: "https://center.mcmod.cn/action/doUserCheckIn/",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          Origin: "https://center.mcmod.cn",
+          Referer: window.location.href,
+          Priority: "u=0",
+          Pragma: "no-cache",
+          "Cache-Control": "no-cache",
+        },
+        data: $.param({
+          nCenterID: this.parent.currentUID,
+        }),
       },
-      data: $.param({
-        nCenterID: this.parent.currentUID,
-      }),
-    });
+      "签到",
+    );
     const data = JSON.parse(resp.responseText);
     let message;
     if (!data.state && data.amount) message = `获得知识碎片 ${data.amount} 个~`;

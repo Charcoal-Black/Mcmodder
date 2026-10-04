@@ -982,20 +982,23 @@ export class Mcmodder {
       setInterval(
         () => {
           this.utils
-            .createRequest({
-              url: `${this.hostname}/frame/CommonHeader/`,
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "X-Requested-With": "XMLHttpRequest",
-                Origin: this.hostname,
-                Referer: window.location.href,
-                Priority: "u=0",
-                Pragma: "no-cache",
-                "Cache-Control": "no-cache",
+            .createRequest(
+              {
+                url: `${this.hostname}/frame/CommonHeader/`,
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                  "X-Requested-With": "XMLHttpRequest",
+                  Origin: this.hostname,
+                  Referer: window.location.href,
+                  Priority: "u=0",
+                  Pragma: "no-cache",
+                  "Cache-Control": "no-cache",
+                },
+                data: "version=4.0",
               },
-              data: "version=4.0",
-            })
+              "实时通讯",
+            )
             .then((resp) => {
               try {
                 const data = JSON.parse(resp.responseText);

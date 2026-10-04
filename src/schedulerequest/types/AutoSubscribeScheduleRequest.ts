@@ -36,10 +36,13 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
       const sid = id.toString();
       const l = `${this.parent.hostname}/class/history/${id}.html`;
       this.parent.utils
-        .createRequest({
-          url: l,
-          method: "GET",
-        })
+        .createRequest(
+          {
+            url: l,
+            method: "GET",
+          },
+          "获取历史编辑记录",
+        )
         .then((resp) => {
           if (!resp.responseXML) return;
           const doc = $(resp.responseXML);
@@ -54,36 +57,39 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
           }
 
           if (this.configs.getSettings("subscribeComment")) {
-            this.parent.utils.createRequest({
-              url: `${this.parent.hostname}/frame/comment/CommentRow/`,
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                Origin: this.parent.hostname,
-                Referer: Utils.getItemURL(id),
-              },
-              data: $.param({
-                data: {
-                  type: "class",
-                  channel: 1,
-                  doid: id,
-                  page: 1,
-                  selfonly: 0,
+            this.parent.utils.createRequest(
+              {
+                url: `${this.parent.hostname}/frame/comment/CommentRow/`,
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                  Origin: this.parent.hostname,
+                  Referer: Utils.getItemURL(id),
                 },
-              }),
-              onload: (resp) => {
-                const d = JSON.parse(resp.responseText)?.data?.row || [];
-                const t = (d[0]?.floor.includes("# 置顶 #") ? d[1]?.id : d[0]?.id) || 0;
-                const lt = this.configs.get("latestComment", sid);
-                if (!lt) this.configs.set("latestComment", sid, t);
-                else if (lt < t) {
-                  GM_openInTab(`${Utils.getClassURL(id)}#comment-${t}`, {
-                    active: true,
-                  });
-                  this.configs.set("latestComment", sid, t);
-                }
+                data: $.param({
+                  data: {
+                    type: "class",
+                    channel: 1,
+                    doid: id,
+                    page: 1,
+                    selfonly: 0,
+                  },
+                }),
+                onload: (resp) => {
+                  const d = JSON.parse(resp.responseText)?.data?.row || [];
+                  const t = (d[0]?.floor.includes("# 置顶 #") ? d[1]?.id : d[0]?.id) || 0;
+                  const lt = this.configs.get("latestComment", sid);
+                  if (!lt) this.configs.set("latestComment", sid, t);
+                  else if (lt < t) {
+                    GM_openInTab(`${Utils.getClassURL(id)}#comment-${t}`, {
+                      active: true,
+                    });
+                    this.configs.set("latestComment", sid, t);
+                  }
+                },
               },
-            });
+              "获取模组短评区",
+            );
           }
 
           if (subscribeModlist.length > index + 1) {

@@ -18,11 +18,14 @@ export class VerifyHistoryInit extends Init {
       }
       const getHistoryPage = (id: number) => {
         this.parent.utils
-          .createRequest({
-            url: `${this.parent.hostname}/verify.html?${param}&page=${id}`,
-            method: "GET",
-            headers: { "Content-Type": "text/html; charset=UTF-8" },
-          })
+          .createRequest(
+            {
+              url: `${this.parent.hostname}/verify.html?${param}&page=${id}`,
+              method: "GET",
+              headers: { "Content-Type": "text/html; charset=UTF-8" },
+            },
+            "展开历史审核记录",
+          )
           .then((resp) => {
             if (!resp.responseXML) return;
             const d = $(resp.responseXML);

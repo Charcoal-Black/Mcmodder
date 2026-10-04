@@ -11,7 +11,7 @@ export default defineConfig({
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
-        version: "2.3.0",
+        version: "2.3",
         description: "Mcmodder",
         license: "AGPL-3.0",
         icon: "https://www.mcmod.cn/static/public/images/favicon.ico",

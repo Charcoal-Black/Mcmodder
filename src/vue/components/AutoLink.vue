@@ -403,23 +403,26 @@ async function performLocalSearch() {
 
 /** 联机搜索：POST `/object/UEAutolink/`，解析返回的 HTML 列表为条目数组；后端报错时提示并返回空 */
 async function performOnlineSearch() {
-  let resp = await parent.value.utils.createRequest({
-    url: `${parent.value.hostname}/object/UEAutolink/`,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "X-Requested-With": "XMLHttpRequest",
-      Origin: parent.value.hostname,
-      Referer: parent.value.href,
-      Priority: "u=0",
-      Pragma: "no-cache",
-      "Cache-Control": "no-cache",
+  let resp = await parent.value.utils.createRequest(
+    {
+      url: `${parent.value.hostname}/object/UEAutolink/`,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        Origin: parent.value.hostname,
+        Referer: parent.value.href,
+        Priority: "u=0",
+        Pragma: "no-cache",
+        "Cache-Control": "no-cache",
+      },
+      data: $.param({
+        classID: nClassID,
+        key: searchText.value,
+      }),
     },
-    data: $.param({
-      classID: nClassID,
-      key: searchText.value,
-    }),
-  });
+    "自动链接联机搜索",
+  );
   let data = JSON.parse(resp.responseText);
   if (data.state) {
     Utils.commonMsg(Values.errorMessage[data.state], false);

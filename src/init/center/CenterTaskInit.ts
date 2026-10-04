@@ -81,10 +81,13 @@ export class CenterTaskInit extends CenterBaseInit {
     }).mount($(".progress-container").get(0)) as InstanceType<typeof ProgressBar>;
     do {
       endTime = Math.min(now, Utils.getStartTime(startTime, 29));
-      resp = await this.utils.createRequest({
-        url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
-        method: "GET",
-      });
+      resp = await this.utils.createRequest(
+        {
+          url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
+          method: "GET",
+        },
+        "获取历史审核记录",
+      );
       if (!resp.responseXML) return;
       resp = $(resp.responseXML);
       maxPage = Number(
@@ -95,10 +98,13 @@ export class CenterTaskInit extends CenterBaseInit {
       });
       if (maxPage)
         for (let i = 2; i <= maxPage; i++) {
-          resp = await this.utils.createRequest({
-            url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
-            method: "GET",
-          });
+          resp = await this.utils.createRequest(
+            {
+              url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
+              method: "GET",
+            },
+            "获取历史审核记录",
+          );
           if (!resp.responseXML) return;
           resp = $(resp.responseXML);
           resp.find(".verify-list-list-frame tbody tr").each((_, c) => {

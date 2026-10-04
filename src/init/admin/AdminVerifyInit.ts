@@ -488,7 +488,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     } else if (isTab) {
       result = TabEditRules.check(data as McmodTabEditorInnerData);
     } else {
-      throw new Error("这操作类型有力气");
+      return;
     }
 
     this.displayCheckResult(result);
@@ -496,12 +496,19 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   private parseClassRawText(key: KeysOfExactType<Required<McmodClassEditorInnerData>, string>) {
     return (content: VerifyContent, data: McmodClassEditorInnerData) => {
+      if (content.current.html() === "-") {
+        return;
+      }
       data[key] = content.current.text().trim();
     };
   }
 
   private parseItemRawText(key: KeysOfExactType<Required<McmodItemEditorInnerData>, string>) {
     return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      if (content.current.html() === "-") {
+        // 空内容的占位符
+        return;
+      }
       data[key] = content.current.text().trim();
     };
   }
@@ -510,6 +517,10 @@ export class AdminVerifyInit extends AdminBaseInit {
     key: KeysOfExactType<Required<McmodClassEditorInnerData>, string>,
   ) {
     return (content: VerifyContent, data: McmodClassEditorInnerData) => {
+      if (content.current.html() === "-") {
+        // 空内容的占位符
+        return;
+      }
       const tags = content.current
         .text()
         .split("/")
@@ -521,6 +532,10 @@ export class AdminVerifyInit extends AdminBaseInit {
   /** 为大/小图标添加透明底与快捷放缩功能。 */
   private parseItemImage(key: KeysOfExactType<Required<McmodItemEditorInnerData>, string>) {
     return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      if (content.current.html() === "-") {
+        // 空内容的占位符
+        return;
+      }
       this.iconModifier(content);
       data[key] = content.current.find("img").attr("src");
     };
@@ -530,6 +545,10 @@ export class AdminVerifyInit extends AdminBaseInit {
     key: KeysOfExactType<Required<McmodItemEditorInnerData>, { 0: "1" | "0" }>,
   ) {
     return (content: VerifyContent, data: McmodItemEditorInnerData) => {
+      if (content.current.html() === "-") {
+        // 空内容的占位符
+        return;
+      }
       data[key] = { 0: content.current.text().trim() === "是" ? "1" : "0" };
     };
   }
@@ -852,6 +871,21 @@ export class AdminVerifyInit extends AdminBaseInit {
       this.verifyClassID = Utils.abstractIDFromURL(modLink, "class");
     },
 
+    完整采集工具: (content, data) => {
+      const links = content.current.find("a");
+      if (links.length === 0) {
+        return;
+      }
+      data.tool = {};
+      let index = 0;
+      links.each((_, link) => {
+        const id = Utils.abstractIDFromURL((link as HTMLAnchorElement).href, "item");
+        if (Number.isFinite(id)) {
+          data.tool![index++] = { id: id.toString() };
+        }
+      });
+    },
+
     /**
      * 为资料类型添加快速跳转链接。
      * 若属于模组分区自定义资料类型，则只有在本地记录了该模组分区的自定义资料类型的情况下，
@@ -891,7 +925,10 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     合成表源数据: (content, data) => {
-      const raw = content.current.text();
+      // 必须指定为代码块，否则会被末尾附加的
+      // `<script type="text/javascript">setItemTableVlaue();</script>` 干扰
+      // （另：`setItemTableVlaue()` 在百科原生中用于美化该 JSON 的展示）
+      const raw = content.current.find("pre").text();
       let recipe;
       try {
         recipe = JSON.parse(raw) as {
@@ -902,6 +939,7 @@ export class AdminVerifyInit extends AdminBaseInit {
           out_num?: Record<number, string>;
           out_chance?: Record<number, string>;
           fuel_num?: Record<number, string>;
+          gui?: string; // (ID:<guiID>) <name> - 来自 (ID:<classID>) <className>
         };
       } catch (e) {
         console.warn("合成表解析失败: ", e);
@@ -930,20 +968,33 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   /** 查错提示的级别与展示样式，与百科原生编辑页一致。 */
   private static readonly checkResultClassName = {
-    error: "text-danger",
-    warning: "text-warning",
-    info: "text-info",
-  } as const satisfies Record<keyof VerifyCheckResult, string>;
+    error: {
+      text: "text-danger",
+      icon: "fa-window-close",
+    },
+    warning: {
+      text: "text-warning",
+      icon: "fa-warning",
+    },
+    info: {
+      text: "text-info",
+      icon: "fa-wrench",
+    },
+  } as const satisfies Record<keyof VerifyCheckResult, { text: string; icon: string }>;
 
   /** 根据表格内容来对模组添加类的待审项做出简单的快速查错。 */
   private displayCheckResult(result: VerifyCheckResult) {
-    const warnContainer = $("<div>").insertBefore(this.verifyTable!);
+    const warnContainer = $('<div class="mcmodder-verify-simplecheck">').insertBefore(
+      this.verifyTable!,
+    );
     (Object.keys(AdminVerifyInit.checkResultClassName) as (keyof VerifyCheckResult)[]).forEach(
       (level) => {
         result[level].forEach((message) => {
-          $(`<p class="${AdminVerifyInit.checkResultClassName[level]}">`)
-            .text(message)
-            .appendTo(warnContainer);
+          $(
+            `<p class="${AdminVerifyInit.checkResultClassName[level].text}">
+              <i class="fa ${AdminVerifyInit.checkResultClassName[level].icon}" />${Utils.escapeHTML(message)}
+            </p>`,
+          ).appendTo(warnContainer);
         });
       },
     );
@@ -965,16 +1016,21 @@ export class AdminVerifyInit extends AdminBaseInit {
       .filter((_, c) => $(c).css("position") === "absolute")
       .remove(); // 移除原版复制按钮
 
-    let textA = content.previousCell;
-    let textB = content.currentCell;
+    let textA = content.previous;
+    let textB = content.current;
     const commonTextA = textA.find(".common-text");
     const commonTextB = textB.find(".common-text");
     if (commonTextA.length) textA = commonTextA;
     if (commonTextB.length) textB = commonTextB;
     this.comparatorTexts = { textA, textB };
-    new MainText(this.parent, textA);
-    new MainText(this.parent, textB);
     data.content = commonTextB.html();
+
+    // comparatorTexts 的 diff 是异步的，这里确保 diff 完成后再添加链接标注，
+    // 避免链接标注元素错误地参与 diff
+    setTimeout(() => {
+      new MainText(this.parent, textA);
+      new MainText(this.parent, textB);
+    }, 0);
   }
 
   /**
@@ -1090,14 +1146,17 @@ export class AdminVerifyInit extends AdminBaseInit {
     ) {
       return;
     }
-    const resp = await this.parent.utils.createRequest({
-      url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    const resp = await this.parent.utils.createRequest(
+      {
+        url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        data: $.param({ data: JSON.stringify(config) }),
       },
-      data: $.param({ data: JSON.stringify(config) }),
-    });
+      "更新待审列表",
+    );
     const state = JSON.parse(resp.responseText)?.state;
     if (state === undefined || state > 0) {
       Utils.commonMsg(
@@ -1195,7 +1254,7 @@ export class AdminVerifyInit extends AdminBaseInit {
   /**
    * 自动根据当前的待审项筛选配置，向后端请求一次最新的待审列表，并对比两个待审列表之间有何不同。
    *
-   * - 当前页面缺失，但最新的待审项存在的项目，以蓝底+下划线高亮。
+   * - 当前页面和最新的待审项均存在，但助理意见数量发生变化的项目，以蓝底+下划线高亮。
    * - 当前页面存在，但最新的待审项缺失的项目，以红底+删除线高亮。
    */
   private async compareAndUpdateVerifyList() {

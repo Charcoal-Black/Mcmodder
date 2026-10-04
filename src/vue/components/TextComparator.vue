@@ -88,19 +88,22 @@ const JsDiff: Record<
 > = { diffChars, diffWords, diffLines } as const;
 
 function getRawContent(l: JQuery) {
-  let s = "";
-  l.contents()
+  if (l.html() === "-") {
+    // 空内容的占位符
+    return "";
+  }
+  return l
+    .contents()
     .filter(
       (_, c) =>
         !/^[\s\n]*$/.test(c.textContent) &&
-        c.tagName != "SCRIPT" &&
-        c.className != "common-text-menu" &&
-        c.className != "common-tag-ban",
+        c.tagName !== "SCRIPT" &&
+        !c.classList.contains("common-text-menu") &&
+        !c.classList.contains("common-tag-ban"),
     )
-    .each((_, e) => {
-      s += e.textContent + "\n";
-    });
-  return s;
+    .toArray()
+    .map((e) => e.textContent)
+    .join("\n");
 }
 
 /** 取出 prop 的实际取值：解包 `Ref`，DOM 节点则解析为纯文本，字符串原样返回 */

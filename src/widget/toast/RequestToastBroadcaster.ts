@@ -77,13 +77,14 @@ export class RequestToastBroadcaster {
    * @param method 请求方法名，缺省为 `GET`（与 `GM_xmlhttpRequest` 的默认行为一致）。
    * @param url 请求地址，原样透传。
    */
-  send(method: string | undefined, url: string) {
+  send(method: string | undefined, url: string, message = "") {
     const record: RequestToastRecord = {
       id: Utils.randStr(8),
       tabID: this.tabID,
       createdAt: Date.now(),
       method: (method || "GET").toUpperCase(),
       url: url,
+      message: message,
     };
     if (document.visibilityState === "visible") this.show(record);
     this.append(record);
@@ -197,8 +198,8 @@ export class RequestToastBroadcaster {
     const pos = this.monitorPos;
     if (!pos) return;
     iziToast.show({
-      title: record.method,
-      message: `[${Utils.getFormatted24hTime(new Date(record.createdAt))}] ${record.url}`,
+      title: record.message,
+      message: `[${Utils.getFormatted24hTime(new Date(record.createdAt))}] [${record.method}] ${record.url}`,
       position: RequestToastBroadcaster.requestMonitorPositions[pos],
       color: RequestToastBroadcaster.methodColors[record.method] || "gray",
       timeout: Values.REQUEST_TOAST_TIMEOUT,
