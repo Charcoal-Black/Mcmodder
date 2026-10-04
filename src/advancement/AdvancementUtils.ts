@@ -1,5 +1,5 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { AdvancementData } from "../types";
 
 export const enum AdvancementID {
   OLD_TEXT_WORD_LENGTH_1000,
@@ -28,13 +28,13 @@ export const enum AdvancementID {
   USER_WORD_TODAY,
   USER_ADD_CLASS,
   USER_ADD_MODPACK,
-  USER_ADD_POST
+  USER_ADD_POST,
 }
 
 export const enum AdvancementType {
   DAILY = 1,
   COMMON,
-  SPECIAL
+  SPECIAL,
 }
 
 type LangGenerator = (tier: number) => string;
@@ -44,17 +44,25 @@ type ImageGenerator = ((tier: number) => string) | null;
 type RewardGenerator = ((tier: number) => number) | null;
 
 export class AdvancementUtils {
-
-  parent: Mcmodder;
-  list: AdvancementData[];
+  // parent: Mcmodder;
+  private readonly configs: ConfigRepository;
+  private readonly list: Advancement[];
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     this.list = [];
   }
 
-  add(lang: string, category: AdvancementType, id: AdvancementID, range: number,
-      exp: number, image?: string | null, reward?: number | null, tier?: number) {
+  add(
+    lang: string,
+    category: AdvancementType,
+    id: AdvancementID,
+    range: number,
+    exp: number,
+    image?: string | null,
+    reward?: number | null,
+    tier?: number,
+  ) {
     this.list.push({
       lang: lang,
       category: category,
@@ -64,13 +72,21 @@ export class AdvancementUtils {
       image: image,
       reward: reward,
       tier: tier,
-      isCustom: image ? true : false
+      isCustom: image ? true : false,
     });
     return this;
   }
 
-  addTiered(maxTier: number, langGen: LangGenerator, category: AdvancementType, id: number, 
-      rangeGen: RangeGenerator, expGen?: ExpGenerator, imageGen?: ImageGenerator, rewardGen?: RewardGenerator) {
+  addTiered(
+    maxTier: number,
+    langGen: LangGenerator,
+    category: AdvancementType,
+    id: number,
+    rangeGen: RangeGenerator,
+    expGen?: ExpGenerator,
+    imageGen?: ImageGenerator,
+    rewardGen?: RewardGenerator,
+  ) {
     for (let tier = 1; tier <= maxTier; ++tier) {
       this.add(
         langGen(tier),
@@ -80,52 +96,61 @@ export class AdvancementUtils {
         expGen ? expGen(tier) : 0,
         imageGen ? imageGen(tier) : null,
         rewardGen ? rewardGen(tier) : null,
-        tier
+        tier,
       );
       const t = this.list.slice(-2);
-      if (tier > 1) t[1].prev = t[0], t[0].next = t[1]; // 双链表
+      if (tier > 1) {
+        t[1].prev = t[0];
+        t[0].next = t[1];
+      } // 双链表
     }
     return this;
   }
 
+  getList() {
+    return this.list;
+  }
+
   getData(id: AdvancementID) {
-    return this.list.filter(e => e.id == id)[0];
+    return this.list.filter((e) => e.id == id)[0];
   }
 
   getAll() {
-    return JSON.parse(this.parent.utils.getProfile("advancements") || "[]");
+    return JSON.parse(this.configs.getProfile("advancements") ?? "[]") as AdvancementProgression[];
   }
 
   getSingleProgress(id: AdvancementID) {
-    let advancements = this.getAll();
-    for (let i of advancements) {
+    const advancements = this.getAll();
+    for (const i of advancements) {
       if (i.id == id) return i.progress;
     }
     return 0;
   }
 
   setProgress(id: AdvancementID, value: number) {
-    if (!this.parent.utils.getConfig("customAdvancements")) return;
-    let advancements = this.getAll(), max = this.getData(id).range, f = 1;
-    for (let i of advancements) {
+    if (!this.configs.getSettings("customAdvancements")) return;
+    const advancements = this.getAll();
+    const max = this.getData(id).range;
+    let f = 1;
+    for (const i of advancements) {
       if (i.id == id) {
         f = 0;
         if (i.progress == max && value >= i.progress) return;
         i.progress = Math.min(value, max);
         if (i.progress >= max) {
-          const rawCompletion: string = this.parent.utils.getProfile("completed");
+          const rawCompletion = this.configs.getProfile("completed");
           let completion: AdvancementID[] = [];
           if (rawCompletion) {
             completion = rawCompletion.split(",").map(Number);
           }
           completion.push(id);
-          this.parent.utils.setProfile("completed", completion.join(","));
+          this.configs.setProfile("completed", completion.join(","));
         }
         break;
       }
     }
     if (f) advancements.push({ id: id, progress: value });
-    this.parent.utils.setProfile("advancements", JSON.stringify(advancements));
+    this.configs.setProfile("advancements", JSON.stringify(advancements));
   }
 
   addProgress(id: AdvancementID, value = 1) {

@@ -1,4 +1,5 @@
-#item-used-item, #item-search-item {
+#item-used-item,
+#item-search-item {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
 }
@@ -24,12 +25,12 @@
 }
 .item-used-frame .item-table-hover .zh-name,
 .item-search-frame .item-table-hover .zh-name {
-  margin-left: .25em;
+  margin-left: 0.25em;
   font-size: 12px;
 }
 .item-used-frame .item-table-hover .en-name,
 .item-search-frame .item-table-hover .en-name {
-  margin-left: .25em;
+  margin-left: 0.25em;
   font-size: 10px;
   color: var(--mcmodder-color-text-dark3);
 }

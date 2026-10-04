@@ -1,5 +1,6 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderUtils } from "../Utils";
+import { Utils } from "../Utils";
 
 function getFontFromIndexedDB(url: string): Promise<ArrayBuffer | null> {
   return new Promise((resolve) => {
@@ -58,7 +59,8 @@ let TTFLoader: any;
 function createPaths(text: string, size: number, data: any, direction: string) {
   const chars = Array.from(text);
   const scale = size / data.resolution;
-  const line_height = (data.boundingBox.yMax - data.boundingBox.yMin + data.underlineThickness) * scale;
+  const line_height =
+    (data.boundingBox.yMax - data.boundingBox.yMin + data.underlineThickness) * scale;
   const paths: any[] = [];
   let offsetX = 0;
   let offsetY = 0;
@@ -100,7 +102,7 @@ function createPath(char: string, scale: number, offsetX: number, offsetY: numbe
 
   if (glyph.o) {
     const outline = glyph._cachedOutline || (glyph._cachedOutline = glyph.o.split(" "));
-    for (let i = 0, l = outline.length; i < l; ) {
+    for (let i = 0, l = outline.length; i < l;) {
       const action = outline[i++];
       switch (action) {
         case "m":
@@ -138,7 +140,8 @@ function createPath(char: string, scale: number, offsetX: number, offsetY: numbe
 async function ensureThreeLoaded() {
   if (THREE) return;
 
-  THREE = (window as any).THREE || (globalThis as any).THREE || (globalThis as any).unsafeWindow?.THREE;
+  THREE =
+    (window as any).THREE || (globalThis as any).THREE || (globalThis as any).unsafeWindow?.THREE;
   if (!THREE) {
     throw new Error("THREE is not defined");
   }
@@ -193,19 +196,17 @@ async function ensureThreeLoaded() {
           if (cachedBuffer) {
             return cachedBuffer;
           }
-        } catch (e) {
-        }
+        } catch (e) {}
 
         const response = await fetch(targetUrl);
         if (!response.ok) {
-          McmodderUtils.commonMsg(`无法从设置的链接 (${targetUrl}) 获取字体数据...`, false);
+          Utils.commonMsg(`无法从设置的链接 (${targetUrl}) 获取字体数据...`, false);
           throw new Error("Failed to fetch font");
         }
         const buffer = await response.arrayBuffer();
         try {
           await saveFontToIndexedDB(targetUrl, buffer);
-        } catch (e) {
-        }
+        } catch (e) {}
         return buffer;
       };
 
@@ -233,7 +234,10 @@ async function ensureThreeLoaded() {
     public parse(arraybuffer: any) {
       const scope = this;
       const targetText = (scope as any).displayText || "";
-      const opentypeLib = (window as any).opentype || (globalThis as any).opentype || (globalThis as any).unsafeWindow?.opentype;
+      const opentypeLib =
+        (window as any).opentype ||
+        (globalThis as any).opentype ||
+        (globalThis as any).unsafeWindow?.opentype;
       if (!opentypeLib) {
         throw new Error("opentype is not defined");
       }
@@ -260,7 +264,7 @@ async function ensureThreeLoaded() {
             ha: round(glyph.advanceWidth * scale),
             x_min: round(glyph.xMin * scale),
             x_max: round(glyph.xMax * scale),
-            o: ""
+            o: "",
           };
           if (reversed) {
             glyph.path.commands = reverseCommands(glyph.path.commands);
@@ -300,10 +304,10 @@ async function ensureThreeLoaded() {
             xMin: font.tables.head.xMin,
             xMax: font.tables.head.xMax,
             yMin: font.tables.head.yMin,
-            yMax: font.tables.head.yMax
+            yMax: font.tables.head.yMax,
           },
           resolution: 1000,
-          original_font_information: font.tables.name
+          original_font_information: font.tables.name,
         };
       }
 
@@ -324,7 +328,7 @@ async function ensureThreeLoaded() {
           const result = {
             type: "m",
             x: p[p.length - 1].x,
-            y: p[p.length - 1].y
+            y: p[p.length - 1].y,
           };
           reversed.push(result);
           for (let i = p.length - 1; i > 0; i--) {
@@ -352,8 +356,9 @@ async function ensureThreeLoaded() {
   };
 }
 
-export class Mcmodder3DSplash {
+export class Splash3D {
   private parent: Mcmodder;
+  private configs: ConfigRepository;
   private container: HTMLDivElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private renderer: any = null;
@@ -366,6 +371,7 @@ export class Mcmodder3DSplash {
 
   constructor(parent: Mcmodder) {
     this.parent = parent;
+    this.configs = parent.configRepository;
   }
 
   public init() {
@@ -385,7 +391,9 @@ export class Mcmodder3DSplash {
       return;
     }
 
-    const textElement = isV4 ? targetElement.find("span").first() : targetElement.find(".text").first();
+    const textElement = isV4
+      ? targetElement.find("span").first()
+      : targetElement.find(".text").first();
     if (!textElement.length) {
       return;
     }
@@ -448,7 +456,7 @@ export class Mcmodder3DSplash {
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
         antialias: true,
-        alpha: true
+        alpha: true,
       }) as any;
       this.renderer!.setSize(width, height, false);
       this.renderer!.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -476,7 +484,9 @@ export class Mcmodder3DSplash {
     dirLightTop.position.set(0, 10, 0);
     this.scene.add(dirLightTop);
 
-    const fontUrl = this.parent.utils.getConfig("splashFontUrl") || "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf";
+    const fontUrl =
+      this.configs.getSettings("splashFontUrl") ||
+      "https://cdn.jsdelivr.net.cn/npm/@electron-fonts/noto-sans-sc/fonts/NotoSansSC-Regular.ttf";
 
     const ttfLoader = new TTFLoader();
     (ttfLoader as any).displayText = displayText;
@@ -493,7 +503,7 @@ export class Mcmodder3DSplash {
           bevelThickness: 0.08,
           bevelSize: 0.04,
           bevelOffset: 0,
-          bevelSegments: 3
+          bevelSegments: 3,
         });
 
         textGeo.computeBoundingBox();
@@ -504,7 +514,7 @@ export class Mcmodder3DSplash {
           emissive: new THREE.Color().setHSL(0, 1.0, 0.5),
           emissiveIntensity: 1.0,
           roughness: 0.2,
-          metalness: 0.8
+          metalness: 0.8,
         });
 
         this.mesh = new THREE.Mesh(textGeo, material);
@@ -528,7 +538,7 @@ export class Mcmodder3DSplash {
       undefined,
       (error: any) => {
         console.error("Failed to load TTF font:", error);
-      }
+      },
     );
   }
 

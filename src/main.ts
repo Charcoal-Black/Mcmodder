@@ -1,11 +1,14 @@
 import { GM_getValue, GM_addValueChangeListener } from "$";
-import { Mcmodder } from './Mcmodder';
-import bbsCss from './css/bbs.css?raw';
+import { Mcmodder } from "./Mcmodder";
+import bbsCss from "./css/bbs.css?raw";
 
 (() => {
   try {
-    const isHomePage = location.hostname.includes("mcmod.cn") && 
-      (location.pathname === "/" || location.pathname === "/v4/" || location.pathname === "/index.html");
+    const isHomePage =
+      location.hostname.includes("mcmod.cn") &&
+      (location.pathname === "/" ||
+        location.pathname === "/v4/" ||
+        location.pathname === "/index.html");
 
     if (isHomePage) {
       const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
@@ -17,31 +20,39 @@ import bbsCss from './css/bbs.css?raw';
         const cached = GM_getValue("mcmodderCustomSplashes");
         let splashList: any[] = [];
         if (cached) {
-          try { splashList = JSON.parse(cached); } catch (_e) {}
+          try {
+            splashList = JSON.parse(cached);
+          } catch (_e) {}
         }
         if (Array.isArray(splashList) && splashList.length > 0) {
           const item = splashList[Math.floor(Math.random() * splashList.length)];
           if (item && item.content) {
-            const targetWin = typeof (globalThis as any).unsafeWindow !== 'undefined' ? (globalThis as any).unsafeWindow : window;
+            const targetWin =
+              typeof (globalThis as any).unsafeWindow !== "undefined"
+                ? (globalThis as any).unsafeWindow
+                : window;
             (targetWin as any).__mcmodder_custom_splash__ = item.content;
 
             const applyConsoleOverride = () => {
               if ((targetWin as any).__mcmodder_console_patched__) return;
               const origConsoleLog = targetWin.console.log;
-              if (typeof origConsoleLog !== 'function') return;
+              if (typeof origConsoleLog !== "function") return;
 
               (targetWin as any).__mcmodder_console_patched__ = true;
               targetWin.console.log = function (...args: any[]) {
-                if (args.length >= 1 && typeof args[0] === 'string' && args[0].includes('%c')) {
-                  return origConsoleLog.apply(targetWin.console, [`%c ${item.content}`, args[1] || 'color:#6699FF;']);
+                if (args.length >= 1 && typeof args[0] === "string" && args[0].includes("%c")) {
+                  return origConsoleLog.apply(targetWin.console, [
+                    `%c ${item.content}`,
+                    args[1] || "color:#6699FF;",
+                  ]);
                 }
                 return origConsoleLog.apply(targetWin.console, args);
               };
             };
 
             applyConsoleOverride();
-            document.addEventListener('DOMContentLoaded', applyConsoleOverride);
-            window.addEventListener('load', applyConsoleOverride);
+            document.addEventListener("DOMContentLoaded", applyConsoleOverride);
+            window.addEventListener("load", applyConsoleOverride);
 
             const observer = new MutationObserver(() => {
               const ooops = document.querySelector(".ooops");
@@ -63,7 +74,7 @@ import bbsCss from './css/bbs.css?raw';
 
             observer.observe(document.documentElement, {
               childList: true,
-              subtree: true
+              subtree: true,
             });
           }
         }
@@ -99,9 +110,9 @@ import bbsCss from './css/bbs.css?raw';
       return;
     }
     const updateClass = (cfg: any) => {
-      const isNight = cfg.adaptableNightMode ? 
-        window.matchMedia("(prefers-color-scheme: dark)").matches : 
-        !!cfg.nightMode;
+      const isNight = cfg.adaptableNightMode
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        : !!cfg.nightMode;
       if (isNight) {
         document.documentElement.classList.add("dark");
       } else {
@@ -109,12 +120,15 @@ import bbsCss from './css/bbs.css?raw';
       }
     };
     updateClass(settings);
-    GM_addValueChangeListener("mcmodderSettings", (_key: string, _oldValue?: string, newValue?: string) => {
-      try {
-        const newSettings = JSON.parse(newValue || "{}");
-        updateClass(newSettings);
-      } catch (e) {}
-    });
+    GM_addValueChangeListener(
+      "mcmodderSettings",
+      (_key: string, _oldValue?: string, newValue?: string) => {
+        try {
+          const newSettings = JSON.parse(newValue || "{}");
+          updateClass(newSettings);
+        } catch (e) {}
+      },
+    );
     if (settings.adaptableNightMode) {
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
         try {
@@ -132,7 +146,9 @@ import bbsCss from './css/bbs.css?raw';
       }
     };
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", moveStyleToBottom, { once: true });
+      document.addEventListener("DOMContentLoaded", moveStyleToBottom, {
+        once: true,
+      });
     } else {
       moveStyleToBottom();
     }
@@ -149,10 +165,16 @@ import bbsCss from './css/bbs.css?raw';
             if (!rules) continue;
             for (let j = 0; j < rules.length; j++) {
               const rule = rules[j] as CSSStyleRule;
-              if (rule.selectorText && (rule.selectorText.includes('.ts') || rule.selectorText.includes('separatorline'))) {
-                if (rule.style.getPropertyPriority('background') === 'important' || rule.style.getPropertyPriority('background-color') === 'important') {
-                  rule.style.removeProperty('background');
-                  rule.style.removeProperty('background-color');
+              if (
+                rule.selectorText &&
+                (rule.selectorText.includes(".ts") || rule.selectorText.includes("separatorline"))
+              ) {
+                if (
+                  rule.style.getPropertyPriority("background") === "important" ||
+                  rule.style.getPropertyPriority("background-color") === "important"
+                ) {
+                  rule.style.removeProperty("background");
+                  rule.style.removeProperty("background-color");
                 }
               }
             }
@@ -160,27 +182,50 @@ import bbsCss from './css/bbs.css?raw';
         }
       } catch (e) {}
       const cleanBbsElements = () => {
-        const els = document.querySelectorAll('.tl .ts th, .tl .ts td, #separatorline th, #separatorline td');
-        els.forEach(el => {
-          (el as HTMLElement).style.setProperty('background', 'var(--mcmodder-color-background-dark1)', 'important');
+        const els = document.querySelectorAll(
+          ".tl .ts th, .tl .ts td, #separatorline th, #separatorline td",
+        );
+        els.forEach((el) => {
+          (el as HTMLElement).style.setProperty(
+            "background",
+            "var(--mcmodder-color-background-dark1)",
+            "important",
+          );
         });
-        document.querySelectorAll('tr[style*="background"], td[style*="background"], div[style*="background"], span[style*="background"], table[style*="background"]').forEach(el => {
-          const bg = (el as HTMLElement).style.background || (el as HTMLElement).style.backgroundColor;
-          if (bg && (bg.includes('#fff') || bg.includes('rgb(255, 255, 255)') || bg.includes('#FFF') || bg.includes('FFFFFF') || bg.includes('255,255,255'))) {
-            (el as HTMLElement).style.background = '';
-            (el as HTMLElement).style.backgroundColor = '';
-          }
-        });
+        document
+          .querySelectorAll(
+            'tr[style*="background"], td[style*="background"], div[style*="background"], span[style*="background"], table[style*="background"]',
+          )
+          .forEach((el) => {
+            const bg =
+              (el as HTMLElement).style.background || (el as HTMLElement).style.backgroundColor;
+            if (
+              bg &&
+              (bg.includes("#fff") ||
+                bg.includes("rgb(255, 255, 255)") ||
+                bg.includes("#FFF") ||
+                bg.includes("FFFFFF") ||
+                bg.includes("255,255,255"))
+            ) {
+              (el as HTMLElement).style.background = "";
+              (el as HTMLElement).style.backgroundColor = "";
+            }
+          });
       };
       cleanBbsElements();
       setTimeout(cleanBbsElements, 100);
       setTimeout(cleanBbsElements, 500);
       setTimeout(cleanBbsElements, 1000);
       const observer = new MutationObserver(cleanBbsElements);
-      observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+      observer.observe(document.body || document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
     };
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", cleanInlineStyles, { once: true });
+      document.addEventListener("DOMContentLoaded", cleanInlineStyles, {
+        once: true,
+      });
     } else {
       cleanInlineStyles();
     }
@@ -189,18 +234,27 @@ import bbsCss from './css/bbs.css?raw';
   const clearScreenCover = () => {
     splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
     setTimeout(() => splashStyle.remove(), 300);
-  }
+  };
   const init = () => {
     if (window.location.hostname === "bbs.mcmod.cn") {
       initBbsDarkMode();
     } else if (typeof jQuery === "undefined" && document.body != null) {
       // 已被封禁
       if (document.body.innerText.includes("您已被系统封禁")) {
-        document.body.innerHTML += ('若遇封IP，请在向作者反馈时发送下列内容，并告知具体封禁时间（精确到秒）以及被封禁时已打开的百科页面数量。下列内容可能包含敏感信息，可考虑私信发送。<textarea id="mcmodder-log-export" style="min-height: 800px; min-width: 100%;">');
-        (document.getElementById("mcmodder-log-export") as HTMLTextAreaElement).value = GM_getValue("mcmodderSettings") + "\n" + GM_getValue("scheduleRequestList") + "\n" + GM_getValue("mcmodderLogger");
+        document.body.innerHTML +=
+          '若遇封IP，请在向作者反馈时发送下列内容，并告知具体封禁时间（精确到秒）以及被封禁时已打开的百科页面数量。下列内容可能包含敏感信息，可考虑私信发送。<textarea id="mcmodder-log-export" style="min-height: 800px; min-width: 100%;">';
+        (document.getElementById("mcmodder-log-export") as HTMLTextAreaElement).value =
+          GM_getValue("mcmodderSettings") +
+          "\n" +
+          GM_getValue("scheduleRequestList") +
+          "\n" +
+          GM_getValue("mcmodderLogger");
       }
       // 后台跳转到登录
-      else if (window.location.href.startsWith("https://admin.mcmod.cn/") && document.body.innerHTML === '{"state":107}') {
+      else if (
+        window.location.href.startsWith("https://admin.mcmod.cn/") &&
+        document.body.innerHTML === '{"state":107}'
+      ) {
         document.body.innerHTML += `
           <br><a target="_blank" href="https://www.mcmod.cn/login/">登录 (主网址)</a>
           <br><a target="_blank" href="https://www1.mcmod.cn/login/">登录 (备用网址)</a>
@@ -209,9 +263,9 @@ import bbsCss from './css/bbs.css?raw';
       splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
       setTimeout(() => splashStyle.remove(), 300);
     } else {
-      new Mcmodder;
+      new Mcmodder();
     }
-  }
+  };
   const tryInit = () => {
     if (window.location.hostname === "bbs.mcmod.cn") {
       init();

@@ -1,37 +1,35 @@
-import { createClient, FunctionInvokeOptions, SupabaseClient } from '@supabase/supabase-js';
-import { Mcmodder } from '../Mcmodder';
-import { SupabaseCustomSplash, SupabaseErrorResponse, SupabaseGetCustomSplashesResponse, SupabaseUploadSplashResponse } from '../types';
-import { McmodderUtils } from '../Utils';
+import {
+  createClient,
+  type FunctionInvokeOptions,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
+import { Mcmodder } from "../Mcmodder";
+import { Utils } from "../Utils";
+import type { ConfigRepository } from "../config/ConfigRepository";
 
 export class SupabaseUtils {
   private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
-  
 
-  private readonly parent: Mcmodder;
+  private readonly configs: ConfigRepository;
   private readonly instance: SupabaseClient | null;
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
 
-    if (!this.parent.utils.getConfig("useSupabase")) {
+    if (!this.configs.getSettings("useSupabase")) {
       this.instance = null;
-    }
-
-    else try {
-      this.instance = createClient(
-        SupabaseUtils.supabaseUrl,
-        SupabaseUtils.supabaseKey, {
+    } else
+      try {
+        this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
           auth: {
-            persistSession: false
-          }
-        }
-      );
-    }
-    catch (e) {
-      console.warn("Failed to create Supabase client!");
-      this.instance = null;
-    }
+            persistSession: false,
+          },
+        });
+      } catch (e) {
+        console.warn("Failed to create Supabase client: ", e);
+        this.instance = null;
+      }
   }
 
   getClient() {
@@ -45,21 +43,21 @@ export class SupabaseUtils {
   async invoke<SupabaseSuccessfulResponse extends object>(
     functionName: string,
     options?: FunctionInvokeOptions,
-    onErrorCallback?: (error: string) => void
+    onErrorCallback?: (error: string) => void,
   ) {
     const client = this.getClient();
     if (!client) {
       return;
     }
-    const { data, error } = await client.functions.invoke<SupabaseSuccessfulResponse | SupabaseErrorResponse>(
-      functionName, options
-    );
+    const { data, error } = await client.functions.invoke<
+      SupabaseSuccessfulResponse | SupabaseErrorResponse
+    >(functionName, options);
     if (error || (data as SupabaseErrorResponse)?.error) {
       const errorMsg = (data as SupabaseErrorResponse)?.error ?? String(error);
       if (onErrorCallback) {
         onErrorCallback(errorMsg);
       } else {
-        McmodderUtils.commonMsg(errorMsg, false);
+        Utils.commonMsg(errorMsg, false);
       }
       return;
     }
@@ -67,15 +65,12 @@ export class SupabaseUtils {
   }
 
   async uploadCustomSplash(content: string, authKey: string) {
-    return await this.invoke<SupabaseUploadSplashResponse>(
-      "upload-splash",
-      {
-        body: {
-          auth_key: authKey,
-          content: content
-        }
-      }
-    );
+    return await this.invoke<SupabaseUploadSplashResponse>("upload-splash", {
+      body: {
+        auth_key: authKey,
+        content: content,
+      },
+    });
   }
 
   async fetchCustomSplashes(): Promise<SupabaseCustomSplash[] | undefined> {

@@ -1,16 +1,15 @@
-import { McmodderMap } from "../map/Map";
-import { McmodderItemData, McmodderItemList } from "../types";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
+import { FieldIndex } from "../fieldindex/FieldIndex";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 export class ItemDisplay {
-  private itemMap?: McmodderMap<McmodderItemData>;
-  private tagMap?: McmodderMap<McmodderItemData>;
+  private itemFieldIndex?: FieldIndex<Item, "registerName">;
+  private tagFieldIndex?: FieldIndex<Item, "OredictList">;
   private count = 1;
   private chance = 100;
   private id?: string | string[];
-  private matchList: Record<string, McmodderItemList | undefined> = {};
-  private flattenedList: McmodderItemList = [];
+  private matchList: Record<string, ItemList | undefined> = {};
+  private flattenedList: ItemList = [];
   private HTMLSuffix = "";
   private displaying = 0;
   readonly instance = $(`<div class="mcmodder-item-display">`);
@@ -19,32 +18,37 @@ export class ItemDisplay {
   readonly chanceNode = $(`<span class="chance">`).appendTo(this.instance);
 
   private isEmptyItem() {
-    return !this.itemMap || !this.tagMap || !this.id;
+    return !this.itemFieldIndex || !this.tagFieldIndex || !this.id;
   }
 
-  private setTooltip(data?: McmodderItemData) {
+  private setTooltip(data?: Item) {
     let title;
     if (data) {
-      title = `<span class="mcmodder-slim-dark">${ data.id }</span> <span>${ data.name }</span>`;
-      if (data.englishName) title += ` <span class="mcmodder-item-ename">(${ data.englishName })</span>`;
-      if (data.registerName) title += `<br><span class="mcmodder-item-regname mcmodder-monospace">${ data.registerName }</span>`;
-      if (data.className) title += `<br><span class="mcmodder-item-classname">${ data.className }</span>`;
+      title = `<span class="mcmodder-slim-dark">${data.id}</span> <span>${data.name}</span>`;
+      if (data.englishName)
+        title += ` <span class="mcmodder-item-ename">(${data.englishName})</span>`;
+      if (data.registerName)
+        title += `<br><span class="mcmodder-item-regname mcmodder-monospace">${data.registerName}</span>`;
+      if (data.className)
+        title += `<br><span class="mcmodder-item-classname">${data.className}</span>`;
     } else {
       if (this.isEmptyItem()) {
         title = `<span class="muted">无物品</span>`;
       } else {
         title = `
           <span class="mcmodder-slim-danger">未知物品</span>
-          <br><span class="mcmodder-item-regname mcmodder-monospace">${ this.id }</span>
+          <br><span class="mcmodder-item-regname mcmodder-monospace">${this.id}</span>
         `;
       }
     }
-    if (this.count >= 1e4) title += `<br><span class="mcmodder-item-localecount">数量: ${ this.count.toLocaleString() }</span>`
-    else if (this.count === -1) title += `<br><span class="mcmodder-item-localecount">该原料在合成时不会损耗</span>`
+    if (this.count >= 1e4)
+      title += `<br><span class="mcmodder-item-localecount">数量: ${this.count.toLocaleString()}</span>`;
+    else if (this.count === -1)
+      title += `<br><span class="mcmodder-item-localecount">该原料在合成时不会损耗</span>`;
     this.instance.attr({
       "data-toggle": "tooltip",
       "data-html": "true",
-      "data-original-title": `${ title }<br>${ this.HTMLSuffix }`
+      "data-original-title": `${title}<br>${this.HTMLSuffix}`,
     });
   }
 
@@ -56,11 +60,11 @@ export class ItemDisplay {
     const item = this.flattenedList[this.displaying];
     let url;
     if (item != null) {
-      url = item.smallIcon || McmodderUtils.getImageURLByItemID(item.id);
+      url = item.smallIcon || Utils.getImageURLByItemID(item.id);
     } else {
-      url = McmodderValues.assets.mcmod.emptyItemIcon32x;
+      url = Values.assets.mcmod.emptyItemIcon32x;
     }
-    this.instance.css("background-image", `url(${ url })`);
+    this.instance.css("background-image", `url(${url})`);
     this.setTooltip(item);
   }
 
@@ -76,20 +80,20 @@ export class ItemDisplay {
   private getSingleIDMatchList(id: string) {
     const nid = Number(id);
     if (isNaN(nid)) {
-      const singleMatchList = id.charAt(0) === "#" ?
-        this.tagMap!.get(id.slice(1)) :
-        this.itemMap!.get(id);
+      const singleMatchList =
+        id.charAt(0) === "#" ? this.tagFieldIndex!.get(id.slice(1)) : this.itemFieldIndex!.get(id);
       this.matchList[id] = singleMatchList;
       if (singleMatchList) {
         this.flattenedList = this.flattenedList.concat(singleMatchList);
       }
-    }
-    else {
-      this.matchList[id] = [{
-        id: nid,
-        classID: 0,
-        name: ""
-      }];
+    } else {
+      this.matchList[id] = [
+        {
+          id: nid,
+          classID: 0,
+          name: "",
+        },
+      ];
       this.flattenedList = this.flattenedList.concat(this.matchList[id]);
     }
   }
@@ -101,18 +105,19 @@ export class ItemDisplay {
       return;
     }
     this.HTMLSuffix = "支持下列任意物品：<br>";
-    ids.forEach(id => {
-      let str = `<span class="mcmodder-item-regname mcmodder-monospace">${ id }</span> - `;
+    ids.forEach((id) => {
+      let str = `<span class="mcmodder-item-regname mcmodder-monospace">${id}</span> - `;
       const matchList = this.matchList[id];
       if (!matchList || !matchList.length) {
         str += `<span class="mcmodder-slim-danger">匹配失败!</span>`;
       } else {
-        matchList.forEach(data => {
-          str += `<span class="mcmodder-slim-dark">${ data.id }</span> <span>${ data.name }</span>`;
-          if (data.englishName) str += ` <span class="mcmodder-item-ename">(${ data.englishName })</span>; `;
+        matchList.forEach((data) => {
+          str += `<span class="mcmodder-slim-dark">${data.id}</span> <span>${data.name}</span>`;
+          if (data.englishName)
+            str += ` <span class="mcmodder-item-ename">(${data.englishName})</span>; `;
         });
       }
-      this.HTMLSuffix += `${ str }<br>`;
+      this.HTMLSuffix += `${str}<br>`;
     });
   }
 
@@ -127,10 +132,10 @@ export class ItemDisplay {
     this.displaying = 0;
     if (!(this.id instanceof Array)) {
       this.getSingleIDMatchList(this.id!);
-    }
-    else this.id.forEach(id => {
-      this.getSingleIDMatchList(id);
-    });
+    } else
+      this.id.forEach((id) => {
+        this.getSingleIDMatchList(id);
+      });
     this.generateHTMLSuffix();
     this.refreshItem();
   }
@@ -140,10 +145,9 @@ export class ItemDisplay {
     if (this.count < 0) {
       res = "无损";
       this.countNode.addClass("no-consumption");
-    }
-    else {
+    } else {
       this.countNode.removeClass("no-consumption");
-      if (this.count != 1) res = McmodderUtils.getFormattedNumber(this.count);
+      if (this.count != 1) res = Utils.getFormattedNumber(this.count);
       if (this.count >= 1e3) this.countNode.addClass("small");
       else this.countNode.removeClass("small");
     }
@@ -169,7 +173,7 @@ export class ItemDisplay {
     let res = "";
     if (this.chance < 100) {
       this.chanceNode.addClass("small");
-      res = McmodderUtils.getPrecisionFormatter().format(this.chance) + "%";
+      res = Utils.getPrecisionFormatter().format(this.chance) + "%";
     }
     this.chanceNode.text(res);
   }
@@ -181,9 +185,15 @@ export class ItemDisplay {
     this.refreshChance();
   }
 
-  constructor(itemMap?: McmodderMap<McmodderItemData>, tagMap?: McmodderMap<McmodderItemData>, id?: string | string[], count = 1, chance = 100) {
-    this.itemMap = itemMap;
-    this.tagMap = tagMap;
+  constructor(
+    itemMap?: FieldIndex<Item, "registerName">,
+    tagMap?: FieldIndex<Item, "OredictList">,
+    id?: string | string[],
+    count = 1,
+    chance = 100,
+  ) {
+    this.itemFieldIndex = itemMap;
+    this.tagFieldIndex = tagMap;
     this.id = id;
     this.count = count;
     this.chance = chance;

@@ -1,8 +1,8 @@
-import { McmodderUtils } from "../Utils";
-import { InputList } from "../widget/InputList";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { InputListController } from "../widget/InputListController";
+import { Init } from "./Init";
 
-export class GeneralEditInit extends McmodderInit {
+export class GeneralEditInit extends Init {
   canRun() {
     return false;
   }
@@ -17,61 +17,91 @@ export class GeneralEditInit extends McmodderInit {
       t = $(".left .text").get(0);
       t.innerHTML = t.innerHTML.replace("Alt + X", "⌥X").replace("Ctrl + Enter", "⌘⏎");
     } */
-    let leftText = $(".left .text").get(0);
+    const leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
-    .replace("Alt + X", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastLink")))
-    .replace("Ctrl + Enter", McmodderUtils.keyToHTML(this.parent.utils.getConfig("keybindFastSubmit")));
+      .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+      .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
     // Bug修复：快速存档时当前菜单自动关闭
-    if (this.parent.utils.getConfig("autoSaveFix")) {
+    if (this.configs.getSettings("autoSaveFix")) {
       editAutoSaveLoop = function () {
-        1 == nAutoSave ? $("#editor-frame").length > 0 && 0 == editor.getContent().trim().length ? nAutoSave = 60 : (editSave(), nAutoSave--) : nAutoSave > 0 && nAutoSave--, $("#edit-autosave-sec").text(nAutoSave), setTimeout(editAutoSaveLoop, 1e3)
-      }
+        // 百科原生发力
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        (1 == nAutoSave
+          ? $("#editor-frame").length > 0 && 0 == editor.getContent().trim().length
+            ? (nAutoSave = 60)
+            : (editSave(), nAutoSave--)
+          : nAutoSave > 0 && nAutoSave--,
+          $("#edit-autosave-sec").text(nAutoSave),
+          setTimeout(editAutoSaveLoop, 1e3));
+      };
     }
 
-    if (!this.parent.utils.isKeyMatchConfig("keybindFastSubmit", { ctrlKey: true, key: "Enter", keyCode: 13 }))
-      bindFastSubmit = (e: MouseEvent) => { // @Override
+    if (
+      !this.parent.utils.isKeyMatchConfig("keybindFastSubmit", {
+        ctrlKey: true,
+        key: "Enter",
+        keyCode: 13,
+      })
+    )
+      bindFastSubmit = (e: MouseEvent) => {
+        // @Override
         if (this.parent.utils.isKeyMatchConfig("keybindFastSubmit", e)) {
           e.preventDefault();
-          $('#edit-submit-button').click();
-          if (this.parent.utils.getConfig("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行
+          $("#edit-submit-button").click();
+          if (this.configs.getSettings("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行
         }
-        if ((!e.shiftKey) && McmodderUtils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
+        if (!e.shiftKey && Utils.isKeyMatch({ ctrlKey: true, keyCode: 83 }, e)) {
           e.preventDefault();
-          $('.edit-tools .save a').click();
+          $(".edit-tools .save a").click();
         }
-        if (McmodderUtils.isKeyMatch({ ctrlKey: true, shiftKey: true, keyCode: 83 }, e)) {
+        if (Utils.isKeyMatch({ ctrlKey: true, shiftKey: true, keyCode: 83 }, e)) {
           e.preventDefault();
-          $('.edit-tools .new a').click();
+          $(".edit-tools .new a").click();
         }
-      }
+      };
 
     // 改动附言与说明提示
     const b = $(".common-rowlist-block b");
-    b.filter((_, c) => $(c).text() === "改动附言:").append('<span class="mcmodder-common-danger"> (仅用于给审核员留言)</span>');
-    b.filter((_, c) => $(c).text() === "改动说明:").append('<span class="mcmodder-common-dark"> (所有人均可见)</span>');
-    $("[data-multi-id=remark], [data-multi-id=reason]").hide().each((_, e) => {
-      $(`<textarea id=${"mcmodder-textarea-" + $(e).attr("data-multi-id")} class="form-control" placeholder="${$(e).attr("placeholder")}"></textarea>`)
-      .insertBefore($(e).parent())
-      .val($(e).val())
-      .bind("change", e => {
-        $(e.target)
-        .parent()
-        .find(`[data-multi-id=${e.target.id.split("-").slice(-1)[0]}]`)
-        .val($(e.target).val())
+    b.filter((_, c) => $(c).text() === "改动附言:").append(
+      '<span class="mcmodder-common-danger"> (仅用于给审核员留言)</span>',
+    );
+    b.filter((_, c) => $(c).text() === "改动说明:").append(
+      '<span class="mcmodder-common-dark"> (所有人均可见)</span>',
+    );
+    $("[data-multi-id=remark], [data-multi-id=reason]")
+      .hide()
+      .each((_, e) => {
+        $(
+          `<textarea id=${"mcmodder-textarea-" + $(e).attr("data-multi-id")} class="form-control" placeholder="${$(e).attr("placeholder")}"></textarea>`,
+        )
+          .insertBefore($(e).parent())
+          .val($(e).val())
+          .bind("change", (e) => {
+            $(e.target)
+              .parent()
+              .find(`[data-multi-id=${e.target.id.split("-").slice(-1)[0]}]`)
+              .val($(e.target).val());
+          });
       });
-    });
 
     // 下拉菜单
     $("#mcmodder-textarea-remark, #mcmodder-textarea-reason").each((_, e) => {
-      const textarea = $(e);
-      new InputList(textarea, this.parent.utils, "editReasons", "；", true);
+      const textarea = e as HTMLTextAreaElement;
+      InputListController.instance.add(textarea, {
+        delimiter: "；",
+        hideBeforeInput: true,
+        suggestionManager: {
+          configs: this.configs,
+          configKey: "editReasons",
+        },
+      });
     });
 
     // 针对应用 InputList 后原生输入框无法被检测到的修复
     const parent = $(".common-rowlist-block .text");
-    parent.on("change", ".mcmodder-input-container textarea", e => {
-      parent.find(`[data-multi-id=${ e.target.id.split("-").slice(-1)[0] }]`).val($(e.target).val());
+    parent.on("change", ".mcmodder-input-container textarea", (e) => {
+      parent.find(`[data-multi-id=${e.target.id.split("-").slice(-1)[0]}]`).val($(e.target).val());
     });
   }
 }

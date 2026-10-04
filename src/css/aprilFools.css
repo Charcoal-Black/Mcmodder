@@ -2,10 +2,10 @@
   animation: aprilfools 2.75s linear infinite;
   background: var(--mcmodder-color-background);
   z-index: 999;
-} 
+}
 @keyframes aprilfools {
   0% {
-    -webkit-transform: rotate(0deg); 
+    -webkit-transform: rotate(0deg);
   }
   25% {
     -webkit-transform: rotate(90deg);

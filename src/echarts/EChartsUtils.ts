@@ -1,9 +1,9 @@
+import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
-import { McmodderValues } from "../Values";
+import { Values } from "../Values";
 
 export class EchartsUtils {
-
-  parent: Mcmodder;
+  private readonly configs: ConfigRepository;
   classRatingChart: any;
   classUserEditChart: any;
   classUserWordChart: any;
@@ -13,14 +13,14 @@ export class EchartsUtils {
   font: 0 | 1 | 2 | 3 | undefined;
 
   constructor(parent: Mcmodder) {
-    this.parent = parent;
+    this.configs = parent.configRepository;
     // Echarts 图表相关兼容
     if (typeof echarts != "undefined") {
       let t = document.getElementById("class-rating");
-      if (t) this.setChartFont(this.classRatingChart = echarts.getInstanceByDom(t));
+      if (t) this.setChartFont((this.classRatingChart = echarts.getInstanceByDom(t)));
       t = document.getElementById("center-editchart-obj");
-      if (t) this.setChartFont(this.centerEditChart = echarts.getInstanceByDom(t));
-      
+      if (t) this.setChartFont((this.centerEditChart = echarts.getInstanceByDom(t)));
+
       $(".common-world-gen-chart").each((_, e) => {
         const chart = echarts.getInstanceByDom(e);
         this.worldgenCharts.push(chart);
@@ -31,22 +31,29 @@ export class EchartsUtils {
       });
 
       // 获取字体
-      this.font = this.parent.utils.getConfig("customFont");
+      this.font = this.configs.getSettings("customFont");
 
       // 用户贡献饼图
-      const classUserChartObserver = new MutationObserver(mutationList => {
-        mutationList.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
+      const classUserChartObserver = new MutationObserver((mutationList) => {
+        mutationList.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
             const element = node as Element;
             const id = element?.id;
             if (id === "chart-edit") {
-              this.setChartFont(this.classUserEditChart = echarts.getInstanceById(element.getAttribute("_echarts_instance_")));
+              this.setChartFont(
+                (this.classUserEditChart = echarts.getInstanceById(
+                  element.getAttribute("_echarts_instance_"),
+                )),
+              );
               if (parent.isNightMode) {
                 this.setClassUserChartNightStyle(this.classUserEditChart);
               }
-            }
-            else if (id === "chart-word") {
-              this.setChartFont(this.classUserWordChart = echarts.getInstanceById(element.getAttribute("_echarts_instance_")));
+            } else if (id === "chart-word") {
+              this.setChartFont(
+                (this.classUserWordChart = echarts.getInstanceById(
+                  element.getAttribute("_echarts_instance_"),
+                )),
+              );
               if (parent.isNightMode) {
                 this.setClassUserChartNightStyle(this.classUserWordChart);
               }
@@ -54,55 +61,67 @@ export class EchartsUtils {
             if (this.classUserEditChart && this.classUserWordChart) {
               classUserChartObserver.disconnect();
             }
-          })
+          });
         });
       });
       const classUserChartFrame = $("#class-user-chart-frame").get(0);
       if (classUserChartFrame) {
-        classUserChartObserver.observe(classUserChartFrame, { subtree: true, childList: true });
+        classUserChartObserver.observe(classUserChartFrame, {
+          subtree: true,
+          childList: true,
+        });
       }
 
       // 指数走势图
-      const classIndexChartObserver = new MutationObserver(mutationList => {
-        mutationList.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
+      const classIndexChartObserver = new MutationObserver((mutationList) => {
+        mutationList.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
             const element = node as Element;
             const id = element?.id;
             if (id === "chart-index") {
-              this.setChartFont(this.classIndexChart = echarts.getInstanceById(element.getAttribute("_echarts_instance_")));
+              this.setChartFont(
+                (this.classIndexChart = echarts.getInstanceById(
+                  element.getAttribute("_echarts_instance_"),
+                )),
+              );
               if (parent.isNightMode) {
                 this.setClassIndexChartNightStyle();
               }
             }
-          })
+          });
         });
       });
       const classIndexChartFrame = $("#class-index-chart-frame").get(0);
       if (classIndexChartFrame) {
-        classIndexChartObserver.observe(classIndexChartFrame, { subtree: true, childList: true });
+        classIndexChartObserver.observe(classIndexChartFrame, {
+          subtree: true,
+          childList: true,
+        });
       }
     }
   }
 
   setChartFont(chart: any) {
     if (!this.font) return;
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
-      const fontFamily = McmodderValues.assets.font.fontFamily[this.font];
+      const fontFamily = Values.assets.font.fontFamily[this.font];
       const newOption: any = {
-        textStyle: { fontFamily }
+        textStyle: { fontFamily },
       };
       if (chart === this.centerEditChart) {
-        newOption.calendar = [{
-          yearLabel: { fontFamily }
-        }];
+        newOption.calendar = [
+          {
+            yearLabel: { fontFamily },
+          },
+        ];
       }
       chart.setOption(newOption);
     }
   }
 
   setClassRatingChartBaseStyle() {
-    let o = this.classRatingChart?.getOption();
+    const o = this.classRatingChart?.getOption();
     if (o) {
       o.backgroundColor = "#fff8";
       // o.axisPointer[0].lineStyle.color = "#B9BEC9";
@@ -114,7 +133,7 @@ export class EchartsUtils {
   }
 
   setClassRatingChartNightStyle() {
-    let o = this.classRatingChart?.getOption();
+    const o = this.classRatingChart?.getOption();
     if (o) {
       o.backgroundColor = "#1118";
       // o.axisPointer[0].lineStyle.color = "#444";
@@ -126,20 +145,20 @@ export class EchartsUtils {
   }
 
   setClassUserChartBaseStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#464646";
       o.title[0].subtextStyle.color = "#6e7079";
       o.tooltip[0].backgroundColor = "#fff";
       o.tooltip[0].textStyle.color = "#666";
-      o.series[0].itemStyle.borderColor = "#fff"
+      o.series[0].itemStyle.borderColor = "#fff";
       o.legend[0].textStyle.color = "#333";
       chart.setOption(o);
     }
   }
 
   setClassUserChartNightStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#ccc";
       o.title[0].subtextStyle.color = "#aaa";
@@ -152,7 +171,7 @@ export class EchartsUtils {
   }
 
   setClassIndexChartBaseStyle() {
-    let o = this.classIndexChart?.getOption();
+    const o = this.classIndexChart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#464646";
       o.title[0].subtextStyle.color = "#6e7079";
@@ -167,7 +186,7 @@ export class EchartsUtils {
   }
 
   setClassIndexChartNightStyle() {
-    let o = this.classIndexChart?.getOption();
+    const o = this.classIndexChart?.getOption();
     if (o) {
       o.title[0].textStyle.color = "#ccc";
       o.title[0].subtextStyle.color = "#aaa";
@@ -182,7 +201,7 @@ export class EchartsUtils {
   }
 
   setCenterEditChartBaseStyle() {
-    let o = this.centerEditChart?.getOption();
+    const o = this.centerEditChart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#fff";
       o.calendar[0].dayLabel.color = "#000";
@@ -190,14 +209,14 @@ export class EchartsUtils {
       o.calendar[0].monthLabel.color = "#000";
       o.calendar[0].itemStyle = {
         color: "#fff0",
-        borderColor: "#bbb"
+        borderColor: "#bbb",
       };
       this.centerEditChart.setOption(o);
     }
   }
 
   setCenterEditChartNightStyle() {
-    let o = this.centerEditChart?.getOption();
+    const o = this.centerEditChart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#222";
       o.calendar[0].dayLabel.color = "#fff";
@@ -205,14 +224,14 @@ export class EchartsUtils {
       o.calendar[0].monthLabel.color = "#fff";
       o.calendar[0].itemStyle = {
         color: "#3330",
-        borderColor: "#444"
+        borderColor: "#444",
       };
       this.centerEditChart.setOption(o);
     }
   }
 
   setWorldgenChartBaseStyle(chart: any) {
-    let o = chart.getOption();
+    const o = chart.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#fff";
       o.tooltip[0].borderColor = "#333";
@@ -227,7 +246,7 @@ export class EchartsUtils {
   }
 
   setWorldgenChartNightStyle(chart: any) {
-    let o = chart?.getOption();
+    const o = chart?.getOption();
     if (o) {
       o.tooltip[0].backgroundColor = "#333";
       o.tooltip[0].borderColor = "#666";

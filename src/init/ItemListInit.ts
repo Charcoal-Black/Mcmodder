@@ -1,12 +1,12 @@
-import { McmodderInit } from "./Init";
+import { Init } from "./Init";
 
-export class ItemListInit extends McmodderInit {
+export class ItemListInit extends Init {
   canRun() {
     return this.parent.href.includes("/class/add/");
   }
   run() {
-    if (this.parent.utils.getConfig("moveAds")) {
+    if (this.configs.getSettings("moveAds")) {
       $(".center .adsbygoogle").insertAfter(".center .item-list-table");
-    }  
+    }
   }
 }

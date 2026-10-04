@@ -1,13 +1,15 @@
-import { ItemJsonFrame } from "../jsonframe/ItemJsonFrame";
-import { RecipeJsonFrame } from "../jsonframe/RecipeJsonFrame";
-import { McmodderUtils } from "../Utils";
-import { McmodderValues } from "../Values";
-import { McmodderInit } from "./Init";
+import { createApp } from "vue";
+import { Utils } from "../Utils";
+import { Values } from "../Values";
+import JsonHelper from "../vue/components/JsonHelper.vue";
+import { Init } from "./Init";
 
-export class JsonHelperInit extends McmodderInit {
+export class JsonHelperInit extends Init {
   canRun() {
-    return this.parent.href === `${ this.parent.hostname }/mcmodder/jsonhelper/` && 
-      this.parent.utils.getConfig("enableJsonHelper");
+    return !!(
+      this.parent.href === `${this.parent.hostname}/mcmodder/jsonhelper/` &&
+      this.configs.getSettings("enableJsonHelper")
+    );
   }
   async run() {
     const pageName = "JSON导入辅助";
@@ -15,31 +17,15 @@ export class JsonHelperInit extends McmodderInit {
     $(".common-nav .item").html(pageName);
     $(".search-frame, .eat-frame, .info-frame").remove();
 
-    // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.bootstrap);
-    // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.bootstrapSelect);
-    await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.sortable);
-    await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.mcmod.js.tableSorter);
-    // $(`<link type="text/css" href="${ McmodderValues.assets.mcmod.css.bootstrapSelect }" rel="stylesheet">`).appendTo("head");
+    // await Utils.loadScript(document.head, null, Values.assets.mcmod.js.bootstrap);
+    // await Utils.loadScript(document.head, null, Values.assets.mcmod.js.bootstrapSelect);
+    await Utils.loadScript(document.head, null, Values.assets.mcmod.js.sortable);
+    await Utils.loadScript(document.head, null, Values.assets.mcmod.js.tableSorter);
+    // $(`<link type="text/css" href="${ Values.assets.mcmod.css.bootstrapSelect }" rel="stylesheet">`).appendTo("head");
 
-    const itemJsonContainer = $(`<div id="mcmodder-itemjson-container">
-        <div class="common-text">
-          <span class="mcmodder-subtitle">物品JSON管理</span>
-          <div id="mcmodder-json-compare-frame"></div>
-        </div>
-      </div>`).appendTo(".center");
-    const itemJsonFrame = new ItemJsonFrame("itemjsonframe", this.parent);
-    itemJsonFrame.$instance.appendTo(itemJsonContainer);
-
-    const recipeJsonContainer = $(`<div id="mcmodder-recipejson-container">
-        <div class="common-text">
-          <span class="mcmodder-subtitle">合成表JSON管理</span>
-          <div id="mcmodder-json-compare-frame"></div>
-        </div>
-      </div>`).appendTo(".center");
-    const recipeJsonFrame = new RecipeJsonFrame("recipejsonframe", this.parent);
-    recipeJsonFrame.$instance.appendTo(recipeJsonContainer);
-
-    const guiBoundFrame = $("<div>").insertAfter(recipeJsonContainer);
-    recipeJsonFrame.guiBindFrame.getInstance().addClass("mcmodder-guibound-container").appendTo(guiBoundFrame);
+    const container = $("<div>").appendTo(".center");
+    createApp(JsonHelper, {
+      parent: this.parent,
+    }).mount(container.get(0));
   }
 }

@@ -1,6 +1,6 @@
-import { McmodderLogger } from "./Logger";
+import type { Logger } from "./Logger";
 
-export class McmodderConsole implements McmodderLogger {
+export class McmodderConsole implements Logger {
   log(message: string) {
     console.log(message);
   }
@@ -24,4 +24,6 @@ export class McmodderConsole implements McmodderLogger {
   key(message: string) {
     console.log("%c" + message, "color: orchid;");
   }
+
+  scrollToBottom(): void {}
 }

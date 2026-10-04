@@ -6,10 +6,13 @@ export abstract class CenterBaseInit {
   constructor(center: CenterInit) {
     this.center = center;
   }
-  getParent() {
+  get parent() {
     return this.center.parent;
   }
-  getUtils() {
-    return this.getParent().utils;
+  get utils() {
+    return this.parent.utils;
+  }
+  get configs() {
+    return this.parent.configRepository;
   }
 }

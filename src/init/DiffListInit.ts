@@ -1,14 +1,18 @@
-import { McmodderUtils } from "../Utils";
-import { McmodderInit } from "./Init";
+import { Utils } from "../Utils";
+import { Init } from "./Init";
 
-export class DiffListInit extends McmodderInit {
+export class DiffListInit extends Init {
   canRun() {
-    return this.parent.href.includes("/diff/") &&
+    return !!(
+      this.parent.href.includes("/diff/") &&
       this.parent.href.includes("/list/") &&
-      this.parent.utils.getConfig("multiDiffCompare");
+      this.configs.getSettings("multiDiffCompare")
+    );
   }
   run() {
-    $('<button class="btn btn-sm btn-dark" id="diff-multicompare-btn">批量对比选中项</button><div class="mcmodder-multicompare-frame"></div>').insertAfter(".difference-top");
+    $(
+      '<button class="btn btn-sm btn-dark" id="diff-multicompare-btn">批量对比选中项</button><div class="mcmodder-multicompare-frame"></div>',
+    ).insertAfter(".difference-top");
     $("#diff-multicompare-btn").click(async () => {
       let selected: number[] = [];
       // const id = $("input[name='diff-compare-box']").toArray().map(e => e.getAttribute("value")).sort();
@@ -19,10 +23,10 @@ export class DiffListInit extends McmodderInit {
       const begin = selected[0];
       const end = selected[1];
       if (selected.length < 2) {
-        McmodderUtils.commonMsg(PublicLangData.difference_list.warning.empty, false);
+        Utils.commonMsg(PublicLangData.difference_list.warning.empty, false);
         return;
       } else if (selected.length > 2) {
-        McmodderUtils.commonMsg(PublicLangData.difference_list.warning.limit, false);
+        Utils.commonMsg(PublicLangData.difference_list.warning.limit, false);
         return;
       }
       for (let i = begin; i < end; i++) {

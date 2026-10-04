@@ -9,15 +9,34 @@ declare global {
   }
 
   /* Swal */
+  interface SweetAlertOption {
+    type?: "success" | "warning" | "info" | "error" | "question";
+    title?: string;
+    text?: string;
+    html?: string;
+    footer?: string;
+    customClass?: string;
+    showConfirmButton?: boolean;
+    showCancelButton?: boolean;
+    confirmButtonText?: string;
+    cancelButtonText?: string;
+    confirmButtonColor?: string;
+    cancelButtonColor?: string;
+    allowOutsideClick?: boolean;
+    allowEscapeKey?: boolean;
+    preConfirm?: () => any;
+  }
   interface SweetAlertCallbackState {
     value: boolean;
   }
   interface SweetAlertStatic {
-    fire(option: any): Promise<SweetAlertCallbackState>;
+    fire(option: SweetAlertOption): Promise<SweetAlertCallbackState>;
     close(): void;
     isLoading(): boolean;
   }
   var swal: SweetAlertStatic;
+
+  var iziToast: any;
 
   /* Turndown */
   var turndownPluginGfm: any;
@@ -25,8 +44,14 @@ declare global {
   /* MCMOD */
   function common_msg(title: string, message: string, state: string): void;
 
-  function showTaskTip(imageUrl: string, title: string, text: string, 
-    achieveTime: string, progress: number, rewardExp: number | string): number;
+  function showTaskTip(
+    imageUrl: string,
+    title: string,
+    text: string,
+    achieveTime: string,
+    progress: number,
+    rewardExp: number | string,
+  ): number;
 
   function setSetting(key: string, data: string | number): void;
 
@@ -56,4 +81,4 @@ declare global {
   var getEditorData: (isTest: boolean) => any;
 }
 
-export {}
+export {};

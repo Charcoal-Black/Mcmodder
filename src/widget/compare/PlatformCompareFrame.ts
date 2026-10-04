@@ -1,4 +1,4 @@
-import { McmodderUtils } from "../../Utils";
+import { Utils } from "../../Utils";
 
 type PlatformMap = Record<string, Set<string>>;
 type NodeMap = WeakMap<Set<string>, Record<string, HTMLElement>>;
@@ -6,20 +6,19 @@ type NodeMap = WeakMap<Set<string>, Record<string, HTMLElement>>;
 export class PlatformCompareFrame {
   private static parse(node: JQuery): [PlatformMap, NodeMap] {
     const platforms: PlatformMap = {};
-    const nodes: NodeMap = new Map;
+    const nodes: NodeMap = new Map();
     let category: Set<string>;
     let loaderName = "";
     let nodeRecord: Record<string, HTMLElement>;
     node.contents().each((_, p) => {
       if (p.nodeType === Node.ELEMENT_NODE) {
         loaderName = p.textContent.slice(0, -1);
-        category = new Set;
+        category = new Set();
         platforms[loaderName] = category;
         nodeRecord = {};
         nodes.set(category, nodeRecord);
-      }
-      else if (p.nodeType === Node.TEXT_NODE) {
-        const text = (p as any as Text).data;
+      } else if (p.nodeType === Node.TEXT_NODE) {
+        const text = (p as unknown as Text).data;
         const versionList = text.split(" / ");
         const newElement = $("<p>");
         versionList.forEach((version, index) => {
@@ -39,9 +38,14 @@ export class PlatformCompareFrame {
     return [platforms, nodes];
   }
 
-  private static compare(from: PlatformMap, to: PlatformMap, nodes: NodeMap, className: string | string[]) {
+  private static compare(
+    from: PlatformMap,
+    to: PlatformMap,
+    nodes: NodeMap,
+    className: string | string[],
+  ) {
     Object.entries(from).forEach(([loaderName, versions]) => {
-      const toType = to[loaderName] ?? new Set;
+      const toType = to[loaderName] ?? new Set();
       for (const version of versions) {
         if (!toType.has(version)) {
           const nodeRecord = nodes.get(versions);
@@ -50,10 +54,10 @@ export class PlatformCompareFrame {
             if (!(className instanceof Array)) {
               className = [className];
             }
-            className.forEach(e => {
+            className.forEach((e) => {
               node.classList.add(e);
             });
-            if (!McmodderUtils.validateVersionForLoaderName(version, loaderName)) {
+            if (!Utils.validateVersionForLoaderName(version, loaderName)) {
               node.classList.add("mcmodder-compare-invalidversion");
             }
           }
