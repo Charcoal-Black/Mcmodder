@@ -966,12 +966,15 @@ export class AdvancedUEditor extends UEditor {
       .children()
       .first()
       .attr("href");
-    const resp = await this.parent.utils.createRequest({
-      url: url,
-      method: "GET",
-      headers: { "Content-Type": "text/html; charset=UTF-8" },
-      anonymous: true,
-    });
+    const resp = await this.parent.utils.createRequest(
+      {
+        url: url,
+        method: "GET",
+        headers: { "Content-Type": "text/html; charset=UTF-8" },
+        anonymous: true,
+      },
+      "获取资料原始正文",
+    );
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
     const textArea =

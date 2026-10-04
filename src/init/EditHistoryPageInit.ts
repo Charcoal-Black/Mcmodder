@@ -11,11 +11,14 @@ export class EditHistoryPageInit extends Init {
   }
   private getHistoryPage(id: number, maxPage: number) {
     this.parent.utils
-      .createRequest({
-        url: `${this.parent.hostname}/history.html?starttime=${this.startTime}&endtime=${this.endTime}&page=${id}`,
-        method: "GET",
-        headers: { "Content-Type": "text/html; charset=UTF-8" },
-      })
+      .createRequest(
+        {
+          url: `${this.parent.hostname}/history.html?starttime=${this.startTime}&endtime=${this.endTime}&page=${id}`,
+          method: "GET",
+          headers: { "Content-Type": "text/html; charset=UTF-8" },
+        },
+        "展开历史编辑记录",
+      )
       .then((resp) => {
         if (!resp.responseXML) {
           Utils.commonMsg("加载历史编辑记录失败...", false);

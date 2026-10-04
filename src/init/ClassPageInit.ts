@@ -397,10 +397,13 @@ export class ClassPageInit extends Init {
           button.find("span").text("努力加载中...");
           button.find("i").attr("class", "fa fa-pulse fa-spinner");
           this.parent.utils
-            .createRequest({
-              url: `${this.parent.hostname}/${this.isClassPage ? "class" : "modpack"}/edit/${classID}/`,
-              method: "GET",
-            })
+            .createRequest(
+              {
+                url: `${this.parent.hostname}/${this.isClassPage ? "class" : "modpack"}/edit/${classID}/`,
+                method: "GET",
+              },
+              "展开模组高级信息",
+            )
             .then((resp) => {
               if (!resp.responseXML) return;
               const doc = $(resp.responseXML);

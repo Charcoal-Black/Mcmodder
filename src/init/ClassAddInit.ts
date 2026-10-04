@@ -16,10 +16,13 @@ export class ClassAddInit extends Init {
 
   private async runCrashProtector() {
     $("#mcmodder-crash-protector").html("[刷新中...]");
-    const resp = await this.parent.utils.createRequest({
-      url: `${this.parent.hostname}/class/add/`,
-      method: "GET",
-    });
+    const resp = await this.parent.utils.createRequest(
+      {
+        url: `${this.parent.hostname}/class/add/`,
+        method: "GET",
+      },
+      "防撞车",
+    );
     if (!resp.responseXML) return;
     const doc = $(resp.responseXML);
     $("div.common-rowlist-block:nth-child(2) > div:nth-child(2)").html(

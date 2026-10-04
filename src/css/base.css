@@ -1125,6 +1125,9 @@ body:not(.view),
   font-style: italic;
   background-color: var(--mcmodder-color-success-transparent1) !important;
 }
+.mcmodder-verify-simplecheck i {
+  margin-right: 5px;
+}
 .mcmodder-template-delete {
   position: absolute;
   right: 0.5em;

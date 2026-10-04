@@ -1381,12 +1381,13 @@ export class Utils {
    */
   createRequest(
     config: GmXmlhttpRequestOption<"text", unknown>,
+    message?: string,
   ): Promise<GmResponseEvent<"text", unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
     if (lastRequestTime === null) {
-      const errorMsg = "排队的请求已超出上限，本次请求被丢弃（详见控制台）。";
-      Utils.commonMsg(errorMsg, false);
+      const errorMsg = "排队的请求已超出上限，本次请求被丢弃。";
+      Utils.commonMsg(errorMsg + "（详见控制台）", false);
       return Promise.reject(new Error(errorMsg));
     }
     return new Promise((resolve) => {
@@ -1429,7 +1430,7 @@ export class Utils {
         logs.push(content);
         GM_setValue("mcmodderLogger", logs.join(";"));
         // 调试与监控：在所有可见的标签页上提示本次发包（须置于限速等待之后，否则排队中的请求会提前亮起）
-        this.parent.requestToastBroadcaster.send(config.method, config.url);
+        this.parent.requestToastBroadcaster.send(config.method, config.url, message);
         // console.debug("Send Async request: ", config);
         GM_xmlhttpRequest(config);
       }, lastRequestTime - now);
@@ -1604,12 +1605,15 @@ export class Utils {
   /** 按 ID 抓取物品资料页并解析为 `Item`，失败返回 undefined */
   async getItemByID(id: string | number) {
     id = Number(id);
-    const resp = await this.createRequest({
-      url: `${this.parent.hostname}/item/${id}.html`,
-      method: "GET",
-      redirect: "manual",
-      anonymous: true,
-    });
+    const resp = await this.createRequest(
+      {
+        url: `${this.parent.hostname}/item/${id}.html`,
+        method: "GET",
+        redirect: "manual",
+        anonymous: true,
+      },
+      "获取物品基础信息",
+    );
     if (resp.status > 300 || !resp.responseXML) {
       return;
     }
@@ -1621,11 +1625,14 @@ export class Utils {
   async getDetailedItemByID(id: string | number) {
     if (!this.parent.currentUID) return;
     id = Number(id);
-    const resp = await this.createRequest({
-      url: `${this.parent.hostname}/item/edit/${id}/`,
-      method: "GET",
-      redirect: "manual",
-    });
+    const resp = await this.createRequest(
+      {
+        url: `${this.parent.hostname}/item/edit/${id}/`,
+        method: "GET",
+        redirect: "manual",
+      },
+      "获取物品详细信息",
+    );
     if (resp.status > 300 || !resp.responseXML) {
       return;
     }

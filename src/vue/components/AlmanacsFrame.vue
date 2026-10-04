@@ -60,12 +60,15 @@ async function get(date: number) {
     }
   });
   if (!almanacs.value && date === Utils.getStartTime(new Date(), 0)) {
-    const resp = await parent.utils.createRequest({
-      url: `${parent.hostname}/tools/almanacs`,
-      method: "GET",
-      headers: { "Content-Type": "text/html; charset=UTF-8" },
-      anonymous: true,
-    });
+    const resp = await parent.utils.createRequest(
+      {
+        url: `${parent.hostname}/tools/almanacs`,
+        method: "GET",
+        headers: { "Content-Type": "text/html; charset=UTF-8" },
+        anonymous: true,
+      },
+      "获取运势",
+    );
     let almanacs: Almanacs = {
       date: date,
       good: [],
