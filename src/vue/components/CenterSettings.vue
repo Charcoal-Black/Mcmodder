@@ -70,6 +70,25 @@
   </div>
 
   <div class="center-setting-block" style="margin-top: 2em">
+    <h4 style="margin-bottom: 0.5em; font-weight: bold">我上传的表态贴纸</h4>
+    <p class="text-muted" style="margin-bottom: 0.8em; font-size: 13px">
+      贴纸用于短评的自定义表态：图片存到百科图床，脚本云端只登记归属；每人每天的上传数量有上限。
+    </p>
+    <template v-if="attitudeStickersEnabled">
+      <AttitudeStickerList
+        :stickers="attitudeStickers"
+        :quota="attitudeStickerQuota"
+        :loading="attitudeStickersLoading"
+        :on-upload="uploadAttitudeSticker"
+      />
+      <p class="text-muted" style="font-size: 12px; margin-top: 0.6em">
+        <a href="javascript:void(0);" @click="refreshAttitudeStickers(true)">刷新列表</a>
+      </p>
+    </template>
+    <p v-else class="text-muted" style="font-size: 13px">{{ attitudeStickersHint }}</p>
+  </div>
+
+  <div class="center-setting-block" style="margin-top: 2em">
     <div class="setting-item">
       <button class="btn" @click="emptyScheduleRequest">清除当前所有计划任务</button>
     </div>
@@ -78,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef } from "vue";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import { Mcmodder } from "../../Mcmodder";
 import { Values } from "../../Values";
 import { InputType } from "../../config/ConfigUtils";
@@ -91,6 +110,7 @@ import ConfigResourceInteractor from "./config/ConfigResourceInteractor.vue";
 import { Utils } from "../../Utils.ts";
 import ConfigResourceFileListInteractor from "./config/ConfigResourceFileListInteractor.vue";
 import SupabaseAuthBinder from "./supabase/SupabaseAuthBinder.vue";
+import AttitudeStickerList from "./attitude/AttitudeStickerList.vue";
 import ButtonWithSpinner from "./ButtonWithSpinner.vue";
 import type {
   ConfigResourceFileListInteractorProps,
@@ -231,7 +251,51 @@ function emptyScheduleRequest() {
   }
 }
 
+/** 我上传的表态贴纸（图片存于百科图床，云端只登记归属） */
+const attitudeStickers = ref<SupabaseAttitudeSticker[]>([]);
+const attitudeStickerQuota = ref<SupabaseAttitudeStickerQuota | null>(null);
+const attitudeStickersLoading = ref(false);
+
+const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude");
+const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase");
+/** 贴纸区块是否可用：两项开关都打开且已完成云端认证 */
+const attitudeStickersEnabled = computed(
+  () =>
+    customAttitudeEnabled.value &&
+    useSupabaseEnabled.value &&
+    !!props.parent.attitudeSystem.getAuthKey(),
+);
+const attitudeStickersHint = computed(() => {
+  if (!customAttitudeEnabled.value) return "自定义表态未开启：可在上方开启后再管理表态贴纸。";
+  if (!useSupabaseEnabled.value) return "云端服务未开启：可在上方开启后再管理表态贴纸。";
+  return "尚未完成云端认证：请先在上方完成认证。";
+});
+
+async function refreshAttitudeStickers(force = false) {
+  if (!attitudeStickersEnabled.value) return;
+  attitudeStickersLoading.value = true;
+  try {
+    const data = await props.parent.attitudeSystem.listMyStickers(force);
+    if (!data) return;
+    attitudeStickers.value = data.stickers;
+    attitudeStickerQuota.value = data.quota ?? null;
+  } finally {
+    attitudeStickersLoading.value = false;
+  }
+}
+
+async function uploadAttitudeSticker(file: File) {
+  await props.parent.attitudeSystem.uploadSticker(file);
+  await refreshAttitudeStickers(true);
+}
+
+onMounted(() => void refreshAttitudeStickers());
+watch(attitudeStickersEnabled, (enabled) => {
+  if (enabled) void refreshAttitudeStickers();
+});
+
 const splashInput = ref<string>("");
+
 async function submitSplash() {
   const content = splashInput.value.trim();
 

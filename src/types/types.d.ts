@@ -130,6 +130,24 @@ interface AppStorage {
    * 读写均直接走 GM Storage。结构见 {@link RequestToastRecord}。
    */
   mcmodderRequestToasts?: RequestToastRecord[];
+  /**
+   * 自定义表态的轻量缓存（不登记为可缓存键，读写直接走 GM Storage）。
+   *
+   * 仅供「未读表态数」这类跨页面提醒复用，避免每页都请求一次云端：`unreadAt` 为写入时间戳，
+   * 超过 `Values.attitude.unreadCacheTtl` 即视为过期。
+   */
+  attitudeCache?: {
+    unread?: number;
+    total?: number;
+    unreadAt?: number;
+    /** 已确认看到的最大表态记录 id（打开消息中心 / 点击铃铛时推进） */
+    lastSeenId?: number;
+    /** 最近一次增量检查看到的最大表态记录 id */
+    latestId?: number;
+    /** 最近一次增量检查的时间戳与结果（多标签去重用） */
+    checkedAt?: number;
+    checkedCount?: number;
+  };
 }
 
 interface Settings {
@@ -214,6 +232,8 @@ interface Settings {
   missileAlertHeight: number;
   commentExpandHeight: number;
   userBlacklist: string;
+  customAttitude: boolean;
+  attitudeTwemoji: boolean;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;
   itemListStylePreview: boolean;
@@ -242,6 +262,8 @@ interface Settings {
   lastRequestTime: number;
   itemCustomTypeList: ItemType[];
   userFavList: string;
+  /** 最近使用的自定义表态 emoji（JSON 数组字符串，本机维度） */
+  attitudeRecentEmojis: string;
   recentlyVisited: string;
   recentlyVisitedMods: RecentlyVisited[];
   myProfiles: string;
@@ -1696,5 +1718,111 @@ interface SupabaseUploadSplashResponse {
 
 interface SupabaseGetCustomSplashesResponse {
   splashes?: SupabaseCustomSplash[];
+  error?: string;
+}
+
+/** 单条表态的聚合计数：`attitude_type` → 数量 */
+type AttitudeCounts = Record<string, number>;
+
+/** `attitude-counts` / `attitude-put` 的响应：短评 id → 聚合计数 / 我点过的类型 */
+interface SupabaseAttitudeCountsResponse {
+  /** `comment_id` → （`attitude_type` → 数量） */
+  counts?: Record<string, AttitudeCounts>;
+  /** `comment_id` → 我点过的 `attitude_type` 列表（未认证时为空对象） */
+  mine?: Record<string, string[]>;
+  error?: string;
+}
+
+/** `attitude-put` 的响应：目标短评的最新聚合计数与我的表态类型 */
+interface SupabaseAttitudePutResponse {
+  counts?: AttitudeCounts;
+  mine?: string[];
+  error?: string;
+}
+
+/** 一张自定义表态贴纸（图片本体在百科图床，云端只登记归属与创建时间） */
+interface SupabaseAttitudeSticker {
+  id: number;
+  uid: number;
+  image_url: string;
+  /** 原始文件名（展示用，服务端截断） */
+  name?: string;
+  created_at: string;
+}
+
+/** 贴纸上传额度（东八区自然日） */
+interface SupabaseAttitudeStickerQuota {
+  limit?: number;
+  used?: number;
+  remaining?: number;
+}
+
+/** `attitude-sticker` 的 `list` 响应：我上传的贴纸与今日额度 */
+interface SupabaseAttitudeStickerListResponse {
+  stickers?: SupabaseAttitudeSticker[];
+  quota?: SupabaseAttitudeStickerQuota;
+  error?: string;
+}
+
+/** `attitude-sticker` 的 `put` 响应：登记的贴纸与最新额度 */
+interface SupabaseAttitudeStickerPutResponse {
+  sticker?: SupabaseAttitudeSticker;
+  quota?: SupabaseAttitudeStickerQuota;
+  error?: string;
+}
+
+/** `attitude-sticker` 的 `resolve` 响应：按 id 解析出的贴纸（渲染历史表态用） */
+interface SupabaseAttitudeStickerResolveResponse {
+  stickers?: SupabaseAttitudeSticker[];
+  error?: string;
+}
+
+/** 表态消息中心的一条记录 */
+interface SupabaseAttitudeInboxItem {
+  id: number;
+  comment_id: string;
+  attitude_type: string;
+  from_uid: number;
+  from_username?: string;
+  from_avatar?: string;
+  comment_text?: string;
+  source_url?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+/** `attitude-inbox` 的 `list` 响应 */
+interface SupabaseAttitudeInboxListResponse {
+  items?: SupabaseAttitudeInboxItem[];
+  /** 符合条件的总条数（与 `unreadOnly` 对应） */
+  total?: number;
+  /** 未读总数（不受 `unreadOnly` 影响） */
+  unread?: number;
+  error?: string;
+}
+
+/** `attitude-inbox` 的 `stats` 响应 */
+interface SupabaseAttitudeStatsResponse {
+  /** 我收到的表态：`attitude_type` → 数量 */
+  received?: AttitudeCounts;
+  /** 我给出的表态总数 */
+  given?: number;
+  /** 我收到的表态总数 */
+  total?: number;
+  /** 其中未读数 */
+  unread?: number;
+  error?: string;
+}
+
+/** `attitude-inbox` 的 `read` 响应 */
+interface SupabaseAttitudeReadResponse {
+  ok?: boolean;
+  error?: string;
+}
+
+/** `attitude-inbox` 的 `check` 响应：`since_id` 之后的新表态数量与最新记录 id */
+interface SupabaseAttitudeCheckResponse {
+  count?: number;
+  latest_id?: number;
   error?: string;
 }

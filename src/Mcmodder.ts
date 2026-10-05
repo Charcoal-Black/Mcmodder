@@ -22,6 +22,7 @@ import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { Swiper } from "./widget/Swiper";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
+import { AttitudeSystem } from "./attitude/AttitudeSystem";
 import { Splash3D } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
 import { createApp } from "vue";
@@ -54,6 +55,8 @@ export class Mcmodder {
   screenAttachedFrame: ScreenAttachedFrameData[];
   cfgutils: ConfigUtils;
   supabaseUtils: SupabaseUtils;
+  /** 自定义表态系统（全站单例：短评页与消息中心共用同一份计数缓存与未读统计） */
+  attitudeSystem: AttitudeSystem;
   echartsUtils: EchartsUtils;
   styleColors: ThemeColorSet;
   splash3D?: Splash3D;
@@ -64,6 +67,8 @@ export class Mcmodder {
   itemTypeList?: ItemCustomTypeList;
   readonly hostname: string;
   private msgAlertCount = 0;
+  /** 站点自身的未读消息数（页头铃铛的基底；我方表态提醒数在此之上叠加） */
+  private msgSiteCount = 0;
   private readonly titleNode = $("title");
   private readonly linkContentDictionary: Record<string, string> = {};
   private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
@@ -112,6 +117,8 @@ export class Mcmodder {
     ScheduleRequestLoader.run(this.scheduleRequestUtils);
 
     this.supabaseUtils = new SupabaseUtils(this);
+
+    this.attitudeSystem = AttitudeSystem.for(this);
 
     InitLoader.run(this, this.initList);
 
@@ -282,6 +289,23 @@ export class Mcmodder {
       redNum.hide();
     }
     this.updateTitleNode();
+  }
+
+  /**
+   * 刷新页头铃铛未读数：站点消息数 + 未确认的自定义表态数。
+   *
+   * 只在进入页面时调用一次（不做轮询）：表态数走 `attitude-inbox` 的增量 `check`
+   * （只取 `since_id` 之后的新记录数，{@link Values.attitude.remindCacheTtl} 内复用缓存）。
+   */
+  async refreshBellNotify() {
+    const count = await this.attitudeSystem.getNewCount();
+    if (count === undefined) return;
+    this.notifyUnreadMessage(this.msgSiteCount + count);
+  }
+
+  /** 只按已缓存的数据重画铃铛（站点自身刷新消息数时用，不产生额外请求） */
+  private applyBellNotify() {
+    this.notifyUnreadMessage(this.msgSiteCount + this.attitudeSystem.getCachedNewCount());
   }
 
   updateTitleNode(count = this.msgAlertCount) {
@@ -574,6 +598,19 @@ export class Mcmodder {
     }
   }
 
+  /**
+   * 切换自定义表态 emoji 的 Twemoji 字体渲染。
+   *
+   * 样式（`src/css/attitude.css`）以 `html.mcmodder-attitude-twemoji` 为开关，
+   * 关闭时回退系统 emoji 字体，无需重载页面。
+   */
+  updateAttitudeFont() {
+    $("html").toggleClass(
+      "mcmodder-attitude-twemoji",
+      !!this.configRepository.getSettings("attitudeTwemoji"),
+    );
+  }
+
   switchNightMode() {
     if (this.isNightMode) {
       this.configRepository.setSettings("nightMode", false);
@@ -598,6 +635,7 @@ export class Mcmodder {
   private watchRef() {
     this.configRepository.watchSettingsRef("nightMode", () => this.updateNightMode());
     this.configRepository.watchSettingsRef("preferredWiderScreen", () => this.updatePageWidth());
+    this.configRepository.watchSettingsRef("attitudeTwemoji", () => this.updateAttitudeFont());
   }
 
   main() {
@@ -818,6 +856,7 @@ export class Mcmodder {
 
     this.updateNightMode();
     this.updatePageWidth();
+    this.updateAttitudeFont();
 
     if (!this.configRepository.getSettings("adaptableNightMode")) {
       $(
@@ -860,15 +899,23 @@ export class Mcmodder {
         .appendTo(".header-container .header-search")
         .click(() => {
           GM_openInTab(`${this.hostname}/message/`, { active: true });
+          this.msgSiteCount = 0;
           this.notifyUnreadMessage(0);
+          // 表态消息同样一键清空未读并确认提醒，避免铃铛刚点完又亮起来
+          void this.attitudeSystem
+            .markAllRead()
+            .then(() => this.attitudeSystem.acknowledgeNew())
+            .then(() => this.refreshBellNotify());
         });
     }
 
-    const msgAlert = Number($(".header-user-msg b").text());
+    this.msgSiteCount = Number($(".header-user-msg b").text());
     if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       $(".header-user-msg").remove();
       $(`<div class="mcmodder-rednum">`).appendTo("#mcmodder-message-center");
-      this.notifyUnreadMessage(msgAlert);
+      this.applyBellNotify();
+      // 自定义表态提醒：只在进入页面时检查一次（不轮询），结果与站点消息数叠加
+      if (this.currentUID) void this.refreshBellNotify();
     }
 
     if (typeof editor != "undefined") this.callEditor();
@@ -952,11 +999,11 @@ export class Mcmodder {
             .then((resp) => {
               try {
                 const data = JSON.parse(resp.responseText);
-                if (data.state || !data.user.login || !data.user.msg_count) {
-                  this.notifyUnreadMessage(0);
-                } else {
-                  this.notifyUnreadMessage(data.user.msg_count);
-                }
+                const siteCount =
+                  data.state || !data.user.login || !data.user.msg_count ? 0 : data.user.msg_count;
+                this.msgSiteCount = siteCount;
+                // 站点自身的消息数刷新即时叠加已缓存的新表态数（不再为本功能额外请求云端）
+                this.applyBellNotify();
               } catch (e) {
                 if (e instanceof SyntaxError) {
                   console.error("Failed to parse data: " + resp.responseText);

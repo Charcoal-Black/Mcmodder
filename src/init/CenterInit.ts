@@ -1,5 +1,6 @@
 import { Values } from "../Values";
 import { CenterCardInit } from "./center/CenterCardInit";
+import { CenterCommentInit } from "./center/CenterCommentInit";
 import { CenterHomeInit } from "./center/CenterHomeInit";
 import { CenterRankInit } from "./center/CenterRankInit";
 import { CenterSettingInit } from "./center/CenterSettingInit";
@@ -71,6 +72,13 @@ export class CenterInit extends Init {
       }
     }
   });
+  // 「短评」子页是 hash 路由 SPA，面板内容（含「我的表态取得统计」）每次进入都会重渲染，
+  // 故不 disconnect、只做幂等重注入（`CenterCommentInit.run()` 自带 fetching/已注入守卫）
+  private readonly centerCommentObserver = new MutationObserver(() => {
+    if (this.configs.getSettings("customAttitude")) {
+      void new CenterCommentInit(this).run();
+    }
+  });
 
   run() {
     this.pageUID = Number(this.parent.href.split("center.mcmod.cn/")[1].split("/")[0]);
@@ -96,6 +104,12 @@ export class CenterInit extends Init {
     if (this.configs.getSettings("expCalculator")) {
       this.centerRankObserver.observe($("#center-page-rank").get(0), {
         childList: true,
+      });
+    }
+    if ($("#center-page-comment").length && this.configs.getSettings("customAttitude")) {
+      this.centerCommentObserver.observe($("#center-page-comment").get(0), {
+        childList: true,
+        subtree: true,
       });
     }
 

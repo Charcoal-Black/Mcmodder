@@ -11,7 +11,7 @@ export default defineConfig({
       userscript: {
         name: "Mcmodder-MC百科辅助工具",
         author: "Charcoal-Black",
-        version: "2.2.2",
+        version: "2.3.0",
         description: "Mcmodder",
         license: "AGPL-3.0",
         icon: "https://www.mcmod.cn/static/public/images/favicon.ico",
@@ -47,6 +47,7 @@ export default defineConfig({
           "supabase.co",
           "fastly.jsdelivr.net",
           "cdn.jsdelivr.net",
+          "cdn.jsdelivr.net.cn",
         ],
         require: [
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",

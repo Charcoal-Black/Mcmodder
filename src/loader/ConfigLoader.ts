@@ -388,6 +388,18 @@ export class ConfigLoader {
         "用户黑名单",
         "自动屏蔽所选定用户发布的短评和回复。输入要屏蔽的用户 UID，多个 UID 间用半角逗号隔开。",
       )
+      .addCheckboxConfig(
+        "customAttitude",
+        "自定义表态",
+        "启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。该功能依赖云端服务。",
+        true,
+      )
+      .addCheckboxConfig(
+        "attitudeTwemoji",
+        "表态使用 Twemoji 字体",
+        "用 Mozilla Twemoji 字体渲染自定义表态 emoji，保证跨平台一致外观。",
+        true,
+      )
       .addNumberConfig(
         "autoVerifyDelay",
         "自动查询待审项",

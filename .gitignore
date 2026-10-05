@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local-only working directories (never committed): agent workspace, Supabase project
+.agents/
+supabase/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
