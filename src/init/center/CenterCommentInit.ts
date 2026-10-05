@@ -2,8 +2,8 @@ import { buildAttitudeIcon, getAttitudeTitle } from "../../attitude/attitudeIcon
 import { CenterBaseInit } from "./CenterBaseInit";
 
 /**
- * 个人中心「短评」子页（`center.mcmod.cn/<uid>/#/comment/`）的「我的表态取得统计」扩展：
- * 在原生 12 项之后按数量降序追加自定义表态的取得次数。
+ * 个人中心「短评」子页（`center.mcmod.cn/<uid>/#/comment/`）的「表态取得统计」扩展：
+ * 在原生 12 项之后按数量降序追加自定义表态的取得次数。自己与别人的主页都按该页 uid 读公开聚合计数。
  *
  * 该页是 hash 路由 SPA，面板每次进入都会重渲染，注入逻辑要做幂等。
  */
@@ -14,16 +14,16 @@ export class CenterCommentInit extends CenterBaseInit {
     if (this.fetching) return;
     if (!this.configs.getSettings("customAttitude")) return;
     if (!this.parent.supabaseUtils.hasClient()) return;
-    if (!this.center.isMyPage()) return;
+    const uid = this.center.getPageUID();
+    if (!(uid > 0)) return;
     if (!$(".center-main.attitude .center-content.attitude-list > ul").length) return;
     if ($(".center-main.attitude .mcmodder-attitude-stat").length) return;
 
-    const authKey = this.configs.getProfile("auth_key");
-    if (!authKey) return;
-
     this.fetching = true;
     try {
-      const resp = await this.parent.supabaseUtils.fetchAttitudeInbox(authKey, "stats");
+      const resp = await this.parent.supabaseUtils.fetchAttitudeUserCounts(uid, (error) =>
+        console.warn("[Mcmodder] 表态取得统计获取失败：", error),
+      );
       if (!resp) return;
       const entries = Object.entries(resp.received ?? {})
         .filter(([, count]) => count > 0)

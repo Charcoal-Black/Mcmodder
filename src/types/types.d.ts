@@ -1733,6 +1733,12 @@ interface SupabaseAttitudeCountsResponse {
   error?: string;
 }
 
+/** `attitude-counts` 的 `uid` 模式响应：该用户收到的各类型表态数量 */
+interface SupabaseAttitudeUserCountsResponse {
+  received?: AttitudeCounts;
+  error?: string;
+}
+
 /** `attitude-put` 的响应：目标短评的最新聚合计数与我的表态类型 */
 interface SupabaseAttitudePutResponse {
   counts?: AttitudeCounts;

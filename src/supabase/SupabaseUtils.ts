@@ -97,6 +97,15 @@ export class SupabaseUtils {
     );
   }
 
+  /** 读取某个用户收到的自定义表态计数（公开读，未认证也可调用） */
+  async fetchAttitudeUserCounts(uid: number, onErrorCallback?: (error: string) => void) {
+    return await this.invoke<SupabaseAttitudeUserCountsResponse>(
+      "attitude-counts",
+      { body: { uid } },
+      onErrorCallback,
+    );
+  }
+
   /**
    * 写入 / 取消一条自定义表态，返回该短评的最新聚合计数。
    *
