@@ -163,7 +163,9 @@ export class CommentInit extends Init {
             // 移动端图标优化
             this.replaceMobileClientIcon(target);
           });
-        } else if (className === "comment-reply-floor" && this.configs.getSettings("replyLink")) {
+        } else if (className === "comment-reply-floor") {
+          void this.attitude.processCommentRows(commentFloor);
+          if (!this.configs.getSettings("replyLink")) continue;
           $("div.comment-reply-row", mutation.target).each((_, _e) => {
             const e = $(_e);
             const uid = Number(e.find("a.poped").attr("data-uid"));

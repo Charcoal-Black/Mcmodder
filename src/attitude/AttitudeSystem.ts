@@ -35,7 +35,7 @@ export interface AttitudeTarget {
   toUsername: string;
   commentText: string;
   sourceUrl: string;
-  /** 顶层短评节点（`.comment-row`） */
+  /** 短评节点：顶层 `.comment-row` 或楼中楼 `.comment-reply-row` */
   row: HTMLElement;
 }
 
@@ -523,7 +523,7 @@ export class AttitudeSystem {
     const button = target.closest("a.mcmodder-attitude-button");
     if (button) {
       event.preventDefault();
-      const resolved = this.resolveTarget($(button).closest(".comment-row"));
+      const resolved = this.resolveTarget($(button).closest(".comment-row, .comment-reply-row"));
       if (resolved) void this.handleButtonClick(button, resolved);
       return;
     }
@@ -531,7 +531,7 @@ export class AttitudeSystem {
     const value = target.closest("a[data-mcmodder-attitude]");
     if (value) {
       event.preventDefault();
-      const resolved = this.resolveTarget($(value).closest(".comment-row"));
+      const resolved = this.resolveTarget($(value).closest(".comment-row, .comment-reply-row"));
       const attitudeType = value.getAttribute("data-mcmodder-attitude");
       if (resolved && attitudeType) void this.write(resolved, attitudeType);
     }
@@ -624,14 +624,14 @@ export class AttitudeSystem {
   }
 
   /**
-   * 给一批新插入的短评注入自定义表态入口，并统一刷新这批短评的计数。
+   * 给一批新插入的短评（顶层短评与楼中楼回复）注入自定义表态入口，并统一刷新这批短评的计数。
    *
-   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的顶层短评。
+   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的条目。
    */
   async processCommentRows($context: JQuery) {
     if (!this.enabled) return;
     const rows: { $row: JQuery; target: AttitudeTarget }[] = [];
-    $context.find(".comment-row").each((_, row) => {
+    $context.find(".comment-row, .comment-reply-row").each((_, row) => {
       const $row = $(row);
       if ($row.attr("data-mcmodder-attitude-row")) return;
       const $tools = $row.find(".comment-tools").first();
@@ -694,14 +694,16 @@ export class AttitudeSystem {
 
   /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 自己的短评 / 缺 author 信息）时返回 undefined */
   private resolveTarget($row: JQuery): AttitudeTarget | undefined {
-    // `.get()` 只给出 `Element`，`.comment-row` 实际是 `<div>`，按已知宿主结构收窄
+    // `.get()` 只给出 `Element`，短评节点实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
     if (!row) return undefined;
     const $tools = $row.find(".comment-tools").first();
     const commentId = String($tools.find("input.comment-id").first().val() ?? "");
     if (!commentId) return undefined;
 
-    const $author = $row.find(".comment-row-username a.poped").first();
+    const $author = $row
+      .find(".comment-row-username a.poped, .comment-reply-row-username a.poped")
+      .first();
     const toUid = Number($author.attr("data-uid"));
     if (!toUid || toUid === this.parent.currentUID) return undefined;
 
@@ -709,7 +711,11 @@ export class AttitudeSystem {
       commentId,
       toUid,
       toUsername: $author.text().trim(),
-      commentText: $row.find(".comment-row-text-content").first().text().trim(),
+      commentText: $row
+        .find(".comment-row-text-content, .comment-reply-row-text-content")
+        .first()
+        .text()
+        .trim(),
       sourceUrl: `${window.location.href.split("#")[0]}#comment-${commentId}`,
       row,
     };

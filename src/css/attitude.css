@@ -9,6 +9,11 @@
  */
 
 /* ===== Twemoji 字体与 emoji 字形 ===== */
+:root {
+  /* 自定义表态图标（emoji / 恶魔安格瑞 / 贴纸）的统一尺寸倍率 */
+  --mcmodder-attitude-scale: 1.2;
+}
+
 @font-face {
   font-family: "Twemoji";
   src: url("https://cdn.jsdelivr.net.cn/npm/twemoji-colr-font@15.0.3/twemoji.woff2") format("woff2");
@@ -31,19 +36,27 @@ html.mcmodder-attitude-twemoji emoji-picker {
 
 /* 恶魔安格瑞图标：宽高随字体、取色随 currentColor */
 .mcmodder-attitude-svg {
-  width: 1em;
-  height: 1em;
+  width: calc(1em * var(--mcmodder-attitude-scale));
+  height: calc(1em * var(--mcmodder-attitude-scale));
   display: inline-block;
   vertical-align: middle;
 }
 
 /* ===== 短评工具条：自定义表态按钮与结果项 ===== */
-.comment-row .comment-tools li.mcmodder-attitude-tools > a.mcmodder-attitude-button {
+:is(.comment-row, .comment-reply-row)
+  .comment-tools
+  li.mcmodder-attitude-tools
+  > a.mcmodder-attitude-button {
   cursor: var(--mcmodder-cursor-hand);
+  font-size: calc(1em * var(--mcmodder-attitude-scale));
 }
 
 /* 覆盖站点 `.comment-row .comment-tools li i { margin-right: 3px }`，让表情与箭头贴合 */
-.comment-row .comment-tools li.mcmodder-attitude-tools > a.mcmodder-attitude-button > i {
+:is(.comment-row, .comment-reply-row)
+  .comment-tools
+  li.mcmodder-attitude-tools
+  > a.mcmodder-attitude-button
+  > i {
   margin-right: 0;
 }
 
@@ -56,18 +69,18 @@ html.mcmodder-attitude-twemoji emoji-picker {
 }
 
 /* 结果条里的 emoji 略放大：Twemoji 字形比原生 FontAwesome 图标偏小，放大后更易辨认 */
-.comment-row
+:is(.comment-row, .comment-reply-row)
   .comment-tools
   ol.comment-attitude-result
   li.mcmodder-attitude-item
   > a
   > .mcmodder-attitude-emoji {
-  font-size: 1.4em;
+  font-size: calc(1.4em * var(--mcmodder-attitude-scale));
   vertical-align: -0.12em;
 }
 
 /* 原生表态候选列表里的恶魔安格瑞：站点只为 `.comment-attitude` 写样式，自绘项自带对齐与取色 */
-.comment-row
+:is(.comment-row, .comment-reply-row)
   .comment-tools
   li.comment-attitude-list
   .comment-attitude-list-hover
@@ -80,7 +93,7 @@ html.mcmodder-attitude-twemoji emoji-picker {
   cursor: var(--mcmodder-cursor-hand);
 }
 
-.comment-row
+:is(.comment-row, .comment-reply-row)
   .comment-tools
   li.comment-attitude-list
   .comment-attitude-list-hover
@@ -215,8 +228,8 @@ html.mcmodder-attitude-twemoji emoji-picker {
 .mcmodder-attitude-sticker,
 img.mcmodder-attitude-sticker-image {
   display: inline-block;
-  width: 1.3em;
-  height: 1.3em;
+  width: calc(1.3em * var(--mcmodder-attitude-scale));
+  height: calc(1.3em * var(--mcmodder-attitude-scale));
   vertical-align: -0.3em;
   border-radius: 3px;
   background-color: var(--mcmodder-color-background-dark1);
@@ -233,14 +246,14 @@ img.mcmodder-attitude-sticker-image {
 }
 
 /* 结果条里的贴纸略放大，与 emoji 观感一致 */
-.comment-row
+:is(.comment-row, .comment-reply-row)
   .comment-tools
   ol.comment-attitude-result
   li.mcmodder-attitude-item
   > a
   > .mcmodder-attitude-sticker {
-  width: 1.5em;
-  height: 1.5em;
+  width: calc(1.5em * var(--mcmodder-attitude-scale));
+  height: calc(1.5em * var(--mcmodder-attitude-scale));
 }
 
 /* ===== 「我的贴纸」列表（表态选择面板与个人中心设置共用） ===== */
@@ -320,6 +333,10 @@ img.mcmodder-attitude-sticker-image {
   opacity: 0.8;
 }
 
+.message-list .mcmodder-attitude-count .mcmodder-attitude-emoji {
+  font-size: calc(1em * var(--mcmodder-attitude-scale));
+}
+
 .message-list > .mcmodder-attitude-summary {
   margin-bottom: 8px;
   font-size: 12px;
@@ -354,7 +371,7 @@ img.mcmodder-attitude-sticker-image {
 }
 
 .mcmodder-attitude-badge .mcmodder-attitude-emoji {
-  font-size: 14px;
+  font-size: calc(14px * var(--mcmodder-attitude-scale));
 }
 
 .mcmodder-attitude-badge .mcmodder-attitude-svg {
@@ -364,4 +381,8 @@ img.mcmodder-attitude-sticker-image {
 /* ===== 个人中心「我的表态取得统计」 ===== */
 .center-main.attitude li.mcmodder-attitude-stat .mcmodder-attitude-svg {
   margin-right: 0.5em;
+}
+
+.center-main.attitude li.mcmodder-attitude-stat .mcmodder-attitude-emoji {
+  font-size: calc(1em * var(--mcmodder-attitude-scale));
 }
