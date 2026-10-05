@@ -40,6 +40,24 @@ function textNodes($element: JQuery) {
   return $element.contents().filter((_, node) => node.nodeType === Node.TEXT_NODE);
 }
 
+function messageTimeKey($item: JQuery) {
+  return $item.find(".content-tools > li").first().text().trim();
+}
+
+export function insertMessageItemByTime($list: JQuery, element: HTMLElement) {
+  const newKey = messageTimeKey($(element));
+  const entries: { node: Element; key: string }[] = [];
+  $list.children("li").each((_, li) => {
+    const key = messageTimeKey($(li));
+    if (key) entries.push({ node: li, key });
+  });
+
+  const descending = entries.length < 2 || entries[0].key >= entries[1].key;
+  const next = entries.find(({ key }) => (descending ? key < newKey : key > newKey));
+  if (next) $(next.node).before(element);
+  else $list.append(element);
+}
+
 /** 挑选可克隆的站点原生条目模板：优先原生表态条目，其次任意原生条目，最后内置模板 */
 export function findAttitudeMessageTemplate() {
   const $nativeItems = $(".message-list > ul > li").not(".mcmodder-attitude-message");
@@ -70,13 +88,11 @@ export function buildAttitudeMessageItem($template: JQuery, item: SupabaseAttitu
   });
 
   const $username = $item.find(".username").first();
-  // 克隆来的昵称与主页链接属于模板作者，改写成表态者
   $username
     .find("b a")
     .attr("href", profileUrl)
     .text(item.from_username?.trim() ?? "");
   const $nativeBadge = $username.find(".content-comment-attitude");
-  // 文案取自原生表态条目，站点改措辞时自动跟随
   const nativeSuffix = textNodes($username).last().text().trim();
   const suffix = $nativeBadge.length && nativeSuffix ? nativeSuffix : DEFAULT_ATTITUDE_SUFFIX;
 

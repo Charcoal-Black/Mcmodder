@@ -4,6 +4,7 @@ import { buildAttitudeIcon } from "../attitude/attitudeIcon";
 import {
   buildAttitudeMessageItem,
   findAttitudeMessageTemplate,
+  insertMessageItemByTime,
 } from "../attitude/attitudeMessageItem";
 import { Values } from "../Values";
 import { Init } from "./Init";
@@ -243,14 +244,14 @@ export class MessageInit extends Init {
     if (items.length === 0) return;
 
     const $template = findAttitudeMessageTemplate();
-    const fragment = document.createDocumentFragment();
-    items.forEach((item) => fragment.append(buildAttitudeMessageItem($template, item)));
-    $list.prepend(fragment);
+    items.forEach((item) =>
+      insertMessageItemByTime($list, buildAttitudeMessageItem($template, item)),
+    );
 
     if (total > items.length) {
       $('<li class="mcmodder-attitude-more-hint text-muted"></li>')
         .text(`共 ${total} 条自定义表态，仅显示最近 ${items.length} 条`)
-        .insertAfter($list.children("li.mcmodder-attitude-message").last());
+        .appendTo($list);
     }
     $(".message-list > .message-empty").hide();
     void this.attitude.hydrateStickers($list);
