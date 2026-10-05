@@ -258,7 +258,7 @@ const attitudeStickersLoading = ref(false);
 
 const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude");
 const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase");
-/** 贴纸区块是否可用：两项开关都打开且已完成云端认证 */
+/** 表态与云端开关都打开且已认证时才可用 */
 const attitudeStickersEnabled = computed(
   () =>
     customAttitudeEnabled.value &&

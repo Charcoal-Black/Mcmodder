@@ -1,12 +1,11 @@
 /**
  * 自定义表态（短评）样式。
  *
- * 自绘元素一律使用 `mcmodder-attitude-*` 前缀：站点对 `.comment-attitude` 有 document 事件委托，
- * 复用其类名会被误判成原生表态并发出无效请求，故两套完全隔离。
+ * 自绘元素一律用 `mcmodder-attitude-*` 前缀：站点对 `.comment-attitude` 有 document 事件委托，
+ * 复用其类名会被误判成原生表态并发请求。
  *
- * emoji 统一走 Twemoji COLR 字体：`@font-face` 声明本身不触发下载，只有页面真正渲染
- * `.mcmodder-attitude-emoji` 元素时才会拉取 woff2；`html.mcmodder-attitude-twemoji`
- * 由 `Mcmodder.updateAttitudeFont()` 按配置项挂载。
+ * emoji 走 Twemoji COLR 字体（`@font-face` 声明本身不触发下载，渲染到对应元素时才拉 woff2），
+ * 由 `Mcmodder.updateAttitudeFont()` 按配置项挂载开关类。
  */
 
 /* ===== Twemoji 字体与 emoji 字形 ===== */

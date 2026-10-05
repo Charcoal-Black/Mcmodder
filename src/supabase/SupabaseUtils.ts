@@ -205,11 +205,7 @@ export class SupabaseUtils {
     });
   }
 
-  /**
-   * 增量读取「上次确认（`sinceId`）之后」的新表态数量与最新记录 id。
-   *
-   * 提醒轮询专用：只做两次计数/取最大 id 的轻查询，不返回消息明细，故可高频调用。
-   */
+  /** 增量读取「上次确认（`sinceId`）之后」的新表态数量与最新记录 id（不返回消息明细） */
   async checkNewAttitudes(authKey: string, sinceId: number, onError?: (error: string) => void) {
     return await this.invoke<SupabaseAttitudeCheckResponse>(
       "attitude-inbox",
@@ -218,7 +214,7 @@ export class SupabaseUtils {
     );
   }
 
-  /** 把我的全部未读表态标记为已读（页头铃铛一键清空未读时使用） */
+  /** 把我的全部未读表态标记为已读（页头铃铛用） */
   async markAllAttitudesRead(authKey: string) {
     return await this.invoke<SupabaseAttitudeReadResponse>("attitude-inbox", {
       body: { auth_key: authKey, action: "read" },

@@ -39,13 +39,12 @@ import { buildStickerType } from "../../../attitude/attitudeIcon";
 interface Props {
   /** 我上传的贴纸（按上传时间倒序） */
   stickers: SupabaseAttitudeSticker[];
-  /** 今日上传额度；未知时传 null（不展示额度文案） */
+  /** 今日上传额度（null = 未知） */
   quota: SupabaseAttitudeStickerQuota | null;
-  /** 是否正在加载列表 */
   loading?: boolean;
-  /** 我在当前短评已表态的类型（用于高亮）；只查看的场景传空数组 */
+  /** 已表态的类型（高亮用）；只查看时传空数组 */
   active?: string[];
-  /** 点击一张贴纸；不传表示只查看（此时贴纸不可点） */
+  /** 点击贴纸；不传 = 只查看（贴纸不可点） */
   onPick?: (attitudeType: string) => void;
   /** 上传本地图片；不传则不显示上传入口 */
   onUpload?: (file: File) => Promise<void> | void;
@@ -71,7 +70,7 @@ const quotaText = computed(() => {
 async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
-  // 清空 value：同一张图片连续二次选择时也要触发 change
+  // 清空 value，同一张图片连续选两次也能触发 change
   input.value = "";
   if (!file || !props.onUpload) return;
   uploading.value = true;

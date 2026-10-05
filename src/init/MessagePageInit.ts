@@ -9,19 +9,11 @@ import { Values } from "../Values";
 import { Init } from "./Init";
 
 /**
- * 消息中心的表态集成。
+ * 消息中心的表态集成：子 tab 徽标与列表顶部合计行在任何消息中心页面都渲染；每条短评类消息显示该短评
+ * 获得的自定义表态数量；「短评表态」与「全部」子页签额外注入自定义表态消息列表（克隆原生条目样式），
+ * 并把本批未读记录回写为已读。
  *
- * - 子 tab 徽标与列表顶部合计行（共 N 条 / 未读 M）在**任何**消息中心页面都渲染，进页即可看到提醒，
- *   不必先点进「短评表态」子 tab；统计走 GM 缓存，正常每次访问只请求一次云端；
- * - 每条短评类消息在 `.content-ground` 显示该短评获得的自定义表态数量（复用短评页的计数缓存）；
- * - 「短评表态」与「全部」子页签（`?category=comment` 及 `?type=attitude`）额外注入自定义表态消息列表
- *   （克隆原生条目样式），并把本批未读记录回写为已读；未完成云端认证时给出可操作提示，
- *   「忽略已读」把列表过滤空时给出说明；
- * - 「忽略已读」勾选框（`#message-unread`）勾选时只取未读记录，与站点语义一致；
- * - 进入消息中心即视为已看到提醒（`AttitudeSystem.acknowledgeNew`），页头红点随之归零。
- *
- * 站点的列表渲染（含 AJAX / 滚动分页与子 tab 切换时的整块重绘）不被接管：`MutationObserver`
- * 观察 `body` 做幂等增量注入，每次请求由签名（子 tab / 未读过滤 / 原生条目数 / 我方列表是否存在）去重。
+ * 站点自身的列表渲染不被接管：`MutationObserver` 观察 `body` 做幂等增量注入。
  */
 export class MessageInit extends Init {
   private readonly attitude = AttitudeSystem.for(this.parent);
@@ -44,8 +36,7 @@ export class MessageInit extends Init {
     }
 
     if (!this.attitude.enabled) return;
-    // 列表可能由站点 AJAX 渲染，且切换子 tab 时整块重绘：观察 body 而非列表本身，
-    // 保证列表节点被替换后仍能接上（刷新按签名去重，不会因自身注入而循环）
+    // 列表由站点 AJAX 渲染、切子 tab 时整块重绘：观察 body 而非列表本身，节点被替换后仍能接上
     this.messageObserver.observe(document.body, { childList: true, subtree: true });
     $("#message-unread").on("change", () => {
       this.inboxSignature = "";
@@ -53,11 +44,11 @@ export class MessageInit extends Init {
     });
     this.scheduleRefresh();
 
-    // 进消息中心即视为已看到提醒：页头红点归零（表态本身的未读状态仍按各子 tab 展示）
+    // 进消息中心即视为已看到提醒：页头红点归零
     void this.attitude.acknowledgeNew().then(() => this.parent.refreshBellNotify());
   }
 
-  /** 站点列表的增删改都合并到一次刷新里（我方自己的注入也会触发，靠签名与缓存去重） */
+  /** 站点列表的增删改合并到一次刷新（自身注入也会触发，靠签名去重） */
   private scheduleRefresh() {
     if (this.refreshTimer !== undefined) window.clearTimeout(this.refreshTimer);
     this.refreshTimer = window.setTimeout(() => void this.refresh(), 120);
@@ -65,14 +56,14 @@ export class MessageInit extends Init {
 
   private async refresh() {
     this.refreshTimer = undefined;
-    // 合计与未读徽标不依赖子 tab：进消息中心即可看到提醒
+    // 合计与未读徽标不依赖子 tab
     await this.renderStats();
     if (!$(".message-list").length) return;
     await this.renderCommentCounts();
     if (this.isInboxTab()) await this.renderInbox();
   }
 
-  /** 我方可注入消息条目的子页签：「全部」（不带 `type`）与「短评表态」 */
+  /** 可注入表态消息条目的子页签：「全部」（不带 `type`）与「短评表态」 */
   private isInboxTab() {
     const type = new URLSearchParams(window.location.search).get("type");
     return !type || type === "attitude";
@@ -100,7 +91,7 @@ export class MessageInit extends Init {
     });
   }
 
-  /** 写入数量标签；结果不变时不动 DOM，避免与 `MutationObserver` 形成抖动循环 */
+  /** 写入数量标签；内容不变时不改 DOM（避免与 `MutationObserver` 形成循环） */
   private renderCountBadge($item: JQuery, record: AttitudeRecord) {
     const $ground = $item.find(".content-ground").first();
     if (!$ground.length) return;
@@ -132,11 +123,10 @@ export class MessageInit extends Init {
       $badge.text(`自定义表态 ${total}`);
     }
     $ground.append($badge);
-    // 徽标里的贴纸先以占位形态出现，图片地址解析完成后补上
     void this.attitude.hydrateStickers($badge);
   }
 
-  /** 「短评表态」子 tab：注入自定义表态消息、子 tab 徽标与合计行 */
+  /** 「短评表态」子 tab：注入表态消息列表 */
   private async renderInbox() {
     if (this.inboxFetching) return;
     const authKey = this.attitude.getAuthKey();
@@ -166,11 +156,11 @@ export class MessageInit extends Init {
       this.renderInboxItems(items, listResp.total ?? items.length);
       this.renderFilteredHint(items.length, unreadOnly);
 
-      // 已读回写放在渲染之后：本批条目本次仍保持原样式显示，只更新云端状态
+      // 已读回写放在渲染之后：本批条目保持未读样式显示，只更新云端状态
       const unreadIds = items.filter((item) => !item.is_read).map((item) => item.id);
       if (unreadIds.length) {
         await this.parent.supabaseUtils.markAttitudesRead(authKey, unreadIds);
-        // 未读已清零：立即刷新合计与子 tab 徽标（绕过缓存）
+        // 未读已清零：立即刷新合计与徽标（绕过缓存）
         await this.renderStats(true);
       }
 
@@ -184,17 +174,12 @@ export class MessageInit extends Init {
     return $(".message-list > ul > li").not(".mcmodder-attitude-message").length;
   }
 
-  /**
-   * 表态合计与未读徽标。
-   *
-   * 子 tab 徽标始终渲染（不点进「表态」子页签也能看到提醒），列表顶部合计行只在列表存在时渲染；
-   * 统计走 {@link AttitudeSystem.getStats} 的 GM 缓存，正常每个页面只请求一次云端。
-   */
+  /** 表态合计与未读徽标（徽标始终渲染，合计行只在列表存在时渲染；统计走 `AttitudeSystem.getStats` 的 GM 缓存） */
   private async renderStats(force = false) {
     const stats = await this.attitude.getStats(force);
     if (!stats) return;
 
-    // 幂等：内容不变就不动 DOM，否则会与本页的 MutationObserver 形成「注入 -> 刷新」循环
+    // 内容不变时不改 DOM，避免与本页的 MutationObserver 形成注入/刷新循环
     const badgeClass = `badge mcmodder-attitude-total ${stats.unread > 0 ? "badge-danger" : "badge-light"}`;
     const badgeTitle = `共 ${stats.total} 条，未读 ${stats.unread} 条`;
     const badgeText = stats.unread > 0 ? `${stats.unread}/${stats.total}` : String(stats.total);
@@ -237,11 +222,7 @@ export class MessageInit extends Init {
       .prependTo(".message-list");
   }
 
-  /**
-   * 「忽略已读」把列表过滤空时给出说明。
-   *
-   * 否则列表顶部只有合计行、正文却停在站点的空态提示上，容易被当成没注入成功。
-   */
+  /** 「忽略已读」把列表过滤空时给出说明（只剩合计行时容易被当成注入失败） */
   private renderFilteredHint(shown: number, unreadOnly: boolean) {
     const $hint = $(".message-list > .mcmodder-attitude-filter-hint");
     if (!unreadOnly || shown > 0) {
@@ -272,7 +253,6 @@ export class MessageInit extends Init {
         .insertAfter($list.children("li.mcmodder-attitude-message").last());
     }
     $(".message-list > .message-empty").hide();
-    // 表态消息里的贴纸同样按占位渲染后异步补图
     void this.attitude.hydrateStickers($list);
   }
 

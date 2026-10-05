@@ -67,7 +67,7 @@ export class Mcmodder {
   itemTypeList?: ItemCustomTypeList;
   readonly hostname: string;
   private msgAlertCount = 0;
-  /** 站点自身的未读消息数（页头铃铛的基底；我方表态提醒数在此之上叠加） */
+  /** 站点自身的未读消息数（页头铃铛的基底，自定义表态数在此之上叠加） */
   private msgSiteCount = 0;
   private readonly titleNode = $("title");
   private readonly linkContentDictionary: Record<string, string> = {};
@@ -292,10 +292,8 @@ export class Mcmodder {
   }
 
   /**
-   * 刷新页头铃铛未读数：站点消息数 + 未确认的自定义表态数。
-   *
-   * 只在进入页面时调用一次（不做轮询）：表态数走 `attitude-inbox` 的增量 `check`
-   * （只取 `since_id` 之后的新记录数，{@link Values.attitude.remindCacheTtl} 内复用缓存）。
+   * 刷新页头铃铛未读数：站点消息数 + 未确认的自定义表态数（表态数走 `attitude-inbox` 的增量
+   * `check`，只在进入页面时调用一次）。
    */
   async refreshBellNotify() {
     const count = await this.attitudeSystem.getNewCount();
@@ -303,7 +301,7 @@ export class Mcmodder {
     this.notifyUnreadMessage(this.msgSiteCount + count);
   }
 
-  /** 只按已缓存的数据重画铃铛（站点自身刷新消息数时用，不产生额外请求） */
+  /** 只按缓存数据重画铃铛（站点刷新消息数时用，不发请求） */
   private applyBellNotify() {
     this.notifyUnreadMessage(this.msgSiteCount + this.attitudeSystem.getCachedNewCount());
   }
@@ -598,12 +596,7 @@ export class Mcmodder {
     }
   }
 
-  /**
-   * 切换自定义表态 emoji 的 Twemoji 字体渲染。
-   *
-   * 样式（`src/css/attitude.css`）以 `html.mcmodder-attitude-twemoji` 为开关，
-   * 关闭时回退系统 emoji 字体，无需重载页面。
-   */
+  /** 切换表态 emoji 的 Twemoji 渲染（`html.mcmodder-attitude-twemoji` 为样式开关，无需重载） */
   updateAttitudeFont() {
     $("html").toggleClass(
       "mcmodder-attitude-twemoji",
@@ -901,7 +894,7 @@ export class Mcmodder {
           GM_openInTab(`${this.hostname}/message/`, { active: true });
           this.msgSiteCount = 0;
           this.notifyUnreadMessage(0);
-          // 表态消息同样一键清空未读并确认提醒，避免铃铛刚点完又亮起来
+          // 表态消息同样清空未读并确认提醒
           void this.attitudeSystem
             .markAllRead()
             .then(() => this.attitudeSystem.acknowledgeNew())
@@ -914,7 +907,7 @@ export class Mcmodder {
       $(".header-user-msg").remove();
       $(`<div class="mcmodder-rednum">`).appendTo("#mcmodder-message-center");
       this.applyBellNotify();
-      // 自定义表态提醒：只在进入页面时检查一次（不轮询），结果与站点消息数叠加
+      // 自定义表态提醒：进入页面时检查一次，结果与站点消息数叠加
       if (this.currentUID) void this.refreshBellNotify();
     }
 
@@ -1005,7 +998,7 @@ export class Mcmodder {
                 const siteCount =
                   data.state || !data.user.login || !data.user.msg_count ? 0 : data.user.msg_count;
                 this.msgSiteCount = siteCount;
-                // 站点自身的消息数刷新即时叠加已缓存的新表态数（不再为本功能额外请求云端）
+                // 站点刷新消息数时叠加已缓存的新表态数，不额外请求云端
                 this.applyBellNotify();
               } catch (e) {
                 if (e instanceof SyntaxError) {

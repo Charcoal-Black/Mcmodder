@@ -40,13 +40,8 @@ export interface AttitudeTarget {
 }
 
 /**
- * 自定义表态系统：纯 DOM 编排 + 云端读写。
- *
- * - **注入**：在站点渲染了原生表态候选列表的顶层短评工具条（`.comment-tools`）末尾追加自定义表态
- *   按钮与结果条；站点原生的单表态逻辑与事件委托不受影响（两套类名完全隔离）。
- * - **计数**：短评计数走 `attitude-counts`，按 TTL 缓存，缺失部分合并成一次去抖请求；
- *   写操作（`attitude-put`）成功后用服务端返回的最新计数就地刷新。
- * - **多表态**：同一用户对同一短评可按类型并存多种表态；点击已表态的类型即取消。
+ * 自定义表态系统：纯 DOM 编排 + 云端读写。计数走 `attitude-counts`（TTL 缓存 + 去抖合并请求），
+ * 写操作走 `attitude-put` 并以服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
  *
  * 全站单例：短评页与消息中心共用同一份缓存与去抖通道，经 {@link AttitudeSystem.for} 获取。
  */
@@ -69,7 +64,7 @@ export class AttitudeSystem {
   };
   /** `sticker:<id>` → 贴纸记录（贴纸不可变，命中即长期有效） */
   private readonly stickerCache = new Map<string, SupabaseAttitudeSticker>();
-  /** 服务端明确答复「不存在」的贴纸 id：避免反复请求，也用于区分「未解析完」与「确实缺失」 */
+  /** 服务端答复「不存在」的贴纸 id（不再重复请求） */
   private readonly missingStickerIds = new Set<number>();
   private pendingStickerTypes = new Set<string>();
   private pendingStickerResolvers: ((stickers: Map<string, SupabaseAttitudeSticker>) => void)[] =
@@ -97,7 +92,7 @@ export class AttitudeSystem {
     return this.configs.getProfile("auth_key") ?? "";
   }
 
-  /** 最近使用的 emoji（本机维度存储，解析失败按空列表处理） */
+  /** 最近使用的 emoji（本机维度） */
   getRecentEmojis() {
     const raw = this.configs.getSettings("attitudeRecentEmojis");
     if (!raw) return [];
@@ -112,9 +107,8 @@ export class AttitudeSystem {
   }
 
   /**
-   * 我收到的表态统计（未读数供页头提醒与消息中心徽标共用）。
+   * 我收到的表态统计（`unreadCacheTtl` 内复用 GM 缓存）。
    *
-   * 命中 `Values.attitude.unreadCacheTtl` 内的 GM 缓存直接返回，避免每个页面都请求云端；
    * 功能关闭 / 未认证返回 `{ unread: 0, total: 0 }`；请求失败且无缓存可用时返回 undefined。
    */
   async getStats(force = false): Promise<AttitudeStats | undefined> {
@@ -126,7 +120,7 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.at < Values.attitude.unreadCacheTtl) {
       return { unread: cached.unread, total: cached.total };
     }
-    // 后台提醒用：失败只记录日志，不弹模态框打断用户
+    // 后台提醒用：失败只记录日志，不弹模态框
     const resp = await this.parent.supabaseUtils.fetchAttitudeInbox(authKey, "stats", {
       onError: (error) => console.warn("[Mcmodder] 表态消息统计获取失败：", error),
     });
@@ -137,13 +131,10 @@ export class AttitudeSystem {
   }
 
   /**
-   * 未确认的新表态数量（页头红点用）。
+   * 未确认的新表态数量（页头红点用）：只取 `since_id` 之后的增量，数量在 {@link acknowledgeNew}
+   * 之前不归零；进入页面时调用一次，{@link Values.attitude.remindCacheTtl} 内复用结果。
    *
-   * 只请求 `since_id`（上次确认位置）之后的增量，不返回消息明细；数量在 {@link acknowledgeNew}
-   * 之前不会归零，因此消息中心自动标记已读不会让红点提前消失。每个页面只在进入时调用一次
-   * （不做轮询），{@link Values.attitude.remindCacheTtl} 内的结果直接复用，避免连续开页重复请求。
-   *
-   * @returns 新表态数量；功能关闭 / 未认证时为 0，请求失败且无缓存时为 undefined。
+   * @returns 功能关闭 / 未认证时为 0，请求失败且无缓存时为 undefined。
    */
   async getNewCount(): Promise<number | undefined> {
     if (!this.enabled) return 0;
@@ -160,7 +151,7 @@ export class AttitudeSystem {
     );
     if (!resp) return checkedAt ? cachedCount : undefined;
 
-    // 请求期间若已确认提醒（打开消息中心 / 点铃铛），本次结果已过期，丢弃以免红点被重新点亮
+    // 请求期间若已确认提醒（打开消息中心 / 点铃铛），本次结果已过期，丢弃
     if ((this.configs.get("attitudeCache", "lastSeenId") ?? 0) !== sinceId)
       return this.configs.get("attitudeCache", "checkedCount") ?? 0;
 
@@ -171,18 +162,13 @@ export class AttitudeSystem {
     return count;
   }
 
-  /** 最近一次检查得到的未确认表态数（不发请求；站点自身刷新消息数时叠加它） */
+  /** 最近一次检查得到的未确认表态数（不发请求） */
   getCachedNewCount() {
     if (!this.enabled || !this.getAuthKey()) return 0;
     return this.configs.get("attitudeCache", "checkedCount") ?? 0;
   }
 
-  /**
-   * 确认已看到全部表态提醒（打开消息中心 / 点击铃铛时调用），红点随之归零。
-   *
-   * 确认位置总是写成「当前最新记录 id」：刚检查过就直接复用缓存（不重复请求），否则现取一次，
-   * 以免把「刚到达但尚未检查过」的提醒一并吞掉。
-   */
+  /** 确认已看到全部表态提醒（打开消息中心 / 点铃铛）：确认位置写成当前最新记录 id，没有缓存时现取一次 */
   async acknowledgeNew() {
     if (!this.enabled) return;
     const authKey = this.getAuthKey();
@@ -194,8 +180,7 @@ export class AttitudeSystem {
       const resp = await this.parent.supabaseUtils.checkNewAttitudes(authKey, 0, () => {});
       latestId = resp?.latest_id ?? latestId;
     }
-    // 从未成功取到最新记录 id 时不推进确认位置：宁可让红点多留一会儿，
-    // 也不能把它写成 0（那会让下一次检查重新数出全部历史记录，红点反而消不掉）
+    // 从未取到最新记录 id 时不推进确认位置：写成 0 会让下次检查重新数出全部历史记录
     if (!latestId) return;
     this.configs.set("attitudeCache", "latestId", latestId);
     this.configs.set("attitudeCache", "lastSeenId", latestId);
@@ -203,7 +188,7 @@ export class AttitudeSystem {
     this.configs.set("attitudeCache", "checkedAt", Date.now());
   }
 
-  /** 把我的全部未读表态标记为已读，并同步本地未读缓存（页头铃铛点击时调用） */
+  /** 把我的全部未读表态标记为已读，并同步本地未读缓存（页头铃铛用） */
   async markAllRead() {
     if (!this.enabled) return;
     const authKey = this.getAuthKey();
@@ -231,12 +216,7 @@ export class AttitudeSystem {
     this.configs.set("attitudeCache", "unreadAt", Date.now());
   }
 
-  /**
-   * 读取若干短评的自定义表态计数。
-   *
-   * 命中缓存（{@link Values.attitude.countsCacheTtl}）的短评直接返回；其余合并进同一个去抖窗口，
-   * 由 {@link flushCounts} 一次性请求。请求失败的短评不会进入缓存，也不会出现在返回值里。
-   */
+  /** 读取若干短评的表态计数：命中 `countsCacheTtl` 的直接返回，其余合并进一个去抖窗口（{@link fetchCounts}） */
   async requestCounts(commentIds: string[]): Promise<Map<string, AttitudeRecord>> {
     const result = new Map<string, AttitudeRecord>();
     if (!this.enabled || commentIds.length === 0) return result;
@@ -260,11 +240,7 @@ export class AttitudeSystem {
     return result;
   }
 
-  /**
-   * 把一批缺失缓存的短评并入去抖窗口（窗口内的多次调用只发一次请求）。
-   *
-   * 计时器只在窗口开启时排期一次：若每个调用都重排计时器，突发持续的调用会把请求无限推迟。
-   */
+  /** 把一批缺失缓存的短评并入去抖窗口（计时器只在窗口开启时排期一次，突发调用不会无限推迟请求） */
   private fetchCounts(commentIds: string[]) {
     commentIds.forEach((commentId) => this.pendingCommentIds.add(commentId));
     return new Promise<Map<string, AttitudeRecord>>((resolve) => {
@@ -290,7 +266,7 @@ export class AttitudeSystem {
     const authKey = this.getAuthKey();
     for (let i = 0; i < commentIds.length; i += Values.attitude.maxCountsPerRequest) {
       const chunk = commentIds.slice(i, i + Values.attitude.maxCountsPerRequest);
-      // 后台批量读：失败只记录日志，不弹模态框打断用户
+      // 后台批量读：失败只记录日志，不弹模态框
       const resp = await this.parent.supabaseUtils.fetchAttitudeCounts(chunk, authKey, (error) =>
         console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
       );
@@ -322,7 +298,7 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.time < Values.attitude.sticker.listCacheTtl) {
       return { stickers: cached.stickers, quota: cached.quota };
     }
-    // 面板打开时的预取：失败只记录日志，不弹模态框打断用户
+    // 面板打开时的预取：失败只记录日志，不弹模态框
     const resp = await this.parent.supabaseUtils.fetchAttitudeStickers(authKey, (error) =>
       console.warn("[Mcmodder] 表态贴纸列表获取失败：", error),
     );
@@ -332,7 +308,7 @@ export class AttitudeSystem {
     return { stickers: stored.stickers, quota: stored.quota };
   }
 
-  /** 写入贴纸列表缓存（列表里的贴纸同时进入解析缓存，随后渲染无需再解析） */
+  /** 写入贴纸列表缓存（同时进入解析缓存） */
   private storeStickers(stickers: SupabaseAttitudeSticker[], quota?: SupabaseAttitudeStickerQuota) {
     for (const sticker of stickers) {
       this.stickerCache.set(buildStickerType(sticker.id), sticker);
@@ -342,10 +318,9 @@ export class AttitudeSystem {
   }
 
   /**
-   * 上传一张本地图片作为表态贴纸：先传百科图床，再把图片地址登记到云端，返回可用的表态类型。
+   * 上传一张本地图片作为表态贴纸：先传百科图床，再把地址登记到云端，返回 `sticker:<新贴纸 id>`。
    *
-   * 失败时以 `Utils.commonMsg` 提示（非图片、体积超限、图床拒绝、今日额度用尽等）并返回 undefined；
-   * 成功后的表态类型为 `sticker:<新贴纸 id>`，可直接交给 {@link write} 使用。
+   * 失败时以 `Utils.commonMsg` 提示（非图片、体积超限、图床拒绝、今日额度用尽等）并返回 undefined。
    */
   async uploadSticker(file: File): Promise<string | undefined> {
     if (!this.enabled) {
@@ -376,7 +351,7 @@ export class AttitudeSystem {
       name: file.name,
     });
     const sticker = resp?.sticker;
-    // 登记失败（额度用尽 / 网络异常）时刷新一次列表：错误提示由 `invoke` 给出
+    // 登记失败时刷新一次列表（错误提示由 `invoke` 给出）
     if (!sticker) {
       void this.listMyStickers(true);
       return undefined;
@@ -389,10 +364,9 @@ export class AttitudeSystem {
   }
 
   /**
-   * 把本地图片传到百科图床（站点 UEditor 的图片上传接口），返回图片地址。
+   * 把本地图片传到百科图床（站点 UEditor 图片接口），返回图片地址。
    *
-   * 请求体与站点前端一致（`upfile` + `type=ajax`，multipart 边界由 GM 请求自行生成）；
-   * 跨站也走 `GM_xmlhttpRequest`，站点登录 cookie 由浏览器按目标域名带上，故不在页面内直传。
+   * 请求体与站点前端一致（`upfile` + `type=ajax`）；走 `GM_xmlhttpRequest` 以带上站点 cookie。
    */
   private async uploadImageToMcmod(file: File) {
     const form = new FormData();
@@ -419,19 +393,14 @@ export class AttitudeSystem {
       }
       return result.url;
     } catch (error) {
-      // 图床异常响应（登录失效返回 HTML 报错页等）会走到这里，原始错误留在控制台便于排查
+      // 图床异常响应（登录失效会返回 HTML 报错页）会走到这里，原始错误留在控制台
       console.warn("[Mcmodder] 表态贴纸上传失败：", error);
       Utils.commonMsg("图片上传失败，请稍后再试。", false);
       return undefined;
     }
   }
 
-  /**
-   * 解析一批表态类型里的贴纸：返回 `sticker:<id>` → 贴纸记录（渲染图片与展示名称用）。
-   *
-   * 贴纸不可变，命中缓存的立即返回；其余合并进同一个去抖窗口，由 {@link flushStickers} 一次性请求。
-   * 解析失败的贴纸不写入缓存，也不出现在返回值里（调用方按缺失降级渲染）。
-   */
+  /** 解析一批表态类型里的贴纸（`sticker:<id>` → 记录）：命中缓存的立即返回，其余合并进去抖窗口 */
   async resolveStickers(attitudeTypes: Iterable<string>) {
     const result = new Map<string, SupabaseAttitudeSticker>();
     if (!this.enabled) return result;
@@ -454,7 +423,7 @@ export class AttitudeSystem {
     return result;
   }
 
-  /** 把一批缺失缓存的贴纸并入去抖窗口（窗口内的多次调用只发一次请求，与计数同款做法） */
+  /** 把一批缺失缓存的贴纸并入去抖窗口（与计数同款做法） */
   private fetchStickers(attitudeTypes: string[]) {
     attitudeTypes.forEach((attitudeType) => this.pendingStickerTypes.add(attitudeType));
     return new Promise<Map<string, SupabaseAttitudeSticker>>((resolve) => {
@@ -483,7 +452,7 @@ export class AttitudeSystem {
         .map((attitudeType) => parseStickerId(attitudeType))
         .filter((id): id is number => id !== undefined);
       if (ids.length === 0) continue;
-      // 后台批量解析：失败只记录日志，不弹模态框打断用户
+      // 后台批量解析：失败只记录日志，不弹模态框
       const resp = await this.parent.supabaseUtils.resolveAttitudeStickers(ids, (error) =>
         console.warn("[Mcmodder] 表态贴纸解析失败：", error),
       );
@@ -495,17 +464,15 @@ export class AttitudeSystem {
         result.set(attitudeType, sticker);
         unanswered.delete(sticker.id);
       }
-      // 服务端明确答复里没有的 id 记为缺失：占位块走降级样式，且不再重复请求
+      // 服务端答复里没有的 id 记为缺失：占位块走降级样式，且不再重复请求
       unanswered.forEach((id) => this.missingStickerIds.add(id));
     }
     resolvers.forEach((resolve) => resolve(result));
   }
 
   /**
-   * 把一批已渲染的贴纸占位节点（`[data-mcmodder-sticker-id]`）填上图片与名称。
-   *
-   * 渲染路径因此不必等待网络：图标先以占位形态出现，解析完成后补上背景图；解析失败的贴纸
-   * 标上 `data-mcmodder-sticker-failed` 走降级样式，不再反复请求。
+   * 给一批贴纸占位节点（`[data-mcmodder-sticker-id]`）补上图片与名称；解析失败的标上
+   * `data-mcmodder-sticker-failed` 走降级样式。
    */
   async hydrateStickers(root: JQuery | HTMLElement) {
     if (!this.enabled) return;
@@ -525,13 +492,13 @@ export class AttitudeSystem {
         if (sticker) {
           fillStickerIcon($icon, sticker);
         } else if (this.missingStickerIds.has(stickerId)) {
-          // 仅「服务端明确答复不存在」才降级；请求失败时保留占位，等下次渲染再试
+          // 仅「服务端答复不存在」才降级；请求失败时保留占位
           $icon.attr("data-mcmodder-sticker-failed", "1");
         }
       });
   }
 
-  /** 绑定工具条点击与原生表态列表的悬停补注入（全站一次即可；自绘元素与站点原生选择器完全隔离） */
+  /** 绑定工具条点击与原生表态列表的悬停补注入（全站一次） */
   bindEvents() {
     if (this.eventsBound) return;
     this.eventsBound = true;
@@ -539,11 +506,7 @@ export class AttitudeSystem {
     document.addEventListener("mouseover", this.onDocumentMouseOver);
   }
 
-  /**
-   * 鼠标进入站点原生表态列表时补注入恶魔安格瑞。
-   *
-   * 站点在首次悬停时才显示该列表（并可能整体重绘），故除了渲染时注入一次，这里再兜一次底。
-   */
+  /** 鼠标进入站点原生表态列表时补注入恶魔安格瑞（站点首次悬停才显示该列表，且可能整体重绘） */
   private readonly onDocumentMouseOver = (event: MouseEvent) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -603,7 +566,7 @@ export class AttitudeSystem {
     attitudePickerState.active = record?.mine ?? [];
     const recents = this.getRecentEmojis();
     attitudePickerState.recents = recents;
-    // 最近使用里的贴纸要先解析出图片地址：面板同步渲染，解析完成后补上（不阻塞打开）
+    // 最近使用里的贴纸先解析图片地址，解析完成后补上（不阻塞面板渲染）
     attitudePickerState.stickerUrls = {};
     void this.resolveStickers(recents).then((stickers) => {
       attitudePickerState.stickerUrls = Object.fromEntries(
@@ -663,8 +626,7 @@ export class AttitudeSystem {
   /**
    * 给一批新插入的短评注入自定义表态入口，并统一刷新这批短评的计数。
    *
-   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的顶层短评；
-   * 其余场景（未登录、自己的短评、楼中楼）站点本身也不允许表态。
+   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的顶层短评。
    */
   async processCommentRows($context: JQuery) {
     if (!this.enabled) return;
@@ -707,8 +669,8 @@ export class AttitudeSystem {
   /**
    * 把「恶魔安格瑞」补进站点原生的表态候选列表（`.comment-attitude-list-hover > ul`）。
    *
-   * 它不是 emoji，故与原生 12 项并列显示，而不是放进 emoji 面板。站点对 `.comment-attitude`
-   * 有 document 事件委托（命中即发原生单表态请求），故这里用自绘类名承接点击。
+   * 它不是 emoji，故与原生 12 项并列，而不放进 emoji 面板；站点对 `.comment-attitude` 有
+   * document 事件委托（命中即发原生单表态请求），故这里用自绘类名承接点击。
    */
   private injectNativeDevilAngry($tools: JQuery) {
     const $list = $tools.find("li.comment-attitude-list .comment-attitude-list-hover > ul").first();
@@ -732,7 +694,7 @@ export class AttitudeSystem {
 
   /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 自己的短评 / 缺 author 信息）时返回 undefined */
   private resolveTarget($row: JQuery): AttitudeTarget | undefined {
-    // jQuery 的 `.get()` 只会给出 `Element`；`.comment-row` 实际是 `<div>`，这里按已知的宿主结构收窄
+    // `.get()` 只给出 `Element`，`.comment-row` 实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
     if (!row) return undefined;
     const $tools = $row.find(".comment-tools").first();
@@ -778,7 +740,6 @@ export class AttitudeSystem {
       .find("a.mcmodder-attitude-native")
       .toggleClass("mcmodder-attitude-active", mine.has(Values.attitude.devilAngry.type));
 
-    // 结果条里的贴纸先以占位形态渲染，图片地址解析完成后补上
     void this.hydrateStickers($result);
   }
 
@@ -804,9 +765,8 @@ export class AttitudeSystem {
   }
 
   /**
-   * 添加 / 取消一条表态（服务端按 `(短评, 我, 类型)` 存在性切换），成功后就地刷新结果条。
-   *
-   * 不做乐观计数：以服务端返回的最新计数为准；同一短评的写操作排队执行，避免连点竞态。
+   * 添加 / 取消一条表态（服务端按 `(短评, 我, 类型)` 存在性切换）：不做乐观计数，以服务端返回的
+   * 计数为准，同一短评的写操作排队执行。
    */
   async write(target: AttitudeTarget, attitudeType: string) {
     if (!this.enabled || this.busyCommentIds.has(target.commentId)) return;

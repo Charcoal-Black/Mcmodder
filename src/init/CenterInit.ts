@@ -72,8 +72,7 @@ export class CenterInit extends Init {
       }
     }
   });
-  // 「短评」子页是 hash 路由 SPA，面板内容（含「我的表态取得统计」）每次进入都会重渲染，
-  // 故不 disconnect、只做幂等重注入（`CenterCommentInit.run()` 自带 fetching/已注入守卫）
+  // 「短评」子页是 hash 路由 SPA，面板每次进入都会重渲染：这里不 disconnect，只做幂等重注入
   private readonly centerCommentObserver = new MutationObserver(() => {
     if (this.configs.getSettings("customAttitude")) {
       void new CenterCommentInit(this).run();

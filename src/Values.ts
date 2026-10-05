@@ -186,12 +186,7 @@ export class Values {
   /**
    * 自定义表态（短评）相关常量。
    *
-   * - `devilAngry`：内置表态类型「恶魔安格瑞」（图标自参考实现原样移植）；
-   * - `emojiDataUrl`：运行时懒加载的中文 emoji 数据（由 emoji-picker-element 自行缓存进
-   *   IndexedDB；Twemoji COLR 字体的 `@font-face` 直接写在 `src/css/attitude.css`，仅在真正
-   *   渲染 emoji 时才下载）；
-   * - `countsCacheTtl` / `countsDebounce`：短评计数缓存有效期与批量请求去抖窗口；
-   * - `maxCountsPerRequest`：单次 `attitude-counts` 携带的短评 id 上限（与服务端一致）。
+   * 请求批量上限（`maxCountsPerRequest` / `maxResolvePerRequest`）须与服务端 Edge Function 一致。
    */
   static readonly attitude = {
     devilAngry: {
@@ -206,9 +201,8 @@ export class Values {
     /** 选择面板「最近使用」保留的 emoji 个数 */
     recentEmojisLimit: 12,
     /**
-     * 表态贴纸：图片本体上传到百科图床（站点 UEditor 的图片上传接口，`i.mcmod.cn` 托管），
-     * 云端只登记「谁上传了哪张图」，表态类型为 `sticker:<贴纸 id>`。
-     * 每日新建数量由服务端限制（`quota.limit`），客户端只展示。
+     * 表态贴纸：图片本体上传到百科图床（站点 UEditor 图片接口），云端只登记归属，
+     * 表态类型为 `sticker:<贴纸 id>`；每日新建数量由服务端限制。
      */
     sticker: {
       /** 表态类型前缀：`sticker:<贴纸 id>`（服务端 `attitude-put` 按同一前缀解析） */
@@ -226,12 +220,9 @@ export class Values {
     },
     /** 表态消息中心单页条数 */
     inboxPageSize: 20,
-    /** 表态消息未读数缓存有效期：页头提醒与消息中心徽标共用，避免每页都请求云端 */
+    /** 表态消息未读数缓存有效期（页头提醒与消息中心徽标共用） */
     unreadCacheTtl: 5 * 60 * 1000,
-    /**
-     * 表态提醒检查结果的复用窗口：同一浏览器连续开页（含多标签页）时不重复请求云端，
-     * 只用于去重，不做轮询——提醒检查只在每次进入页面时发起一次。
-     */
+    /** 表态提醒检查结果的复用窗口：同一浏览器连续开页时去重，检查本身只在进入页面时发起一次 */
     remindCacheTtl: 20 * 1000,
     countsCacheTtl: 60 * 1000,
     countsDebounce: 300,

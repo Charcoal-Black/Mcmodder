@@ -90,26 +90,25 @@ const { store } = defineProps<Props>();
 
 const pickerHost = ref<HTMLDivElement>();
 const allEmojisVisible = ref(false);
-/** 面板页签：emoji（最近使用 + 全部 emoji）与「我的贴纸」（上传的本地图片贴纸） */
+/** 面板页签 */
 const tab = ref<"emoji" | "sticker">("emoji");
 
-/** 表态类型是否为贴纸（`sticker:<id>`） */
 function isSticker(attitudeType: string) {
   return parseStickerId(attitudeType) !== undefined;
 }
 
-/** 已解析出的贴纸图片地址；尚未解析完成时为空（渲染占位方块） */
+/** 未解析完成时为空，渲染占位方块 */
 function stickerUrl(attitudeType: string) {
   return store.stickerUrls[attitudeType];
 }
 
-/** 切换页签：面板高度随之变化，重新夹取到视口内 */
+/** 切换页签后高度会变，重新夹取到视口内 */
 function switchTab(next: "emoji" | "sticker") {
   tab.value = next;
   void nextTick(clampAttitudePanelPosition);
 }
 
-/** 站点是否处于夜间模式（站点自身与本站配色都以 `<html>` 上的 `dark` 类为准） */
+/** 站点是否处于夜间模式（以 `<html>` 上的 `dark` 类为准） */
 const siteDark = ref(document.documentElement.classList.contains("dark"));
 let pickerReady = false;
 let pickerEl: HTMLElement | undefined;
@@ -118,12 +117,7 @@ const themeObserver = new MutationObserver(() => {
   siteDark.value = document.documentElement.classList.contains("dark");
 });
 
-/**
- * 让 `emoji-picker-element` 跟随站点主题。
- *
- * 它默认只在未指定主题类时跟随系统的 `prefers-color-scheme`，与站点夜间模式无关：
- * 系统深色而站点浅色时，面板里会突兀地出现一块深色选择器。故始终显式指定 `light` / `dark`。
- */
+/** 让 `emoji-picker-element` 跟随站点夜间模式，而不是默认的系统主题 */
 function applyPickerTheme() {
   if (!pickerEl) return;
   pickerEl.classList.toggle("dark", siteDark.value);
@@ -132,12 +126,7 @@ function applyPickerTheme() {
 
 watch(siteDark, applyPickerTheme);
 
-/**
- * 展开 / 收起「全部 emoji」。
- *
- * 选择器本身（含 365KB 中文 emoji 数据）只在首次展开时创建并下载，数据由
- * `emoji-picker-element` 自行缓存进 IndexedDB；收起只是隐藏，不销毁实例。
- */
+/** 展开 / 收起「全部 emoji」：选择器只在首次展开时创建并下载数据，收起只隐藏、不销毁 */
 function toggleAllEmojis() {
   allEmojisVisible.value = !allEmojisVisible.value;
   if (allEmojisVisible.value && !pickerReady) {
@@ -152,7 +141,7 @@ function toggleAllEmojis() {
       pickerEl = picker;
       applyPickerTheme();
       picker.addEventListener("emoji-click", (event) => {
-        // 自定义 emoji 没有 `unicode`（本站不注册自定义 emoji），直接忽略
+        // 自定义 emoji 没有 `unicode`，忽略
         const unicode = event.detail.unicode;
         if (unicode) store.onPick(unicode);
       });
@@ -167,7 +156,7 @@ function close() {
   store.onClose();
 }
 
-/** 页面滚动关闭面板；面板内部（如 emoji 选择器自身的滚动区）的滚动不算 */
+/** 页面滚动关闭面板（面板内部如 emoji 选择器的滚动不算） */
 function onAnyScroll(event: Event) {
   const target = event.target;
   if (
@@ -179,7 +168,7 @@ function onAnyScroll(event: Event) {
   close();
 }
 
-/** 点击面板外部关闭；点击工具条按钮不算外部（由 `AttitudeSystem` 的开关逻辑处理） */
+/** 点击面板外部关闭（工具条按钮交给 `AttitudeSystem` 的开关逻辑） */
 function onDocumentPointerDown(event: PointerEvent) {
   if (!store.visible) return;
   const target = event.target;

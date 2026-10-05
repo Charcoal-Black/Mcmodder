@@ -131,10 +131,8 @@ interface AppStorage {
    */
   mcmodderRequestToasts?: RequestToastRecord[];
   /**
-   * 自定义表态的轻量缓存（不登记为可缓存键，读写直接走 GM Storage）。
-   *
-   * 仅供「未读表态数」这类跨页面提醒复用，避免每页都请求一次云端：`unreadAt` 为写入时间戳，
-   * 超过 `Values.attitude.unreadCacheTtl` 即视为过期。
+   * 自定义表态的轻量缓存（与 {@link AppStorage.mcmodderModalBroadcast} 一样不登记为可缓存键，
+   * 读写直接走 GM Storage），供跨页面的未读表态提醒复用。
    */
   attitudeCache?: {
     unread?: number;
