@@ -20,21 +20,28 @@ export class TabEditRules {
    * 对一份资料编辑数据执行全部检查。
    *
    * @param data 已解析好的合成表编辑数据
+   * @param isAdd 是否是添加类编辑
    */
-  static check(data: McmodTabEditorInnerData) {
+  static check(data: McmodTabEditorInnerData, isAdd: boolean) {
     const result: VerifyCheckResult = {
       error: [],
       warning: [],
       info: [],
     };
 
-    if (Object.values(data["slot-in-item"] ?? {}).every((id) => id.trim().length === 0)) {
+    if (
+      !(!isAdd && data["slot-in-item"] === undefined) &&
+      Object.values(data["slot-in-item"] ?? {}).every((id) => id.trim().length === 0)
+    ) {
       result.warning.push(
         "合成表至少需要选择一项输入材料，不能添加空的合成表。（若 GUI 无原料格则请忽略）",
       );
     }
 
-    if (Object.values(data["slot-out-item"] ?? {}).every((id) => id.trim().length === 0)) {
+    if (
+      !(!isAdd && data["slot-out-item"] === undefined) &&
+      Object.values(data["slot-out-item"] ?? {}).every((id) => id.trim().length === 0)
+    ) {
       result.warning.push(
         "合成表至少需要选择一项输出材料，不能添加空的合成表。（若 GUI 无产物格则请忽略）",
       );

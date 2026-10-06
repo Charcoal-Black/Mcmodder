@@ -462,14 +462,18 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   private parseAndModifyTable(contents: Record<string, VerifyContent>) {
     const data: McmodClassEditorInnerData | McmodItemEditorInnerData | McmodTabEditorInnerData = {};
-    const isClass = this.verifyInfo["操作类型"] === "模组添加";
-    const isItem = this.verifyInfo["操作类型"] === "资料添加";
-    const isTab = this.verifyInfo["操作类型"] === "合成表添加";
+    const type = this.verifyInfo["操作类型"];
+    const isClass = type.startsWith("模组");
+    const isItem = type.startsWith("资料");
+    const isTab = type.startsWith("合成表");
+    const isAdd = type.endsWith("添加");
+    let hasText = false;
 
     Object.values(contents).forEach((content) => {
       const rowText = content.title;
       if (rowText.includes("介绍") || rowText.includes("正文")) {
         this.modifyMainText(content, data as McmodClassEditorInnerData | McmodItemEditorInnerData);
+        hasText = true;
       }
       if (isClass) {
         this.classModifiers[rowText]?.(content, data as McmodClassEditorInnerData);
@@ -480,13 +484,21 @@ export class AdminVerifyInit extends AdminBaseInit {
       }
     });
 
+    // 若没有出现正文栏，则隐藏文本对比
+    if (!hasText) {
+      this.comparatorTexts = {
+        textA: $(),
+        textB: $(),
+      };
+    }
+
     let result;
     if (isClass) {
-      result = ClassEditRules.check(data as McmodClassEditorInnerData);
+      result = ClassEditRules.check(data as McmodClassEditorInnerData, isAdd);
     } else if (isItem) {
-      result = ItemEditRules.check(data as McmodItemEditorInnerData);
+      result = ItemEditRules.check(data as McmodItemEditorInnerData, isAdd);
     } else if (isTab) {
-      result = TabEditRules.check(data as McmodTabEditorInnerData);
+      result = TabEditRules.check(data as McmodTabEditorInnerData, isAdd);
     } else {
       return;
     }

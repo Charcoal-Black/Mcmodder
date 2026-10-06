@@ -93,35 +93,40 @@ export class ClassEditRules {
    * 对一份模组编辑数据执行全部检查。
    *
    * @param data 已解析好的模组编辑数据
+   * @param isAdd 是否是添加类编辑
    */
-  static check(data: McmodClassEditorInnerData) {
+  static check(data: McmodClassEditorInnerData, isAdd: boolean) {
     const result: VerifyCheckResult = {
       error: [],
       warning: [],
       info: [],
     };
 
-    ClassEditRules.checkName(data, result);
-    ClassEditRules.checkCategory(data, result);
-    ClassEditRules.checkCover(data, result);
-    ClassEditRules.checkPlatform(data, result);
-    ClassEditRules.checkModid(data, result);
+    ClassEditRules.checkName(data, result, isAdd);
+    ClassEditRules.checkCategory(data, result, isAdd);
+    ClassEditRules.checkCover(data, result, isAdd);
+    ClassEditRules.checkPlatform(data, result, isAdd);
+    ClassEditRules.checkModid(data, result, isAdd);
     ClassEditRules.checkSpliter(data, result);
-    ClassEditRules.checkAuthor(data, result);
+    ClassEditRules.checkAuthor(data, result, isAdd);
     ClassEditRules.checkRelation(data, result);
-    ClassEditRules.checkProjectID(data, result);
-    ClassEditRules.checkLink(data, result);
-    ClassEditRules.checkContent(data, result);
+    ClassEditRules.checkProjectID(data, result, isAdd);
+    ClassEditRules.checkLink(data, result, isAdd);
+    ClassEditRules.checkContent(data, result, isAdd);
 
     return result;
   }
 
   /** 主要名称、次要名称与简写名称。 */
-  private static checkName(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkName(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
     const name = data.name?.trim() ?? "";
     const ename = data.ename?.trim() ?? "";
 
-    if (name.length === 0) {
+    if (isAdd && name.length === 0) {
       result.error.push("缺少“主要名称”，具体请参考“编辑帮助”中的《主站通用命名规则》。"); // common_name_empty
     }
     if (name === ename && name.length > 0) {
@@ -138,13 +143,18 @@ export class ClassEditRules {
   }
 
   /** 模组元素：核心元素有且仅有一种。 */
-  private static checkCategory(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkCategory(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    const hasCategory = data.category !== undefined;
     const hasCore = Object.values(data.category ?? {}).some(
       (value) =>
         value !== undefined &&
         Utils.getKeyValueOfObject(Values.classCategoryValueMap, value)?.type === 0,
     );
-    if (!hasCore) {
+    if ((isAdd && (!hasCategory || !hasCore)) || (!isAdd && hasCategory && !hasCore)) {
       result.error.push(
         "模组缺少一项“核心元素”，具体请参考“编辑帮助”中的《模组元素定义与优先级》。",
       ); // class_category_empty
@@ -152,18 +162,34 @@ export class ClassEditRules {
   }
 
   /** 模组封面。 */
-  private static checkCover(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
-    if (data["cover-delete"]?.[0] === "1" || (data["cover-data"]?.trim().length ?? 0) === 0) {
+  private static checkCover(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    const hasCover = (data["cover-data"]?.trim().length ?? 0) !== 0;
+    const deleted = data["cover-delete"]?.[0] === "1";
+    if ((isAdd && (!hasCover || deleted)) || (!isAdd && deleted)) {
       result.warning.push("模组必须包含封面。"); // class_cover_empty
     }
   }
 
   /** 支持平台、运作方式与 MC 版本。 */
-  private static checkPlatform(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
-    if (Object.keys(data.platform ?? {}).length === 0 || Object.keys(data.api ?? {}).length === 0) {
+  private static checkPlatform(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (
+      isAdd &&
+      (Object.keys(data.platform ?? {}).length === 0 || Object.keys(data.api ?? {}).length === 0)
+    ) {
       result.error.push("缺少“支持平台”或“运作方式”，通过指定条件将无法查到本模组。"); // class_platform_api_empty
     }
     if (data.mcversion === undefined) {
+      return;
+    }
+    if (!isAdd && data.api === undefined) {
       return;
     }
     // 数据中 mcversion 仅记录已勾选的版本，故未出现的运作方式即为漏勾
@@ -181,7 +207,14 @@ export class ClassEditRules {
   }
 
   /** MODID。 */
-  private static checkModid(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkModid(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (!isAdd && data.modid === undefined) {
+      return;
+    }
     const modid = data.modid?.trim() ?? "";
     if (modid.length === 0) {
       result.warning.push("缺少 MODID。"); // class_modid_empty
@@ -201,7 +234,14 @@ export class ClassEditRules {
   }
 
   /** 作者/团队。 */
-  private static checkAuthor(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkAuthor(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (!isAdd && data.author === undefined) {
+      return;
+    }
     const authors = [
       ...Object.values(data.author?.add ?? {}),
       ...Object.values(data.author?.link ?? {}),
@@ -220,7 +260,15 @@ export class ClassEditRules {
   }
 
   /** CurseForge / Modrinth 项目 ID：填写了对应链接就必须提供 ID。 */
-  private static checkProjectID(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkProjectID(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (!isAdd) {
+      return;
+    }
+
     const links = Object.values(data.link ?? {});
     const hasCF = links.some((link) => link.title === "curseforge");
     const hasMR = links.some((link) => link.title === "modrinth");
@@ -244,7 +292,15 @@ export class ClassEditRules {
   }
 
   /** 相关链接。 */
-  private static checkLink(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkLink(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (!isAdd && data.link === undefined) {
+      return;
+    }
+
     const links = Object.values(data.link ?? {});
     const counter = {
       nohttp: 0,
@@ -385,7 +441,15 @@ export class ClassEditRules {
   }
 
   /** 模组介绍正文。 */
-  private static checkContent(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+  private static checkContent(
+    data: McmodClassEditorInnerData,
+    result: VerifyCheckResult,
+    isAdd: boolean,
+  ) {
+    if (!isAdd && data.content === undefined) {
+      return;
+    }
+
     // 保留空白字符：原生实现会把空格全部删掉，导致「大量空格」检查永远不会触发
     const text = ClassEditRules.stripHtmlTag(data.content ?? "").trim();
     if (text.length === 0) {
