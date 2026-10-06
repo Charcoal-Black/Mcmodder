@@ -13,10 +13,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint and format check
+        run: npm run verify
 
       - name: Build
         run: npm run build
