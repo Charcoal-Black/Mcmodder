@@ -1724,22 +1724,54 @@ interface SupabaseGetCustomSplashesResponse {
 /** 单条表态的聚合计数：`attitude_type` → 数量 */
 type AttitudeCounts = Record<string, number>;
 
-/** `attitude-counts` / `attitude-put` 的响应：短评 id → 聚合计数 / 我点过的类型 */
-interface SupabaseAttitudeCountsResponse {
-  /** `comment_id` → （`attitude_type` → 数量） */
-  counts?: Record<string, AttitudeCounts>;
-  /** `comment_id` → 我点过的 `attitude_type` 列表（未认证时为空对象） */
-  mine?: Record<string, string[]>;
-  error?: string;
+/**
+ * RPC `mcmodder_attitude_counts` 的一行：某短评下某类型的聚合计数。
+ *
+ * 行序（`order by min(id)`）即「各类别首次表态的时间序」，客户端按行序构造展示顺序；服务端不返回
+ * 聚合对象，避免 json 聚合打乱键序。
+ */
+interface SupabaseAttitudeCountRow {
+  comment_id: string;
+  attitude_type: string;
+  total: number;
+  /** 我是否点过该类型（未认证时恒为 false） */
+  mine: boolean;
 }
 
-/** `attitude-counts` 的 `uid` 模式响应：该用户收到的各类型表态数量 */
-interface SupabaseAttitudeUserCountsResponse {
-  received?: AttitudeCounts;
-  error?: string;
+/** RPC `mcmodder_attitude_user_counts` 的一行：某用户收到的某类型表态数量（行序同 `SupabaseAttitudeCountRow`） */
+interface SupabaseAttitudeUserCountRow {
+  attitude_type: string;
+  total: number;
 }
 
-/** `attitude-put` 的响应：目标短评的最新聚合计数与我的表态类型 */
+/** RPC `mcmodder_attitude_sticker_quota` 的一行：今日贴纸额度（东八区自然日） */
+interface SupabaseAttitudeStickerQuotaRow {
+  used_today: number;
+  daily_limit: number;
+  remaining: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_list` 的一行：一条表态消息 + 符合条件的总条数 */
+interface SupabaseAttitudeInboxListRow extends SupabaseAttitudeInboxItem {
+  /** 与 `unreadOnly` 对应的总条数（服务端 `count(*) over ()`） */
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_stats` 的一行：我收到的表态统计 */
+interface SupabaseAttitudeStatsRow {
+  /** 未读条数 */
+  unread: number;
+  /** 总条数 */
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_check` 的一行：`since_id` 之后的新表态数量与我的最新记录 id */
+interface SupabaseAttitudeCheckRow {
+  new_count: number;
+  latest_id: number;
+}
+
+/** `attitude-put`（Edge，写操作）的响应：目标短评的最新聚合计数与我的表态类型 */
 interface SupabaseAttitudePutResponse {
   counts?: AttitudeCounts;
   mine?: string[];
@@ -1763,27 +1795,14 @@ interface SupabaseAttitudeStickerQuota {
   remaining?: number;
 }
 
-/** `attitude-sticker` 的 `list` 响应：我上传的贴纸与今日额度 */
-interface SupabaseAttitudeStickerListResponse {
-  stickers?: SupabaseAttitudeSticker[];
-  quota?: SupabaseAttitudeStickerQuota;
-  error?: string;
-}
-
-/** `attitude-sticker` 的 `put` 响应：登记的贴纸与最新额度 */
+/** `attitude-sticker`（Edge）的 `put` 响应：登记的贴纸与最新额度 */
 interface SupabaseAttitudeStickerPutResponse {
   sticker?: SupabaseAttitudeSticker;
   quota?: SupabaseAttitudeStickerQuota;
   error?: string;
 }
 
-/** `attitude-sticker` 的 `resolve` 响应：按 id 解析出的贴纸（渲染历史表态用） */
-interface SupabaseAttitudeStickerResolveResponse {
-  stickers?: SupabaseAttitudeSticker[];
-  error?: string;
-}
-
-/** 表态消息中心的一条记录 */
+/** 表态消息中心的一条记录（RPC `mcmodder_attitude_inbox_list` 的行去掉 `total`） */
 interface SupabaseAttitudeInboxItem {
   id: number;
   comment_id: string;
@@ -1795,40 +1814,4 @@ interface SupabaseAttitudeInboxItem {
   source_url?: string;
   is_read: boolean;
   created_at: string;
-}
-
-/** `attitude-inbox` 的 `list` 响应 */
-interface SupabaseAttitudeInboxListResponse {
-  items?: SupabaseAttitudeInboxItem[];
-  /** 符合条件的总条数（与 `unreadOnly` 对应） */
-  total?: number;
-  /** 未读总数（不受 `unreadOnly` 影响） */
-  unread?: number;
-  error?: string;
-}
-
-/** `attitude-inbox` 的 `stats` 响应 */
-interface SupabaseAttitudeStatsResponse {
-  /** 我收到的表态：`attitude_type` → 数量 */
-  received?: AttitudeCounts;
-  /** 我给出的表态总数 */
-  given?: number;
-  /** 我收到的表态总数 */
-  total?: number;
-  /** 其中未读数 */
-  unread?: number;
-  error?: string;
-}
-
-/** `attitude-inbox` 的 `read` 响应 */
-interface SupabaseAttitudeReadResponse {
-  ok?: boolean;
-  error?: string;
-}
-
-/** `attitude-inbox` 的 `check` 响应：`since_id` 之后的新表态数量与最新记录 id */
-interface SupabaseAttitudeCheckResponse {
-  count?: number;
-  latest_id?: number;
-  error?: string;
 }

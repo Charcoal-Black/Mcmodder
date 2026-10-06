@@ -186,7 +186,8 @@ export class Values {
   /**
    * 自定义表态（短评）相关常量。
    *
-   * 请求批量上限（`maxCountsPerRequest` / `maxResolvePerRequest`）须与服务端 Edge Function 一致。
+   * 请求批量上限（`maxCountsPerRequest` / `maxResolvePerRequest`）须与服务端一致：
+   * `mcmodder_attitude_counts` 与 `mcmodder_attitude_stickers_by_ids` 均为 200。
    */
   static readonly attitude = {
     devilAngry: {
@@ -223,9 +224,14 @@ export class Values {
     /** 表态消息中心单页条数 */
     inboxPageSize: 20,
     /** 表态消息未读数缓存有效期（页头提醒与消息中心徽标共用） */
-    unreadCacheTtl: 5 * 60 * 1000,
-    /** 表态提醒检查结果的复用窗口：同一浏览器连续开页时去重，检查本身只在进入页面时发起一次 */
-    remindCacheTtl: 20 * 1000,
+    unreadCacheTtl: 60 * 1000,
+    /**
+     * 表态提醒检查结果的复用窗口：同一浏览器连续开页时去重，检查本身只在进入页面时发起一次。
+     *
+     * 这是「每次导航都可能发一次请求」的关口：取 1 分钟，红点最多滞后 1 分钟，同时把活跃浏览时的
+     * 检查次数压到每分钟一次（原先 20 秒等于每次导航都发）。
+     */
+    remindCacheTtl: 60 * 1000,
     countsCacheTtl: 60 * 1000,
     countsDebounce: 300,
     maxCountsPerRequest: 200,

@@ -21,11 +21,14 @@ export class CenterCommentInit extends CenterBaseInit {
 
     this.fetching = true;
     try {
-      const resp = await this.parent.supabaseUtils.fetchAttitudeUserCounts(uid, (error) =>
+      const rows = await this.parent.supabaseUtils.fetchAttitudeUserCounts(uid, (error) =>
         console.warn("[Mcmodder] 表态取得统计获取失败：", error),
       );
-      if (!resp) return;
-      const entries = Object.entries(resp.received ?? {}).filter(([, count]) => count > 0);
+      if (!rows) return;
+      // 服务端按「各类别首次获得表态的时间序」返回行，这里保持该顺序追加展示
+      const entries = rows
+        .filter((row) => row.total > 0)
+        .map((row) => [row.attitude_type, row.total] as const);
       if (entries.length === 0) return;
 
       // 贴纸先解析出原始文件名再写文案

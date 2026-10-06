@@ -40,8 +40,9 @@ export interface AttitudeTarget {
 }
 
 /**
- * 自定义表态系统：纯 DOM 编排 + 云端读写。计数走 `attitude-counts`（TTL 缓存 + 去抖合并请求），
- * 写操作走 `attitude-put` 并以服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
+ * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
+ * 不占 Edge Function 调用额度；计数为 TTL 缓存 + 去抖合并请求），写操作走 `attitude-put` 并以
+ * 服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
  *
  * 全站单例：短评页与消息中心共用同一份缓存与去抖通道，经 {@link AttitudeSystem.for} 获取。
  */
@@ -121,9 +122,9 @@ export class AttitudeSystem {
       return { unread: cached.unread, total: cached.total };
     }
     // 后台提醒用：失败只记录日志，不弹模态框
-    const resp = await this.parent.supabaseUtils.fetchAttitudeInbox(authKey, "stats", {
-      onError: (error) => console.warn("[Mcmodder] 表态消息统计获取失败：", error),
-    });
+    const resp = await this.parent.supabaseUtils.fetchAttitudeInboxStats(authKey, (error) =>
+      console.warn("[Mcmodder] 表态消息统计获取失败：", error),
+    );
     if (!resp) return cached && { unread: cached.unread, total: cached.total };
     const stats = { unread: resp.unread ?? 0, total: resp.total ?? 0 };
     this.writeUnreadCache(stats);
@@ -155,7 +156,7 @@ export class AttitudeSystem {
     if ((this.configs.get("attitudeCache", "lastSeenId") ?? 0) !== sinceId)
       return this.configs.get("attitudeCache", "checkedCount") ?? 0;
 
-    const count = resp.count ?? 0;
+    const count = resp.new_count ?? 0;
     this.configs.set("attitudeCache", "checkedAt", Date.now());
     this.configs.set("attitudeCache", "checkedCount", count);
     this.configs.set("attitudeCache", "latestId", resp.latest_id ?? 0);
@@ -271,11 +272,16 @@ export class AttitudeSystem {
         console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
       );
       if (!resp) continue;
+      // 服务端返回行集合，行序即「各类别首次表态的时间序」：按行序还原成展示用的对象
+      const grouped = new Map<string, AttitudeRecord>();
+      for (const row of resp) {
+        let record = grouped.get(row.comment_id);
+        if (!record) grouped.set(row.comment_id, (record = { counts: {}, mine: [] }));
+        record.counts[row.attitude_type] = row.total;
+        if (row.mine) record.mine.push(row.attitude_type);
+      }
       for (const commentId of chunk) {
-        const record: AttitudeRecord = {
-          counts: resp.counts?.[commentId] ?? {},
-          mine: resp.mine?.[commentId] ?? [],
-        };
+        const record = grouped.get(commentId) ?? { counts: {}, mine: [] };
         this.countsCache.set(commentId, { time: Date.now(), record });
         result.set(commentId, record);
       }
@@ -299,12 +305,17 @@ export class AttitudeSystem {
       return { stickers: cached.stickers, quota: cached.quota };
     }
     // 面板打开时的预取：失败只记录日志，不弹模态框
-    const resp = await this.parent.supabaseUtils.fetchAttitudeStickers(authKey, (error) =>
-      console.warn("[Mcmodder] 表态贴纸列表获取失败：", error),
-    );
-    if (!resp) return cached && { stickers: cached.stickers, quota: cached.quota };
+    const onError = (error: string) => console.warn("[Mcmodder] 表态贴纸列表获取失败：", error);
+    const [stickers, quota] = await Promise.all([
+      this.parent.supabaseUtils.fetchAttitudeStickers(authKey, onError),
+      this.parent.supabaseUtils.fetchAttitudeStickerQuota(authKey, onError),
+    ]);
+    if (!stickers) return cached && { stickers: cached.stickers, quota: cached.quota };
 
-    const stored = this.storeStickers(resp.stickers ?? [], resp.quota);
+    const stored = this.storeStickers(
+      stickers,
+      quota && { limit: quota.daily_limit, used: quota.used_today, remaining: quota.remaining },
+    );
     return { stickers: stored.stickers, quota: stored.quota };
   }
 
@@ -458,7 +469,7 @@ export class AttitudeSystem {
       );
       if (!resp) continue;
       const unanswered = new Set(ids);
-      for (const sticker of resp.stickers ?? []) {
+      for (const sticker of resp) {
         const attitudeType = buildStickerType(sticker.id);
         this.stickerCache.set(attitudeType, sticker);
         result.set(attitudeType, sticker);

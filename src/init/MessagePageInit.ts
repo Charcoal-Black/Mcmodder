@@ -147,25 +147,24 @@ export class MessageInit extends Init {
 
     this.inboxFetching = true;
     try {
-      const listResp = await this.parent.supabaseUtils.fetchAttitudeInbox(authKey, "list", {
+      const rows = await this.parent.supabaseUtils.fetchAttitudeInboxList(authKey, {
         limit: Values.attitude.inboxPageSize,
         unreadOnly,
       });
-      if (!listResp) return;
+      if (!rows) return;
 
-      const items = listResp.items ?? [];
-      this.renderInboxItems(items, listResp.total ?? items.length);
-      this.renderFilteredHint(items.length, unreadOnly);
+      this.renderInboxItems(rows, rows[0]?.total ?? rows.length);
+      this.renderFilteredHint(rows.length, unreadOnly);
 
       // 已读回写放在渲染之后：本批条目保持未读样式显示，只更新云端状态
-      const unreadIds = items.filter((item) => !item.is_read).map((item) => item.id);
+      const unreadIds = rows.filter((item) => !item.is_read).map((item) => item.id);
       if (unreadIds.length) {
         await this.parent.supabaseUtils.markAttitudesRead(authKey, unreadIds);
         // 未读已清零：立即刷新合计与徽标（绕过缓存）
         await this.renderStats(true);
       }
 
-      this.inboxSignature = [unreadOnly, this.nativeItemCount(), items.length > 0, true].join("|");
+      this.inboxSignature = [unreadOnly, this.nativeItemCount(), rows.length > 0, true].join("|");
     } finally {
       this.inboxFetching = false;
     }
