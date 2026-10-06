@@ -1,4 +1,4 @@
-import { createApp, ref, type App, type ShallowRef } from "vue";
+import { createApp, ref, shallowRef, type App, type ShallowRef } from "vue";
 import { HorizontalDraggableFrame } from "../../widget/draggable/HorizontalDraggableFrame";
 import Countdown from "../../vue/components/Countdown.vue";
 import { TimerUtils } from "../../widget/TimerUtils.ts";
@@ -15,6 +15,7 @@ import { Values } from "../../Values.ts";
 import { ClassEditRules } from "../../editrule/ClassEditRules.ts";
 import { ItemEditRules } from "../../editrule/ItemEditRules.ts";
 import { TabEditRules } from "../../editrule/TabEditRules.ts";
+import VerifyTimeline from "../../vue/components/VerifyTimeline.vue";
 
 type ParsedOpinion = [number, number, number, number];
 
@@ -45,11 +46,15 @@ export class AdminVerifyInit extends AdminBaseInit {
   private notifyTimer?: number;
   /** 挂载在审核窗内、仅创建一个实例的正文对比组件（`TextComparator`） */
   private textComparator?: App;
+  /** 挂载在审核窗内、仅创建一个实例的审核足迹时间线组件（`VerifyTimeline`） */
+  private timeline?: App;
   /** 正文对比组件的挂载点，每次加载待审项后被重新插回审核按钮之前 */
   private comparatorContainer?: HTMLElement;
+  /** 时间线组件的挂载点，每次加载待审项后被重新插回审核按钮之后 */
+  private timelineContainer?: HTMLElement;
   /** 正文对比组件当前读取的编辑前后正文（`modifyMainText` 写，`mountTextComparator` 读） */
-  private readonly comparatorTextA: ShallowRef<JQuery> = ref($());
-  private readonly comparatorTextB: ShallowRef<JQuery> = ref($());
+  private readonly comparatorTextA = shallowRef($());
+  private readonly comparatorTextB = shallowRef($());
   /** 传给组件的正文来源，组件据此在原地刷新对比结果 */
   private get comparatorTexts(): { textA: ShallowRef<JQuery>; textB: ShallowRef<JQuery> } {
     return { textA: this.comparatorTextA, textB: this.comparatorTextB };
@@ -58,6 +63,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.comparatorTextA.value = texts.textA;
     this.comparatorTextB.value = texts.textB;
   }
+  /** 时间线组件相关参数 */
+  private readonly lastRefundElement = shallowRef($());
+  private readonly assistantSuggestionElement = shallowRef($());
+  private readonly lastSubmission = ref(0);
+  /** 审核页面分屏是否可用且已启用 */
   private get enableSplit() {
     return this.splitScreenOnVerify && !this.parent.isMobileClient;
   }
@@ -96,6 +106,8 @@ export class AdminVerifyInit extends AdminBaseInit {
       this.frameMounted = false;
       this.textComparator?.unmount();
       this.textComparator = undefined;
+      this.timeline?.unmount();
+      this.timeline = undefined;
     }
     if (this.enableSplit && !this.frameMounted) {
       const connectedFrame = document.getElementById("connect-frame");
@@ -330,6 +342,9 @@ export class AdminVerifyInit extends AdminBaseInit {
 
     // 表内的正文已被搬运到审核窗内，组件可挂载（或复用）了
     this.mountTextComparator();
+
+    // 审核足迹时间线同理
+    this.mountTimeline();
 
     // 附言缓存
     this.cacheMessage();
@@ -1062,6 +1077,35 @@ export class AdminVerifyInit extends AdminBaseInit {
       .children()
       .first();
     $(insertPos).before(this.comparatorContainer!);
+  }
+
+  private mountTimeline() {
+    this.lastRefundElement.value = this.verifyFrame!.find(
+      '[style="color:#FFF;background:indianred;font-size:12px;display:inline;word-break:break-all;"]',
+    );
+    const lastSubmissionText = this.verifyInfo["最后提交时间"].match(
+      /\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/,
+    );
+    if (lastSubmissionText === null) {
+      throw new Error("`lastSubmissionText` is null");
+    }
+    this.lastSubmission.value = Date.parse(lastSubmissionText[0]);
+    this.assistantSuggestionElement.value = this.verifyFrame!.find(".assistant-sug");
+
+    if (this.timeline === undefined) {
+      this.timelineContainer = document.createElement("div");
+      this.timelineContainer.classList.add("mcmodder-verify-timeline");
+      this.timeline = createApp(VerifyTimeline, {
+        lastRefundElement: this.lastRefundElement,
+        lastSubmission: this.lastSubmission,
+        assistantSuggestionElement: this.assistantSuggestionElement,
+      });
+      this.timeline.mount(this.timelineContainer);
+    }
+
+    $(this.timelineContainer!).insertAfter(
+      this.verifyFrame!.find(".verify-action-btns, .assistant-action-btns"),
+    );
   }
 
   /**
