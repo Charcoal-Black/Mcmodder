@@ -155,6 +155,7 @@ import { ItemIDBRepository } from "../../jsonframe/repository/ItemIDBRepository.
 import type { ItemRepository } from "../../jsonframe/repository/ItemRepository.ts";
 import { ItemGMStorageRepository } from "../../jsonframe/repository/ItemGMStorageRepository.ts";
 import Pinyin from "pinyin-match";
+import type { UEditor } from "../../ueditor/UEditor";
 
 /** 允许手动输入的关键词数量上限（空格分隔） */
 const AUTOLINK_KEYWORD_MAXLENGTH = 10;
@@ -163,7 +164,7 @@ const AUTOLINK_KEYWORD_MAXLENGTH = 10;
 const styles = ["选中的文本", "一半名称 (仅主要名称)", "完整名称 (主要名称+次要名称)"] as const;
 
 interface Props {
-  editor: any;
+  editor: UEditor;
 }
 
 const { editor } = defineProps<Props>();

@@ -63,7 +63,7 @@
                 v-if="inputNodeData?.type === InputType.NUMBER"
                 ref="input"
                 :title="inputNodeData.title"
-                :value="inputNodeData.value"
+                :value="inputNodeData.value as number"
                 :range="inputNodeData.range"
                 ,
                 :on-successful-change="inputNodeData.onSuccessfulChange"
@@ -72,7 +72,7 @@
                 v-if="inputNodeData?.type === InputType.TEXT"
                 ref="input"
                 :title="inputNodeData.title"
-                :value="inputNodeData.value"
+                :value="inputNodeData.value as string"
                 :on-successful-change="inputNodeData.onSuccessfulChange"
               />
             </div>
@@ -359,7 +359,7 @@ function calculateRowHeightBottomOffset(index: number) {
  * @param value 目标值（宽松相等比较）。
  * @returns 匹配行索引；未找到返回 -1。
  */
-function searchData(key: keyof T | null, value: any) {
+function searchData(key: keyof T | null, value: unknown) {
   if (key) {
     for (const i in currentData.value) {
       if (currentData.value[i].content[key] == value) {
@@ -481,7 +481,7 @@ function appendDataList(dataList: TableDataList<T>) {
  * 直接设置某单元格字段值（忽略撤销历史，用于外部程序化赋值）。
  * 值为 undefined 时转为删除该字段。
  */
-function setValue(index: number, key: keyof T, value: any) {
+function setValue(index: number, key: keyof T, value: T[keyof T]) {
   if (value === undefined) {
     deleteValue(index, key);
     return;
@@ -535,7 +535,7 @@ function getUnitElement(index: number, key: string) {
  * 内容为空时显示灰色「∅」占位。返回值直接 `v-html` 注入。
  */
 function renderUnit(data: TableRowData<T>, key: string) {
-  const rawContent = (data.edited as any)?.[key] ?? (data.content as any)[key];
+  const rawContent = data.edited?.[key] ?? data.content[key];
   const displayRule = columnOptions[key].displayRule;
   let content;
   if (
@@ -675,7 +675,7 @@ function getEditorRowData(index: number) {
   const rowData = getRowData(index);
   const content = Utils.simpleDeepCopy(rowData.content);
   Object.keys(rowData.edited || {}).forEach((key) => {
-    (content as any)[key] = rowData.edited![key];
+    (content as Record<string, unknown>)[key] = rowData.edited![key];
   });
   return content;
 }
@@ -725,13 +725,13 @@ function deleteRow(index: number): TableDataMap<T> {
 /** 批量删除多行（O(n) 一趟完成，避免循环 deleteRow 的 O(n²)），返回 `行索引 → 行数据` 映射供撤销 */
 function deleteMultipleRow(selection: TableRowSelection) {
   const deletedData: TableDataMap<T> = {};
-  const tempData: any = currentData;
+  const tempData: (TableRowData<T> | null)[] = [...currentData.value];
   selection.forEach((i) => {
     if (currentData.value[i].selected) selectedRowCount.value--;
-    deletedData[i] = Object.assign({}, currentData.value[i].content);
+    deletedData[i] = Utils.simpleDeepCopy(currentData.value[i].content);
     tempData[i] = null;
   });
-  currentData.value = tempData.value.filter((e: any) => e);
+  currentData.value = tempData.filter((row) => row !== null);
   refreshAll();
   unsaved.value = true;
   return deletedData;
@@ -742,12 +742,12 @@ function deleteMultipleRow(selection: TableRowSelection) {
  * 改动不为 undefined 且与原值不同时写入行 `edited`；改回原值时清除该字段的未保存标记。
  * 不落 `content`，待 `saveAll` 才真正提交。
  */
-function editData(index: number, key: keyof T, newValue: any) {
+function editData(index: number, key: keyof T, newValue: unknown) {
   let data = currentData.value[index] || "";
   let original = data.content[key] || "";
   if (original != newValue) {
     if (!data.edited) data.edited = {};
-    data.edited[key] = newValue;
+    (data.edited as Partial<Record<keyof T, unknown>>)[key] = newValue;
     triggerRef(currentData);
     unsaved.value = true;
   } else {
@@ -816,13 +816,13 @@ function insertMultipleRowWithDataMap(dataMap: TableDataMap<T>) {
   let i = 0,
     j = 0;
   let total = currentData.value.length + Object.keys(dataMap).length;
-  let newData: any[] = new Array(total).fill(null).map(() => ({}));
-  let deletedRowIndex = dataMapToSelection(dataMap);
+  const newData: TableRowData<T>[] = [];
+  const deletedRowIndex = dataMapToSelection(dataMap);
   for (let k = 0; k < total; k++) {
     if (deletedRowIndex[j] == k) {
-      newData[k].content = Utils.simpleDeepCopy(dataMap[k]);
+      newData.push({ content: Utils.simpleDeepCopy(dataMap[k]) });
       j++;
-    } else newData[k] = currentData.value[i++];
+    } else newData.push(currentData.value[i++]);
   }
   currentData.value = newData;
   refreshAll();
@@ -940,7 +940,7 @@ function onDblclick(index: number, key: keyof T) {
   if (!editConfigs.value!.hasOwnProperty(key)) {
     return;
   }
-  if ((editConfigs.value as any)[key]?.readonly) {
+  if (editConfigs.value![key as keyof EditConfigs<T>]?.readonly) {
     return;
   }
   editingIndex.value = index;
@@ -970,7 +970,7 @@ function onDblclick(index: number, key: keyof T) {
 const inputNodeData = shallowRef<{
   type: InputType;
   title: string;
-  value: any;
+  value: number | string;
   range?: InputValueNumericRange;
   onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>;
 }>();

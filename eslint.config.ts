@@ -12,6 +12,17 @@ export default defineConfig([
     files: ["**/*.{js,ts}"],
     ignores: ["dist/*"],
     extends: [js.configs.recommended, tseslint.configs.recommended],
+    rules: {
+      // 与 tsc 的 noUnusedLocals/noUnusedParameters 对齐：`_` 前缀表示有意不使用
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
   },
   {
     // 大小写校验独立成块：`.vue` 也要覆盖，故不能并入上面的 js/ts 块
@@ -22,7 +33,8 @@ export default defineConfig([
   },
   {
     files: ["src/**/*.vue"],
-    extends: [vue.configs["flat/recommended"]],
+    // TS 规则放在 vue 配置之前：vue 的 flat 配置要负责外层 parser，后写的才生效
+    extends: [...tseslint.configs.recommended, vue.configs["flat/recommended"]],
     languageOptions: {
       // <script lang="ts"> 交给 TS 解析器，模板则由 vue-eslint-parser 处理
       parserOptions: { parser: tseslint.parser },
@@ -35,6 +47,15 @@ export default defineConfig([
         },
       ],
       "vue/component-name-in-template-casing": ["error", "PascalCase"],
+      // 与 tsc 的 noUnusedLocals/noUnusedParameters 对齐：`_` 前缀表示有意不使用
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
   {

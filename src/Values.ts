@@ -432,7 +432,7 @@ export class Values {
     "icon:",
   ];
   static readonly supportedImageSuffix = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
-  static readonly importableKeys = [
+  static readonly importableKeys: (keyof Item)[] = [
     "name",
     "englishName",
     "registerName",

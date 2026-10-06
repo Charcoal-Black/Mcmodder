@@ -123,6 +123,26 @@ async function loadScripts() {
   ]);
 }
 
+/** 宿主 `structure_browser` 用到的字段（仅本组件读到的部分） */
+interface StructureCube {
+  uuid: string;
+  material: { map: { image: { src: string } } }[];
+  data: {
+    id: number;
+    layer: number;
+    position: [number, number];
+    name: { item: string; mod: string };
+  };
+}
+
+/** 宿主 `structure_browser.blocktype_list` 的元素 */
+interface StructureBlockType {
+  item: string;
+  mod: string;
+  face: string[];
+  id: number;
+}
+
 onMounted(async () => {
   await loadScripts();
 
@@ -131,12 +151,12 @@ onMounted(async () => {
   structure_browser.blocktype_list = [];
   structure_browser.get_block_type = () => {
     structure_browser.blocktype_list = [];
-    structure_browser.cube_list.forEach((e: any) => {
+    structure_browser.cube_list.forEach((e: StructureCube) => {
       let i = {
         item: e.data.name.item,
         mod: e.data.name.mod,
         // material: e.material,
-        face: e.material.map((t: any) => t.map.image.src),
+        face: e.material.map((t) => t.map.image.src),
         id: e.data.id,
       };
       for (let j of structure_browser.blocktype_list)
@@ -144,16 +164,18 @@ onMounted(async () => {
       structure_browser.blocktype_list.push(i);
     });
   };
-  structure_browser.remove_block = (uuid: any) => {
-    structure_browser.cube_list = structure_browser.cube_list.filter((e: any) => e.uuid != uuid);
+  structure_browser.remove_block = (uuid: string) => {
+    structure_browser.cube_list = structure_browser.cube_list.filter(
+      (e: StructureCube) => e.uuid != uuid,
+    );
     structure_browser.group.children = structure_browser.group.children.filter(
-      (e: any) => e.uuid != uuid,
+      (e: StructureCube) => e.uuid != uuid,
     );
     structure_browser.scene.remove(structure_browser.group);
     structure_browser.scene.add(structure_browser.group);
   };
   let defaultDocumentMouseUp = structure_browser.onDocumentMouseUp;
-  structure_browser.onDocumentMouseUp = (e: any) => {
+  structure_browser.onDocumentMouseUp = (e: MouseEvent) => {
     if ($("#previewMode").prop("checked")) defaultDocumentMouseUp(e);
     else {
       if (e.button != 2 || blocktype < 0) return;
@@ -170,7 +192,8 @@ onMounted(async () => {
         }
         if (
           structure_browser.cube_list.filter(
-            (e: any) => x === e.data.position[0] && y === e.data.layer && z === e.data.position[1],
+            (e: StructureCube) =>
+              x === e.data.position[0] && y === e.data.layer && z === e.data.position[1],
           ).length
         )
           return;
@@ -188,7 +211,7 @@ onMounted(async () => {
     }
   };
   const defaultDocumentClick = structure_browser.onDocumentClick;
-  structure_browser.onDocumentClick = (e: any) => {
+  structure_browser.onDocumentClick = (e: MouseEvent) => {
     if ($("#previewMode").prop("checked")) defaultDocumentClick(e);
     else {
       const u = structure_browser.raycaster.intersectObjects(structure_browser.cube_list);
@@ -200,7 +223,7 @@ onMounted(async () => {
 
   $("#structure-close").hide();
   structure_browser.get_block_type();
-  (structure_browser.blocktype_list as any[]).forEach((blocktype, index) => {
+  (structure_browser.blocktype_list as StructureBlockType[]).forEach((blocktype, index) => {
     blockListTable.value!.appendData({
       id: index,
       op: null,

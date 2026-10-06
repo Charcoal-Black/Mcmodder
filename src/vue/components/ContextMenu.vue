@@ -70,8 +70,6 @@ let contextmenuEvent: PointerEvent | undefined;
 let activeState = false;
 /** 本次打开以来是否已用过键盘（方向键）或指针进入——用于决定悬停是否接管键盘选中的项 */
 let pressArrowKeyBeforePointerMove = false;
-/** 累计注册的菜单项总数（`addItem` 时累加；当前仅统计，不参与渲染） */
-let itemCount = 0;
 /** 宿主容器元素（菜单本体之外、真正挂载着菜单的那个 DOM 节点） */
 let container: HTMLElement | null = null;
 /** 当前可用条目在 `items` 中的原下标（过滤后下标 → 原始下标的映射） */
@@ -108,8 +106,10 @@ const cssY = ref(0);
  * - 在容器内任意点击 → 关闭菜单。
  */
 onMounted(() => {
-  container = root.value?.parentElement!.parentElement!;
-  $(container!)
+  const owner = root.value?.parentElement?.parentElement;
+  if (!owner) return;
+  container = owner;
+  $(owner)
     .contextmenu((e) => onContextmenu(e.originalEvent as PointerEvent))
     .click((e) => onClick(e.originalEvent as PointerEvent));
 });
@@ -224,7 +224,6 @@ function hide() {
  */
 function addItem(option: ContextMenuItemOption) {
   items.value.push(option);
-  itemCount++;
   return { addItem };
 }
 

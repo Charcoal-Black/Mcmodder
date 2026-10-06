@@ -142,7 +142,11 @@ const visibleConfigData = computed(() => {
   return result;
 });
 
-const configResourceInteractorProps = [
+const configResourceInteractorProps: ConfigResourceInteractorProps<
+  keyof AppStorage,
+  object,
+  TableAcceptable
+>[] = [
   {
     parent: props.parent,
     id: "mcmodderSplashList_v2",
@@ -170,11 +174,10 @@ const configResourceInteractorProps = [
       id: ["模组编号", TableUtils.DISPLAYRULE_LINK_CLASS],
       children: ["记录内容", TableUtils.DISPLAYRULE_LINK_CLASS_ARRAY],
     },
-    dataParser: (key, item) =>
-      ({
-        id: Number(key),
-        children: item as number[],
-      }) as any, // ???
+    dataParser: (key, item) => ({
+      id: Number(key),
+      children: item as number[],
+    }),
   } satisfies ConfigResourceInteractorProps<
     "modDependences_v2",
     Record<string, number[]>,

@@ -6,47 +6,47 @@
         v-if="type === InputType.CHECKBOX"
         :id="id"
         :title="title"
-        :value="value"
+        :value="value as boolean"
         :on-successful-change="onConfigSuccessfulChange"
         :with-label="true"
       />
       <TextInput
         v-else-if="type === InputType.TEXT"
         :title="title"
-        :value="value"
+        :value="value as string"
         :on-successful-change="onConfigSuccessfulChange"
       />
       <ColorpickerInput
         v-else-if="type === InputType.COLORPICKER"
         :title="title"
-        :value="value"
+        :value="value as string"
         :on-successful-change="onConfigSuccessfulChange"
       />
       <NumberInput
         v-else-if="type === InputType.NUMBER"
         :title="title"
-        :value="value"
+        :value="value as number"
         :on-successful-change="onConfigSuccessfulChange"
         :range="range"
       />
       <SliderInput
         v-else-if="type === InputType.SLIDER"
         :title="title"
-        :value="value"
+        :value="value as number"
         :on-successful-change="onConfigSuccessfulChange"
         :range="finiteRange!"
       />
       <DropdownMenuInput
         v-else-if="type === InputType.DROPDOWN_MENU"
         :title="title"
-        :value="value"
+        :value="value as number"
         :on-successful-change="onConfigSuccessfulChange"
         :range="valueSet!"
       />
       <DropdownTextInput
         v-else-if="type === InputType.DROPDOWN_TEXT_MENU"
         :title="title"
-        :value="value"
+        :value="value as string"
         :on-successful-change="onConfigSuccessfulChange"
         :suggestion-manager="{
           onInitSuggestion: () => suggestion!,
@@ -55,7 +55,7 @@
       <KeybindInput
         v-else-if="type === InputType.KEYBIND"
         :title="title"
-        :value="value"
+        :value="value as Key"
         :on-successful-change="onConfigSuccessfulChange"
       />
       <slot name="afterInput" />
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, type WritableComputedRef } from "vue";
+import { computed, ref, shallowRef } from "vue";
 import { ConfigUtils, InputType } from "../../../config/ConfigUtils";
 import { Utils } from "../../../Utils";
 import CheckboxInput from "../input/CheckboxInput.vue";
@@ -92,7 +92,7 @@ const { id, cfgutils, configs } = defineProps<Props>();
 const configOption = shallowRef(cfgutils.data[id]);
 const type = ref<Readonly<InputType>>(configOption.value.type);
 const title = computed(() => configOption.value.title);
-const value = configs.getSettingsWritableRef(id) as WritableComputedRef<any>;
+const value = configs.getSettingsWritableRef(id);
 // computed(() => configs.getSettings(id) ?? configOption.value.value);
 
 const opt = computed(() => {
@@ -140,7 +140,7 @@ const finiteRange = computed(() => opt.value.finiteRange);
 const valueSet = computed(() => opt.value.valueSet);
 const suggestion = computed(() => opt.value.suggestion);
 
-function onConfigSuccessfulChange(resp: InputValidInfo<any>) {
+function onConfigSuccessfulChange(resp: InputValidInfo<Settings[keyof Settings]>) {
   Utils.commonMsg(PublicLangData.center.setting.complete);
   value.value = resp.final;
   // configs.setSettings(id, resp.final);
