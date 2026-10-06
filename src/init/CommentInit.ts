@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import { Utils } from "../Utils";
 import Countdown from "../vue/components/Countdown.vue";
 import { TimerUtils } from "../widget/TimerUtils.ts";
@@ -8,6 +9,9 @@ export class CommentInit extends Init {
   canRun() {
     return !!$(".common-comment-block.lazy").length;
   }
+
+  /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存 */
+  private readonly attitude = AttitudeSystem.for(this.parent);
 
   private displayPublishTime(target: JQuery) {
     target.find(".comment-reply-row-time").each((_, node) => {
@@ -98,6 +102,9 @@ export class CommentInit extends Init {
           // 显示快速跳转面板
           this.renderPagination();
 
+          // 自定义表态：注入按钮并刷新这批短评的计数
+          void this.attitude.processCommentRows(commentFloor);
+
           const alertHeight = this.configs.getSettings("missileAlertHeight")!;
           const expandHeight = this.configs.getSettings("commentExpandHeight")!;
           $("div.comment-row-content", mutation.target).each((_, c) => {
@@ -156,7 +163,9 @@ export class CommentInit extends Init {
             // 移动端图标优化
             this.replaceMobileClientIcon(target);
           });
-        } else if (className === "comment-reply-floor" && this.configs.getSettings("replyLink")) {
+        } else if (className === "comment-reply-floor") {
+          void this.attitude.processCommentRows(commentFloor);
+          if (!this.configs.getSettings("replyLink")) continue;
           $("div.comment-reply-row", mutation.target).each((_, _e) => {
             const e = $(_e);
             const uid = Number(e.find("a.poped").attr("data-uid"));
@@ -182,6 +191,8 @@ export class CommentInit extends Init {
         }
       } else if (className === "common-comment-block lazy" && mutation.addedNodes.length > 0) {
         this.unlockComment();
+        // 整块重渲染（如翻页）时兜底重注入
+        void this.attitude.processCommentRows($(mutation.target));
       }
     }
   });
@@ -274,5 +285,9 @@ export class CommentInit extends Init {
         childList: true,
         subtree: true,
       });
+
+    // 自定义表态：绑定工具条事件，并刷新页面上已有的短评
+    this.attitude.bindEvents();
+    void this.attitude.processCommentRows($(document.body));
   }
 }

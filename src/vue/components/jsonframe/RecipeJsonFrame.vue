@@ -118,11 +118,11 @@ function itemListDisplay(
   return res;
 }
 
-function itemInputDisplay(_: any, row: Partial<Recipe>) {
+function itemInputDisplay(_: string, row: Partial<Recipe>) {
   return itemListDisplay(row.in_id, row.in_num, row.in_chance);
 }
 
-function itemOutputDisplay(_: any, row: Partial<Recipe>) {
+function itemOutputDisplay(_: string, row: Partial<Recipe>) {
   return itemListDisplay(row.out_id, row.out_num, row.out_chance);
 }
 

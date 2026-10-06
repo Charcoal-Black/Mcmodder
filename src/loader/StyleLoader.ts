@@ -127,6 +127,7 @@ export class StyleLoader {
 
     const baseCss = importCSS("base");
     const mcmodderUICss = importCSS("mcmodderUI");
+    const attitudeCss = importCSS("attitude");
     const aprilFoolsCss = importCSS("aprilFools");
     const tableThemeColorCss = importCSS("tableThemeColor");
     const tableLeftAlignCss = importCSS("tableLeftAlign");
@@ -412,6 +413,7 @@ export class StyleLoader {
         "attitude-tired": "#960",
         "attitude-snowflake": "#39c",
         "attitude-handshake": "#363",
+        "attitude-devil-angry": "#8a1212",
         "classstatus-1": "#2cbe4e",
         "classstatus-2": "#cb6431",
         "classstatus-3": "#cb2431",
@@ -478,6 +480,7 @@ export class StyleLoader {
         "attitude-tired": "#b71",
         "attitude-snowflake": "#7ac",
         "attitude-handshake": "#383",
+        "attitude-devil-angry": "#ff4d4d",
         "classstatus-1": "#183",
         "classstatus-2": "#852",
         "classstatus-3": "#822",
@@ -518,6 +521,7 @@ export class StyleLoader {
       }`,
       base: baseCss,
       mcmodderUI: mcmodderUICss,
+      attitude: attitudeCss,
       aprilFools: aprilFoolsCss,
       tableThemeColor: tableThemeColorCss,
       tableLeftAlign: tableLeftAlignCss,
@@ -540,6 +544,9 @@ export class StyleLoader {
     // if (configs.get("mcmodderUI")) {
     style += css.mcmodderUI;
     // }
+    if (configs.getSettings("customAttitude")) {
+      style += css.attitude;
+    }
     if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {
       style += css.tableThemeColor;
     }

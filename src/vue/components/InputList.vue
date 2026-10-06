@@ -611,7 +611,7 @@ function onOptionPointerenter(index: number) {
  * 按候选来源类型选择回调的取法：配置式（`SuggestionConfigManager`）自动包装成读写回调，
  * 回调式（`SuggestionCallbackManager`）直接取宿主给的函数（可能为 `undefined`）。
  */
-const pick = <T extends Function>(
+const pick = <T extends (...args: never[]) => unknown>(
   fromConfig: (manager: SuggestionConfigManager) => T,
   fromCallback: (manager: SuggestionCallbackManager) => T | undefined,
 ) => {

@@ -47,6 +47,7 @@ export default defineConfig({
           "supabase.co",
           "fastly.jsdelivr.net",
           "cdn.jsdelivr.net",
+          "cdn.jsdelivr.net.cn",
         ],
         require: [
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",

@@ -13,7 +13,7 @@
 import { ref } from "vue";
 
 interface Props {
-  onClick?: (e: PointerEvent) => any;
+  onClick?: (e: PointerEvent) => void;
 }
 
 const props = defineProps<Props>();

@@ -852,7 +852,7 @@ async function performClassSearch(classID: number, typeID: number) {
     return;
   }
 
-  const configTemp: Record<string, any> = { classID, typeID };
+  const configTemp: Record<string, unknown> = { classID, typeID };
   $(classSearchFrame.value!)
     .find("input[name]")
     .each((_, _input) => {
@@ -860,7 +860,8 @@ async function performClassSearch(classID: number, typeID: number) {
       const name = input.getAttribute("name") as keyof ItemJsonFrameConfig;
       if (name) configTemp[name] = input.checked;
     });
-  const config = configTemp as ItemJsonFrameConfig;
+  // 表单里取到的都是原始字符串 / 布尔值，统一在这里断言成配置对象
+  const config = configTemp as unknown as ItemJsonFrameConfig;
 
   let itemList: ItemList = [];
 
@@ -1078,24 +1079,24 @@ function onDownloadClick(e: Event) {
 }
 
 function convertToImportableFormat(data: Partial<Item>) {
-  const entry: Record<string, any> = {};
+  const entry: Record<string, unknown> = {};
   for (const key of Values.importableKeys) {
-    let value = (data as any)[key];
-    if (value === undefined || value === null || (typeof value === "number" && isNaN(value)))
-      value = "";
+    const raw = data[key];
+    const value =
+      raw === undefined || raw === null || (typeof raw === "number" && isNaN(raw)) ? "" : raw;
     switch (key) {
       case "OredictList":
-        entry[key] = value.replaceAll(",", ", ");
+        entry[key] = typeof value === "string" ? value.replaceAll(",", ", ") : String(value);
         break;
       case "smallIcon":
       case "largeIcon":
-        entry[key] = Utils.removeBase64ImgPrefix(value);
+        entry[key] = typeof value === "string" ? Utils.removeBase64ImgPrefix(value) : String(value);
         break;
       default:
         entry[key] = value;
     }
   }
-  return entry as Item;
+  return entry as unknown as Item;
 }
 
 function exportJson(fileName: string) {
