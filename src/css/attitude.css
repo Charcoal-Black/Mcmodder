@@ -32,6 +32,9 @@ html.mcmodder-attitude-twemoji .mcmodder-attitude-emoji {
 
 html.mcmodder-attitude-twemoji emoji-picker {
   --emoji-font-family: "Twemoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  /* 10 个类别 tab：格子随站点 rem 放大会重叠并裁掉最后一格 */
+  --category-emoji-size: min(var(--emoji-size), 20px);
+  --category-emoji-padding: min(var(--emoji-padding), 4px);
 }
 
 /* 恶魔安格瑞图标：宽高随字体、取色随 currentColor */
@@ -68,7 +71,7 @@ html.mcmodder-attitude-twemoji emoji-picker {
   margin-left: 3px;
 }
 
-/* 结果条里的 emoji 略放大：Twemoji 字形比原生 FontAwesome 图标偏小，放大后更易辨认 */
+/* 结果条里的 emoji 略放大（Twemoji 字形比原生图标偏小） */
 :is(.comment-row, .comment-reply-row)
   .comment-tools
   ol.comment-attitude-result
@@ -333,8 +336,9 @@ img.mcmodder-attitude-sticker-image {
   opacity: 0.8;
 }
 
+/* 行尾计数徽标里的 emoji：与表态徽标同基准（14px × 倍率） */
 .message-list .mcmodder-attitude-count .mcmodder-attitude-emoji {
-  font-size: calc(1em * var(--mcmodder-attitude-scale));
+  font-size: calc(14px * var(--mcmodder-attitude-scale));
 }
 
 .message-list > .mcmodder-attitude-summary {
@@ -370,6 +374,7 @@ img.mcmodder-attitude-sticker-image {
   vertical-align: middle;
 }
 
+/* 消息列表徽标里的 emoji：基准 14px，随表态图标倍率放大 */
 .mcmodder-attitude-badge .mcmodder-attitude-emoji {
   font-size: calc(14px * var(--mcmodder-attitude-scale));
 }

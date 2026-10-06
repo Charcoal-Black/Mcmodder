@@ -196,6 +196,8 @@ export class Values {
     },
     emojiDataUrl:
       "https://cdn.jsdelivr.net.cn/npm/emoji-picker-element-data@1/zh/emojibase/data.json",
+    /** Twemoji 官方 SVG 目录（`<codepoint>.svg`） */
+    emojiSvgUrl: "https://cdn.jsdelivr.net.cn/gh/jdecked/twemoji@v15.0.3/assets/svg/",
     /** Twemoji COLR 字体覆盖到 Emoji 15.0，选择器据此裁剪超出部分 */
     emojiVersion: 15.0,
     /** 选择面板「最近使用」保留的 emoji 个数 */

@@ -24,7 +24,7 @@
       </button>
     </div>
 
-    <template v-if="tab === 'emoji'">
+    <div v-show="tab === 'emoji'">
       <div class="mcmodder-attitude-choice-list">
         <button
           v-for="attitudeType in store.recents"
@@ -58,10 +58,10 @@
         class="mcmodder-attitude-picker-host"
         :class="{ 'mcmodder-attitude-picker-visible': allEmojisVisible }"
       ></div>
-    </template>
+    </div>
 
     <AttitudeStickerList
-      v-else
+      v-if="tab === 'sticker'"
       :stickers="store.stickers"
       :quota="store.stickerQuota"
       :loading="store.stickerLoading"
@@ -80,6 +80,11 @@ import { Values } from "../../../Values";
 import { clampAttitudePanelPosition } from "../../../attitude/AttitudePickerState";
 import type { AttitudePickerState } from "../../../attitude/AttitudePickerState";
 import { parseStickerId } from "../../../attitude/attitudeIcon";
+import {
+  attitudeLetterIconUrl,
+  attitudeLetters,
+  attitudeTypeOfLetter,
+} from "../../../attitude/attitudeLetter";
 import AttitudeStickerList from "./AttitudeStickerList.vue";
 
 interface Props {
@@ -90,34 +95,80 @@ const { store } = defineProps<Props>();
 
 const pickerHost = ref<HTMLDivElement>();
 const allEmojisVisible = ref(false);
-/** 面板页签 */
 const tab = ref<"emoji" | "sticker">("emoji");
 
 function isSticker(attitudeType: string) {
   return parseStickerId(attitudeType) !== undefined;
 }
 
-/** 未解析完成时为空，渲染占位方块 */
 function stickerUrl(attitudeType: string) {
   return store.stickerUrls[attitudeType];
 }
 
-/** 切换页签后高度会变，重新夹取到视口内 */
 function switchTab(next: "emoji" | "sticker") {
   tab.value = next;
   void nextTick(clampAttitudePanelPosition);
 }
 
-/** 站点是否处于夜间模式（以 `<html>` 上的 `dark` 类为准） */
 const siteDark = ref(document.documentElement.classList.contains("dark"));
-let pickerReady = false;
 let pickerEl: HTMLElement | undefined;
+
+/** 库的自定义类别分组 id */
+const CUSTOM_GROUP_ID = "-1";
+const LETTERS_CATEGORY_LABEL = "字母";
+
+function decorateLettersCategory(picker: HTMLElement) {
+  const shadow = picker.shadowRoot;
+  if (!shadow) return;
+  const style = document.createElement("style");
+  shadow.append(style);
+
+  const apply = (nav: Element) => {
+    const buttons = [...nav.children].filter(
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement && child.dataset.groupId !== undefined,
+    );
+    if (buttons.length === 0) return;
+    const iconHost = nav.querySelector(`[data-group-id='${CUSTOM_GROUP_ID}'] .nav-emoji`);
+    if (iconHost && !iconHost.querySelector("img")) {
+      const icon = document.createElement("img");
+      icon.src = attitudeLetterIconUrl;
+      icon.alt = "";
+      iconHost.replaceChildren(icon);
+    }
+    const visualOrder = [
+      ...buttons.filter((button) => button.dataset.groupId !== CUSTOM_GROUP_ID),
+      ...buttons.filter((button) => button.dataset.groupId === CUSTOM_GROUP_ID),
+    ];
+    const css = [
+      `.nav > [data-group-id='${CUSTOM_GROUP_ID}'] { order: 1; }`,
+      `.nav > [data-group-id='${CUSTOM_GROUP_ID}'] .nav-emoji img {` +
+        " width: var(--category-emoji-size); height: var(--category-emoji-size); }",
+      ...visualOrder.map(
+        (button, column) =>
+          `.picker:has(.nav > [data-group-id='${button.dataset.groupId}'][aria-selected='true'])\n` +
+          `  .indicator { transform: translateX(${column * 100}%) !important; }`,
+      ),
+    ].join("\n");
+    if (style.textContent !== css) style.textContent = css;
+  };
+
+  const start = (attempts: number) => {
+    const nav = shadow.querySelector(".nav");
+    if (nav) {
+      apply(nav);
+      new MutationObserver(() => apply(nav)).observe(nav, { childList: true, subtree: true });
+      return;
+    }
+    if (attempts > 0) requestAnimationFrame(() => start(attempts - 1));
+  };
+  start(30);
+}
 
 const themeObserver = new MutationObserver(() => {
   siteDark.value = document.documentElement.classList.contains("dark");
 });
 
-/** 让 `emoji-picker-element` 跟随站点夜间模式，而不是默认的系统主题 */
 function applyPickerTheme() {
   if (!pickerEl) return;
   pickerEl.classList.toggle("dark", siteDark.value);
@@ -126,37 +177,46 @@ function applyPickerTheme() {
 
 watch(siteDark, applyPickerTheme);
 
-/** 展开 / 收起「全部 emoji」：选择器只在首次展开时创建并下载数据，收起只隐藏、不销毁 */
-function toggleAllEmojis() {
-  allEmojisVisible.value = !allEmojisVisible.value;
-  if (allEmojisVisible.value && !pickerReady) {
-    const host = pickerHost.value;
-    if (host) {
-      const picker = new Picker({
-        locale: "zh",
-        i18n: zhCN,
-        dataSource: Values.attitude.emojiDataUrl,
-        emojiVersion: Values.attitude.emojiVersion,
-      });
-      pickerEl = picker;
-      applyPickerTheme();
-      picker.addEventListener("emoji-click", (event) => {
-        // 自定义 emoji 没有 `unicode`，忽略
-        const unicode = event.detail.unicode;
-        if (unicode) store.onPick(unicode);
-      });
-      host.appendChild(picker);
-      pickerReady = true;
+function ensurePicker() {
+  const host = pickerHost.value;
+  if (!host) return;
+  if (pickerEl?.isConnected && pickerEl.parentElement === host) return;
+
+  pickerEl?.remove();
+  const picker = new Picker({
+    locale: "zh",
+    i18n: { ...zhCN, categories: { ...zhCN.categories, custom: LETTERS_CATEGORY_LABEL } },
+    dataSource: Values.attitude.emojiDataUrl,
+    emojiVersion: Values.attitude.emojiVersion,
+    customEmoji: attitudeLetters,
+  });
+  pickerEl = picker;
+  applyPickerTheme();
+  picker.addEventListener("emoji-click", (event) => {
+    const { unicode, emoji } = event.detail;
+    const letter = unicode ? undefined : attitudeTypeOfLetter(emoji.name);
+    if (letter) {
+      store.onPick(letter, true);
+    } else if (unicode) {
+      store.onPick(unicode);
     }
-  }
-  nextTick(clampAttitudePanelPosition);
+  });
+  host.appendChild(picker);
+  decorateLettersCategory(picker);
+}
+
+async function toggleAllEmojis() {
+  allEmojisVisible.value = !allEmojisVisible.value;
+  // 选择器初始化时要量宽度，须等宿主可见
+  await nextTick();
+  if (allEmojisVisible.value) ensurePicker();
+  clampAttitudePanelPosition();
 }
 
 function close() {
   store.onClose();
 }
 
-/** 页面滚动关闭面板（面板内部如 emoji 选择器的滚动不算） */
 function onAnyScroll(event: Event) {
   const target = event.target;
   if (

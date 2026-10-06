@@ -21,8 +21,8 @@ export interface AttitudePickerState {
   stickerLoading: boolean;
   /** `sticker:<id>` → 已解析出的图片地址（最近使用区渲染用） */
   stickerUrls: Record<string, string>;
-  /** 用户选中某个类型（`AttitudeSystem` 接管写入） */
-  onPick: (attitudeType: string) => void;
+  /** `keepOpen` 为真时保持面板打开（字母连续拼词） */
+  onPick: (attitudeType: string, keepOpen?: boolean) => void;
   /** 用户上传本地图片作为贴纸（`AttitudeSystem` 接管；成功后直接用它表态） */
   onUpload: (file: File) => Promise<void> | void;
   /** 请求关闭面板（`AttitudeSystem` 落地） */

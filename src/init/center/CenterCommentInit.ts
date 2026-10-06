@@ -25,9 +25,7 @@ export class CenterCommentInit extends CenterBaseInit {
         console.warn("[Mcmodder] 表态取得统计获取失败：", error),
       );
       if (!resp) return;
-      const entries = Object.entries(resp.received ?? {})
-        .filter(([, count]) => count > 0)
-        .sort(([, a], [, b]) => b - a);
+      const entries = Object.entries(resp.received ?? {}).filter(([, count]) => count > 0);
       if (entries.length === 0) return;
 
       // 贴纸先解析出原始文件名再写文案

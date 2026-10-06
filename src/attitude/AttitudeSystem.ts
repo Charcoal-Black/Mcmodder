@@ -49,7 +49,7 @@ export class AttitudeSystem {
   private static instance?: AttitudeSystem;
 
   private readonly countsCache = new Map<string, { time: number; record: AttitudeRecord }>();
-  private readonly busyCommentIds = new Set<string>();
+  private readonly writeQueues = new Map<string, Promise<void>>();
   private pendingCommentIds = new Set<string>();
   private pendingResolvers: ((records: Map<string, AttitudeRecord>) => void)[] = [];
   private flushTimer?: number;
@@ -597,10 +597,10 @@ export class AttitudeSystem {
         attitudePickerState.onPick(attitudeType);
       }
     };
-    attitudePickerState.onPick = (attitudeType) => {
-      attitudePickerState.visible = false;
+    attitudePickerState.onPick = (attitudeType, keepOpen = false) => {
+      if (!keepOpen) attitudePickerState.visible = false;
       this.rememberRecentEmoji(attitudeType);
-      void this.write(target, attitudeType);
+      this.write(target, attitudeType);
     };
     attitudePickerState.onClose = () => {
       attitudePickerState.visible = false;
@@ -728,9 +728,9 @@ export class AttitudeSystem {
 
     $result.children("li.mcmodder-attitude-item").remove();
     const mine = new Set(record.mine);
+    // 顺序即服务端键序（各类别首次表态时间序）
     Object.keys(record.counts)
       .filter((attitudeType) => (record.counts[attitudeType] ?? 0) > 0 || mine.has(attitudeType))
-      .sort((a, b) => (record.counts[b] ?? 0) - (record.counts[a] ?? 0) || a.localeCompare(b))
       .forEach((attitudeType) => {
         $result.append(
           this.buildResultItem(
@@ -772,10 +772,10 @@ export class AttitudeSystem {
 
   /**
    * 添加 / 取消一条表态（服务端按 `(短评, 我, 类型)` 存在性切换）：不做乐观计数，以服务端返回的
-   * 计数为准，同一短评的写操作排队执行。
+   * 计数为准；同一短评的写操作串行排队。
    */
-  async write(target: AttitudeTarget, attitudeType: string) {
-    if (!this.enabled || this.busyCommentIds.has(target.commentId)) return;
+  write(target: AttitudeTarget, attitudeType: string) {
+    if (!this.enabled) return;
     const authKey = this.getAuthKey();
     if (!authKey) {
       Utils.commonMsg(
@@ -785,25 +785,34 @@ export class AttitudeSystem {
       return;
     }
 
-    this.busyCommentIds.add(target.commentId);
-    attitudePickerState.visible = false;
-    try {
-      const resp = await this.parent.supabaseUtils.putAttitude({
-        authKey,
-        commentId: target.commentId,
-        attitudeType,
-        toUid: target.toUid,
-        toUsername: target.toUsername,
-        fromAvatar: this.configs.getProfile("avatar") ?? "",
-        commentText: target.commentText,
-        sourceUrl: target.sourceUrl,
-      });
-      if (!resp) return;
-      const record: AttitudeRecord = { counts: resp.counts ?? {}, mine: resp.mine ?? [] };
-      this.countsCache.set(target.commentId, { time: Date.now(), record });
-      this.renderRow($(target.row), record);
-    } finally {
-      this.busyCommentIds.delete(target.commentId);
+    const commentId = target.commentId;
+    const job = (this.writeQueues.get(commentId) ?? Promise.resolve())
+      .then(() => this.sendWrite(target, attitudeType, authKey))
+      .catch((error) => console.warn("[Mcmodder] 自定义表态写入失败：", error));
+    this.writeQueues.set(commentId, job);
+    void job.then(() => {
+      // 排空后清理，避免 Map 无限增长
+      if (this.writeQueues.get(commentId) === job) this.writeQueues.delete(commentId);
+    });
+  }
+
+  private async sendWrite(target: AttitudeTarget, attitudeType: string, authKey: string) {
+    const resp = await this.parent.supabaseUtils.putAttitude({
+      authKey,
+      commentId: target.commentId,
+      attitudeType,
+      toUid: target.toUid,
+      toUsername: target.toUsername,
+      fromAvatar: this.configs.getProfile("avatar") ?? "",
+      commentText: target.commentText,
+      sourceUrl: target.sourceUrl,
+    });
+    if (!resp) return;
+    const record: AttitudeRecord = { counts: resp.counts ?? {}, mine: resp.mine ?? [] };
+    this.countsCache.set(target.commentId, { time: Date.now(), record });
+    this.renderRow($(target.row), record);
+    if (attitudePickerState.visible && attitudePickerState.commentId === target.commentId) {
+      attitudePickerState.active = record.mine;
     }
   }
 }
