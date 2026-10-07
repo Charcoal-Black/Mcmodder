@@ -759,40 +759,97 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     /**
-     * 为开源许可中出现的链接文本添加快速跳转。
+     * 解析开源许可信息，并为开源许可中出现的链接文本添加快速跳转。
      *
-     * 现有编辑检查规则尚无涉及开源许可的条目，故暂时跳过解析。
+     * 原始 HTML 范例，注意&lt;b&gt;标签与方括号之间的一个空格，以及方括号与备注括号之间的一个空格，
+     * 且类型、链接与备注都是可选字段，为空串时不会显示（连带外周的括号与空格）：
      *
-     * 原始 HTML 范例（注意&lt;b&gt;标签与方括号之间的一个空格）：
      * ```html
      * <p><b class="text-primary">通用</b></p>
-     * <p>声明许可协议为: <b>MIT License</b> 【{{ link }}】</p>
+     * <p><b>源码 / 资产 / 构件</b> 声明许可协议为: <b>MIT License</b> 【{{ link }}】 (这里是备注)</p>
      * ```
      */
     开源许可: (content, data) => {
-      // let title = "";
-      content.row
-        .find("p")
-        .contents()
-        .each((_, e) => {
-          // if (e.nodeType === Node.ELEMENT_NODE && e.tagName === "B") {
-          //   const text = e.textContent;
-          //   if (e.classList.contains("text-primary")) {
-          //     title = text;
-          //     return;
-          //   }
-          // }
-          if (e.nodeType === Node.TEXT_NODE) {
-            const text = e as unknown as Text;
-            if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
-              const link = text.data.slice(2, -1);
-              const mid = text.splitText(2);
-              mid.splitText(link.length);
-              Utils.textToAnchor(mid);
-            }
-          }
-        });
       data.license = {};
+      let title = "";
+      let listIndex = 0;
+      let index = 0;
+      let currentList: ValueOf<Required<typeof data>["license"]>;
+      type License = ValueOf<(typeof currentList)["list"]>;
+      content.row.find("p").each((_, p) => {
+        const contents = $(p).contents();
+        let types: License["type"] = [];
+        let isCustomType = false;
+        let name: License["name"] = "other";
+        let link: License["link"] = "";
+        let extras: License["text"] = "";
+        if (contents.length === 1 && contents.attr("class") === "text-primary") {
+          title = p.textContent;
+          currentList = { title, list: {} };
+          data.license![listIndex++] = currentList;
+          index = 0;
+          return;
+        } else {
+          contents.each((childIndex, element) => {
+            if (
+              childIndex === 0 &&
+              element.nodeType === Node.ELEMENT_NODE &&
+              element.tagName === "B"
+            ) {
+              element.textContent
+                .split("/")
+                .map((type) => type.trim())
+                .forEach((rawType) => {
+                  const type = Utils.getKeyValueOfObject(Values.reversedLicenseTypeMap, rawType);
+                  if (type === undefined) {
+                    isCustomType = true;
+                  } else {
+                    (types as Exclude<typeof types, string>).push(type);
+                  }
+                });
+              if (isCustomType) {
+                types = element.textContent;
+              }
+            } else {
+              const prev = element.previousSibling;
+              if (
+                prev !== null &&
+                Utils.isTextNode(prev) &&
+                prev.data.endsWith("声明许可协议为: ")
+              ) {
+                const rawName = element.textContent;
+                const mappedName = Utils.getKeyValueOfObject(Values.reversedLicenseMap, rawName);
+                if (mappedName === undefined) {
+                  console.warn("未知的许可协议: " + rawName);
+                } else {
+                  name = mappedName;
+                }
+              }
+            }
+            if (element.nodeType === Node.TEXT_NODE) {
+              const text = element as unknown as Text;
+              const linkStartPos = text.data.indexOf(" 【");
+              const linkEndPos = text.data.indexOf("】");
+              if (linkStartPos >= 0 && linkEndPos > linkStartPos) {
+                link = text.data.slice(2, -1);
+                const mid = text.splitText(2);
+                mid.splitText(link.length);
+                Utils.textToAnchor(mid);
+              }
+              const lastText = text.data.slice(linkEndPos + 1);
+              if (lastText.startsWith(" (") && lastText.endsWith(")")) {
+                extras = lastText.slice(2, -1);
+              }
+            }
+          });
+          currentList.list[index++] = {
+            type: types,
+            name,
+            link,
+            text: extras,
+          };
+        }
+      });
     },
 
     /**

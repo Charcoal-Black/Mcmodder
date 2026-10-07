@@ -11,13 +11,13 @@ type KeysOfExactType<T, P> = {
   [K in keyof T]-?: Equal<T[K], P> extends true ? K : never;
 }[keyof T];
 
-type ValueOf<T extends Readonly<Record<PropertyKey, unknown>>> = T[keyof T];
+type ValueOf<T extends Record<PropertyKey, unknown>> = T[keyof T];
 
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-type ReverseMap<T extends Readonly<PropertyKey, PropertyKey>> = {
+type ReverseMap<T extends Record<PropertyKey, PropertyKey>> = {
   [K in keyof T as T[K]]: K;
 };
 
@@ -1067,13 +1067,13 @@ interface McmodClassEditorInnerData {
         number,
         {
           /** 指定本协议适用的区域（源码/资产/构建）。若为 `string` 类型，则属于自定义类型 */
-          type: string | (keyof typeof import("../Values").Values.licenseTypeName)[];
+          type: string | (keyof typeof import("../Values").Values.licenseTypeMap)[];
           /** 协议英文 ID */
           name: keyof typeof import("../Values").Values.licenseName;
           /** 开源信息链接 */
           link: string;
           /** 开源信息备注 */
-          name: string;
+          text: string;
         }
       >;
     }

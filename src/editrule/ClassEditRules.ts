@@ -113,6 +113,7 @@ export class ClassEditRules {
     ClassEditRules.checkProjectID(data, result, isAdd);
     ClassEditRules.checkLink(data, result, isAdd);
     ClassEditRules.checkContent(data, result, isAdd);
+    ClassEditRules.checkLicense(data, result);
 
     return result;
   }
@@ -220,6 +221,21 @@ export class ClassEditRules {
       result.warning.push("缺少 MODID。"); // class_modid_empty
     } else if (modid.includes("，") || modid.includes(" ")) {
       result.warning.push("MODID 中含有异常符号，请检查是否准确。"); // class_modid_wrong_spliter
+    } else {
+      const ids = modid.split(",").map((id) => id.trim().toLowerCase());
+      if (
+        ids.some(
+          (id) =>
+            /^example.*mod$/g.test(id) ||
+            /^generated.*mod.*$/g.test(id) ||
+            /^template.*mod$/g.test(id) ||
+            id === "minecraft",
+        )
+      ) {
+        result.warning.push(
+          "含有使用生成器等程序的缺省值，如默认 Mod 名称、使用默认 MODID 或恶意占用已存在的 MODID 的行为。",
+        );
+      }
     }
   }
 
@@ -492,6 +508,26 @@ export class ClassEditRules {
     }
     if (/bug/i.test(text)) {
       result.info.push("BUG和Mod特性请发到社群的“特性反馈”板块。"); // bug_note
+    }
+  }
+
+  private static checkLicense(data: McmodClassEditorInnerData, result: VerifyCheckResult) {
+    const license = data.license;
+    if (license === undefined) {
+      return;
+    }
+    const groups = Object.values(license);
+    const titles = groups.map((group) => group.title.trim());
+    if (new Set(titles).size !== titles.length) {
+      result.error.push("许可协议出现了多个同名条件。");
+    }
+    if (
+      groups
+        .map((group) => Object.values(group.list))
+        .flat()
+        .some((entry) => entry.link === "" && entry.text === "")
+    ) {
+      result.error.push("缺少能够定位许可声明的地址。");
     }
   }
 
