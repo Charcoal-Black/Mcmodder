@@ -1265,6 +1265,23 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   line-height: 2;
   font-size: 0.7em;
 }
+/* 短评编辑器工具栏的「上传文件」按钮：图标是脚本内联的 SVG，需自行居中，并盖掉站点图标的精灵图背景 */
+.mcmodder-edui-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: none !important;
+}
+body .edui-default .edui-toolbar .edui-for-mcmodderupload .edui-button-wrap:hover {
+  background-color: var(--mcmodder-color-primary-transparent1);
+  border-color: var(--mcmodder-color-primary-dark1);
+}
+/* 上传中：按钮变淡并拒绝再次点击，避免重复上传 */
+body .edui-default .edui-toolbar .edui-for-mcmodderupload.mcmodder-edui-uploading {
+  opacity: 0.5;
+  cursor: progress;
+  pointer-events: none;
+}
 .info-frame .radio {
   display: inline-block;
   margin-right: 1em;

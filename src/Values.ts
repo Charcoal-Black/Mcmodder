@@ -424,6 +424,17 @@ export class Values {
     "subscript",
     "header",
   ];
+  /**
+   * 站点 UEditor 的接口入口：`action=` 后接动作名。短评工具栏上只暴露了图片上传，
+   * 附件上传（`uploadfile`，即「上传文件」按钮用的那个）属于站点未在界面上给出的隐藏入口。
+   */
+  static readonly ueditorActionUrl = "/ueditor/php/controller.php?action=";
+  /**
+   * 「上传文件」按钮可选的文件类型：与站点 UEditor 服务端的 `fileAllowFiles` 对齐，
+   * 只用于文件选择框的过滤，最终是否放行仍由服务端判定。
+   */
+  static readonly ueditorFileAccept =
+    ".png,.jpg,.jpeg,.gif,.bmp,.flv,.swf,.mkv,.avi,.rm,.rmvb,.mpeg,.mpg,.ogg,.ogv,.mov,.wmv,.mp4,.webm,.mp3,.wav,.mid,.rar,.zip,.tar,.gz,.7z,.bz2,.cab,.iso,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.md,.xml";
   static readonly adminIDList = [
     2, 8, 9, 208, 331, 7926, 7949, 10167, 12422, 14115, 17038, 21294, 29797, 672797,
   ];

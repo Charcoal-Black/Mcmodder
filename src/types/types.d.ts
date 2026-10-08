@@ -224,6 +224,7 @@ interface Settings {
   expCalculator: boolean;
   freezeAdvancements: boolean;
   unlockComment: boolean;
+  uploadFileButton: boolean;
   ignoreEmptyLine: boolean;
   replyLink: boolean;
   missileAlert: boolean;
