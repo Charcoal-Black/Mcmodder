@@ -82,18 +82,45 @@ html.dark .top-main .info .name a {
   color: var(--mcmodder-color-text);
 }
 
-html.dark .top-main .info .pulldown {
+html.dark .top-main .info .user-info .top_content,
+html.dark .top-main .info .more-info .top_content,
+html.dark .top-main .navs .app-url .top_content {
   background-color: var(--mcmodder-color-background-dark1);
-  border: 1px solid var(--mcmodder-color-background-dark3);
-}
-
-html.dark .top-main .info .pulldown .top_content a {
+  border-color: var(--mcmodder-color-background-dark3);
+  box-shadow: 0 2px 4px var(--mcmodder-color-bbs-shadow);
   color: var(--mcmodder-color-text);
 }
 
-html.dark .top-main .info .pulldown .top_content a:hover {
-  background-color: var(--mcmodder-color-background-dark2);
-  color: var(--mcmodder-color-accent-dark2);
+html.dark .top-main .navs .current .hover {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .top-main .pulldown .arrow {
+  border-color: transparent transparent var(--mcmodder-color-background-dark1) transparent;
+}
+
+html.dark .top-main .info .user-info .top_content a,
+html.dark .top-main .info .more-info .top_content a,
+html.dark .top-main .navs .app-url .top_content a {
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .top-main .info .user-info .top_content a:hover,
+html.dark .top-main .info .more-info .top_content a:hover,
+html.dark .top-main .navs .app-url .top_content a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .top-main .navs .app-url .li:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .top-main .info .separate-li,
+html.dark .top-main .more-info .separate-li {
+  border-top-color: var(--mcmodder-color-background-dark3);
+  border-bottom-color: transparent;
 }
 
 html.dark #wp.wp.fwp a {
@@ -113,6 +140,7 @@ html.dark .ooops .shadow {
 }
 
 html.dark .banner {
+  background-color: var(--mcmodder-color-background);
   border: 1px solid var(--mcmodder-color-background-dark3);
   border-radius: 6px;
   overflow: hidden;
@@ -341,7 +369,7 @@ html.dark .pgb a:hover {
 html.dark .pg strong {
   background-color: var(--mcmodder-color-accent-dark2);
   border-color: var(--mcmodder-color-accent-dark2);
-  color: var(--mcmodder-color-bbs-white);
+  color: var(--mcmodder-color-background);
 }
 
 html.dark #ft {
@@ -524,7 +552,7 @@ html.dark .ttp .a a,
 html.dark .ttp li.a a {
   background-image: none;
   background-color: var(--mcmodder-color-accent-dark2);
-  color: var(--mcmodder-color-bbs-white);
+  color: var(--mcmodder-color-background);
   border-color: var(--mcmodder-color-accent-dark2);
 }
 
@@ -559,7 +587,14 @@ html.dark .showmenu:hover {
 html.dark .th.showmenubox {
   background-image: none;
   background-color: var(--mcmodder-color-background-dark2);
-  border-bottom: 1px solid var(--mcmodder-color-background-dark3);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+}
+
+/* 「新窗」开关与勾选标签的颜色来自 #atarget/.unchk/.chked 的 id 级规则 */
+html.dark #atarget,
+html.dark .unchk,
+html.dark .chked {
+  color: var(--mcmodder-color-text-dark1);
 }
 
 html.dark .showmenu_outer {
@@ -801,7 +836,7 @@ html.dark body#nv_forum .ttp li a:hover {
 html.dark body#nv_forum .ttp li.a a,
 html.dark body#nv_forum .ttp li.a a:hover {
   background-color: var(--mcmodder-color-accent-dark2);
-  color: var(--mcmodder-color-bbs-white);
+  color: var(--mcmodder-color-background);
   border-color: var(--mcmodder-color-accent-dark2);
 }
 
@@ -1021,4 +1056,242 @@ html.dark body#nv_forum .sltm li.hover,
 html.dark body#nv_forum .sltm li:hover {
   background-color: var(--mcmodder-color-background-dark3);
   color: var(--mcmodder-color-accent-dark2);
+}
+
+/* 站内 www.mcmod.cn/css/main.css 的 div,a,ul,li{color:#222} 截断了文字颜色的继承链（社群页面也会加载它），
+   用同元素、更高特指度的规则改成继承，让容器上的深色配色能作用到内部文本 */
+html.dark div,
+html.dark ul,
+html.dark li {
+  color: inherit;
+}
+
+/* 版块页「发新帖」按钮区：站内样式把底色写死为白色 */
+html.dark #sd_bdr {
+  background-color: var(--mcmodder-color-background);
+}
+
+/* 首页图片挂件：轮播容器与页码标签的底色由脚本写成内联样式 */
+html.dark .slidebox_grid table {
+  background: var(--mcmodder-color-background-dark2) !important;
+}
+
+html.dark .slideswitch {
+  background-color: var(--mcmodder-color-background-dark3) !important;
+  border-color: var(--mcmodder-color-background-dark3) !important;
+  color: var(--mcmodder-color-text-dark2) !important;
+  opacity: 1 !important;
+}
+
+/* 当前页标签的高亮底色（脚本写入 rgb(194, 213, 227)） */
+html.dark .slideswitch[style*="background-color: rgb(194, 213, 227)"] {
+  background-color: var(--mcmodder-color-accent-dark2) !important;
+  border-color: var(--mcmodder-color-accent-dark2) !important;
+  color: var(--mcmodder-color-background) !important;
+}
+
+/* 表单按钮：Discuz 折叠框（spoilerbutton）等按钮沿用浏览器默认外观，不会被上面的 input[type="text"] 规则覆盖 */
+html.dark input[type="button"],
+html.dark input[type="reset"],
+html.dark input[type="submit"] {
+  background-color: var(--mcmodder-color-background-dark2);
+  border: 1px solid var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .spoilerbody {
+  border-color: var(--mcmodder-color-background-dark3) !important;
+}
+
+/* 个人中心 / 社群主页（body#nv_home，含 home.php 各子页） */
+html.dark body#nv_home .ct1 {
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark body#nv_home .ct1 .mn {
+  background-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark #uhd {
+  background-color: var(--mcmodder-color-background-dark2) !important;
+  border-color: var(--mcmodder-color-background-dark3) !important;
+}
+
+html.dark #uhd .tb a {
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tb a {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tb .a a,
+html.dark .tb .current a {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+  border-bottom-color: var(--mcmodder-color-background-dark1);
+}
+
+html.dark .avt img {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .bbda {
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+/* 个人中心的资料页把链接颜色写成了行内 !important 规则 */
+html.dark .pbm.mbm.bbda.cl a {
+  color: var(--mcmodder-color-link) !important;
+}
+
+html.dark .green {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-font-green);
+}
+
+html.dark .blue {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-link);
+}
+
+/* 帖内分隔线、头像框、自动翻页条等站内写死的亮色边框 */
+html.dark .frame,
+html.dark .frame-tab,
+html.dark .yudi_view_avta .frame,
+html.dark .pls .avatar .frame,
+html.dark .tl .icn .usrtou {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3) !important;
+  box-shadow: none;
+}
+
+html.dark .wrap-posts,
+html.dark .tt_wrap-posts,
+html.dark .total,
+html.dark .po,
+html.dark .tl .th {
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark #autopbn {
+  background-color: var(--mcmodder-color-background-dark2);
+  border: none !important;
+  border-top: 3px solid var(--mcmodder-color-background-dark3) !important;
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark #autopbn:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-accent-dark2);
+}
+
+/* 首页挂件 / 图片边框 / 版块信息栏等仍沿用站内亮色边框 */
+html.dark .slidebox_grid,
+html.dark .subforums img,
+html.dark .info #edit_roll,
+html.dark .sd .yb_brgyboxt,
+html.dark .yb_brgyboxt,
+html.dark .sd .yb_brgyboxt a,
+html.dark .yb_brgyboxt a,
+html.dark .tb {
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .subforums img {
+  background-color: var(--mcmodder-color-background-dark2);
+}
+
+/* 分隔线的颜色由站内行内样式（含脚本写入）写死 */
+html.dark .po,
+html.dark .slideouter,
+html.dark .wrap-posts.total,
+html.dark #separatorline .ts th,
+html.dark #separatorline .ts td {
+  border-color: var(--mcmodder-color-background-dark3) !important;
+}
+
+/* 个人中心 / 消息中心（home.php?mod=spacecp、space、pm 等登录后页面）里站内的浅色面板 */
+html.dark .ttp .pipe {
+  background-color: var(--mcmodder-color-background-dark3);
+}
+
+/* 设置中心等带 .appl 侧栏的页面：整块容器 .ct2_a/.ct3_a 底色被站点写成 #FFF */
+html.dark .ct2_a,
+html.dark .ct3_a {
+  background-color: var(--mcmodder-color-background-dark1);
+  background-image: none;
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tbn li {
+  border-bottom-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .tbn h2 {
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .m_c,
+html.dark .pm_sd,
+html.dark .pm_b,
+html.dark .pmfl,
+html.dark .pmfrndl,
+html.dark .nfl .f_c,
+html.dark .rfm .p_tip {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .pmfl .s .px,
+html.dark .rfm .px:focus {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark .bmn,
+html.dark .pm_g,
+html.dark .pmd,
+html.dark .exfm,
+html.dark .tb_h,
+html.dark .a_mu,
+html.dark .e .i,
+html.dark .el .i,
+html.dark .sl .h,
+html.dark .albim_pic_title,
+html.dark .pml .hover,
+html.dark .pml .newpm,
+html.dark .pmfrndl a.a,
+html.dark .mi .hover .moodfm_input {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text-dark1);
+}
+
+html.dark .usl .avt,
+html.dark .tbn li.a,
+html.dark .xld .atc img,
+html.dark .mlp img {
+  background-color: var(--mcmodder-color-background-dark2);
+  border-color: var(--mcmodder-color-background-dark3);
+}
+
+html.dark #mu a:hover,
+html.dark #qmenu_menu ul.nav a:hover,
+html.dark #extcreditmenu a:hover,
+html.dark #g_upmine a:hover {
+  background-color: var(--mcmodder-color-background-dark3);
+  color: var(--mcmodder-color-text);
+}
+
+html.dark .tip,
+html.dark .ntc_l {
+  background-color: var(--mcmodder-color-alert-warning-2);
+  border-color: var(--mcmodder-color-alert-warning-3);
+  color: var(--mcmodder-color-alert-warning-1);
 }
