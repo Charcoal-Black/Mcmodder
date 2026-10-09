@@ -1,6 +1,6 @@
 import { UEditor } from "../ueditor/UEditor";
 import { Utils } from "../Utils";
-import { InputListController } from "../widget/InputListController";
+import { PopoverController } from "../widget/PopoverController";
 import { Init } from "./Init";
 
 abstract class EditorAlertLink {
@@ -487,7 +487,8 @@ export class EditorInit extends Init {
           $(".common-rowlist-block").last().append(submitButton);
           $("#mcmodder-presubmit-remark, #mcmodder-presubmit-reason").each((_, e) => {
             const textarea = $(e).get(0) as HTMLTextAreaElement;
-            InputListController.instance.add(textarea, {
+            PopoverController.instance.addInputList(textarea, {
+              type: "inputList",
               delimiter: "；",
               hideBeforeInput: true,
               suggestionManager: {

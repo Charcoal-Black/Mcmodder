@@ -1,43 +1,14 @@
-import { createApp, nextTick } from "vue";
-import type { App } from "vue";
 import type { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
-import AttitudePicker from "../vue/components/attitude/AttitudePicker.vue";
 import {
   buildAttitudeIcon,
   buildStickerType,
   fillStickerIcon,
   parseStickerId,
 } from "./attitudeIcon";
-import { attitudePickerState, clampAttitudePanelPosition } from "./AttitudePickerState";
-
-/** 一条短评的自定义表态聚合结果 */
-export interface AttitudeRecord {
-  /** `attitude_type` → 数量 */
-  counts: AttitudeCounts;
-  /** 我点过的 `attitude_type`；未认证时为空 */
-  mine: string[];
-}
-
-/** 我收到的表态统计（页头提醒、消息中心徽标与合计行共用） */
-export interface AttitudeStats {
-  /** 未读条数 */
-  unread: number;
-  /** 我收到的表态总条数 */
-  total: number;
-}
-
-/** 写一条表态所需的短评上下文 */
-export interface AttitudeTarget {
-  commentId: string;
-  toUid: number;
-  toUsername: string;
-  commentText: string;
-  sourceUrl: string;
-  /** 短评节点：顶层 `.comment-row` 或楼中楼 `.comment-reply-row` */
-  row: HTMLElement;
-}
+import { PopoverController } from "../widget/PopoverController.ts";
+import type { ConfigRepository } from "../config/ConfigRepository.ts";
 
 /**
  * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
@@ -49,16 +20,16 @@ export interface AttitudeTarget {
 export class AttitudeSystem {
   private static instance?: AttitudeSystem;
 
+  private readonly configs: ConfigRepository;
   private readonly countsCache = new Map<string, { time: number; record: AttitudeRecord }>();
-  private readonly writeQueues = new Map<string, Promise<void>>();
+  private readonly writeQueues = new Map<string, Promise<AttitudeRecord | undefined | void>>();
   private pendingCommentIds = new Set<string>();
   private pendingResolvers: ((records: Map<string, AttitudeRecord>) => void)[] = [];
   private flushTimer?: number;
   private eventsBound = false;
-  private pickerApp?: App;
 
   /** 我上传的贴纸与今日上传额度（`attitude-sticker` 的 `list` 结果，TTL 内复用） */
-  private myStickers?: {
+  myStickers?: {
     time: number;
     stickers: SupabaseAttitudeSticker[];
     quota?: SupabaseAttitudeStickerQuota;
@@ -77,10 +48,8 @@ export class AttitudeSystem {
     return (AttitudeSystem.instance ??= new AttitudeSystem(parent));
   }
 
-  private constructor(private readonly parent: Mcmodder) {}
-
-  private get configs() {
-    return this.parent.configRepository;
+  private constructor(private readonly parent: Mcmodder) {
+    this.configs = parent.configRepository;
   }
 
   /** 功能是否可用：配置开启且云端客户端存在（`useSupabase` 关闭时整套静默停用） */
@@ -527,17 +496,18 @@ export class AttitudeSystem {
     if ($tools.length) this.injectNativeDevilAngry($tools);
   };
 
+  bindOption(button: HTMLElement) {
+    const resolved = this.resolveTarget($(button).closest(".comment-row, .comment-reply-row"));
+    if (resolved) {
+      return this.handleButtonClick(button, resolved);
+    } else {
+      throw new Error("短评节点解析失败...");
+    }
+  }
+
   private readonly onDocumentClick = (event: MouseEvent) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-
-    const button = target.closest("a.mcmodder-attitude-button");
-    if (button) {
-      event.preventDefault();
-      const resolved = this.resolveTarget($(button).closest(".comment-row, .comment-reply-row"));
-      if (resolved) void this.handleButtonClick(button, resolved);
-      return;
-    }
 
     const value = target.closest("a[data-mcmodder-attitude]");
     if (value) {
@@ -550,81 +520,27 @@ export class AttitudeSystem {
 
   /** 点击表态按钮：同一短评再次点击即关闭，否则读取该短评计数后打开面板 */
   private async handleButtonClick(anchor: Element, target: AttitudeTarget) {
-    if (attitudePickerState.visible && attitudePickerState.commentId === target.commentId) {
-      attitudePickerState.visible = false;
-      return;
-    }
     const records = await this.requestCounts([target.commentId]);
-    await this.openPicker(anchor, target, records.get(target.commentId));
+    return this.openPicker(anchor, target, records.get(target.commentId));
   }
 
   /** 打开选择面板：先按按钮位置渲染，再按面板实际尺寸夹取到视口内 */
-  private async openPicker(
+  private openPicker(
     anchor: Element,
     target: AttitudeTarget,
     record: AttitudeRecord | undefined,
-  ) {
-    if (!this.pickerApp) {
-      const host = document.createElement("div");
-      host.id = "mcmodder-attitude-panel-host";
-      document.body.append(host);
-      this.pickerApp = createApp(AttitudePicker, { store: attitudePickerState });
-      this.pickerApp.mount(host);
-    }
-
-    const rect = anchor.getBoundingClientRect();
-    attitudePickerState.commentId = target.commentId;
-    attitudePickerState.active = record?.mine ?? [];
-    const recents = this.getRecentEmojis();
-    attitudePickerState.recents = recents;
-    // 最近使用里的贴纸先解析图片地址，解析完成后补上（不阻塞面板渲染）
-    attitudePickerState.stickerUrls = {};
-    void this.resolveStickers(recents).then((stickers) => {
-      attitudePickerState.stickerUrls = Object.fromEntries(
-        [...stickers].map(([attitudeType, sticker]) => [attitudeType, sticker.image_url]),
-      );
-    });
-    // 我的贴纸：先用缓存渲染，再后台刷新列表与今日额度
-    attitudePickerState.stickers = this.myStickers?.stickers ?? [];
-    attitudePickerState.stickerQuota = this.myStickers?.quota ?? null;
-    attitudePickerState.stickerLoading = true;
-    void this.listMyStickers().then((data) => {
-      if (data) {
-        attitudePickerState.stickers = data.stickers;
-        attitudePickerState.stickerQuota = data.quota ?? null;
-      }
-      attitudePickerState.stickerLoading = false;
-    });
-    attitudePickerState.onUpload = async (file) => {
-      const attitudeType = await this.uploadSticker(file);
-      attitudePickerState.stickers = this.myStickers?.stickers ?? attitudePickerState.stickers;
-      attitudePickerState.stickerQuota = this.myStickers?.quota ?? attitudePickerState.stickerQuota;
-      // 上传后面板仍停在同一条短评上就直接用它表态（否则只加入「我的贴纸」）
-      if (
-        attitudeType &&
-        attitudePickerState.visible &&
-        attitudePickerState.commentId === target.commentId
-      ) {
-        attitudePickerState.onPick(attitudeType);
-      }
+  ): AttitudePickerState {
+    return {
+      type: "attitudePicker",
+      anchorElement: anchor as HTMLElement,
+      parent: this.parent,
+      commentId: target.commentId,
+      active: record?.mine ?? [],
+      target,
     };
-    attitudePickerState.onPick = (attitudeType, keepOpen = false) => {
-      if (!keepOpen) attitudePickerState.visible = false;
-      this.rememberRecentEmoji(attitudeType);
-      this.write(target, attitudeType);
-    };
-    attitudePickerState.onClose = () => {
-      attitudePickerState.visible = false;
-    };
-    attitudePickerState.left = rect.left;
-    attitudePickerState.top = rect.bottom + 6;
-    attitudePickerState.visible = true;
-
-    await nextTick();
-    clampAttitudePanelPosition();
   }
 
-  private rememberRecentEmoji(attitudeType: string) {
+  rememberRecentEmoji(attitudeType: string) {
     if (attitudeType === Values.attitude.devilAngry.type) return;
     const recents = this.getRecentEmojis().filter((emoji) => emoji !== attitudeType);
     recents.unshift(attitudeType);
@@ -668,6 +584,8 @@ export class AttitudeSystem {
       $tools.append(
         `<li class="mcmodder-attitude-tools"><a class="mcmodder-attitude-button" href="javascript:void(0);" title="自定义表态"><span class="mcmodder-attitude-emoji">😀</span><i class="fas fa-caret-up"></i></a></li>`,
       );
+      const button = $tools.find(".mcmodder-attitude-button").get(0) as HTMLElement;
+      PopoverController.instance.addAttitudePicker(button, (button) => this.bindOption(button));
     }
     if (!$tools.children("ol.comment-attitude-result").length) {
       $('<ol class="comment-attitude-result mcmodder-attitude-result-custom"></ol>').insertAfter(
@@ -704,7 +622,7 @@ export class AttitudeSystem {
   }
 
   /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 自己的短评 / 缺 author 信息）时返回 undefined */
-  private resolveTarget($row: JQuery): AttitudeTarget | undefined {
+  resolveTarget($row: JQuery): AttitudeTarget | undefined {
     // `.get()` 只给出 `Element`，短评节点实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
     if (!row) return undefined;
@@ -801,9 +719,10 @@ export class AttitudeSystem {
       .then(() => this.sendWrite(target, attitudeType, authKey))
       .catch((error) => console.warn("[Mcmodder] 自定义表态写入失败：", error));
     this.writeQueues.set(commentId, job);
-    void job.then(() => {
+    return job.then((attitudeRecord) => {
       // 排空后清理，避免 Map 无限增长
       if (this.writeQueues.get(commentId) === job) this.writeQueues.delete(commentId);
+      return attitudeRecord;
     });
   }
 
@@ -822,8 +741,6 @@ export class AttitudeSystem {
     const record: AttitudeRecord = { counts: resp.counts ?? {}, mine: resp.mine ?? [] };
     this.countsCache.set(target.commentId, { time: Date.now(), record });
     this.renderRow($(target.row), record);
-    if (attitudePickerState.visible && attitudePickerState.commentId === target.commentId) {
-      attitudePickerState.active = record.mine;
-    }
+    return record;
   }
 }

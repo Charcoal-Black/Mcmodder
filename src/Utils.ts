@@ -6,6 +6,7 @@ import {
   type GmResponseEvent,
   type GmXmlhttpRequestOption,
 } from "$";
+import { AnimationFrameScheduler } from "./AnimationFrameScheduler";
 import { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
 import { Values } from "./Values";
@@ -1107,14 +1108,14 @@ export class Utils {
   };
 
   /** 基于 `requestAnimationFrame` 的节流：每帧最多执行一次 */
-  static animationThrottle = <T extends (...args: never[]) => void>(func: T) => {
+  static animationThrottle = <T extends (...args: never[]) => void>(func: T, priority = 0) => {
     let isTicking = false;
     return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
       if (!isTicking) {
-        requestAnimationFrame(() => {
+        AnimationFrameScheduler.add(() => {
           func.apply(this, args);
           isTicking = false;
-        });
+        }, priority);
         isTicking = true;
       }
     };

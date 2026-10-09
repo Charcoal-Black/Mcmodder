@@ -9,7 +9,7 @@
     </div>
 
     <p v-if="loading" class="mcmodder-attitude-empty-hint">正在加载我上传的表态贴纸…</p>
-    <p v-else-if="stickers.length === 0" class="mcmodder-attitude-empty-hint">
+    <p v-else-if="stickers!.length === 0" class="mcmodder-attitude-empty-hint">
       还没有上传过表态贴纸：点上方「上传图片」，把本地图片存到百科图床后即可用作表态。
     </p>
     <div v-else class="mcmodder-attitude-sticker-grid">
@@ -19,7 +19,7 @@
         type="button"
         class="mcmodder-attitude-sticker-item"
         :class="{
-          'mcmodder-attitude-choice-active': active.includes(buildStickerType(sticker.id)),
+          'mcmodder-attitude-choice-active': active?.includes(buildStickerType(sticker.id)),
         }"
         :title="sticker.name || '自定义贴纸'"
         :disabled="!onPick"
@@ -35,26 +35,12 @@
 import { computed, ref } from "vue";
 import { Values } from "../../../Values";
 import { buildStickerType } from "../../../attitude/attitudeIcon";
+import type { AttitudeStickerListProps } from "../../../types/props";
 
-interface Props {
-  /** 我上传的贴纸（按上传时间倒序） */
-  stickers: SupabaseAttitudeSticker[];
-  /** 今日上传额度（null = 未知） */
-  quota: SupabaseAttitudeStickerQuota | null;
-  loading?: boolean;
-  /** 已表态的类型（高亮用）；只查看时传空数组 */
-  active?: string[];
-  /** 点击贴纸；不传 = 只查看（贴纸不可点） */
-  onPick?: (attitudeType: string) => void;
-  /** 上传本地图片；不传则不显示上传入口 */
-  onUpload?: (file: File) => Promise<void> | void;
-}
+const props = defineProps<AttitudeStickerListProps>();
 
-const props = withDefaults(defineProps<Props>(), {
-  loading: false,
-  active: () => [],
-  onPick: undefined,
-  onUpload: undefined,
+const loading = computed(() => {
+  return props.parent === undefined || props.stickers === undefined;
 });
 
 const accept = Values.attitude.sticker.uploadAccept;
@@ -72,10 +58,10 @@ async function onFileChange(event: Event) {
   const file = input.files?.[0];
   // 清空 value，同一张图片连续选两次也能触发 change
   input.value = "";
-  if (!file || !props.onUpload) return;
+  if (!file) return;
   uploading.value = true;
   try {
-    await props.onUpload(file);
+    await props.onUpload?.(file);
   } finally {
     uploading.value = false;
   }

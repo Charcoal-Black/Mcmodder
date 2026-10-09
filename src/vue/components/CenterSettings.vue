@@ -76,6 +76,7 @@
     </p>
     <template v-if="attitudeStickersEnabled">
       <AttitudeStickerList
+        :parent="parent"
         :stickers="attitudeStickers"
         :quota="attitudeStickerQuota"
         :loading="attitudeStickersLoading"

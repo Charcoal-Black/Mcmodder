@@ -2667,7 +2667,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 #mcmodder-getitemlist-typeid-input {
   border-radius: 0;
 }
-.mcmodder-input-list {
+.mcmodder-popover {
   position: absolute;
   margin-top: 4px;
   margin-bottom: 0;
@@ -2685,8 +2685,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   opacity: 0;
   /* transform: scale(0.98); */
 }
-.mcmodder-input-list-innerframe {
-  max-height: 300px;
+.mcmodder-popover-inner {
   margin: 2px;
   overflow-x: clip;
   overflow-y: auto;
@@ -3246,6 +3245,25 @@ body .top-main .navs .app-url .li .text,
 .comment-attitude.handshake.colourful,
 .comment-attitude.handshake.colourful:hover {
   color: var(--mcmodder-color-attitude-handshake);
+}
+.attitude-list > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--mcmodder-width-padding-3);
+}
+.center-main.attitude li {
+  width: 100%;
+  overflow: clip;
+  text-overflow: ellipsis;
+}
+.mcmodder-attitude-stat-name {
+  overflow: clip;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 50%;
+}
+.mcmodder-attitude-tools .mcmodder-attitude-emoji {
+  margin-right: 3px;
 }
 .mcmodder-mobileclient {
   margin-left: var(--mcmodder-width-padding-2);

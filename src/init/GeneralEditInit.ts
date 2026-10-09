@@ -1,5 +1,5 @@
 import { Utils } from "../Utils";
-import { InputListController } from "../widget/InputListController";
+import { PopoverController } from "../widget/PopoverController";
 import { Init } from "./Init";
 
 export class GeneralEditInit extends Init {
@@ -88,7 +88,8 @@ export class GeneralEditInit extends Init {
     // 下拉菜单
     $("#mcmodder-textarea-remark, #mcmodder-textarea-reason").each((_, e) => {
       const textarea = e as HTMLTextAreaElement;
-      InputListController.instance.add(textarea, {
+      PopoverController.instance.addInputList(textarea, {
+        type: "inputList",
         delimiter: "；",
         hideBeforeInput: true,
         suggestionManager: {

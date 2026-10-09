@@ -43,7 +43,7 @@ export default defineConfig([
       "vue/multi-word-component-names": [
         "error",
         {
-          ignores: ["Countdown", "Collapsible", "Pagination"],
+          ignores: ["Countdown", "Collapsible", "Pagination", "Popover"],
         },
       ],
       "vue/component-name-in-template-casing": ["error", "PascalCase"],

@@ -41,6 +41,16 @@ export class ConfigLoader {
         "启用后，脚本会从云端读取贡献榜数据，用于显示个人主页的字数统计图表。",
       )
       .addCheckboxConfig(
+        "customAttitude",
+        "自定义表态",
+        "[需要用户认证] 启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。",
+      )
+      .addCheckboxConfig(
+        "attitudeTwemoji",
+        "表态使用 Twemoji 字体",
+        "用 Mozilla Twemoji 字体渲染自定义表态 emoji，保证跨平台一致外观。",
+      )
+      .addCheckboxConfig(
         "moveAds",
         "广告优化",
         "将百科的部分广告移动到不影响浏览体验的位置。（本脚本不会主动隐藏或屏蔽广告，若欲屏蔽请自行安装广告屏蔽插件）",
@@ -387,18 +397,6 @@ export class ConfigLoader {
         "userBlacklist",
         "用户黑名单",
         "自动屏蔽所选定用户发布的短评和回复。输入要屏蔽的用户 UID，多个 UID 间用半角逗号隔开。",
-      )
-      .addCheckboxConfig(
-        "customAttitude",
-        "自定义表态",
-        "启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。该功能依赖云端服务。",
-        true,
-      )
-      .addCheckboxConfig(
-        "attitudeTwemoji",
-        "表态使用 Twemoji 字体",
-        "用 Mozilla Twemoji 字体渲染自定义表态 emoji，保证跨平台一致外观。",
-        true,
       )
       .addNumberConfig(
         "autoVerifyDelay",

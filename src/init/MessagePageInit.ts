@@ -1,5 +1,4 @@
 import { AttitudeSystem } from "../attitude/AttitudeSystem";
-import type { AttitudeRecord } from "../attitude/AttitudeSystem";
 import { buildAttitudeIcon } from "../attitude/attitudeIcon";
 import {
   buildAttitudeMessageItem,

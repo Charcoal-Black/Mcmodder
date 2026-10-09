@@ -17,17 +17,20 @@
  */
 import { onMounted, useTemplateRef } from "vue";
 import TextInput from "./TextInput.vue";
-import { InputListController } from "../../../widget/InputListController.ts";
+import { PopoverController } from "../../../widget/PopoverController.ts";
 import type { DropdownTextInputProps } from "../../../types/props";
 
-const props = defineProps<DropdownTextInputProps>();
+const props = defineProps<Omit<DropdownTextInputProps, "type">>();
 /** 内层 `TextInput` 组件实例（经它拿到真实的 input DOM） */
 const inputRef = useTemplateRef("textInput");
 
 onMounted(() => {
   // 登记的是最内层的 input：候选列表的 focus / 键盘 / 输入事件都挂在它上面
   const target = inputRef.value!.getInstance();
-  InputListController.instance?.add(target as InputListBindElement, props);
+  PopoverController.instance?.addInputList(target as InputListBindElement, {
+    type: "inputList",
+    ...props,
+  });
 });
 
 defineExpose<InputControlRef<string>>({

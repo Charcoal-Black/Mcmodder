@@ -38,6 +38,8 @@ type ArrayToMap2<
   [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
 };
 
+type Awaitable<T> = T | Promise<T>;
+
 type IndexedType<T extends object, K extends number | string | symbol = number> = T & {
   _primaryKey: K;
 };
@@ -157,6 +159,8 @@ interface Settings {
   customSplashRate: number;
   supabaseSplash: boolean;
   supabaseByteChart: boolean;
+  customAttitude: boolean;
+  attitudeTwemoji: boolean;
   moveAds: boolean;
   customFont: 0 | 1 | 2 | 3;
   disableGradient: boolean;
@@ -230,8 +234,6 @@ interface Settings {
   missileAlertHeight: number;
   commentExpandHeight: number;
   userBlacklist: string;
-  customAttitude: boolean;
-  attitudeTwemoji: boolean;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;
   itemListStylePreview: boolean;
@@ -788,6 +790,12 @@ interface SuggestionConfigManager {
 }
 
 type InputListOption = import("./props").InputListOption;
+
+type AttitudePickerState = import("./props").AttitudePickerState;
+
+type AttitudeStickerListProps = import("./props").AttitudeStickerListProps;
+
+type PopoverOption = InputListOption | AttitudePickerState;
 
 interface McmodItemEditorInnerData {
   /**
@@ -1663,6 +1671,33 @@ type RequestQueuePreExecution = Partial<RequestQueueExecution>;
 type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
 };
+
+/** 一条短评的自定义表态聚合结果 */
+interface AttitudeRecord {
+  /** `attitude_type` → 数量 */
+  counts: AttitudeCounts;
+  /** 我点过的 `attitude_type`；未认证时为空 */
+  mine: string[];
+}
+
+/** 我收到的表态统计（页头提醒、消息中心徽标与合计行共用） */
+interface AttitudeStats {
+  /** 未读条数 */
+  unread: number;
+  /** 我收到的表态总条数 */
+  total: number;
+}
+
+/** 写一条表态所需的短评上下文 */
+interface AttitudeTarget {
+  commentId: string;
+  toUid: number;
+  toUsername: string;
+  commentText: string;
+  sourceUrl: string;
+  /** 短评节点：顶层 `.comment-row` 或楼中楼 `.comment-reply-row` */
+  row: HTMLElement;
+}
 
 type MapKeyHandler<V, K> = (data: V) => K | K[];
 

@@ -124,23 +124,12 @@ html.mcmodder-attitude-twemoji emoji-picker {
 
 /* ===== 选择面板（挂到 body 下，fixed 定位，避免被评论容器裁剪） ===== */
 #mcmodder-attitude-panel {
-  position: fixed;
-  z-index: 1080;
-  display: none;
   width: 356px;
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
   overflow-y: auto;
   padding: 8px;
-  border: 1px solid var(--mcmodder-color-background-dark2);
-  border-radius: 6px;
-  background-color: var(--mcmodder-color-background);
-  box-shadow: 0 4px 16px var(--mcmodder-color-box-shadow);
   text-align: left;
-}
-
-#mcmodder-attitude-panel.mcmodder-attitude-panel-visible {
-  display: block;
 }
 
 /* 页签：emoji（最近使用 + 全部 emoji）与「我的贴纸」 */

@@ -1,4 +1,5 @@
 import { buildAttitudeIcon, getAttitudeTitle } from "../../attitude/attitudeIcon";
+import { Utils } from "../../Utils";
 import { CenterBaseInit } from "./CenterBaseInit";
 
 /**
@@ -43,9 +44,12 @@ export class CenterCommentInit extends CenterBaseInit {
       $list.children(".mcmodder-attitude-stat").remove();
       entries.forEach(([attitudeType, count]) => {
         const title = getAttitudeTitle(attitudeType, stickers.get(attitudeType)?.name);
+        const escaped = Utils.escapeHTML(title);
         $('<li class="mcmodder-attitude-stat"></li>')
           .append(buildAttitudeIcon(attitudeType).attr("data-mcmodder-attitude", attitudeType))
-          .append(document.createTextNode(`被评“${title}”: ${count.toLocaleString("en-US")}次`))
+          .append(
+            `被评“<span class="mcmodder-attitude-stat-name" title="${escaped}">${escaped}</span>”: ${count.toLocaleString("en-US")}次`,
+          )
           .appendTo($list);
       });
       void attitudeSystem.hydrateStickers($list);

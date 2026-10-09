@@ -1,25 +1,12 @@
 <template>
-  <div
-    v-show="!classHidden"
-    ref="list"
-    class="mcmodder-input-list"
-    :class="{
-      'expand-upward': expandUpward,
-      faded: classFaded,
-      editable: onModifySuggestion,
-    }"
-    :style="{
-      left: cssPos.left,
-      top: cssPos.top,
-    }"
-  >
+  <Popover ref="popoverRef" :anchor-element="anchorElement" :max-height="300">
     <div
-      class="mcmodder-input-list-innerframe"
-      :style="{
-        'min-width': cssPos['min-width'],
-        'max-width': cssPos['max-width'],
-        'max-height': cssPos['max-height'],
+      ref="listRef"
+      class="mcmodder-input-list"
+      :class="{
+        editable: onModifySuggestion,
       }"
+      :style="sizeCss"
     >
       <a
         v-for="(entry, i) in suggestedList"
@@ -76,7 +63,7 @@
         <span class="mcmodder-slim-dark">+ 保存为快捷输入项</span>
       </a>
     </div>
-  </div>
+  </Popover>
 </template>
 
 <script setup lang="ts">
@@ -93,8 +80,10 @@ import {
 import { Utils } from "../../Utils";
 import { Values } from "../../Values";
 import type { ConfigRepository } from "../../config/ConfigRepository";
+import type { InputListProps, PopoverExpose } from "../../types/props";
 import Pinyin from "pinyin-match";
 import MatchedText from "./MatchedText";
+import Popover from "./Popover.vue";
 
 /**
  * 候选列表（快速补全）组件。
@@ -176,11 +165,6 @@ const selectionValue = computed(() => {
 
 const suggestedList = shallowRef<InputRatedSuggestion[]>([]);
 
-/** `setOption` 的入参：在 `InputListOption` 之外必须显式给出**当前绑定的是哪个输入元素** */
-interface Props extends InputListOption {
-  inputNode: HTMLInputElement | HTMLTextAreaElement;
-}
-
 // === 来自 setOption 的选项（组件没有自身的「当前输入框」状态，全部由此驱动） ===
 
 /** 忽略输入内容，直接展示全部候选（显示成按钮的下拉菜单用法） */
@@ -207,7 +191,7 @@ const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
  * @param option 当前输入框及其行为选项；`inputNode` 即 `inputListBindElement` 的值
  *               （交互元素与输入元素是同一个时，控制器会把两者一并传进来）。
  */
-function setOption(option: Props) {
+function setOption(option: InputListProps) {
   inputRef.value = option.inputNode;
   alwaysShowAllSuggestions.value = option.alwaysShowAllSuggestions ?? false;
   defaultSelectionProvider.value = option.defaultSelectionProvider ?? (() => 0);
@@ -225,7 +209,7 @@ function setOption(option: Props) {
     (manager) => manager.onModifySuggestion,
   );
 
-  updatePos();
+  popoverRef.value!.updatePos();
 }
 
 // === 内部状态 ===
@@ -247,67 +231,11 @@ const selectable = ref(false);
 // let isFocused = false;
 /** 是否展示「+ 保存为快捷输入项」这一项（需要可保存回调且当前段非空） */
 const canCreateNew = ref(false);
-/** 锚点元素的矩形缓存（`updatePos` 在聚焦、页面滚动与缩放时刷新） */
-const rectRef = shallowRef<DOMRect>();
-/** 列表自身高度（向上弹出时用来算 top，也是 `expandUpward` 的判断依据） */
-const listHeight = ref(0);
-/** 淡出中（`selectable` 由真变假时置 true） */
-const classFaded = ref(false);
-/** 完全隐藏（`v-show` 开关；淡出 200ms 结束后才置 true） */
-const classHidden = ref(true);
 
+/** 弹出框根节点 */
+const popoverRef = useTemplateRef("popoverRef");
 /** 列表根节点（量高度、按 `data-index` 找选项节点） */
-const listRef = useTemplateRef("list");
-
-/**
- * 是否需要向上弹出：下方放不下而上方放得下时向上；两侧都放得下但上方更宽裕时也向上
- * （上方的可用空间扣除了吸顶导航高度，避免列表被页头遮住）。
- */
-const expandUpward = computed(() => {
-  const rect = rectRef.value;
-  if (!rect) {
-    return false;
-  }
-  const topSpace = rect.top - Values.headerContainerHeight;
-  const bottomSpace = innerHeight - rect.bottom;
-  if (bottomSpace < listHeight.value && topSpace >= listHeight.value) {
-    return true;
-  } else if (bottomSpace >= listHeight.value && topSpace > bottomSpace) {
-    return true;
-  }
-  return false;
-});
-
-/** 列表的定位与尺寸样式（相对锚点：向下为锚点下方，向上为锚点上方且减去自身高度） */
-const cssPos = computed(() => {
-  if (!anchorElement.value) {
-    return {
-      left: 0,
-      top: 0,
-      "min-width": "0px",
-    };
-  }
-
-  const { x: absPosX, y: absPosY } = Utils.getAbsolutePos(anchorElement.value);
-
-  const rect = rectRef.value!;
-  const left = absPosX;
-  const top = expandUpward.value ? absPosY - listHeight.value - 4 : absPosY + rect.height;
-
-  const minWidth = rect.width;
-  const maxWidth = innerWidth - rect.left - 16;
-  const maxHeight = expandUpward.value
-    ? rect.top - Values.headerContainerHeight - 16
-    : innerHeight - rect.bottom - 16;
-
-  return {
-    left: left + "px",
-    top: top + "px",
-    "min-width": minWidth + "px",
-    "max-width": maxWidth + "px",
-    "max-height": Math.min(maxHeight, 300) + "px",
-  };
-});
+const listRef = useTemplateRef("listRef");
 
 // 候选数量变化后重新量一次列表高度（向上弹出时需要它来定位）
 watch(
@@ -317,7 +245,7 @@ watch(
       return;
     }
     nextTick(() => {
-      listHeight.value = listRef.value!.getBoundingClientRect().height;
+      popoverRef.value?.onPopoverHeightChange();
     });
   },
 );
@@ -325,22 +253,19 @@ watch(
 // 显隐动画：显示时先取消隐藏、下一帧再取消淡出；隐藏时先淡出、200ms 后才真正隐藏
 watch(
   () => selectable.value,
-  (newValue, oldValue) => {
-    if (newValue && !oldValue) {
-      classHidden.value = false;
-      setTimeout(() => {
-        classFaded.value = false;
-      }, 0);
-    } else if (oldValue && !newValue) {
-      classFaded.value = true;
-      setTimeout(() => {
-        if (!selectable.value) {
-          classHidden.value = true;
-        }
-      }, 200);
-    }
-  },
+  (value) => popoverRef.value?.onPopoverVisibilityChange(value),
 );
+
+const sizeCss = computed(() => {
+  const rect = popoverRef.value?.rectRef ?? new DOMRect();
+  const minWidth = rect.width;
+  const maxWidth = innerWidth - rect.left - 16;
+
+  return {
+    "min-width": minWidth + "px",
+    "max-width": maxWidth + "px",
+  };
+});
 
 /**
  * 通过 watchEffect 计算当前展示的候选列表（全局唯一的「匹配 → 过滤 → 排序」入口）。
@@ -733,22 +658,10 @@ function getSelectedOptionNode() {
   return getOptionNode(selected.value);
 }
 
-/** 刷新锚点矩形缓存（聚焦时、以及页面滚动 / 缩放时由控制器调用） */
-function updatePos() {
-  if (!anchorElement.value) {
-    return;
-  }
-  rectRef.value = anchorElement.value.getBoundingClientRect();
-}
-
-defineExpose({
-  /** 切换当前服务的输入元素与选项（由 `InputListController` 在聚焦时调用） */
+defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({
   setOption,
-  /** 转发给输入框的事件表（控制器据此在 `window` 上挂监听，也可被宿主直接调用） */
   inputEvents,
-  /** 重新量一次锚点矩形（页面滚动 / 缩放时调用以跟随位置） */
-  updatePos,
-  /** 是否需要向上弹出（`false` 时向下） */
-  expandUpward,
+  updatePos: () => popoverRef.value?.updatePos(),
+  close,
 });
 </script>

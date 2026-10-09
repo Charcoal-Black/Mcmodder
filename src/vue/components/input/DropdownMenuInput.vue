@@ -32,7 +32,7 @@
  * 若让两者合一，候选列表就会把「按钮」当作文本框来改写，`readonly` 的按钮将无法承载补全过程。
  */
 import { computed, onMounted, ref, useTemplateRef } from "vue";
-import { InputListController } from "../../../widget/InputListController.ts";
+import { PopoverController } from "../../../widget/PopoverController.ts";
 import { useInputBase } from "../../composables/useInputBase.ts";
 import type { InputProps } from "../../../types/props";
 
@@ -49,7 +49,7 @@ const inputRef = useTemplateRef("input");
 const valueInputRef = useTemplateRef("valueInput");
 
 /** 手动向候选列表派发事件的函数（`add` 的返回值），用于补发该元素收不到的事件 */
-let eventSender: ReturnType<typeof InputListController.instance.add>;
+let eventSender: ReturnType<typeof PopoverController.instance.addInputList>;
 /** 是否处于展开态（决定按钮的 `.expanded` 样式） */
 const selected = ref(false);
 /** 刚被程序化聚焦的 100ms 内的标记：用于区分「点按钮展开」与「点按钮收起」 */
@@ -100,7 +100,8 @@ function onBlur() {
 
 onMounted(() => {
   // 登记交互元素（按钮），但把输入逻辑指向隐藏的 `valueInput`，定位锚点也用按钮
-  eventSender = InputListController.instance.add(inputRef.value!, {
+  eventSender = PopoverController.instance.addInputList(inputRef.value!, {
+    type: "inputList",
     inputListBindElement: valueInputRef.value!,
     anchorElement: inputRef.value!,
     // 枚举选择是「列出全部」而非「按输入过滤」，不做拼音匹配

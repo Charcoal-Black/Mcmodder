@@ -4,7 +4,7 @@ import Countdown from "../../vue/components/Countdown.vue";
 import { TimerUtils } from "../../widget/TimerUtils.ts";
 import { Utils } from "../../Utils.ts";
 import type { Mcmodder } from "../../Mcmodder.ts";
-import { InputListController } from "../../widget/InputListController.ts";
+import { PopoverController } from "../../widget/PopoverController.ts";
 import { OredictCompareFrame } from "../../widget/compare/OredictCompareFrame.ts";
 import { PlatformCompareFrame } from "../../widget/compare/PlatformCompareFrame.ts";
 import { RelationCompareFrame } from "../../widget/compare/RelationCompareFrame.ts";
@@ -408,7 +408,8 @@ export class AdminVerifyInit extends AdminBaseInit {
       );
     }
 
-    InputListController.instance.add(this.reasonInput.get(0) as HTMLInputElement, {
+    PopoverController.instance.addInputList(this.reasonInput.get(0) as HTMLInputElement, {
+      type: "inputList",
       delimiter: "；",
       hideBeforeInput: true,
       suggestionManager: {
