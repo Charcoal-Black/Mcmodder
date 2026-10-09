@@ -215,7 +215,7 @@ export class Values {
       /** 本地图片体积上限（字节）：与站点 UEditor 默认的 `imageMaxSize` 一致 */
       maxUploadBytes: 2 * 1024 * 1024,
       /** 可选图片来源：`<input accept>` 与服务端按扩展名判定的图床白名单对齐 */
-      uploadAccept: "image/png,image/jpeg,image/gif,image/webp,image/bmp",
+      uploadAccept: "image/png,image/jpeg,image/gif,image/bmp",
       /** 「我的贴纸」列表与今日额度的缓存有效期 */
       listCacheTtl: 30 * 1000,
       /** 单次 `resolve` 携带的贴纸 id 上限（与服务端一致） */
