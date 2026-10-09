@@ -234,6 +234,8 @@ export class AttitudeSystem {
 
     const result = new Map<string, AttitudeRecord>();
     const authKey = this.getAuthKey();
+    // 本次读取的起始时刻：此后写请求返回的记录（`sendWrite` 写入缓存）比本次读取结果权威
+    const startedAt = Date.now();
     for (let i = 0; i < commentIds.length; i += Values.attitude.maxCountsPerRequest) {
       const chunk = commentIds.slice(i, i + Values.attitude.maxCountsPerRequest);
       // 后台批量读：失败只记录日志，不弹模态框
@@ -250,8 +252,11 @@ export class AttitudeSystem {
         if (row.mine) record.mine.push(row.attitude_type);
       }
       for (const commentId of chunk) {
-        const record = grouped.get(commentId) ?? { counts: {}, mine: [] };
-        this.countsCache.set(commentId, { time: Date.now(), record });
+        const fetched = grouped.get(commentId) ?? { counts: {}, mine: [] };
+        // 读取期间该短评已被写入更新：保留缓存里的新记录，并把新记录交付给等待方，避免用过期结果覆盖
+        const cached = this.countsCache.get(commentId);
+        const record = cached && cached.time > startedAt ? cached.record : fetched;
+        if (record === fetched) this.countsCache.set(commentId, { time: Date.now(), record });
         result.set(commentId, record);
       }
     }
@@ -499,7 +504,7 @@ export class AttitudeSystem {
   bindOption(button: HTMLElement) {
     const resolved = this.resolveTarget($(button).closest(".comment-row, .comment-reply-row"));
     if (resolved) {
-      return this.handleButtonClick(button, resolved);
+      return this.openPicker(button, resolved);
     } else {
       throw new Error("短评节点解析失败...");
     }
@@ -518,24 +523,13 @@ export class AttitudeSystem {
     }
   };
 
-  /** 点击表态按钮：同一短评再次点击即关闭，否则读取该短评计数后打开面板 */
-  private async handleButtonClick(anchor: Element, target: AttitudeTarget) {
-    const records = await this.requestCounts([target.commentId]);
-    return this.openPicker(anchor, target, records.get(target.commentId));
-  }
-
-  /** 打开选择面板：先按按钮位置渲染，再按面板实际尺寸夹取到视口内 */
-  private openPicker(
-    anchor: Element,
-    target: AttitudeTarget,
-    record: AttitudeRecord | undefined,
-  ): AttitudePickerState {
+  private openPicker(anchor: Element, target: AttitudeTarget): AttitudePickerState {
     return {
       type: "attitudePicker",
       anchorElement: anchor as HTMLElement,
       parent: this.parent,
       commentId: target.commentId,
-      active: record?.mine ?? [],
+      active: this.countsCache.get(target.commentId)?.record.mine ?? [],
       target,
     };
   }

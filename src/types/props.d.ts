@@ -107,7 +107,6 @@ export interface AttitudePickerState {
   target: AttitudeTarget;
   /** 面板当前对应的短评 id（再次点击同一条短评即关闭） */
   commentId: string;
-  /** 我在该短评下已表态的类型 */
   active: string[];
 }
 

@@ -27,7 +27,7 @@
             :key="attitudeType"
             type="button"
             class="mcmodder-attitude-choice mcmodder-attitude-emoji"
-            :class="{ 'mcmodder-attitude-choice-active': state?.active.includes(attitudeType) }"
+            :class="{ 'mcmodder-attitude-choice-active': active.includes(attitudeType) }"
             @click="onPick(attitudeType)"
           >
             <img
@@ -65,7 +65,7 @@
         :parent="state?.parent"
         :stickers="stickers"
         :quota="quota"
-        :active="state?.active"
+        :active="active"
         :on-pick="onPick"
         :on-upload="onUpload"
       />
@@ -101,11 +101,37 @@ const tab = ref<"emoji" | "sticker">("emoji");
 const visible = ref(false);
 const popoverRef = useTemplateRef("popoverRef");
 
+/**
+ * 「我点过」的高亮：打开时取选项里的初始值（本地缓存），后台刷新与写请求的返回都会替换它。
+ *
+ * `state` 是 `shallowRef`，改它的属性不会触发重渲染，故高亮单独用一个 ref 承载。
+ */
+const active = shallowRef<string[]>([]);
+
 /** 最近使用的 emoji（本机维度） */
 const recents = shallowRef<string[]>();
-/** 我上传的贴纸（面板打开时懒加载） */
+/** 我上传的贴纸：懒加载，首次切到「我的贴纸」页签时才拉取（系统内另有 30s 缓存） */
 const stickers = shallowRef<SupabaseAttitudeSticker[]>();
 const quota = shallowRef<SupabaseAttitudeStickerQuota | null>(null);
+/** 贴纸列表请求进行中（避免切页签时重复发请求） */
+let stickersLoading = false;
+/** 面板内已点击表态的次数：写请求的返回比打开时的后台刷新更权威，点过之后即丢弃过期刷新 */
+let pickCount = 0;
+
+/** 拉取「我的贴纸」与今日额度；失败时保持未加载状态，切页签可重试 */
+async function loadStickers() {
+  const instance = system.value;
+  if (!instance || stickersLoading) return;
+  stickersLoading = true;
+  try {
+    const data = await instance.listMyStickers();
+    if (!data) return;
+    stickers.value = data.stickers;
+    quota.value = data.quota ?? null;
+  } finally {
+    stickersLoading = false;
+  }
+}
 
 watch(
   () => visible.value,
@@ -124,6 +150,7 @@ function stickerUrl(attitudeType: string) {
 
 function switchTab(next: "emoji" | "sticker") {
   tab.value = next;
+  if (next === "sticker") void loadStickers();
   // void nextTick(clampAttitudePanelPosition);
 }
 
@@ -256,14 +283,13 @@ function onDocumentKeyDown(event: Event) {
 /** 点击贴纸；不传 = 只查看（贴纸不可点；`keepOpen` 为真时保持面板打开（字母连续拼词） */
 function onPick(attitudeType: string, keepOpen?: boolean) {
   if (!keepOpen) visible.value = false;
+  pickCount += 1;
   system.value!.rememberRecentEmoji(attitudeType);
-  system.value!.write(state.value!.target, attitudeType)?.then((attitudeRecord) => {
-    if (
-      attitudeRecord &&
-      visible.value &&
-      state.value!.commentId === state.value!.target.commentId
-    ) {
-      state.value!.active = attitudeRecord.mine;
+  const target = state.value!.target;
+  system.value!.write(target, attitudeType)?.then((attitudeRecord) => {
+    // 写请求返回的是权威结果；面板已关或已换到别的短评时不再回填
+    if (attitudeRecord && visible.value && state.value!.target === target) {
+      active.value = attitudeRecord.mine;
     }
   });
 }
@@ -284,22 +310,30 @@ function onClose() {
   visible.value = false;
 }
 
+/**
+ * 打开面板：`active` 由 `AttitudeSystem` 取打开瞬间的本地缓存给出，这里不再等云端；
+ * 随后后台刷新一次计数，响应到达时补上「我点过」高亮（用户已点击表态则丢弃这次刷新结果）。
+ */
 function setOption(option: AttitudePickerState) {
   state.value = option;
   configs.value = state.value ? state.value.parent.configRepository : undefined;
   system.value = state.value ? AttitudeSystem.for(state.value.parent) : undefined;
+  active.value = option.active;
 
   if (system.value) {
     if (recents.value === undefined) {
       recents.value = system.value?.getRecentEmojis();
     }
-    // 我的贴纸：先用缓存渲染，再后台刷新列表与今日额度
-    system.value.listMyStickers().then((data) => {
-      if (data) {
-        stickers.value = data.stickers;
-        quota.value = data.quota ?? null;
-      }
+    // 后台补一次计数：命中缓存立即返回，未命中则去抖后请求（面板此时已经开着）
+    const generation = pickCount;
+    void system.value.requestCounts([option.commentId]).then((records) => {
+      const record = records.get(option.commentId);
+      if (!record || generation !== pickCount) return;
+      if (!visible.value || state.value!.commentId !== option.commentId) return;
+      active.value = record.mine;
     });
+    // 我的贴纸：打开时不预取，切到该页签（或打开时正停在它上面）才拉取列表与今日额度
+    if (tab.value === "sticker") void loadStickers();
   }
 
   initializeStickerUrls();
