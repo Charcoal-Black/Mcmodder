@@ -372,6 +372,11 @@ export class ConfigLoader {
         "无限制留言板",
         "强行显示目标用户留言板，或是模组/作者的短评区，即使其已受天体运动影响而关闭。请勿滥用，除非你想见到重生亲手把这个特性毙掉。",
       )
+      .addCheckboxConfig(
+        "uploadFileButton",
+        "上传文件按钮",
+        "在短评编辑器的工具栏上添加「上传文件」按钮：选中本地文件后，脚本会调用站点 UEditor 未在界面上暴露的附件上传接口，并把返回的链接插入正文。上传的文件会存放在百科的服务器上，请勿滥用。",
+      )
       .addCheckboxConfig("ignoreEmptyLine", "忽略短评空白行", "隐藏短评正文中的空白行。")
       .addCheckboxConfig(
         "replyLink",

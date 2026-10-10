@@ -2,10 +2,11 @@ import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
+import { addUploadFileButton } from "./UploadFileButton";
 
 /**
  * 百科原生 UEditor 的封装基类：把 `editor` 实例解包成一系列好用的 DOM 引用，
- * 并施加一批与编辑页强相关的通用增强（注入样式、夜间模式、按钮现代化、高度/宽度自适应、编辑量统计）。
+ * 并施加一批与编辑页强相关的通用增强（注入样式、夜间模式、按钮现代化、上传文件按钮（默认关闭）、高度/宽度自适应、编辑量统计）。
  *
  * # 关于「不写成 Vue 组件」
  * UEditor 是百科技能自带的 iframe + 原生 DOM，工具栏、颜色选择器、下拉菜单等 UI 全部由百科自己的
@@ -134,6 +135,15 @@ export class UEditor {
       .addClass("mcmodder-edui-arrow fa fa-caret-down")
       .css("background-image", "none");
     // }
+
+    // 短评编辑器（`.comment-editor-area` 里的那个编辑器，即页面上没有主编辑器工具栏 `.edit-tools` 的那种）
+    // 补一个「上传文件」按钮：站点工具栏只给了图片上传，附件上传接口虽有却没有入口。默认关闭，需在设置里开启。
+    // 主编辑器（`AdvancedUEditor`）的 `.edit-tools` 自带附件入口，不重复注入。
+    const isCommentEditor =
+      this.$outerFrame?.closest(".comment-editor-area").length || !$(".edit-tools").length;
+    if (isCommentEditor && this.configs.getSettings("uploadFileButton")) {
+      addUploadFileButton(this);
+    }
 
     // 宽度自适应：监听窗口 resize，并立即手动触发一次（iframe 内的文档不会自动继承外层尺寸）
     window.addEventListener("resize", () => this.widthAutoResize());
