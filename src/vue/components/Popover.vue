@@ -83,12 +83,20 @@ const cssPos = computed(() => {
 
   const rect = rectRef.value!;
   const left = absPosX;
-  const top = expandUpward.value ? absPosY - listHeight.value - 4 : absPosY + rect.height;
 
-  return {
-    left: left + "px",
-    top: top + "px",
-  };
+  if (expandUpward.value) {
+    const bottom = innerHeight - absPosY;
+    return {
+      left: left + "px",
+      bottom: bottom + "px",
+    };
+  } else {
+    const top = absPosY + rect.height;
+    return {
+      left: left + "px",
+      top: top + "px",
+    };
+  }
 });
 
 const heightCss = computed(() => {
@@ -115,11 +123,17 @@ const heightCss = computed(() => {
 
 function onPopoverVisibilityChange(state: boolean) {
   visibility.value = state;
+  if (state) {
+    nextTick(() => {
+      updatePos();
+    });
+  }
 }
 
 function onPopoverHeightChange() {
   nextTick(() => {
     listHeight.value = listRef.value!.getBoundingClientRect().height;
+    updatePos();
   });
 }
 
@@ -128,16 +142,18 @@ watch(
   (newValue, oldValue) => {
     if (newValue && !oldValue) {
       classHidden.value = false;
-      setTimeout(() => {
-        classFaded.value = false;
-      }, 0);
+      // setTimeout(() => {
+      //   classFaded.value = false;
+      // }, 0);
+      classFaded.value = false;
     } else if (oldValue && !newValue) {
       classFaded.value = true;
-      setTimeout(() => {
-        if (!visibility.value) {
-          classHidden.value = true;
-        }
-      }, 200);
+      // setTimeout(() => {
+      //   if (!visibility.value) {
+      //     classHidden.value = true;
+      //   }
+      // }, 200);
+      classHidden.value = true;
     }
   },
 );

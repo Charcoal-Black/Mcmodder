@@ -117,7 +117,7 @@ interface AppStorage {
   guiBound?: RecipeJsonFrameGuiBound[];
   classData?: Record<string, string>;
   inputList?: Record<string, InputSimplifiedSuggestion[]>;
-  assistantViewed?: Record<string, number[]>;
+  assistantViewed?: Record<string, (number | [id: number, refund: number])[]>;
   /**
    * 跨标签页弹窗广播槽：仅存放**当前唯一一条**待弹记录（键不存在即表示无挂起）。
    *
@@ -844,6 +844,9 @@ interface McmodItemEditorInnerData {
 
   /**
    * 资料所属的**资料类型**。键值 Number() 后必须是正整数，代表资料类型的数字 ID。
+   *
+   * @warning 考虑到自定义资料类型在解析时可能会因为脚本尚未记录此名称而解析失败，在解析返回的结果中允许
+   * 将 ID 设置为 -1 以标记为解析失败（而不是缺少此字段）。
    *
    * > 资料的所属类型。
    */

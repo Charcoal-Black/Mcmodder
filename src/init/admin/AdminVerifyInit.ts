@@ -84,8 +84,23 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   constructor(parent: Mcmodder) {
     super(parent);
-    this.assistantViewed = this.configs.getAll("assistantViewed") ?? {};
-    this.assistantViewedSet = new Set<number>();
+
+    const assistantViewed = this.configs.getAll("assistantViewed") ?? {};
+    Object.values(assistantViewed).forEach((numberList) => {
+      const length = numberList.length;
+      for (let i = 0; i < length; i++) {
+        const el = numberList[i];
+        if (typeof el === "number") {
+          numberList[i] = [el, 0];
+        }
+      }
+    });
+    this.assistantViewed = assistantViewed as Record<
+      keyof typeof assistantViewed,
+      Exclude<ElementOf<ValueOf<typeof assistantViewed>>, number>[]
+    >;
+
+    this.assistantViewedMap = new Map<number, number>();
     this.splitScreenOnVerify = this.configs.getSettings("splitScreenOnVerify") ?? false;
   }
 
@@ -981,7 +996,11 @@ export class AdminVerifyInit extends AdminBaseInit {
         if (i === 0) return;
         const text = e.textContent;
         const type = this.parent.utils.getItemTypeData(this.verifyClassID, text);
-        if (type && this.verifyClassID) {
+        if (type === undefined) {
+          data.category = { 0: "-1" };
+          return;
+        }
+        if (this.verifyClassID) {
           e.innerHTML = `<a target="_blank" href="${Utils.getItemTypeURL(
             this.verifyClassID,
             type.typeID,
@@ -1304,11 +1323,27 @@ export class AdminVerifyInit extends AdminBaseInit {
     2: "text-warning",
   } as Record<number, string>;
 
-  /** 获取展示「意见变化」的元素。 */
+  /** 获取展示待审项行元素中「意见变化」的元素。 */
   private getOpinions(elem: JQuery) {
     return elem
       .find("td:nth-child(2) b.text")
       .filter((e) => !$(e).parents(".mcmodder-verify-changedopinions").length);
+  }
+
+  /** 获取并解析待审项行元素中「退回次数」的元素。 */
+  private getRefundCount(elem: JQuery) {
+    const texts = elem
+      .find("td:nth-child(2)")
+      .contents()
+      .filter((_, e) => Utils.isTextNode(e))
+      .toArray() as unknown[] as Text[];
+    for (const text of texts) {
+      const data = text.data;
+      if (data.match(/\[🔍被退回\d+次\]/)) {
+        return Number(data.match(/.d+/));
+      }
+    }
+    return 0;
   }
 
   /**
@@ -1465,10 +1500,14 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   /** 根据日期分类的已提交意见的待审项 ID 列表。 */
   private readonly assistantViewed;
-  /** 与 {@link assistantViewed} 组合使用，存储根据日期分类的已提交意见的待审项 ID 集合，便于快速查重。 */
-  private readonly assistantViewedSet;
+  /**
+   * 与 {@link assistantViewed} 组合使用，存储根据日期分类的已提交意见的待审项 ID 集合与最近一次
+   * 提交意见时的该待审项已经被审核员退回的次数，便于快速查重与获取退回次数。已经提交过意见的
+   * 待审项如果后来被退回并被重新提交，那么标记会被自动隐藏，等到下次提交意见才会被重新标记。
+   */
+  private readonly assistantViewedMap;
 
-  /** 从本地配置加载已提交意见的待审项列表，并同步给 {@link assistantViewed} 和 {@link assistantViewedSet}。 */
+  /** 从本地配置加载已提交意见的待审项列表，并同步给 {@link assistantViewed} 和 {@link assistantViewedMap}。 */
   private initAssistantViewed() {
     const keys = Object.keys(this.assistantViewed).map(Number);
     const time = Utils.getStartTime(Date.now(), 0);
@@ -1476,26 +1515,29 @@ export class AdminVerifyInit extends AdminBaseInit {
       if (time - date > 30 * 24 * 60 * 60 * 1e3) {
         delete this.assistantViewed[date];
       } else {
-        this.assistantViewed[date].forEach((id) => {
-          this.assistantViewedSet.add(id);
+        this.assistantViewed[date].forEach(([id, refund]) => {
+          this.assistantViewedMap.set(id, refund);
         });
       }
     });
   }
 
   /**
-   * 标记待审项为已提交意见，并向 {@link assistantViewed} 和 {@link assistantViewedSet} 同步。
+   * 标记待审项为已提交意见，并向 {@link assistantViewed} 和 {@link assistantViewedMap} 同步。
    *
    * @param id 要标记的待审项的数字 ID
    */
   private markEntryAsViewed(id: number) {
+    const entry = this.getEntry(id);
+    const refund = this.getRefundCount(entry);
+    const record: [number, number] = [id, refund];
     const date = Utils.getStartTime(Date.now(), 0);
     if (this.assistantViewed[date] === undefined) {
-      this.assistantViewed[date] = [id];
+      this.assistantViewed[date] = [record];
     } else {
-      this.assistantViewed[date].push(id);
+      this.assistantViewed[date].push(record);
     }
-    this.assistantViewedSet.add(id);
+    this.assistantViewedMap.set(id, refund);
     this.configs.setAll("assistantViewed", this.assistantViewed);
   }
 
@@ -1513,7 +1555,9 @@ export class AdminVerifyInit extends AdminBaseInit {
   private checkEntry(elem: JQuery | Node) {
     elem = $(elem);
     const id = this.getVerifyID(elem);
-    if (this.assistantViewedSet.has(id)) {
+    const refund = this.getRefundCount(elem);
+    const prevRefund = this.assistantViewedMap.get(id) ?? -1;
+    if (refund <= prevRefund) {
       elem.addClass("mcmodder-verify-commented");
     }
   }

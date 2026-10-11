@@ -59,8 +59,7 @@ export class PopoverController {
   private get activeApp() {
     return this.activeType !== null ? this.typeMap[this.activeType] : null;
   }
-
-  private visibilityLock = false;
+  private activeTarget: HTMLElement | null = null;
 
   private readonly typeMap;
 
@@ -88,7 +87,17 @@ export class PopoverController {
         const closest = this.getClosestWithOption(e);
         if (closest !== undefined) {
           const { target, option } = closest;
-          await this.serve(target, option);
+          const success = await this.serve(target, option);
+          if (success) {
+            return;
+          }
+        }
+
+        const inPopover = e
+          .composedPath()
+          .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
+        if (!inPopover) {
+          this.closeActive();
         }
       },
       this.opt,
@@ -115,25 +124,6 @@ export class PopoverController {
       Utils.animationThrottle(() => {
         this.inputListApp.updatePos();
       }),
-      {
-        passive: true,
-        ...this.opt,
-      },
-    );
-
-    window.addEventListener(
-      "click",
-      (e) => {
-        if (this.visibilityLock) {
-          return;
-        }
-        const inPopover = e
-          .composedPath()
-          .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
-        if (!inPopover) {
-          this.activeApp?.close();
-        }
-      },
       {
         passive: true,
         ...this.opt,
@@ -192,12 +182,6 @@ export class PopoverController {
     target: HTMLElement,
     option: PopoverOption | ((element: HTMLElement) => Awaitable<PopoverOption>),
   ) {
-    // 防止 focus 和 click 事件冲突
-    this.visibilityLock = true;
-    setTimeout(() => {
-      this.visibilityLock = false;
-    }, 100);
-
     if (option instanceof Function) {
       this.pendingOptionSet.add(target);
       option = await option(target);
@@ -205,7 +189,11 @@ export class PopoverController {
       this.lazyOptionMap.delete(target);
       this.optionMap.set(target, option);
     }
+    if (option.closeWhenClickAgain && this.activeTarget === target) {
+      return false;
+    }
     this.activeType = option.type;
+    this.activeTarget = target;
     // this.activeElement = target;
     if (option.type === "inputList") {
       // 交互元素与输入元素可以不同：缺省时就是登记的这个元素本身
@@ -219,6 +207,13 @@ export class PopoverController {
         ...option,
       });
     }
+    return true;
+  }
+
+  private closeActive() {
+    this.activeApp?.close();
+    this.activeType = null;
+    this.activeTarget = null;
   }
 
   /** 懒加载单例（首次访问时构造） */

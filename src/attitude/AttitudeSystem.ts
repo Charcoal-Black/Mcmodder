@@ -531,6 +531,7 @@ export class AttitudeSystem {
     return {
       type: "attitudePicker",
       anchorElement: anchor as HTMLElement,
+      closeWhenClickAgain: true,
       parent: this.parent,
       commentId: target.commentId,
       active: this.countsCache.get(target.commentId)?.record.mine ?? [],

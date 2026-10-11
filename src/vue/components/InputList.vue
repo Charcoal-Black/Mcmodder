@@ -184,6 +184,8 @@ const onInitSuggestion = shallowRef<InputListOnInitSuggestion>();
 /** 实际生效的候选保存回调；为 `undefined` 时不提供「新增 / 删除候选」的操作 */
 const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
 
+let closeLock = false;
+
 /**
  * 由 `InputListController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
  * 这是本组件唯一的入口——组件自身不观察任何输入框。
@@ -210,6 +212,9 @@ function setOption(option: InputListProps) {
   );
 
   popoverRef.value!.updatePos();
+
+  // 强制重算
+  triggerRef(defaultSelectionProvider);
 }
 
 // === 内部状态 ===
@@ -246,6 +251,7 @@ watch(
     }
     nextTick(() => {
       popoverRef.value?.onPopoverHeightChange();
+      triggerRef(popoverRef);
     });
   },
 );
@@ -253,7 +259,13 @@ watch(
 // 显隐动画：显示时先取消隐藏、下一帧再取消淡出；隐藏时先淡出、200ms 后才真正隐藏
 watch(
   () => selectable.value,
-  (value) => popoverRef.value?.onPopoverVisibilityChange(value),
+  (value) => {
+    popoverRef.value?.onPopoverVisibilityChange(value);
+    closeLock = true;
+    setTimeout(() => {
+      closeLock = false;
+    }, 100);
+  },
 );
 
 const sizeCss = computed(() => {
@@ -275,19 +287,34 @@ const sizeCss = computed(() => {
  * 是因为它依赖 `valueRef` / `selectionStart` / `suggestionList` 等响应式源——任何一次输入变化都会触发重算。
  */
 watchEffect(() => {
+  void selectable.value;
+  void defaultSelectionProvider.value;
+  void suggestionList.value;
+  void canCreateNew.value;
+  void suggestedList.value;
+  void hideBeforeInput.value;
+  void selectionValue.value;
+
   selected.value = 0;
+
+  if (closeLock && !selectable.value) {
+    return;
+  }
+
   const content = selectionValue.value.toLowerCase();
   if (alwaysShowAllSuggestions.value) {
     selectable.value = true;
     selected.value = defaultSelectionProvider.value();
     suggestedList.value = suggestionList.value;
+    canCreateNew.value = false;
     return;
   }
 
   if (!content && hideBeforeInput.value) {
     selectable.value = false;
     canCreateNew.value = false;
-    suggestedList.value = [];
+    suggestedList.value.length = 0;
+    triggerRef(suggestedList);
     return;
   }
 
@@ -411,21 +438,11 @@ function onInputKeyup(e: Event) {
   }
 }
 
-/** 输入元素失焦：延迟 100ms 关闭——给「点击候选项」留出时间（否则 mousedown 先于 click 触发失焦） */
-function onInputBlur() {
-  // isFocused = false;
-  setTimeout(() => {
-    selectable.value = false;
-  }, 100);
-}
-
 /** 输入框事件名 → 处理函数：由 `InputListController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
-  focus: onInputFocus,
   click: onInputClick,
   keydown: onInputKeydown,
   keyup: onInputKeyup,
-  blur: onInputBlur,
   input: updateValueRef,
 } as const;
 
@@ -450,13 +467,12 @@ function onNewOptionClick() {
 }
 
 /**
- * 采纳一条候选：把它的文本写回输入元素，随后按「已失焦」收尾。
+ * 采纳一条候选：把它的文本写回输入元素。
  *
  * @param val 被采纳候选的 `value`。
  */
 function onOptionClick(val: string) {
   setSelectionValue(val, !!delimiter.value);
-  onInputBlur();
 }
 
 /**
@@ -659,7 +675,7 @@ function getSelectedOptionNode() {
 }
 
 function close() {
-  onInputBlur();
+  selectable.value = false;
 }
 
 defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({

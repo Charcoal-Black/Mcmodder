@@ -80,7 +80,7 @@ function getDOMValue() {
 /** 点击按钮：已展开且不是「刚聚焦」时才收起（点自己弹出的那次不算） */
 function onClick() {
   if (selected.value && !focusLock) {
-    inputRef.value!.blur();
+    inputRef.value!.click();
   }
 }
 
@@ -104,6 +104,7 @@ onMounted(() => {
     type: "inputList",
     inputListBindElement: valueInputRef.value!,
     anchorElement: inputRef.value!,
+    closeWhenClickAgain: true,
     // 枚举选择是「列出全部」而非「按输入过滤」，不做拼音匹配
     alwaysShowAllSuggestions: true,
     // 将下拉列表的默认选项设置为当前内存态的对应数值

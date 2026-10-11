@@ -61,6 +61,13 @@ export interface InputProps<T> {
   onSuccessfulChange?: InputSuccessfulChangeCallBack<T>;
 }
 
+export interface InputListBaseOption {
+  /** 列表定位的锚点（以此元素的矩形计算位置与宽度）；缺省时用 `inputListBindElement` */
+  anchorElement?: HTMLElement;
+  /** 若在弹出框已打开时再次触发，则关闭弹出框 */
+  closeWhenClickAgain?: boolean;
+}
+
 // types.d.ts 迁移
 /**
  * 候选列表（`InputList`）的绑定选项。传给 `InputListController.add` 的**第一个参数**是
@@ -72,12 +79,10 @@ export interface InputProps<T> {
  * 文本的读写、选区维护、补全替换全部发生在 `inputListBindElement` 上。
  * `DropdownMenuInput.vue` 就靠这种方式把「显示成按钮的下拉菜单」复用了普通候选列表的逻辑。
  */
-export interface InputListOption {
+export interface InputListOption extends InputListBaseOption {
   type: "inputList";
   /** 真正承载输入的元素；缺省时复用 `add` 的第一个参数（交互元素） */
   inputListBindElement?: InputListBindElement;
-  /** 列表定位的锚点（以此元素的矩形计算位置与宽度）；缺省时用 `inputListBindElement` */
-  anchorElement?: HTMLElement;
   /** 忽略输入内容，直接展示全部候选（不做匹配过滤，`DropdownMenuInput` 用此模式） */
   alwaysShowAllSuggestions?: boolean;
   /** 当 {@link alwaysShowAllSuggestions} 启用时，提供默认候选序号的回调 */
@@ -100,10 +105,9 @@ export interface InputListProps extends InputListOption {
 /**
  * 自定义表态选择面板的共享状态：`AttitudeSystem` 负责打开、定位与挂载，`AttitudePicker.vue` 负责渲染与关闭。
  */
-export interface AttitudePickerState {
+export interface AttitudePickerState extends InputListBaseOption {
   type: "attitudePicker";
   parent: import("../Mcmodder").Mcmodder;
-  anchorElement: HTMLElement;
   target: AttitudeTarget;
   /** 面板当前对应的短评 id（再次点击同一条短评即关闭） */
   commentId: string;
