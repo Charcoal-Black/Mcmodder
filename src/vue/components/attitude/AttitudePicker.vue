@@ -1,23 +1,28 @@
 <template>
   <Popover ref="popoverRef" :anchor-element="state?.anchorElement">
     <div id="mcmodder-attitude-panel" class="mcmodder-attitude-panel">
-      <div class="mcmodder-attitude-tabs">
-        <button
-          type="button"
-          class="mcmodder-attitude-tab"
-          :class="{ 'mcmodder-attitude-tab-active': tab === 'emoji' }"
-          @click="switchTab('emoji')"
-        >
-          emoji
-        </button>
-        <button
-          type="button"
-          class="mcmodder-attitude-tab"
-          :class="{ 'mcmodder-attitude-tab-active': tab === 'sticker' }"
-          @click="switchTab('sticker')"
-        >
-          我的贴纸
-        </button>
+      <div class="mcmodder-swiper-tab-container">
+        <div class="mcmodder-attitude-tabs">
+          <button
+            ref="emojiTabRef"
+            type="button"
+            class="mcmodder-attitude-tab"
+            :class="{ 'mcmodder-attitude-tab-active': tab === 'emoji' }"
+            @click="switchTab('emoji')"
+          >
+            Emoji
+          </button>
+          <button
+            ref="stickerTabRef"
+            type="button"
+            class="mcmodder-attitude-tab"
+            :class="{ 'mcmodder-attitude-tab-active': tab === 'sticker' }"
+            @click="switchTab('sticker')"
+          >
+            我的贴纸
+          </button>
+        </div>
+        <TabIndicator ref="indicatorRef" />
       </div>
 
       <div v-show="tab === 'emoji'">
@@ -49,8 +54,8 @@
             最近使用的 emoji 与贴纸会显示在这里
           </span>
         </div>
-        <button type="button" class="mcmodder-attitude-more" @click="toggleAllEmojis">
-          {{ allEmojisVisible ? "收起全部 emoji" : "全部 emoji" }}
+        <button type="button" class="mcmodder-attitude-more btn btn-light" @click="toggleAllEmojis">
+          {{ allEmojisVisible ? "收起全部 Emoji" : "全部 Emoji" }}
         </button>
         <div
           ref="pickerHost"
@@ -74,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, useTemplateRef, shallowRef } from "vue";
+import { ref, watch, nextTick, useTemplateRef, shallowRef, computed } from "vue";
 import Picker from "emoji-picker-element/picker.js";
 import zhCN from "emoji-picker-element/i18n/zh_CN.js";
 import { Values } from "../../../Values";
@@ -89,6 +94,7 @@ import {
 } from "../../../attitude/attitudeLetter";
 import AttitudeStickerList from "./AttitudeStickerList.vue";
 import Popover from "../Popover.vue";
+import TabIndicator from "../TabIndicator.vue";
 
 const state = shallowRef<AttitudePickerState>();
 const configs = shallowRef<ConfigRepository>();
@@ -100,6 +106,9 @@ const tab = ref<"emoji" | "sticker">("emoji");
 
 const visible = ref(false);
 const popoverRef = useTemplateRef("popoverRef");
+const indicatorRef = useTemplateRef("indicatorRef");
+const emojiTabRef = useTemplateRef("emojiTabRef");
+const stickerTabRef = useTemplateRef("stickerTabRef");
 
 /**
  * 「我点过」的高亮：打开时取选项里的初始值（本地缓存），后台刷新与写请求的返回都会替换它。
@@ -109,8 +118,10 @@ const popoverRef = useTemplateRef("popoverRef");
 const active = shallowRef<string[]>([]);
 
 /** 最近使用的 emoji（本机维度） */
-const recents = shallowRef<string[]>();
-/** 我上传的贴纸：懒加载，首次切到「我的贴纸」页签时才拉取（系统内另有 30s 缓存） */
+const recents = computed(() => {
+  return system.value?.recentEmojis.value;
+});
+/** 我上传的贴纸（面板打开时懒加载） */
 const stickers = shallowRef<SupabaseAttitudeSticker[]>();
 const quota = shallowRef<SupabaseAttitudeStickerQuota | null>(null);
 /** 贴纸列表请求进行中（避免切页签时重复发请求） */
@@ -135,7 +146,13 @@ async function loadStickers() {
 
 watch(
   () => visible.value,
-  (newValue) => popoverRef.value?.onPopoverVisibilityChange(newValue ?? false),
+  (newValue) => {
+    popoverRef.value?.onPopoverVisibilityChange(newValue ?? false);
+    if (newValue) {
+      popoverRef.value?.onPopoverHeightChange();
+      updateIndicator();
+    }
+  },
 );
 
 function isSticker(attitudeType: string) {
@@ -152,6 +169,17 @@ function switchTab(next: "emoji" | "sticker") {
   tab.value = next;
   if (next === "sticker") void loadStickers();
   // void nextTick(clampAttitudePanelPosition);
+  popoverRef.value?.onPopoverHeightChange();
+  updateIndicator();
+}
+
+function updateIndicator() {
+  nextTick(() => {
+    const active = tab.value === "emoji" ? emojiTabRef.value : stickerTabRef.value;
+    if (active !== null) {
+      indicatorRef.value?.update(active);
+    }
+  });
 }
 
 let pickerEl: HTMLElement | undefined;
@@ -250,6 +278,7 @@ function ensurePicker() {
   host.appendChild(picker);
   decorateLettersCategory(picker);
   applyPickerTheme();
+  popoverRef.value?.onPopoverHeightChange();
 }
 
 async function toggleAllEmojis() {
@@ -258,10 +287,6 @@ async function toggleAllEmojis() {
   await nextTick();
   if (allEmojisVisible.value) ensurePicker();
   // clampAttitudePanelPosition();
-}
-
-function onDocumentFocus() {
-  visible.value = true;
 }
 
 /** 点击面板外部关闭（工具条按钮交给 `AttitudeSystem` 的开关逻辑） */
@@ -321,9 +346,6 @@ function setOption(option: AttitudePickerState) {
   active.value = option.active;
 
   if (system.value) {
-    if (recents.value === undefined) {
-      recents.value = system.value?.getRecentEmojis();
-    }
     // 后台补一次计数：命中缓存立即返回，未命中则去抖后请求（面板此时已经开着）
     const generation = pickCount;
     void system.value.requestCounts([option.commentId]).then((records) => {
@@ -351,7 +373,7 @@ function initializeStickerUrls() {
 }
 
 /**
- * 把面板夹取到视口内（按面板当前实际尺寸）：打开面板与展开「全部 emoji」后各调用一次，
+ * 把面板夹取到视口内（按面板当前实际尺寸）：打开面板与展开「全部 Emoji」后各调用一次，
  * 这样 JS 侧无需重复 CSS 里的尺寸常量。
  */
 // function clampAttitudePanelPosition() {
@@ -370,7 +392,6 @@ function initializeStickerUrls() {
 
 /** 输入框事件名 → 处理函数：由 `PopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
-  focus: onDocumentFocus,
   pointerdown: onDocumentPointerDown,
   keydown: onDocumentKeyDown,
 } as const;

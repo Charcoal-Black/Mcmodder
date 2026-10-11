@@ -210,11 +210,14 @@ export class Mcmodder {
         }
         previewFrame.attr("data-status", "pending");
         await Utils.sleep(750);
-        const resp = await this.utils.createRequest({
-          url: target.href,
-          method: "GET",
-          anonymous: true,
-        });
+        const resp = await this.utils.createRequest(
+          {
+            url: target.href,
+            method: "GET",
+            anonymous: true,
+          },
+          "链接预览",
+        );
         if (!resp.responseXML) return;
         if (previewFrame.attr("data-status") === "fulfilled") return;
         const doc = $(resp.responseXML);

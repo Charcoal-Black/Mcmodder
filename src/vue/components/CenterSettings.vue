@@ -72,19 +72,16 @@
   <div class="center-setting-block" style="margin-top: 2em">
     <h4 style="margin-bottom: 0.5em; font-weight: bold">我上传的表态贴纸</h4>
     <p class="text-muted" style="margin-bottom: 0.8em; font-size: 13px">
-      贴纸用于短评的自定义表态：图片存到百科图床，脚本云端只登记归属；每人每天的上传数量有上限。
+      所有曾经由我上传的表态贴纸都会显示在这里。贴纸的图片文件均保存在百科图床，因此同样会受到百科图床的上传限制。
     </p>
     <template v-if="attitudeStickersEnabled">
       <AttitudeStickerList
         :parent="parent"
         :stickers="attitudeStickers"
         :quota="attitudeStickerQuota"
-        :loading="attitudeStickersLoading"
         :on-upload="uploadAttitudeSticker"
       />
-      <p class="text-muted" style="font-size: 12px; margin-top: 0.6em">
-        <a href="javascript:void(0);" @click="refreshAttitudeStickers(true)">刷新列表</a>
-      </p>
+      <button class="btn btn-light" @click="refreshAttitudeStickers(true)">刷新列表</button>
     </template>
     <p v-else class="text-muted" style="font-size: 13px">{{ attitudeStickersHint }}</p>
   </div>

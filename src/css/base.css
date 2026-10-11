@@ -2681,6 +2681,11 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   transform-origin: top;
   /* transform: scale(1); */
 }
+.mcmodder-popover.expand-upward {
+  margin-top: 0;
+  margin-bottom: 4px;
+  transform-origin: bottom;
+}
 .mcmodder-input-list.faded {
   opacity: 0;
   /* transform: scale(0.98); */
@@ -2690,11 +2695,6 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-}
-.mcmodder-input-list.expand-upward {
-  margin-top: 0;
-  margin-bottom: 4px;
-  transform-origin: bottom;
 }
 .mcmodder-input-option {
   width: 100%;

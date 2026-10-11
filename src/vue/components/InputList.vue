@@ -658,6 +658,10 @@ function getSelectedOptionNode() {
   return getOptionNode(selected.value);
 }
 
+function close() {
+  onInputBlur();
+}
+
 defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({
   setOption,
   inputEvents,

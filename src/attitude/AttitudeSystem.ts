@@ -9,6 +9,7 @@ import {
 } from "./attitudeIcon";
 import { PopoverController } from "../widget/PopoverController.ts";
 import type { ConfigRepository } from "../config/ConfigRepository.ts";
+import { computed } from "vue";
 
 /**
  * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
@@ -63,8 +64,8 @@ export class AttitudeSystem {
   }
 
   /** 最近使用的 emoji（本机维度） */
-  getRecentEmojis() {
-    const raw = this.configs.getSettings("attitudeRecentEmojis");
+  readonly recentEmojis = computed(() => {
+    const raw = this.configs.getSettingsRef("attitudeRecentEmojis").value;
     if (!raw) return [];
     try {
       const parsed: unknown = JSON.parse(raw);
@@ -74,7 +75,7 @@ export class AttitudeSystem {
     } catch {
       return [];
     }
-  }
+  });
 
   /**
    * 我收到的表态统计（`unreadCacheTtl` 内复用 GM 缓存）。
@@ -358,16 +359,19 @@ export class AttitudeSystem {
     form.append("upfile", file, file.name);
     form.append("type", "ajax");
     try {
-      const resp = await this.parent.utils.createRequest({
-        url: Values.attitude.sticker.uploadUrl,
-        method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Origin: "https://center.mcmod.cn",
-          Referer: "https://center.mcmod.cn/",
+      const resp = await this.parent.utils.createRequest(
+        {
+          url: Values.attitude.sticker.uploadUrl,
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            Origin: "https://center.mcmod.cn",
+            Referer: "https://center.mcmod.cn/",
+          },
+          data: form,
         },
-        data: form,
-      });
+        "上传贴纸",
+      );
       const result = JSON.parse(resp.responseText?.trim() ?? "") as {
         state?: string;
         url?: string;
@@ -536,7 +540,7 @@ export class AttitudeSystem {
 
   rememberRecentEmoji(attitudeType: string) {
     if (attitudeType === Values.attitude.devilAngry.type) return;
-    const recents = this.getRecentEmojis().filter((emoji) => emoji !== attitudeType);
+    const recents = this.recentEmojis.value.filter((emoji) => emoji !== attitudeType);
     recents.unshift(attitudeType);
     this.configs.setSettings(
       "attitudeRecentEmojis",

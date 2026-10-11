@@ -1375,10 +1375,16 @@ export class Utils {
    * 发送限速请求的全局入口：
    * 按 `updateRequestTime` 排定延迟后发出，记录日志；遇到 `yxd_token` 校验响应时写入 cookie 并自动重发。
    *
+   * 允许同时传入一个附加信息。若启用网络请求监控，则会在所有可见的标签页上提示本次发包的同时显示此信息。
+   * 原则上所有网络请求都应当有附加信息，便于在监控中理解请求目的。
+   *
    * @warning 队列超出 {@link Values.MAX_REQUEST_COUNT} 上限时，本请求直接以失败告终、**不会发包**
    *   （此前是把旧的队满哨兵值 `-1` 交给 `setTimeout`，负延迟被当作 0 处理，反而使限速彻底失效）。
    *   对本就无法降级重试的调用方而言失败与「不关心结果」无异；但计划任务与队列必须让失败
    *   可见地冒泡，否则会留下一条已排期、实则永远不会落地的待办。
+   *
+   * @param config 请求配置
+   * @param message 本次请求附带的提示消息
    */
   createRequest(
     config: GmXmlhttpRequestOption<"text", unknown>,
@@ -1415,7 +1421,7 @@ export class Utils {
                   if (err) {
                     console.warn("Failed to set `yxd_token!`");
                   } else {
-                    this.createRequest(config).then((resp) => resolve(resp));
+                    this.createRequest(config, message).then((resp) => resolve(resp));
                   }
                 },
               );

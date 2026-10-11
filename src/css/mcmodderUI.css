@@ -7,17 +7,21 @@
   }
 }
 .btn,
-.btn-dark {
+.btn.btn-dark {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-primary-light),
     var(--mcmodder-color-accent-light)
   );
   color: var(--mcmodder-color-text);
-  border-color: 1px solid var(--mcmodder-color-background-transparent);
+  border: 1px solid var(--mcmodder-color-background);
+}
+.btn.btn-light {
+  border-color: var(--mcmodder-color-text);
 }
 .btn.btn-success,
-.btn-dark.btn-success {
+.btn.btn-dark.btn-success,
+.btn.btn-light.btn-success {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-success-light),
@@ -25,7 +29,8 @@
   );
 }
 .btn.btn-warning,
-.btn-dark.btn-warning {
+.btn.btn-dark.btn-warning,
+.btn.btn-light.btn-warning {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-warning-light),
@@ -33,7 +38,8 @@
   );
 }
 .btn.btn-danger,
-.btn-dark.btn-danger {
+.btn.btn-dark.btn-danger,
+.btn.btn-light.btn-danger {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-danger-light),
@@ -41,13 +47,15 @@
   );
 }
 .btn:hover,
-.btn-dark:hover {
+.btn.btn-dark:hover,
+.btn.btn-light:hover {
   background-color: var(--mcmodder-color-accent-background);
   background-image: none;
   color: var(--mcmodder-color-accent-dark2);
 }
 .btn.btn-success:hover,
-.btn-dark.btn-success:hover {
+.btn.btn-dark.btn-success:hover,
+.btn.btn-light.btn-success:hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-success),
@@ -55,7 +63,8 @@
   );
 }
 .btn.btn-warning:hover,
-.btn-dark.btn-warning:hover {
+.btn.btn-dark.btn-warning:hover,
+.btn.btn-light.btn-warning:hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-warning),
@@ -63,7 +72,8 @@
   );
 }
 .btn.btn-danger:hover,
-.btn-dark.btn-danger:hover {
+.btn.btn-dark.btn-danger:hover,
+.btn.btn-light.btn-danger:hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-danger),
@@ -72,8 +82,10 @@
 }
 .btn:active,
 .btn-dark:active,
+.btn-light:active,
 .btn:focus,
-.btn-dark:focus {
+.btn-dark:focus,
+.btn-light:focus {
   color: var(--mcmodder-color-accent-dark2);
 }
 .dropdown-menu > .active > a,
@@ -376,6 +388,9 @@ body .edui-default .edui-bubble .edui-popup-content {
   background-color: var(--mcmodder-color-background);
 }
 .swiper-wrapper.page-ul {
+  position: relative;
+}
+.mcmodder-swiper-tab-container {
   position: relative;
 }
 .mcmodder-swiper-tab {

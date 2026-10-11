@@ -1,5 +1,4 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
-import { DEVIL_ANGRY_ICON } from "./attitude/devilAngryIcon";
 import defaultEditReasons from "./assets/json/input/EditReason.json";
 import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
 
@@ -193,7 +192,12 @@ export class Values {
     devilAngry: {
       type: "devil-angry",
       title: "恶魔安格瑞",
-      icon: DEVIL_ANGRY_ICON,
+      icon: (
+        import.meta.glob("./assets/attitude/devilAngry.svg", {
+          query: "?raw",
+          eager: true,
+        })["./assets/attitude/devilAngry.svg"] as { default: string }
+      ).default,
     },
     emojiDataUrl:
       "https://cdn.jsdelivr.net.cn/npm/emoji-picker-element-data@1/zh/emojibase/data.json",

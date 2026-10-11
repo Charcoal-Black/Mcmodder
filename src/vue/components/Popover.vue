@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, useTemplateRef, watch } from "vue";
+import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { Values } from "../../Values";
 import { Utils } from "../../Utils";
 
@@ -118,7 +118,9 @@ function onPopoverVisibilityChange(state: boolean) {
 }
 
 function onPopoverHeightChange() {
-  listHeight.value = listRef.value!.getBoundingClientRect().height;
+  nextTick(() => {
+    listHeight.value = listRef.value!.getBoundingClientRect().height;
+  });
 }
 
 watch(

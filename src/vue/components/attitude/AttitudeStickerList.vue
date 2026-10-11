@@ -1,7 +1,7 @@
 <template>
   <div class="mcmodder-attitude-sticker-panel">
     <div class="mcmodder-attitude-sticker-bar">
-      <label v-if="onUpload" class="mcmodder-attitude-sticker-upload">
+      <label v-if="onUpload" class="mcmodder-attitude-sticker-upload btn btn-light">
         <input type="file" :accept="accept" :disabled="uploading" @change="onFileChange" />
         <span>{{ uploading ? "上传中…" : "上传图片" }}</span>
       </label>
@@ -10,7 +10,7 @@
 
     <p v-if="loading" class="mcmodder-attitude-empty-hint">正在加载我上传的表态贴纸…</p>
     <p v-else-if="stickers!.length === 0" class="mcmodder-attitude-empty-hint">
-      还没有上传过表态贴纸：点上方「上传图片」，把本地图片存到百科图床后即可用作表态。
+      还没有上传过表态贴纸，上传一张吧~
     </p>
     <div v-else class="mcmodder-attitude-sticker-grid">
       <button
