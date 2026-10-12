@@ -1265,11 +1265,9 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   line-height: 2;
   font-size: 0.7em;
 }
-/* 短评编辑器工具栏的「上传文件」按钮：图标是脚本内联的 SVG，需自行居中，并盖掉站点图标的精灵图背景 */
+/* 编辑器工具栏的「上传文件」按钮：图标是内联的 FA5 file-upload 轮廓（见 UploadFileButton.ts），
+   需盖掉站点图标背景（.edui-icon 的精灵图），否则图标底下会露出一块错位的贴图 */
 .mcmodder-edui-upload {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background-image: none !important;
 }
 body .edui-default .edui-toolbar .edui-for-mcmodderupload .edui-button-wrap:hover {

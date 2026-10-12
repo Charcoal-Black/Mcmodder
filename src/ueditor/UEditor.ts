@@ -136,12 +136,9 @@ export class UEditor {
       .css("background-image", "none");
     // }
 
-    // 短评编辑器（`.comment-editor-area` 里的那个编辑器，即页面上没有主编辑器工具栏 `.edit-tools` 的那种）
-    // 补一个「上传文件」按钮：站点工具栏只给了图片上传，附件上传接口虽有却没有入口。默认关闭，需在设置里开启。
-    // 主编辑器（`AdvancedUEditor`）的 `.edit-tools` 自带附件入口，不重复注入。
-    const isCommentEditor =
-      this.$outerFrame?.closest(".comment-editor-area").length || !$(".edit-tools").length;
-    if (isCommentEditor && this.configs.getSettings("uploadFileButton")) {
+    // 「上传文件」按钮：站点工具栏只给了图片上传，附件上传接口虽有却没有入口。默认关闭，需在设置里开启。
+    // 短评编辑器与资料编辑器（`AdvancedUEditor`）的工具栏都注入，避免正文里只能放图片。
+    if (this.configs.getSettings("uploadFileButton")) {
       addUploadFileButton(this);
     }
 
