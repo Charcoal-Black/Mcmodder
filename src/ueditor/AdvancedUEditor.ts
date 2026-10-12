@@ -702,45 +702,81 @@ export class AdvancedUEditor extends UEditor {
         });
       });
 
-    this.updateEditorStats();
+    this.saveScene();
   }
 
   /**
-   * 「修复 br 换行」：百科正文的 `<br>` 无法表达段落结构（粘贴正文时常见），
+   * 「修复 br 换行」：在非正常编辑（如粘贴正文）时，正文内会出现使用 `<br>` 标签换行的情况。
    * 此处把含 `<br>` 的段落按 `<br>` 切成多个段落。
+   * ```html
+   * <!-- 切分前 -->
+   * <p>
+   *   第一行
+   *   <br>
+   *   第二行
+   * </p>
+   * <!-- 切分后 -->
+   * <p>第一行</p>
+   * <p>第二行</p>
+   * ```
    */
   performBrFix() {
     if (!this.$body) return;
-    const p = this.$body.find("p");
-    const ps: JQuery[] = [];
-    p.each((_, _e) => {
-      const e = $(_e);
-      const contents = p.contents();
-      const contentsLength = contents.length - 1;
-      for (let i = 1; i < contentsLength; i++) {
-        if (contents.get(i).tagName === "BR") {
-          ps.push(e);
-          break;
+    let count = 0;
+    this.$body.find("p").each((_, _p) => {
+      const p = $(_p);
+      // 按直接子级 <br> 切段（Array.from 取快照，搬家时不会漏项）
+      const segments: Node[][] = [];
+      let segment: Node[] = [];
+      segments.push(segment);
+      Array.from(_p.childNodes).forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
+          segment = [];
+          segments.push(segment);
+        } else {
+          segment.push(node);
         }
+      });
+      if (segments.length < 2) {
+        // 段落内没有 <br>
+        return;
       }
+
+      const hasContent = (nodes: Node[]) =>
+        nodes.some(
+          (node) => node.nodeType === Node.ELEMENT_NODE || (node.textContent ?? "").trim(),
+        );
+      // 行首/行尾的 <br> 不产生新行，去掉对应空段，避免切出空段落
+      while (segments.length > 1 && !hasContent(segments[0])) {
+        segments.shift();
+      }
+      while (segments.length > 1 && !hasContent(segments[segments.length - 1])) {
+        segments.pop();
+      }
+      if (!segments.some(hasContent)) {
+        return; // 整段只有 <br>（通常就是空白行的写法），保持原样
+      }
+      if (segments.length === 1) {
+        p.children("br").remove(); // 只剩一段有内容：摘掉换行符即可，无需切段
+        count++;
+        return;
+      }
+
+      let anchor = p;
+      segments.forEach((nodes) => {
+        const np = p.clone().html("").insertAfter(anchor);
+        nodes.forEach((node) => np.append(node as unknown as Element)); // 逐项 append 以保持原有顺序
+        anchor = np;
+      });
+      p.remove();
+      count++; // 连续 <br> 产生的中间空段保留为空段落，留住原本的空行
     });
-    const count = ps.length;
     if (!count) {
       Utils.commonMsg(`未发现 br 换行问题~`);
       return;
     }
-    ps.forEach((p) => {
-      let np = p.clone().html("").insertAfter(p);
-      p.contents().each((_, e) => {
-        if (e.tagName === "BR") {
-          np = p.clone().html("").insertAfter(np);
-        } else {
-          np.append(e);
-        }
-      });
-      p.remove();
-    });
     Utils.commonMsg(`${count} 处 br 换行问题已被修复~`);
+    this.saveScene();
   }
 
   /**
@@ -764,6 +800,7 @@ export class AdvancedUEditor extends UEditor {
       Utils.commonMsg("未发现异常链接~");
     } else {
       Utils.commonMsg(`${count} 处异常链接已被修复~`);
+      this.saveScene();
     }
   }
 
@@ -873,6 +910,7 @@ export class AdvancedUEditor extends UEditor {
         });
 
         this.body!.contentEditable = "true";
+        this.saveScene();
       }, 1e2); // pangu.spacingPage 并不是同步方法，强制延迟 100ms 以保证执行时 pangu 已完成空格插入
   }
 
@@ -1013,6 +1051,14 @@ export class AdvancedUEditor extends UEditor {
     )
       return false;
     return true;
+  }
+
+  /**
+   * 快照，供撤销，并更新统计数据。
+   */
+  private saveScene() {
+    this.editor.fireEvent("saveScene");
+    this.updateEditorStats();
   }
 
   /**
