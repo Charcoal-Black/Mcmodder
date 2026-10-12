@@ -126,6 +126,14 @@ export class Values {
         3: '"Inter", sans-serif',
       },
     },
+    icon: {
+      fileUpload: (
+        import.meta.glob("./assets/icons/fileUpload.svg", {
+          query: "?raw",
+          eager: true,
+        })["./assets/icons/fileUpload.svg"] as { default: string }
+      ).default,
+    },
     storage: {
       indexes: {
         mcmodderItemData: [

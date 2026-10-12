@@ -1267,12 +1267,14 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
 }
 /* 编辑器工具栏的「上传文件」按钮：图标是内联的 FA5 file-upload 轮廓（见 UploadFileButton.ts），
    需盖掉站点图标背景（.edui-icon 的精灵图），否则图标底下会露出一块错位的贴图 */
-.mcmodder-edui-upload {
+body div.edui-box.mcmodder-edui-upload {
   background-image: none !important;
+  display: inline-flex !important;
 }
 body .edui-default .edui-toolbar .edui-for-mcmodderupload .edui-button-wrap:hover {
   background-color: var(--mcmodder-color-primary-transparent1);
-  border-color: var(--mcmodder-color-primary-dark1);
+  border: 1px solid var(--mcmodder-color-primary);
+  padding: 0;
 }
 /* 上传中：按钮变淡并拒绝再次点击，避免重复上传 */
 body .edui-default .edui-toolbar .edui-for-mcmodderupload.mcmodder-edui-uploading {
