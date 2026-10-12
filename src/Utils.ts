@@ -4,6 +4,7 @@ import {
   GM_setValue,
   GM_xmlhttpRequest,
   type GmResponseEvent,
+  type GmResponseType,
   type GmXmlhttpRequestOption,
 } from "$";
 import { ConfigRepository } from "./config/ConfigRepository";
@@ -1379,10 +1380,10 @@ export class Utils {
    *   对本就无法降级重试的调用方而言失败与「不关心结果」无异；但计划任务与队列必须让失败
    *   可见地冒泡，否则会留下一条已排期、实则永远不会落地的待办。
    */
-  createRequest(
-    config: GmXmlhttpRequestOption<"text", unknown>,
+  createRequest<R extends GmResponseType = "text">(
+    config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
-  ): Promise<GmResponseEvent<"text", unknown>> {
+  ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
     if (lastRequestTime === null) {
@@ -1393,7 +1394,8 @@ export class Utils {
     return new Promise((resolve) => {
       setTimeout(() => {
         config.onload = (resp) => {
-          const str = resp.responseText?.trim() ?? "";
+          // 二进制响应（`responseType: "arraybuffer"` 等）下 responseText 未必是字符串，不能直接 trim
+          const str = typeof resp.responseText === "string" ? resp.responseText.trim() : "";
           if (str.startsWith("<script>") && str.endsWith("</script>")) {
             const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
             if (yxdTokenList) {

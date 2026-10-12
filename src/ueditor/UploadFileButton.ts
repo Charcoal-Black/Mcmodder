@@ -13,6 +13,18 @@ import type { UEditor } from "./UEditor";
 const ICON_SVG =
   '<svg viewBox="0 0 384 512" style="width: 1em; height: 1em; fill: currentColor; display: inline-block; vertical-align: middle;" aria-hidden="true"><path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm65.18 216.01H224v80c0 8.84-7.16 16-16 16h-32c-8.84 0-16-7.16-16-16v-80H94.82c-14.28 0-21.41-17.29-11.27-27.36l96.42-95.7c6.65-6.61 17.39-6.61 24.04 0l96.42 95.7c10.15 10.07 3.03 27.36-11.25 27.36zM377 105L279.1 7c-4.5-4.5-10.6-7-17-7H256v128h128v-6.1c0-6.3-2.5-12.4-7-16.9z"/></svg>';
 
+/**
+ * 站点 UEditor 隐藏附件接口的动作名：上传、列出服务端已有的附件。
+ */
+const UPLOAD_FILE_ACTION = "uploadfile";
+const LIST_FILE_ACTION = "listfile";
+/** 未登录时服务端直接回这个 state */
+const NOT_LOGGED_IN_STATE = "请先登录~";
+/** 找回链接时最多比对几个候选文件（每个都要整份下载回来比对，不宜太多） */
+const RECOVER_CANDIDATE_LIMIT = 5;
+/** 内容比对取文件开头的字节数 */
+const SIGNATURE_BYTES = 64;
+
 /** 把服务端返回的地址补全成绝对地址：站点可能返回 `//host/...`（协议相对）或 `/upload/...`（根相对） */
 function toAbsoluteUrl(url: string) {
   if (url.startsWith("//")) return location.protocol + url;
@@ -28,7 +40,8 @@ function toAbsoluteUrl(url: string) {
  * 因此服务端把附件与图床图片一视同仁地存放；站点只给工具栏配了「多图上传」，
  * 附件接口虽有却没有入口，故由脚本补一个按钮。
  *
- * 失败（未登录、体积或类型超限、接口异常）以 `Utils.commonMsg` 提示，错误原文留在控制台。
+ * 服务端有时只报错、不给地址（文件其实已存下），故失败时会用 `listfile` 的差分找回刚上传的文件，
+ * 见 {@link recoverUploadedUrl}；提示统一走 `Utils.commonMsg`，错误原文留在控制台。
  *
  * @param ueditor 目标编辑器；短评编辑器与资料编辑器（{@link AdvancedUEditor}）都会注入，见 {@link UEditor.init}。
  */
@@ -82,37 +95,131 @@ export function addUploadFileButton(ueditor: UEditor) {
     }
   });
 
+  // 失败时靠 listfile 的差分找回刚上传的文件（见 recoverUploadedUrl）
+  let knownUrls: Set<string> | null = null;
+
+  /** 列出服务端已有的附件（按修改时间倒序）；接口异常返回 null，调用方据此放弃差分 */
+  async function listFiles() {
+    try {
+      const resp = await ueditor.parent.utils.createRequest(
+        { url: `${origin}${Values.ueditorActionUrl}${LIST_FILE_ACTION}`, method: "GET" },
+        "列出附件",
+      );
+      const result: { list?: { url?: unknown; mtime?: unknown }[] } = JSON.parse(
+        resp.responseText?.trim() ?? "",
+      );
+      return (Array.isArray(result?.list) ? result.list : [])
+        .flatMap((item) =>
+          typeof item?.url === "string" && item.url
+            ? [{ url: toAbsoluteUrl(item.url), mtime: Number(item?.mtime) || 0 }]
+            : [],
+        )
+        .sort((a, b) => b.mtime - a.mtime);
+    } catch (error) {
+      console.warn("[Mcmodder] 附件列表获取失败：", error);
+      return null;
+    }
+  }
+
+  /** 记录当前已有的文件，供 {@link recoverUploadedUrl} 差分 */
+  async function snapshot() {
+    const list = await listFiles();
+    knownUrls = list ? new Set(list.map((item) => item.url)) : null;
+  }
+
+  /** 文件指纹：开头的若干字节（列表接口不给大小与校验和，只能下载回来自己比） */
+  const signature = (bytes: Uint8Array) => Array.from(bytes.slice(0, SIGNATURE_BYTES)).join(",");
+
+  /** 整份取回附件内容用于比对 */
+  async function downloadBytes(url: string) {
+    const resp = await ueditor.parent.utils.createRequest(
+      { url, method: "GET", responseType: "arraybuffer" },
+      "比对附件内容",
+    );
+    return new Uint8Array(resp.response);
+  }
+
+  /** 服务端没给地址时，从 `listfile` 的差分里按「大小 + 开头字节」找回刚上传的文件；找不到返回空串 */
+  async function recoverUploadedUrl(file: File) {
+    const list = await listFiles();
+    if (!list) return "";
+    const before = knownUrls;
+    knownUrls = new Set(list.map((item) => item.url));
+    if (!before) return "";
+    const fresh = list.filter((item) => !before.has(item.url)).slice(0, RECOVER_CANDIDATE_LIMIT);
+    if (!fresh.length) return "";
+    const want = signature(new Uint8Array(await file.slice(0, SIGNATURE_BYTES).arrayBuffer()));
+    for (const item of fresh) {
+      try {
+        const bytes = await downloadBytes(item.url);
+        if (bytes.length === file.size && signature(bytes) === want) return item.url;
+      } catch (error) {
+        console.warn("[Mcmodder] 附件内容比对失败：", error);
+      }
+    }
+    return "";
+  }
+
   /** 上传单个文件并把链接插入正文；成功与否都只在这里提示一次 */
   async function upload(file: File) {
-    const form = new FormData();
-    form.append("upfile", file, file.name);
-    let result: { state?: string; url?: string } | undefined;
+    if (file.size > Values.ueditorFileMaxSize) {
+      Utils.commonMsg("文件超过站点上限，仍尝试上传。", false, "警告");
+    }
+    if (!knownUrls) await snapshot();
+    let link: string | undefined;
+    let rejected = false;
     try {
-      const resp = await ueditor.parent.utils.createRequest({
-        url: `${origin}${Values.ueditorActionUrl}uploadfile`,
-        method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Origin: origin,
-          Referer: `${origin}/`,
+      const form = new FormData();
+      form.append("upfile", file, file.name);
+      const resp = await ueditor.parent.utils.createRequest(
+        {
+          url: `${origin}${Values.ueditorActionUrl}${UPLOAD_FILE_ACTION}`,
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            Origin: origin,
+            Referer: `${origin}/`,
+          },
+          data: form,
         },
-        data: form,
-      });
-      result = JSON.parse(resp.responseText?.trim() ?? "");
+        "上传附件",
+      );
+      const raw = resp.responseText?.trim() ?? "";
+      let result: { state?: string; url?: string } | undefined;
+      try {
+        result = JSON.parse(raw);
+      } catch {
+        // 登录失效等异常会返回 HTML 报错页，此时没有 state 可读
+      }
+      if (result?.state === "SUCCESS" && typeof result.url === "string") {
+        link = toAbsoluteUrl(result.url);
+      } else {
+        rejected = true;
+        // 服务端返回的原文只进控制台，不给用户看
+        console.warn(
+          "[Mcmodder] 附件上传未返回地址：",
+          result?.state || raw.slice(0, 300) || "(空响应)",
+        );
+        if (result?.state === NOT_LOGGED_IN_STATE) {
+          Utils.commonMsg("文件上传失败，请先登录。", false);
+          return;
+        }
+        link = await recoverUploadedUrl(file);
+      }
     } catch (error) {
-      // 接口异常响应（登录失效会返回 HTML 报错页）会走到这里，原始错误留在控制台
+      // 请求异常（网络中断、被限速队列丢弃等）会走到这里，原始错误留在控制台
       console.warn("[Mcmodder] 文件上传失败：", error);
       Utils.commonMsg("文件上传失败，请稍后再试。", false);
       return;
     }
-    if (result?.state !== "SUCCESS" || typeof result.url !== "string") {
-      Utils.commonMsg(`文件上传失败：${result?.state || "未知错误"}`, false);
+    if (!link) {
+      Utils.commonMsg("文件上传失败，请稍后再试。", false);
       return;
     }
-    const url = toAbsoluteUrl(result.url);
+    if (rejected) Utils.commonMsg("文件上传成功。");
     editor.execCommand(
       "insertHtml",
-      `<a href="${Utils.escapeHTML(url)}" target="_blank">${Utils.escapeHTML(url)}</a>&nbsp;`,
+      `<a href="${Utils.escapeHTML(link)}" target="_blank">${Utils.escapeHTML(link)}</a>&nbsp;`,
     );
   }
 }
