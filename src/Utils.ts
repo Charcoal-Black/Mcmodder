@@ -4,6 +4,7 @@ import {
   GM_setValue,
   GM_xmlhttpRequest,
   type GmResponseEvent,
+  type GmResponseType,
   type GmXmlhttpRequestOption,
 } from "$";
 import { AnimationFrameScheduler } from "./AnimationFrameScheduler";
@@ -1386,10 +1387,10 @@ export class Utils {
    * @param config 请求配置
    * @param message 本次请求附带的提示消息
    */
-  createRequest(
-    config: GmXmlhttpRequestOption<"text", unknown>,
+  createRequest<R extends GmResponseType = "text">(
+    config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
-  ): Promise<GmResponseEvent<"text", unknown>> {
+  ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
     if (lastRequestTime === null) {
@@ -1400,7 +1401,8 @@ export class Utils {
     return new Promise((resolve) => {
       setTimeout(() => {
         config.onload = (resp) => {
-          const str = resp.responseText?.trim() ?? "";
+          // 二进制响应（`responseType: "arraybuffer"` 等）下 responseText 未必是字符串，不能直接 trim
+          const str = typeof resp.responseText === "string" ? resp.responseText.trim() : "";
           if (str.startsWith("<script>") && str.endsWith("</script>")) {
             const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
             if (yxdTokenList) {

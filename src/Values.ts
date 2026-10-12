@@ -125,6 +125,14 @@ export class Values {
         3: '"Inter", sans-serif',
       },
     },
+    icon: {
+      fileUpload: (
+        import.meta.glob("./assets/icons/fileUpload.svg", {
+          query: "?raw",
+          eager: true,
+        })["./assets/icons/fileUpload.svg"] as { default: string }
+      ).default,
+    },
     storage: {
       indexes: {
         mcmodderItemData: [
@@ -428,6 +436,20 @@ export class Values {
     "subscript",
     "header",
   ];
+  /**
+   * 站点 UEditor 的接口入口：`action=` 后接动作名。短评工具栏上只暴露了图片上传，
+   * 附件上传（`uploadfile`）与附件列表（`listfile`）都是站点未在界面上给出的隐藏入口，
+   * 后者用于找回上传后没拿到地址的文件，见 `src/ueditor/UploadFileButton.ts`。
+   */
+  static readonly ueditorActionUrl = "/ueditor/php/controller.php?action=";
+  /**
+   * 「上传文件」按钮可选的文件类型：与站点 UEditor 服务端的 `fileAllowFiles` 对齐，
+   * 只用于文件选择框的过滤，最终是否放行仍由服务端判定。
+   */
+  static readonly ueditorFileAccept =
+    ".png,.jpg,.jpeg,.gif,.bmp,.flv,.swf,.mkv,.avi,.rm,.rmvb,.mpeg,.mpg,.ogg,.ogv,.mov,.wmv,.mp4,.webm,.mp3,.wav,.mid,.rar,.zip,.tar,.gz,.7z,.bz2,.cab,.iso,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.md,.xml";
+  /** 站点 UEditor 服务端的 `fileMaxSize`：超过它的文件只作提示、照常尝试上传 */
+  static readonly ueditorFileMaxSize = 1024000;
   static readonly adminIDList = [
     2, 8, 9, 208, 331, 7926, 7949, 10167, 12422, 14115, 17038, 21294, 29797, 672797,
   ];
