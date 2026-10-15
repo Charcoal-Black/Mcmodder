@@ -24,18 +24,28 @@ type ReverseMap<T extends Record<PropertyKey, PropertyKey>> = {
 type ElementOf<T extends readonly unknown[]> = T[number];
 
 type ArrayToMap<
-  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  T extends ReadonlyArray<Record<PropertyKey, unknown>>,
   K extends keyof ElementOf<T>,
 > = {
   [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>;
 };
 
 type ArrayToMap2<
-  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  T extends ReadonlyArray<Record<PropertyKey, unknown>>,
   K extends keyof ElementOf<T>,
   K2 extends keyof ElementOf<T>,
 > = {
   [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
+};
+
+type WithDefault<T, V> =
+  Equal<Extract<T, undefined>, undefined> extends true ? Exclude<T, undefined> | V : T;
+
+type WithDefaultKey<T extends Record<PropertyKey, unknown>, K extends PropertyKey, V> = Omit<
+  T,
+  K
+> & {
+  [P in K]: P extends keyof T ? WithDefault<T[P], V> : V;
 };
 
 type Awaitable<T> = T | Promise<T>;
@@ -158,7 +168,9 @@ interface Settings {
   fetchCustomSplashes: boolean;
   customSplashRate: number;
   supabaseSplash: boolean;
+  anonymiseSplashContributor: boolean;
   supabaseByteChart: boolean;
+  showUserBadge: boolean;
   customAttitude: boolean;
   attitudeTwemoji: boolean;
   moveAds: boolean;
@@ -287,6 +299,175 @@ interface Settings {
   useNotoSans?: boolean;
   almanacsList?: Almanacs[];
   jsonDatabase?: string[];
+}
+
+interface OnlineSettings {
+  anonymiseSplashContributor: boolean;
+  showUserBadge: boolean;
+}
+
+interface SettingsSection {
+  id: string;
+  label: string;
+  settings: ConfigParams[];
+}
+
+interface SettingsCategory {
+  id: string;
+  label: string;
+  sections: SettingsSection[];
+}
+
+type InputType =
+  | "checkbox"
+  | "number"
+  | "slider"
+  | "text"
+  | "colorpicker"
+  | "keybind"
+  | "dropdownMenu"
+  | "dropdownTextMenu";
+
+type Permission = "banned" | "none" | "editor" | "developer" | "manager" | "admin";
+
+type ConfigurableSettings = ElementOf<
+  ElementOf<ElementOf<typeof import("../loader/ConfigLoader").settings>["sections"]>["settings"]
+>;
+
+type ConfigurableSettingsOption<V extends ConfigurableSettings["id"]> = WithDefaultKey<
+  WithDefaultKey<
+    Omit<Extract<ConfigurableSettings, { id: V }>, "id">,
+    "value",
+    (typeof import("../config/ConfigUtils.ts").ConfigUtils.defaultValue)[Extract<
+      ConfigurableSettings,
+      { id: V }
+    >["type"]]
+  >,
+  "permission",
+  "none"
+>;
+
+type ConfigurableSettingsOptions = {
+  [V in ConfigurableSettings["id"]]: ConfigurableSettingsOption<V>;
+};
+
+/**
+ * 配置项注册参数的公共部分，`id`/`value` 的取值类型由各输入类型的参数接口指定。
+ *
+ * @template T 配置项字段名，须与输入类型匹配（如复选框类只能是布尔值字段）。
+ * @template V 配置项默认值的类型。
+ * @template R 输入范围的类型，取 `never` 表示该输入类型不接受范围。
+ */
+interface ConfigParamsBase<T extends ConfigurableSettings["id"], V, R> {
+  /** 配置项字段名 */
+  id: T;
+  /** 配置项标题 */
+  title: string;
+  /** 配置项说明 */
+  description: string;
+  /** 配置项默认值，缺省时取 `ConfigUtils.defaultValue` 中该输入类型的默认值 */
+  value?: V | null;
+  /** 输入范围：数值区间或枚举值集合（仅数值/滑块/下拉类输入有效） */
+  range?: R;
+  /** 可见性，缺省为始终可见 */
+  visible?: (ctx: ConfigVisibilityContext) => boolean | undefined;
+  /** 配置项需要与云端同步 */
+  syncWithSupabase?: T extends keyof OnlineSettings ? true : false;
+}
+
+/** 复选框类配置项 */
+interface CheckboxConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, boolean>,
+  boolean,
+  never
+> {
+  type: "checkbox";
+}
+
+/** 文本类配置项 */
+interface TextConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "text";
+}
+
+/** 取色器类配置项 */
+interface ColorpickerConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "colorpicker";
+}
+
+/** 数字类配置项 */
+interface NumberConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueNumericRange
+> {
+  type: "number";
+}
+
+/** 滑块类配置项 */
+interface SliderConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueFiniteNumericRange
+> {
+  type: "slider";
+}
+
+/** 快捷键类配置项 */
+interface KeybindConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, Key>,
+  Key,
+  never
+> {
+  type: "keybind";
+}
+
+/** 下拉菜单类配置项 */
+interface DropdownConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueSet
+> {
+  type: "dropdownMenu";
+}
+
+/** 下拉文本类配置项 */
+interface DropdownTextConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "dropdownTextMenu";
+  /** 输入框的候选列表 */
+  suggestion?: InputSimplifiedSuggestion[];
+}
+
+/** `ConfigUtils.add` 接受的注册参数：以 `type` 区分的各种输入类型 */
+type ConfigParams =
+  | CheckboxConfigParams
+  | TextConfigParams
+  | ColorpickerConfigParams
+  | NumberConfigParams
+  | SliderConfigParams
+  | KeybindConfigParams
+  | DropdownConfigParams
+  | DropdownTextConfigParams;
+
+/** 用于决定配置项是否显示的上下文 */
+interface ConfigVisibilityContext {
+  /** 所有配置项 */
+  configs: import("../config/ConfigRepository.ts").ConfigRepository;
+  /** 当前是否为移动端环境 _（不具有响应性）_ */
+  mobile: boolean;
+  /** 当前用户组 _（不具有响应性）_ */
+  permission: Permission;
 }
 
 interface Item {
@@ -690,13 +871,7 @@ type EditConfigs<T> = {
  * 空值（只读）、`InputType` 数值、`InputLimit`/`InputOption`/`TableInputOption` 对象、`{ readonly: true }`。
  */
 type EditOptionInitializer =
-  | null
-  | undefined
-  | import("../config/ConfigUtils").InputType
-  | InputLimit
-  | InputOption
-  | TableInputOption
-  | { readonly: true };
+  null | undefined | InputType | InputLimit | InputOption | TableInputOption | { readonly: true };
 /** 全部字段的编辑配置初始化表 */
 type EditOptionsInitializer<T> = Record<keyof T, EditOptionInitializer>;
 

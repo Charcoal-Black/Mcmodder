@@ -335,6 +335,26 @@ export class Utils {
     return content.join(" · ");
   }
 
+  /** 当前用户组是否可以进入通用后台 */
+  static hasAdminAccess(permission: Permission) {
+    return permission === "editor" || permission === "manager" || permission === "admin";
+  }
+
+  /** 当前用户组是否可以进入模组区审核，且可以通过/退回编辑（即并非只是审核助理） */
+  static hasVerifyOperateAccess(permission: Permission) {
+    return permission === "manager" || permission === "admin";
+  }
+
+  /** 当前用户组是否可以进入模组区审核（包括审核助理） */
+  static hasVerifyAccess(permission: Permission) {
+    return this.hasAdminAccess(permission);
+  }
+
+  /** 当前用户组是否可以进入文件管理后台 */
+  static hasModfileDLAccess(permission: Permission) {
+    return permission === "developer" || permission === "manager" || permission === "admin";
+  }
+
   /** 按 id 取出交互数据并立即清除该条目；id 为空时返回 undefined */
   getInteract(id: string | null) {
     if (id === null || id === undefined) return undefined;

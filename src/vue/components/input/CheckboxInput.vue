@@ -9,7 +9,11 @@
     <input :id="fullID" ref="checkbox" type="checkbox" :checked="value" @change="onChange" />
     <!-- 标签内容可能带 <code> 等排版标签 -->
     <!-- eslint-disable-next-line vue/no-v-html -- 入参为 useSanitizedHTML 清洗后的结果 -->
-    <label :for="fullID" v-html="safeTitle" />
+    <label v-if="!titleRanges" :for="fullID" v-html="safeTitle" />
+    <!-- 设置中心搜索命中时，标题按纯文本渲染以高亮命中区间（标题本身不含排版标签） -->
+    <label v-else :for="fullID">
+      <MatchedText :text="title" :ranges="titleRanges" />
+    </label>
   </span>
 </template>
 
@@ -19,17 +23,21 @@ import { Utils } from "../../../Utils.ts";
 import { useInputBase } from "../../composables/useInputBase.ts";
 import type { InputProps } from "../../../types/props";
 import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
+import MatchedText from "../MatchedText";
 
 interface Props extends InputProps<boolean> {
   id?: string;
   withLabel?: boolean;
   withTooltip?: string;
+  /** 标题的命中区间；传入时标题按纯文本渲染并高亮命中部分 */
+  titleRanges?: [number, number][];
 }
 
 const props = withDefaults(defineProps<Props>(), {
   id: Utils.randStr(8),
   withLabel: false,
   withTooltip: undefined,
+  titleRanges: undefined,
 });
 
 const checkboxRef = useTemplateRef("checkbox");

@@ -755,9 +755,6 @@ body .common-template-frame li {
 .center-setting-block .btn {
   margin: 0 var(--mcmodder-width-padding-3);
 }
-.mcmodder-auth-state {
-  margin-left: var(--mcmodder-width-padding-3);
-}
 html:not(.mcmodder-config-disable-gradient) .mcmodder-common-light {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
   background-clip: text;
@@ -2786,25 +2783,49 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   background-image: none;
   background-color: var(--mcmodder-color-background);
 }
-.mcmodder-collapsible-content {
-  display: none;
-}
-.mcmodder-collapsible-container.expanded .mcmodder-collapsible-content {
-  display: inherit;
+.mcmodder-collapsible-content-inner {
   padding: var(--mcmodder-width-padding-2);
   border-top: 1px solid var(--mcmodder-color-primary-transparent1);
-}
-.mcmodder-collapsible-content > * {
-  transition: opacity 0.3s;
-  opacity: 0;
-}
-.mcmodder-collapsible-container.expanded .mcmodder-collapsible-content > * {
-  opacity: 1;
 }
 .mcmodder-dropdown-container {
   display: inline-block;
   margin: 0 var(--mcmodder-width-padding-3);
   position: relative;
+}
+.mcmodder-intepolate-container {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.3s ease,
+    margin-top 0.3s ease;
+}
+.mcmodder-intepolate-container.collapsed {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+}
+.mcmodder-intepolate-container > * {
+  transition:
+    margin-top 0.3s ease,
+    margin-bottom 0.3s ease,
+    padding-top 0.3s ease,
+    padding-bottom 0.3s ease,
+    border-top-width 0.3s ease,
+    border-bottom-width 0.3s ease;
+  overflow-clip-margin: 0.3s ease;
+  min-height: 0;
+  overflow-y: clip;
+}
+.mcmodder-intepolate-container.collapsed > * {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  overflow-clip-margin: 0;
+}
+.setting-item .mcmodder-dropdown-container {
+  margin: 0;
 }
 .btn.mcmodder-dropdown-button {
   width: 220px;
@@ -2816,6 +2837,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   -webkit-user-select: none;
   user-select: none;
   margin: 0;
+}
+.center-block-head {
+  margin-top: 10px;
+}
+.mcmodder-storage {
+  padding-bottom: 10px;
 }
 .mcmodder-storage .size {
   position: absolute;

@@ -63,5 +63,11 @@ export class CenterSettingInit extends CenterBaseInit {
     createApp(CenterSettings, {
       parent: this.parent,
     }).mount(mcmodderSettingMenu.get(0));
+
+    $(
+      ".center-main.setting.menuarea .center-block:not([data-menu-frame=9]) .center-block-head .title",
+    )
+      .removeClass("title")
+      .addClass("mcmodder-title-new");
   }
 }

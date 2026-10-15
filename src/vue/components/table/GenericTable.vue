@@ -60,7 +60,7 @@
               @focusout="onInputFocusout"
             >
               <NumberInput
-                v-if="inputNodeData?.type === InputType.NUMBER"
+                v-if="inputNodeData?.type === 'number'"
                 ref="input"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value as number"
@@ -69,7 +69,7 @@
                 :on-successful-change="inputNodeData.onSuccessfulChange"
               />
               <TextInput
-                v-if="inputNodeData?.type === InputType.TEXT"
+                v-if="inputNodeData?.type === 'text'"
                 ref="input"
                 :title="inputNodeData.title"
                 :value="inputNodeData.value as string"
@@ -130,7 +130,6 @@ import { Utils } from "../../../Utils.ts";
 import ContextMenu from "../ContextMenu.vue";
 import { McmodderEditableTable } from "../../../table/EditableTable.ts";
 import { Command } from "../../../table/command/Command.ts";
-import { InputType } from "../../../config/ConfigUtils.ts";
 import { EditCommand } from "../../../table/command/EditCommand.ts";
 import NumberInput from "../input/NumberInput.vue";
 import TextInput from "../input/TextInput.vue";
@@ -207,6 +206,9 @@ let clipboard: TableDataList<T> = [];
 
 const renderingRowArray = computed(() => {
   const { l, r } = renderingRows.value;
+  if (l < 0 && r < 0) {
+    return [];
+  }
   return Utils.createRange(l, r);
 });
 
@@ -987,7 +989,7 @@ function computeInputNode(
   onSuccessfulChange: InputSuccessfulChangeCallBack<unknown>,
 ) {
   const displayName = inputData.customName || columnOptions[key].name || String(key);
-  if (inputData.type === InputType.NUMBER) {
+  if (inputData.type === "number") {
     inputNodeData.value = {
       type: inputData.type,
       title: displayName,

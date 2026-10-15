@@ -3,7 +3,6 @@ import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils"
 import { ConfigUtils } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
 import { AdvancementLoader } from "./loader/AdvancementLoader";
-import { ConfigLoader } from "./loader/ConfigLoader";
 import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
@@ -107,7 +106,6 @@ export class Mcmodder {
     this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new ConfigUtils(this);
-    ConfigLoader.run(this.cfgutils);
     this.styleColors = Utils.getThemeColors(this.configRepository);
 
     this.advutils = new AdvancementUtils(this);
@@ -518,10 +516,13 @@ export class Mcmodder {
           const time = Date.now() - last;
           const formattedTime = Utils.getFormattedTime(time);
           const username = resp.last_visited_user_name;
-          const userID = resp.last_visited_user_id
-            ? `用户 ${username} (UID:${resp.last_visited_user_id}) `
+          const userID = resp.last_visited_user_id;
+          const user = userID
+            ? userID > 0
+              ? `用户 ${username} (UID:${resp.last_visited_user_id}) `
+              : "匿名用户"
             : "未登录用户";
-          msg += `，上一次由${userID}于 ${formattedTime} 前记录`;
+          msg += `，上一次由${user}于 ${formattedTime} 前记录`;
         }
         msg += "~";
       }

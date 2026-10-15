@@ -144,3 +144,14 @@ export interface PopoverExpose<
 
 /** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `InputListController` */
 export interface DropdownTextInputProps extends InputProps<string>, InputListOption {}
+
+/** 一段文本的命中区间集合；区间均为左闭右开，彼此可能相交或相邻（`MatchedText` 会自行合并） */
+export type MatchedRanges = ([number, number] | undefined)[];
+
+/** 配置项的检索命中区间（设置中心搜索用），区间均相对于对应字段的纯文本 */
+export interface ConfigMatchRanges {
+  /** 标题的命中区间 */
+  title?: [number, number][];
+  /** 介绍的命中区间（介绍中的排版标签不占位，故偏移以剔除标签后的纯文本为准） */
+  description?: [number, number][];
+}

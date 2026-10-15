@@ -28,7 +28,6 @@
 
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from "vue";
-import { InputType } from "../../../config/ConfigUtils.ts";
 import { FieldIndex } from "../../../fieldindex/FieldIndex.ts";
 import { TableUtils } from "../../../table/Table.ts";
 import { ItemDisplay } from "../../../widget/ItemDisplay.ts";
@@ -65,7 +64,7 @@ const editConfigs = {
   in_chance: null,
   out_chance: null,
   power_num: null,
-  gui_id: InputType.TEXT,
+  gui_id: "text",
 } satisfies EditOptionsInitializer<Recipe>;
 
 const jsonFrame = useTemplateRef("jsonFrame");
@@ -83,7 +82,7 @@ const guiBoundcolumnOptions = {
 } satisfies ColumnOptionsInitializer<RecipeJsonFrameGuiBound>;
 const guiBoundEditConfigs = {
   guiID: null,
-  mcmodID: InputType.NUMBER,
+  mcmodID: "number",
 } satisfies EditOptionsInitializer<RecipeJsonFrameGuiBound>;
 
 const itemMap = new FieldIndex<Item, "registerName">("registerName");

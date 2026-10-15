@@ -3,8 +3,13 @@
     <div class="mcmodder-collapsible-header" @click="onCollapsibleClick">
       <slot name="header" />
     </div>
-    <div class="mcmodder-collapsible-content">
-      <slot name="content" />
+    <div
+      class="mcmodder-collapsible-content mcmodder-intepolate-container"
+      :class="{ collapsed: !classExpanded }"
+    >
+      <div class="mcmodder-collapsible-content-inner">
+        <slot name="content" />
+      </div>
     </div>
   </div>
 </template>

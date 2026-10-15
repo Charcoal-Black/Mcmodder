@@ -65,7 +65,6 @@
 <script setup lang="ts" generic="T extends TableAcceptable">
 import { computed, onMounted, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
 import { Utils } from "../../../Utils";
-import { Permission } from "../../../config/ConfigUtils";
 import { IDBRepository } from "../../../jsonframe/repository/IDBRepository.ts";
 import { GMStorageRepository } from "../../../jsonframe/repository/GMStorageRepository";
 import type { AppRepository } from "../../../jsonframe/repository/AppRepository.ts";
@@ -373,7 +372,7 @@ function submitEdit() {
   }
   const lv: number = configs.value.getProfile("lv");
   const permission: Permission = configs.value.getProfile("permission");
-  if (lv < 5 && !(permission === Permission.EDITOR || permission >= Permission.ADMIN)) {
+  if (lv < 5 && !(permission === "editor" || permission >= "admin")) {
     Utils.commonMsg(
       "当前提交编辑需要验证码，暂无法使用此功能~（免验证码条件：用户主站等级≥Lv.5 或 已是任意模组编辑员或拥有更高权限）",
       false,

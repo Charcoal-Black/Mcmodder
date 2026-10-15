@@ -282,6 +282,7 @@ img.mcmodder-attitude-sticker-image {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .mcmodder-attitude-sticker-item {

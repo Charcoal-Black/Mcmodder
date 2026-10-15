@@ -134,7 +134,6 @@
 
 <script setup lang="ts">
 import { computed, type ComputedRef, onMounted, ref, useTemplateRef } from "vue";
-import { InputType } from "../../../config/ConfigUtils.ts";
 import { TableUtils } from "../../../table/Table.ts";
 import { Utils } from "../../../Utils.ts";
 import LogPanel from "../LogPanel.vue";
@@ -227,42 +226,42 @@ const columnOptions = {
   maxDurability: ["最大耐久", TableUtils.DISPLAYRULE_NUMBER],
 } satisfies ColumnOptionsInitializer<Item>;
 const editConfigs = {
-  id: InputType.NUMBER,
+  id: "number",
   itemType: {
-    type: InputType.NUMBER,
+    type: "number",
     value: 1,
   },
-  classID: InputType.NUMBER,
+  classID: "number",
   classAbbr: null,
   className: null,
   classEname: null,
   registerName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   metadata: {
-    type: InputType.NUMBER,
+    type: "number",
     optional: true,
   },
   smallIcon: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   largeIcon: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
-  name: InputType.TEXT,
+  name: "text",
   englishName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   creativeTabName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   branch: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   type: null,
@@ -273,8 +272,8 @@ const editConfigs = {
   generalNum: null,
   OredictList: null,
   harvestTools: null,
-  maxStackSize: InputType.NUMBER,
-  maxDurability: InputType.NUMBER,
+  maxStackSize: "number",
+  maxDurability: "number",
   content: null,
 } satisfies EditOptionsInitializer<Item>;
 
