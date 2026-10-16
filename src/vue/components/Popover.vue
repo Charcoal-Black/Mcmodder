@@ -39,6 +39,8 @@ const visibility = ref(false);
 const rectRef = shallowRef<DOMRect>();
 /** 列表自身高度（向上弹出时用来算 top，也是 `expandUpward` 的判断依据） */
 const listHeight = ref(0);
+/** 列表自身宽度（水平方向上把弹出框 constraint 在视口内时使用） */
+const listWidth = ref(0);
 /** 淡出中（`selectable` 由真变假时置 true） */
 const classFaded = ref(false);
 /** 完全隐藏（`v-show` 开关；淡出 200ms 结束后才置 true） */
@@ -82,19 +84,47 @@ const cssPos = computed(() => {
   }
 
   const rect = rectRef.value!;
-  const left = absPosX;
+  const anchorWidth = rect.width;
+
+  // 水平方向：默认与锚点左对齐向右展开；若右边界超出视口，则先尝试右对齐锚点右端，
+  // 让弹出框尽量覆盖锚点所在的水平范围、不遮挡锚点；仍放不下时再整体平移至视口内。
+  const margin = 16;
+  const popoverWidth =
+    listWidth.value || (listRef.value ? listRef.value.getBoundingClientRect().width : 0);
+  const viewportLeft = window.scrollX + margin;
+  const viewportRight = window.scrollX + innerWidth - margin;
+
+  let left = absPosX;
+  if (popoverWidth > 0) {
+    if (left + popoverWidth > viewportRight) {
+      const anchorRightDoc = absPosX + anchorWidth;
+      const candidate = anchorRightDoc - popoverWidth;
+      if (candidate >= viewportLeft && candidate + popoverWidth <= viewportRight) {
+        left = candidate;
+      } else {
+        left = viewportRight - popoverWidth;
+      }
+    }
+    if (left < viewportLeft) {
+      left = viewportLeft;
+    }
+  }
+
+  const maxWidth = Math.max(0, innerWidth - margin * 2) + "px";
 
   if (expandUpward.value) {
     const bottom = innerHeight - absPosY;
     return {
       left: left + "px",
       bottom: bottom + "px",
+      "max-width": maxWidth,
     };
   } else {
     const top = absPosY + rect.height;
     return {
       left: left + "px",
       top: top + "px",
+      "max-width": maxWidth,
     };
   }
 });
@@ -132,7 +162,9 @@ function onPopoverVisibilityChange(state: boolean) {
 
 function onPopoverHeightChange() {
   nextTick(() => {
-    listHeight.value = listRef.value!.getBoundingClientRect().height;
+    const measured = listRef.value!.getBoundingClientRect();
+    listHeight.value = measured.height;
+    listWidth.value = measured.width;
     updatePos();
   });
 }
@@ -164,6 +196,15 @@ function updatePos() {
     return;
   }
   rectRef.value = props.anchorElement.getBoundingClientRect();
+  if (listRef.value) {
+    const measured = listRef.value.getBoundingClientRect();
+    if (measured.height > 0) {
+      listHeight.value = measured.height;
+    }
+    if (measured.width > 0) {
+      listWidth.value = measured.width;
+    }
+  }
 }
 
 defineExpose({

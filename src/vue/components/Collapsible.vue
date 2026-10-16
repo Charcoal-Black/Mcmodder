@@ -1,8 +1,13 @@
 <template>
   <div class="mcmodder-collapsible-container" :class="{ expanded: classExpanded }">
-    <div class="mcmodder-collapsible-header" @click="onCollapsibleClick">
+    <button
+      type="button"
+      class="mcmodder-collapsible-header"
+      :aria-expanded="classExpanded"
+      @click="onCollapsibleClick"
+    >
       <slot name="header" />
-    </div>
+    </button>
     <div
       class="mcmodder-collapsible-content mcmodder-intepolate-container"
       :class="{ collapsed: !classExpanded }"

@@ -710,10 +710,22 @@ onBeforeUnmount(() => treeObserver?.disconnect());
 .mcmodder-menutree {
   padding: 0 1em 0 3em;
   line-height: 1.8em;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100vh - 70px);
   overflow-y: auto;
   position: sticky;
   top: 60px;
+}
+
+@media (max-width: 959px) {
+  .mcmodder-menutree {
+    padding-left: 1em;
+  }
+}
+
+@media (max-width: 899px) {
+  .center-block-settings-sidebar {
+    display: none;
+  }
 }
 
 .mcmodder-menutree-section {

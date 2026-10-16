@@ -200,6 +200,29 @@ export class SupabaseUtils {
     });
   }
 
+  /** 对表态贴纸重命名 */
+  async renameAttitudeSticker(payload: { authKey: string; id: number; name: string }) {
+    return await this.invoke<SupabaseAttitudeStickerPutResponse>("attitude-sticker", {
+      body: {
+        action: "rename",
+        auth_key: payload.authKey,
+        id: payload.id,
+        name: payload.name,
+      },
+    });
+  }
+
+  /** 删除表态贴纸 */
+  async deleteAttitudeSticker(payload: { authKey: string; id: number }) {
+    return await this.invoke<SupabaseAttitudeStickerPutResponse>("attitude-sticker", {
+      body: {
+        action: "delete",
+        auth_key: payload.authKey,
+        id: payload.id,
+      },
+    });
+  }
+
   /** 按 id 批量解析表态贴纸的图片地址（RPC `mcmodder_attitude_stickers_by_ids`，公开读；贴纸不可变，客户端可长期缓存） */
   async resolveAttitudeStickers(ids: number[], onError?: (error: string) => void) {
     return await this.rpc<SupabaseAttitudeSticker>(

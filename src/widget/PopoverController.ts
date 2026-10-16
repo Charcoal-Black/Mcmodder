@@ -3,6 +3,7 @@ import InputList from "../vue/components/InputList.vue";
 import { Utils } from "../Utils.ts";
 import AttitudePicker from "../vue/components/attitude/AttitudePicker.vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
+import StickerPopover from "../vue/components/StickerPopover.vue";
 
 /**
  * 弹出框（以 `Popover` 作为 DOM 根组件的组件）的全局控制器——**全站只有一个实例**（`instance` 单例）。
@@ -44,6 +45,7 @@ export class PopoverController {
   /** 挂载在 `body` 下的候选列表组件实例（`createApp(...).mount` 的返回值即组件的 exposed） */
   private readonly inputListApp;
   private readonly attitudePickerApp;
+  private readonly stickerViewerApp;
   /** 已登记的「交互元素 → 选项」映射（用 WeakMap，元素被移除后自动失效） */
   private readonly optionMap = new WeakMap<HTMLElement, PopoverOption>();
   /** 已登记的「交互元素 → 选项」懒映射，交互元素触发事件时才异步加载，加载完成后从此中移出，并将结果存回 {@link optionMap} */
@@ -62,21 +64,32 @@ export class PopoverController {
   private activeTarget: HTMLElement | null = null;
 
   private readonly typeMap;
+  private readonly eventTriggerMap;
 
   constructor() {
     const body = document.body;
     const inputListContainer = $("<div>").appendTo(body);
     const attitudePickerContainer = $("<div>").appendTo(body);
+    const stickerViewerContainer = $("<div>").appendTo(body);
     this.inputListApp = createApp(InputList).mount(inputListContainer.get(0)) as ComponentExposed<
       typeof InputList
     >;
     this.attitudePickerApp = createApp(AttitudePicker).mount(
       attitudePickerContainer.get(0),
     ) as ComponentExposed<typeof AttitudePicker>;
+    this.stickerViewerApp = createApp(StickerPopover).mount(
+      stickerViewerContainer.get(0),
+    ) as ComponentExposed<typeof StickerPopover>;
     this.typeMap = {
       inputList: this.inputListApp,
       attitudePicker: this.attitudePickerApp,
+      stickerViewer: this.stickerViewerApp,
     } as const;
+    this.eventTriggerMap = {
+      inputList: "click",
+      attitudePicker: "click",
+      stickerViewer: "pointerover",
+    } as const satisfies Record<PopoverOption["type"], string>;
 
     // 任何已登记元素被点击 → 切换弹出框的当前服务对象
     // 先前为监听 focus，但是已经获得焦点的元素在失焦前无法再次被聚焦，导致当弹出框并非因锚点失焦而隐藏时，
@@ -87,7 +100,7 @@ export class PopoverController {
         const closest = this.getClosestWithOption(e);
         if (closest !== undefined) {
           const { target, option } = closest;
-          const success = await this.serve(target, option);
+          const success = await this.serve("click", target, option);
           if (success) {
             return;
           }
@@ -98,6 +111,37 @@ export class PopoverController {
           .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
         if (!inPopover) {
           this.closeActive();
+        }
+      },
+      this.opt,
+    );
+
+    // 阿巴阿巴
+    window.addEventListener(
+      "pointerover",
+      async (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLElement) || this.pendingOptionSet.has(target)) {
+          return;
+        }
+        const option = this.hasOption(target);
+        if (option) {
+          await this.serve("pointerover", target, option);
+        }
+      },
+      this.opt,
+    );
+
+    // 阿巴巴
+    window.addEventListener(
+      "pointerout",
+      async (e) => {
+        if (
+          this.activeType !== null &&
+          this.activeTarget === e.target &&
+          this.eventTriggerMap[this.activeType] === "pointerover"
+        ) {
+          this.activeApp!.close();
         }
       },
       this.opt,
@@ -151,6 +195,16 @@ export class PopoverController {
 
   private readonly optionMaps = [this.optionMap, this.lazyOptionMap] as const;
 
+  private hasOption(target: HTMLElement) {
+    for (const optionMap of this.optionMaps) {
+      const option = optionMap.get(target);
+      if (option !== undefined) {
+        return option;
+      }
+    }
+    return undefined;
+  }
+
   private getClosestWithOption(ev: PointerEvent) {
     const eventTargets = ev.composedPath();
     for (const target of eventTargets) {
@@ -160,14 +214,12 @@ export class PopoverController {
       if (this.pendingOptionSet.has(target)) {
         return;
       }
-      for (const optionMap of this.optionMaps) {
-        const option = optionMap.get(target);
-        if (option !== undefined) {
-          return {
-            option,
-            target,
-          };
-        }
+      const option = this.hasOption(target);
+      if (option !== undefined) {
+        return {
+          option,
+          target,
+        };
       }
     }
   }
@@ -179,6 +231,7 @@ export class PopoverController {
    * 以后如果有需要，可以拆分逻辑。
    */
   private async serve(
+    eventName: string,
     target: HTMLElement,
     option: PopoverOption | ((element: HTMLElement) => Awaitable<PopoverOption>),
   ) {
@@ -188,6 +241,9 @@ export class PopoverController {
       this.pendingOptionSet.delete(target);
       this.lazyOptionMap.delete(target);
       this.optionMap.set(target, option);
+    }
+    if (eventName !== this.eventTriggerMap[option.type]) {
+      return false;
     }
     if (option.closeWhenClickAgain && this.activeTarget === target) {
       return false;
@@ -204,6 +260,10 @@ export class PopoverController {
       });
     } else if (option.type === "attitudePicker") {
       this.attitudePickerApp.setOption({
+        ...option,
+      });
+    } else if (option.type === "stickerViewer") {
+      this.stickerViewerApp.setOption({
         ...option,
       });
     }
@@ -290,6 +350,42 @@ export class PopoverController {
         const events = this.typeMap["attitudePicker"].inputEvents;
         events[eventName](event ?? new Event(eventName));
       }
+    };
+  }
+
+  /**
+   * 给一个元素登记表态贴纸查看器选项。
+   *
+   * @param e **交互元素**：被监听 focus / 键盘 / 输入事件的那个节点。
+   * @param option 行为选项；其中 `inputListBindElement` 可另行指定**输入元素**（缺省即 `e` 本身），
+   *               `anchorElement` 可把列表定位到别的锚点上。
+   * @returns 一个手动派发事件的函数——用于「交互元素收不到该事件」时主动触发（如点击按钮时补发 `input`），
+   *          第二个参数为要传递的事件对象，缺省时按事件名构造一个空的 `Event`。
+   * @throws 同一元素重复登记时抛错（`optionMap` 和 `lazyOptionMap` 的键不能重复或重叠）。
+   */
+  addStickerViewer(
+    e: HTMLElement,
+    option:
+      | (PopoverOption & { type: "stickerViewer" })
+      | ((element: HTMLElement) => Awaitable<PopoverOption & { type: "stickerViewer" }>),
+  ) {
+    if (this.optionMap.has(e) || this.lazyOptionMap.has(e)) {
+      throw new Error("元素已绑定弹出框事件。");
+    }
+    if (option instanceof Function) {
+      this.lazyOptionMap.set(e, option);
+    } else {
+      this.optionMap.set(e, option);
+    }
+    return (
+      _eventName: keyof ComponentExposed<typeof StickerPopover>["inputEvents"],
+      _event?: Event,
+    ) => {
+      // const option = this.optionMap.get(e);
+      // if (option !== undefined) {
+      //   const events = this.typeMap["stickerViewer"].inputEvents;
+      //   events[eventName](event ?? new Event(eventName));
+      // }
     };
   }
 

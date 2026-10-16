@@ -134,6 +134,7 @@ export class StyleLoader {
     const tabSelectorInfoCss = importCSS("tabSelectorInfo");
     const splitScreenOnVerifyCss = importCSS("splitScreenOnVerify");
     const codemirrorCss = importCSS("codemirror");
+    const reducedMotionCss = importCSS("reducedMotion");
 
     const basePalette: Palette = {
       background: "#fff",
@@ -528,6 +529,8 @@ export class StyleLoader {
       tabSelectorInfo: tabSelectorInfoCss,
       splitScreenOnVerify: splitScreenOnVerifyCss,
       codemirrorCss: codemirrorCss,
+      // 末尾追加：减弱动效规则需要压过同选择器的静态样式
+      reducedMotion: reducedMotionCss,
     };
 
     const htmlNode = $("html");
@@ -566,6 +569,7 @@ export class StyleLoader {
       /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
       style += css.aprilFools;
     }
+    style += css.reducedMotion;
 
     parent.css = style;
     Utils.addStyle(style);

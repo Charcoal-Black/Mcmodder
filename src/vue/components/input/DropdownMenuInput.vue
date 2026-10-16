@@ -1,10 +1,13 @@
 <template>
   <span ref="container" class="mcmodder-dropdown-container" :class="{ expanded: selected }">
-    <input ref="valueInput" readonly class="hidden" @change="onChange" />
+    <input ref="valueInput" readonly class="hidden" :aria-hidden="true" @change="onChange" />
     <input
       ref="input"
       readonly
       class="btn mcmodder-dropdown-button"
+      :aria-label="title"
+      :aria-haspopup="'listbox'"
+      :aria-expanded="selected"
       :value="content"
       @click="onClick"
       @focus="onFocus"

@@ -3,6 +3,7 @@
     ref="inputRef"
     class="form-control"
     :placeholder="title + '..'"
+    :aria-label="title"
     @input="onInput"
     @change="onChange"
   />

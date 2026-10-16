@@ -971,7 +971,9 @@ type AttitudePickerState = import("./props").AttitudePickerState;
 
 type AttitudeStickerListProps = import("./props").AttitudeStickerListProps;
 
-type PopoverOption = InputListOption | AttitudePickerState;
+type StickerViewerOption = import("./props").StickerViewerOption;
+
+type PopoverOption = InputListOption | AttitudePickerState | StickerViewerOption;
 
 interface McmodItemEditorInnerData {
   /**

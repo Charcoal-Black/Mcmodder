@@ -1,6 +1,6 @@
 <template>
   <Popover ref="popoverRef" :anchor-element="state?.anchorElement">
-    <div id="mcmodder-attitude-panel" class="mcmodder-attitude-panel">
+    <div id="mcmodder-attitude-panel" class="mcmodder-attitude-panel" :data-mcmodder-tab="tab">
       <div class="mcmodder-swiper-tab-container">
         <div class="mcmodder-attitude-tabs">
           <button

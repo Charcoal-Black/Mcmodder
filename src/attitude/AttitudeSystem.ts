@@ -304,6 +304,33 @@ export class AttitudeSystem {
   }
 
   /**
+   * 本地同步重命名后的贴纸缓存：服务端确认重命名成功后，立即把新名称写入
+   * `myStickers` 与 `stickerCache`，避免 TTL 缓存继续返回旧名称。
+   *
+   * `serverSticker` 优先使用服务端返回的记录（便于沿用服务端截断后的名称）。
+   */
+  renameSticker(id: number, name: string, serverSticker?: SupabaseAttitudeSticker) {
+    const resolvedName = serverSticker?.name ?? name;
+    const resolved = serverSticker ?? this.myStickers?.stickers.find((item) => item.id === id);
+    if (resolved || serverSticker) {
+      this.stickerCache.set(buildStickerType(id), {
+        ...(resolved ?? {}),
+        ...serverSticker,
+        id,
+        name: resolvedName,
+      } as SupabaseAttitudeSticker);
+    }
+    if (this.myStickers) {
+      this.myStickers = {
+        ...this.myStickers,
+        stickers: this.myStickers.stickers.map((item) =>
+          item.id === id ? { ...item, ...serverSticker, name: resolvedName } : item,
+        ),
+      };
+    }
+  }
+
+  /**
    * 上传一张本地图片作为表态贴纸：先传百科图床，再把地址登记到云端，返回 `sticker:<新贴纸 id>`。
    *
    * 失败时以 `Utils.commonMsg` 提示（非图片、体积超限、图床拒绝、今日额度用尽等）并返回 undefined。
@@ -460,8 +487,8 @@ export class AttitudeSystem {
   }
 
   /**
-   * 给一批贴纸占位节点（`[data-mcmodder-sticker-id]`）补上图片与名称；解析失败的标上
-   * `data-mcmodder-sticker-failed` 走降级样式。
+   * 给一批贴纸占位节点（`[data-mcmodder-sticker-id]`）补上图片与名称，并添加弹出窗配置；
+   * 解析失败的标上 `data-mcmodder-sticker-failed` 走降级样式。
    */
   async hydrateStickers(root: JQuery | HTMLElement) {
     if (!this.enabled) return;
@@ -480,6 +507,14 @@ export class AttitudeSystem {
         const sticker = stickers.get(buildStickerType(stickerId));
         if (sticker) {
           fillStickerIcon($icon, sticker);
+          const img = icon.firstElementChild as HTMLElement | null;
+          if (img !== null) {
+            PopoverController.instance.addStickerViewer(img, {
+              type: "stickerViewer",
+              anchorElement: img,
+              sticker,
+            });
+          }
         } else if (this.missingStickerIds.has(stickerId)) {
           // 仅「服务端答复不存在」才降级；请求失败时保留占位
           $icon.attr("data-mcmodder-sticker-failed", "1");

@@ -188,8 +188,10 @@ body > .content,
   gap: var(--mcmodder-width-padding-3);
 }
 .center-block-section .setting-item {
-  overflow: clip;
-  overflow-clip-margin: 5px;
+  overflow-x: auto;
+  overflow-y: clip;
+  padding: 5px 0;
+  text-wrap: nowrap;
 }
 .setting-item .checkbox label {
   margin: 0.25rem 0;

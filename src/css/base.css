@@ -2348,6 +2348,7 @@ div#editor-ueeditor {
   position: relative;
   cursor: var(--mcmodder-cursor-hand);
   touch-action: none;
+  min-width: 180px;
 }
 .mcmodder-slider-tap {
   height: 16px;

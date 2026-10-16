@@ -1,0 +1,110 @@
+/* ===== prefers-reduced-motion：减弱动态效果 =====
+ *
+ * 用户在系统层开启「减弱动态效果」时，把脚本自身引入的循环动画与过渡全部收敛掉：
+ * - 循环 / 趣味性动画（渐变流光、加载圆点缩放、头像抖动、愚人节旋转等）直接停掉；
+ * - 位移、缩放、淡入淡出一类过渡改为瞬时完成（`transition: none`），交互反馈本身保留；
+ * - 只负责「换色」的动画（流光描边）停掉后补一个静态主色，避免元素退化成默认配色。
+ *
+ * 声明一律带 `!important`：目标选择器与 base.css / mcmodderUI.css 完全相同，
+ * 单靠源码顺序并不可靠，且 Vue 组件的作用域样式会额外抬高特异性。
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* ---- 循环装饰动画：直接停掉 ---- */
+
+  /* 渐变流光描边（自定义下拉框、搜索框）：动画只负责主色/强调色交替，停掉后固定为主色 */
+  .common-select,
+  .header-search form {
+    animation: none !important;
+    border-color: var(--mcmodder-color-primary) !important;
+  }
+
+  /* 提示气泡与编辑器气泡：淡入叠加流光描边，一并停掉 */
+  .tooltip-inner,
+  body .edui-default .edui-bubble .edui-popup-content {
+    animation: none !important;
+    border-color: var(--mcmodder-color-primary) !important;
+  }
+
+  /* 彩虹流光字：渐变背景仍在，只是不再滚动 */
+  :not(.mcmodder-config-disable-gradient) .mcmodder-chroma {
+    animation: none !important;
+  }
+
+  /* 加载中的两个圆点：保留静态圆点表示「加载中」，不再来回缩放 */
+  .mcmodder-loading:before,
+  .mcmodder-loading:after {
+    animation: none !important;
+  }
+
+  /* 个人中心头像被点击时的抖动（5 次） */
+  body .center-header .user-icon .user-icon-img.tapped {
+    animation: none !important;
+  }
+
+  /* 关注用户头像的悬停摆动 */
+  .mcmodder-favuser a:hover .avatar {
+    animation: none !important;
+  }
+
+  /* 愚人节彩蛋：任务卡整块旋转（enableAprilFools 开启时） */
+  .center-task-block:first-child {
+    animation: none !important;
+  }
+
+  /* 顶部用户面板的淡入（fadeIn 终点即完全不透明，停掉不影响显示） */
+  .header-user .header-user-info .header-panel {
+    animation: none !important;
+  }
+
+  /* ---- 过渡：改为瞬时完成 ---- */
+
+  /* 首页新闻区按钮 */
+  .news_block .left .text #random_refresh,
+  .news_block .left .text #new_more,
+  .news_block .left .text #edit_more,
+  .news_block .left .text #recent_more,
+
+  /* 分类页 / 综合中心的宽度收缩 */
+  .col-lg-12.mcmodder-class-page,
+  .col-lg-12.common-center,
+
+  /* 进度条与表格高度变化 */
+  .mcmodder-progress-bar,
+  .mcmodder-table-container,
+  .mcmodder-table-loading-overlay,
+
+  /* 校对页图片对比缩放 */
+  #verify-window .common-text img.mcmodder-compare-icon,
+  #mcmodder-verify-window .common-text img.mcmodder-compare-icon,
+
+  /* 滑块、右键菜单、折叠箭头、折叠容器 */
+  .mcmodder-slider-tap,
+  .mcmodder-contextmenu,
+  .mcmodder-collapsible-header:after,
+  .mcmodder-dropdown-container:after,
+  .mcmodder-intepolate-container,
+  .mcmodder-intepolate-container > *,
+
+  /* 页签滑动光标与悬停下划线的位移过渡（光标的 JS 位移动画不在此列） */
+  .mcmodder-swiper-cursor,
+  .news_block .left .hover,
+  .topic_block .title .hover,
+  .star_block .title .hover,
+
+  /* 关注用户删除模式下的头像缩放、用户面板条目的位移与箭头滑动 */
+  .mcmodder-favuser.delete-mode .user.deleted .avatar img,
+  .header-layer-block li a,
+  .header-layer-block li a i:last-child,
+
+  /* 复选框与输入框的描边过渡、标签换色 */
+  .checkbox label:before,
+  .checkbox label,
+  .form-control,
+
+  /* Vue 组件：个人中心设置目录树、校对时间轴节点 */
+  a.mcmodder-menutree-link,
+  .mcmodder-verify-timeline-node {
+    transition: none !important;
+  }
+}

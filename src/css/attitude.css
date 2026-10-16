@@ -63,6 +63,24 @@ html.mcmodder-attitude-twemoji emoji-picker {
   margin-right: 0;
 }
 
+/* 但是我现在只会无脑套 flex 容器了，套完后世界彻底和平（ */
+.common-comment-block .comment-tools ol.comment-attitude-result,
+.common-comment-block .comment-tools ol.comment-attitude-result > li,
+.common-comment-block .comment-tools ol.comment-attitude-result > li > a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.common-comment-block .comment-tools ol.comment-attitude-result img {
+  margin-left: 0;
+  margin-right: 3px;
+}
+
+.mcmodder-attitude-sticker img {
+  max-height: 100%;
+  max-width: 100%;
+}
+
 .comment-tools ol.comment-attitude-result li.mcmodder-attitude-item > a {
   cursor: var(--mcmodder-cursor-hand);
 }
@@ -130,6 +148,10 @@ html.mcmodder-attitude-twemoji emoji-picker {
   overflow-y: auto;
   padding: 8px;
   text-align: left;
+}
+
+#mcmodder-attitude-panel[data-mcmodder-tab="sticker"] {
+  width: 540px;
 }
 
 /* 页签：Emoji（最近使用 + 全部 Emoji）与「我的贴纸」 */
@@ -222,15 +244,10 @@ html.mcmodder-attitude-twemoji emoji-picker {
 .mcmodder-attitude-sticker,
 img.mcmodder-attitude-sticker-image {
   display: inline-block;
-  width: calc(1.3em * var(--mcmodder-attitude-scale));
-  height: calc(1.3em * var(--mcmodder-attitude-scale));
-  vertical-align: -0.3em;
+  max-width: calc(1.3em * var(--mcmodder-attitude-scale));
+  max-height: calc(1.3em * var(--mcmodder-attitude-scale));
   border-radius: 3px;
   background-color: var(--mcmodder-color-background-dark1);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  object-fit: cover;
 }
 
 /* 图片地址尚未解析 / 解析失败时的占位块（保持行内尺寸不跳动） */
@@ -277,12 +294,29 @@ img.mcmodder-attitude-sticker-image {
   color: var(--mcmodder-color-text-dark2);
 }
 
+.mcmodder-attitude-sticker-content {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  grid-template-rows: 200px auto;
+  gap: 4px;
+}
+
+.mcmodder-attitude-sticker-content > * {
+  border: 1px solid var(--mcmodder-color-background-dark2);
+  border-radius: 4px;
+  padding: 4px;
+}
+
 .mcmodder-attitude-sticker-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  display: grid;
+  gap: 4px;
+  grid-row: 1;
+  grid-column: 1;
+  border-radius: 4px;
+  padding: 4px;
+  grid-template-columns: repeat(auto-fit, 53px);
+  grid-template-rows: repeat(auto-fit, 53px);
+  overflow-y: auto;
 }
 
 .mcmodder-attitude-sticker-item {
@@ -293,6 +327,78 @@ img.mcmodder-attitude-sticker-image {
   cursor: var(--mcmodder-cursor-hand);
 }
 
+.mcmodder-attitude-sticker-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mcmodder-attitude-sticker-preview-img-container {
+  height: calc(100% - 30px);
+  width: calc(100% - 30px);
+  display: flex;
+}
+
+.mcmodder-attitude-sticker-preview-img,
+.mcmodder-attitude-sticker-viewer-img {
+  margin: auto;
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.mcmodder-attitude-sticker-preview-desc {
+  width: 100%;
+  height: 30px;
+  color: var(--mcmodder-color-text-dark2);
+  position: relative;
+}
+
+.mcmodder-attitude-sticker-preview-desc-text,
+.mcmodder-attitude-sticker-viewer-name {
+  width: calc(100% - 2em);
+  overflow-x: clip;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  line-height: 30px;
+  font-style: italic;
+  text-align: center;
+  font-size: 14px;
+  color: var(--mcmodder-color-text-dark2);
+  margin: 0 auto;
+}
+
+.mcmodder-attitude-sticker-preview-empty {
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 14px;
+  margin: auto;
+}
+
+.mcmodder-attitude-sticker-preview-desc input {
+  text-align: center;
+}
+
+.mcmodder-attitude-sticker-preview-rename {
+  position: absolute;
+  margin-left: 0.25em;
+  color: var(--mcmodder-color-button);
+  display: none;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mcmodder-attitude-sticker-preview-desc:hover .mcmodder-attitude-sticker-preview-rename {
+  display: inherit;
+}
+
+.mcmodder-attitude-sticker-opt {
+  grid-column-start: 1;
+  grid-column-end: 3;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 4px;
+}
+
 .mcmodder-attitude-sticker-item:hover {
   border-color: var(--mcmodder-color-primary);
 }
@@ -301,13 +407,14 @@ img.mcmodder-attitude-sticker-image {
   outline: none;
 }
 
+.mcmodder-attitude-sticker-item.mcmodder-attitude-choice-selected {
+  border-color: var(--mcmodder-color-accent);
+  box-shadow: 0 0 0 2px var(--mcmodder-color-accent);
+}
+
 .mcmodder-attitude-sticker-item.mcmodder-attitude-choice-active {
   border-color: var(--mcmodder-color-primary);
   box-shadow: 0 0 0 1px var(--mcmodder-color-primary);
-}
-
-.mcmodder-attitude-sticker-item:disabled {
-  cursor: default;
 }
 
 .mcmodder-attitude-sticker-item img {
@@ -315,6 +422,39 @@ img.mcmodder-attitude-sticker-image {
   width: 48px;
   height: 48px;
   object-fit: contain;
+}
+
+.mcmodder-attitude-sticker-viewer {
+  width: 200px;
+  height: 200px;
+  display: flex;
+}
+
+.mcmodder-attitude-sticker-viewer-desc {
+  width: 200px;
+}
+
+@media (max-width: 639px) {
+  #mcmodder-attitude-panel[data-mcmodder-tab="sticker"] {
+    width: 220px;
+  }
+
+  .mcmodder-attitude-sticker-content {
+    grid-template-rows: 1fr 200px auto;
+    grid-template-columns: 200px;
+  }
+
+  .mcmodder-attitude-sticker-grid {
+    max-height: 150px;
+  }
+
+  .mcmodder-attitude-sticker-preview {
+    grid-row: 2;
+  }
+
+  .mcmodder-attitude-sticker-opt {
+    grid-column-end: 2;
+  }
 }
 
 /* ===== 消息中心 ===== */

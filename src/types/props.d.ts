@@ -61,7 +61,7 @@ export interface InputProps<T> {
   onSuccessfulChange?: InputSuccessfulChangeCallBack<T>;
 }
 
-export interface InputListBaseOption {
+export interface PopoverBaseOption {
   /** 列表定位的锚点（以此元素的矩形计算位置与宽度）；缺省时用 `inputListBindElement` */
   anchorElement?: HTMLElement;
   /** 若在弹出框已打开时再次触发，则关闭弹出框 */
@@ -79,7 +79,7 @@ export interface InputListBaseOption {
  * 文本的读写、选区维护、补全替换全部发生在 `inputListBindElement` 上。
  * `DropdownMenuInput.vue` 就靠这种方式把「显示成按钮的下拉菜单」复用了普通候选列表的逻辑。
  */
-export interface InputListOption extends InputListBaseOption {
+export interface InputListOption extends PopoverBaseOption {
   type: "inputList";
   /** 真正承载输入的元素；缺省时复用 `add` 的第一个参数（交互元素） */
   inputListBindElement?: InputListBindElement;
@@ -105,7 +105,7 @@ export interface InputListProps extends InputListOption {
 /**
  * 自定义表态选择面板的共享状态：`AttitudeSystem` 负责打开、定位与挂载，`AttitudePicker.vue` 负责渲染与关闭。
  */
-export interface AttitudePickerState extends InputListBaseOption {
+export interface AttitudePickerState extends PopoverBaseOption {
   type: "attitudePicker";
   parent: import("../Mcmodder").Mcmodder;
   target: AttitudeTarget;
@@ -126,6 +126,11 @@ export interface AttitudeStickerListProps {
   onPick?: (attitudeType: string) => void;
   /** 上传本地图片；不传则不显示上传入口；用户上传本地图片作为贴纸（`AttitudeSystem` 接管；成功后直接用它表态） */
   onUpload?: (file: File) => Promise<void> | void;
+}
+
+export interface StickerViewerOption extends PopoverBaseOption {
+  type: "stickerViewer";
+  sticker: SupabaseAttitudeSticker;
 }
 
 export interface PopoverExpose<

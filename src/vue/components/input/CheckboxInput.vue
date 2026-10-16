@@ -6,7 +6,14 @@
     :data-toggle="withTooltip ? 'tooltip' : undefined"
     :data-original-title="withTooltip"
   >
-    <input :id="fullID" ref="checkbox" type="checkbox" :checked="value" @change="onChange" />
+    <input
+      :id="fullID"
+      ref="checkbox"
+      type="checkbox"
+      :checked="value"
+      :aria-label="title"
+      @change="onChange"
+    />
     <!-- 标签内容可能带 <code> 等排版标签 -->
     <!-- eslint-disable-next-line vue/no-v-html -- 入参为 useSanitizedHTML 清洗后的结果 -->
     <label v-if="!titleRanges" :for="fullID" v-html="safeTitle" />

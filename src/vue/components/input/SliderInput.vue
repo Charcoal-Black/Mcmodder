@@ -19,6 +19,11 @@
       <div
         ref="tap"
         class="mcmodder-slider-tap"
+        role="slider"
+        :aria-label="title"
+        :aria-valuenow="valueRef"
+        :aria-valuemin="range[0]"
+        :aria-valuemax="range[1]"
         :class="{ focus: classTapFocus }"
         :style="{ left: cssRate }"
         @pointerdown="onTapPointerdown"

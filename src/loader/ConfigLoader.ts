@@ -671,6 +671,7 @@ export const settings = [
             type: "checkbox",
             visible: (ctx) =>
               ctx.configs.getSettings("useSupabase") && ctx.configs.getSettings("supabaseSplash"),
+            syncWithSupabase: true,
           },
           {
             id: "supabaseByteChart",
@@ -687,6 +688,7 @@ export const settings = [
               "[需要用户认证] 启用后，您将能够在短评区/留言板中看到其他同样正在使用 Mcmodder 且启用了此选项的用户！同时，您对于其他用户也是如此。",
             type: "checkbox",
             visible: (ctx) => ctx.configs.getSettings("useSupabase"),
+            syncWithSupabase: true,
           },
           {
             id: "customAttitude",

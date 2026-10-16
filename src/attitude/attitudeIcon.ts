@@ -19,7 +19,7 @@ export function buildStickerType(id: number) {
 export function buildAttitudeIcon(attitudeType: string) {
   const stickerId = parseStickerId(attitudeType);
   if (stickerId !== undefined) {
-    return $('<i class="mcmodder-attitude-sticker"></i>').attr(
+    return $('<div class="mcmodder-attitude-sticker"></div>').attr(
       "data-mcmodder-sticker-id",
       stickerId,
     );
@@ -38,8 +38,9 @@ export function getAttitudeTitle(attitudeType: string, stickerName?: string) {
 
 /** 由 `AttitudeSystem.hydrateStickers` 给贴纸占位节点补上图片 */
 export function fillStickerIcon($icon: JQuery, sticker: SupabaseAttitudeSticker) {
+  const img = $("<img>").attr("src", sticker.image_url);
   return $icon
     .attr("title", getAttitudeTitle(buildStickerType(sticker.id), sticker.name))
-    .css("background-image", `url("${sticker.image_url}")`)
-    .removeAttr("data-mcmodder-sticker-failed");
+    .removeAttr("data-mcmodder-sticker-failed")
+    .append(img);
 }
