@@ -21,6 +21,15 @@
           >
             我的贴纸
           </button>
+          <button
+            ref="plazaTabRef"
+            type="button"
+            class="mcmodder-attitude-tab"
+            :class="{ 'mcmodder-attitude-tab-active': tab === 'plaza' }"
+            @click="switchTab('plaza')"
+          >
+            贴纸广场
+          </button>
         </div>
         <TabIndicator ref="indicatorRef" />
       </div>
@@ -73,6 +82,19 @@
         :active="active"
         :on-pick="onPick"
         :on-upload="onUpload"
+        :on-share="onShare"
+        :on-favorite="onUnfavorite"
+      />
+      <AttitudeStickerPlaza
+        v-show="tab === 'plaza'"
+        :parent="state?.parent"
+        :stickers="plazaStickers"
+        :total="plazaTotal"
+        :loading="plazaLoading"
+        :active="active"
+        :on-pick="onPick"
+        :on-favorite="onFavoritePlaza"
+        :on-load-more="onLoadMorePlaza"
       />
     </div>
   </Popover>
@@ -83,7 +105,7 @@ import { ref, watch, nextTick, useTemplateRef, shallowRef, computed } from "vue"
 import Picker from "emoji-picker-element/picker.js";
 import zhCN from "emoji-picker-element/i18n/zh_CN.js";
 import { Values } from "../../../Values";
-import { ConfigRepository } from "../../../config/ConfigRepository.ts";
+import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 import { AttitudeSystem } from "../../../attitude/AttitudeSystem";
 import type { AttitudePickerState, PopoverExpose } from "../../../types/props.d.ts";
 import { parseStickerId } from "../../../attitude/attitudeIcon";
@@ -93,6 +115,7 @@ import {
   attitudeTypeOfLetter,
 } from "../../../attitude/attitudeLetter";
 import AttitudeStickerList from "./AttitudeStickerList.vue";
+import AttitudeStickerPlaza from "./AttitudeStickerPlaza.vue";
 import Popover from "../Popover.vue";
 import TabIndicator from "../TabIndicator.vue";
 
@@ -102,13 +125,14 @@ const system = shallowRef<AttitudeSystem>();
 
 const pickerHost = ref<HTMLDivElement>();
 const allEmojisVisible = ref(false);
-const tab = ref<"emoji" | "sticker">("emoji");
+const tab = ref<"emoji" | "sticker" | "plaza">("emoji");
 
 const visible = ref(false);
 const popoverRef = useTemplateRef("popoverRef");
 const indicatorRef = useTemplateRef("indicatorRef");
 const emojiTabRef = useTemplateRef("emojiTabRef");
 const stickerTabRef = useTemplateRef("stickerTabRef");
+const plazaTabRef = useTemplateRef("plazaTabRef");
 
 /**
  * 「我点过」的高亮：打开时取选项里的初始值（本地缓存），后台刷新与写请求的返回都会替换它。
@@ -121,11 +145,17 @@ const active = shallowRef<string[]>([]);
 const recents = computed(() => {
   return system.value?.recentEmojis.value;
 });
-/** 我上传的贴纸（面板打开时懒加载） */
+/** 我上传与收藏的贴纸（面板打开时懒加载） */
 const stickers = shallowRef<SupabaseAttitudeSticker[]>();
 const quota = shallowRef<SupabaseAttitudeStickerQuota | null>(null);
+/** 贴纸广场（按共享时间倒序，分页加载） */
+const plazaStickers = shallowRef<SupabaseAttitudeSticker[]>();
+const plazaTotal = ref(0);
+const plazaLoading = ref(false);
 /** 贴纸列表请求进行中（避免切页签时重复发请求） */
 let stickersLoading = false;
+/** 广场请求进行中 */
+let plazaLoadingGuard = false;
 /** 面板内已点击表态的次数：写请求的返回比打开时的后台刷新更权威，点过之后即丢弃过期刷新 */
 let pickCount = 0;
 
@@ -141,6 +171,29 @@ async function loadStickers() {
     quota.value = data.quota ?? null;
   } finally {
     stickersLoading = false;
+  }
+}
+
+/** 拉取贴纸广场一页；`reset` 为真时从第一页重新开始 */
+async function loadPlaza(reset = false) {
+  const instance = system.value;
+  if (!instance || plazaLoadingGuard) return;
+  plazaLoadingGuard = true;
+  plazaLoading.value = true;
+  try {
+    const offset = reset ? 0 : (plazaStickers.value?.length ?? 0);
+    const rows = await instance.listPlazaStickers(
+      offset,
+      Values.attitude.sticker.plazaPageSize,
+      (error) => console.warn("[Mcmodder] 贴纸广场获取失败：", error),
+    );
+    if (!rows) return;
+    plazaTotal.value = rows[0]?.total ?? 0;
+    plazaStickers.value =
+      reset || plazaStickers.value === undefined ? rows : [...plazaStickers.value, ...rows];
+  } finally {
+    plazaLoadingGuard = false;
+    plazaLoading.value = false;
   }
 }
 
@@ -165,9 +218,10 @@ function stickerUrl(attitudeType: string) {
   return stickerUrls[attitudeType];
 }
 
-function switchTab(next: "emoji" | "sticker") {
+function switchTab(next: "emoji" | "sticker" | "plaza") {
   tab.value = next;
   if (next === "sticker") void loadStickers();
+  else if (next === "plaza" && plazaStickers.value === undefined) void loadPlaza(true);
   // void nextTick(clampAttitudePanelPosition);
   popoverRef.value?.onPopoverHeightChange();
   updateIndicator();
@@ -175,7 +229,12 @@ function switchTab(next: "emoji" | "sticker") {
 
 function updateIndicator() {
   nextTick(() => {
-    const active = tab.value === "emoji" ? emojiTabRef.value : stickerTabRef.value;
+    const active =
+      tab.value === "emoji"
+        ? emojiTabRef.value
+        : tab.value === "sticker"
+          ? stickerTabRef.value
+          : plazaTabRef.value;
     if (active !== null) {
       indicatorRef.value?.update(active);
     }
@@ -330,6 +389,45 @@ async function onUpload(file: File) {
   }
 }
 
+/** 共享 / 取消共享自己上传的贴纸 */
+async function onShare(sticker: SupabaseAttitudeSticker) {
+  const shared = !sticker.shared_at;
+  const ok = await system.value!.shareSticker(sticker.id, shared);
+  if (!ok) return false;
+  const item = stickers.value?.find((s) => s.id === sticker.id);
+  if (item) item.shared_at = shared ? new Date().toISOString() : null;
+  // 广场列表需要重新拉取（新增或下架）
+  plazaStickers.value = undefined;
+  return true;
+}
+
+/** 在「我的贴纸」里取消收藏 */
+async function onUnfavorite(sticker: SupabaseAttitudeSticker) {
+  const ok = await system.value!.favoriteSticker(sticker.id, false);
+  if (!ok) return false;
+  stickers.value = stickers.value?.filter((item) => item.id !== sticker.id);
+  plazaStickers.value = undefined;
+  return true;
+}
+
+/** 在广场里收藏 / 取消收藏 */
+async function onFavoritePlaza(sticker: SupabaseAttitudeSticker) {
+  const favorite = !sticker.is_favorite;
+  const ok = await system.value!.favoriteSticker(sticker.id, favorite);
+  if (!ok) return false;
+  plazaStickers.value = plazaStickers.value?.map((item) =>
+    item.id === sticker.id ? { ...item, is_favorite: favorite } : item,
+  );
+  // 「我的贴纸」集合已变化，下次切页签时重新拉取
+  stickers.value = undefined;
+  return true;
+}
+
+/** 广场分页：加载下一页 */
+function onLoadMorePlaza() {
+  return loadPlaza(false);
+}
+
 /** 请求关闭面板（`AttitudeSystem` 落地） */
 function onClose() {
   visible.value = false;
@@ -356,6 +454,7 @@ function setOption(option: AttitudePickerState) {
     });
     // 我的贴纸：打开时不预取，切到该页签（或打开时正停在它上面）才拉取列表与今日额度
     if (tab.value === "sticker") void loadStickers();
+    else if (tab.value === "plaza" && plazaStickers.value === undefined) void loadPlaza(true);
   }
 
   initializeStickerUrls();

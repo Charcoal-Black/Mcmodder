@@ -150,7 +150,8 @@ html.mcmodder-attitude-twemoji emoji-picker {
   text-align: left;
 }
 
-#mcmodder-attitude-panel[data-mcmodder-tab="sticker"] {
+#mcmodder-attitude-panel[data-mcmodder-tab="sticker"],
+#mcmodder-attitude-panel[data-mcmodder-tab="plaza"] {
   width: 540px;
 }
 
@@ -320,6 +321,7 @@ img.mcmodder-attitude-sticker-image {
 }
 
 .mcmodder-attitude-sticker-item {
+  position: relative;
   padding: 2px;
   border: 1px solid var(--mcmodder-color-background-dark2);
   border-radius: 4px;
@@ -424,6 +426,109 @@ img.mcmodder-attitude-sticker-image {
   object-fit: contain;
 }
 
+/* 「我的贴纸」里的收藏标识 */
+.mcmodder-attitude-sticker-favorite-badge,
+.mcmodder-attitude-plaza-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background-color: var(--mcmodder-color-accent);
+  color: var(--mcmodder-color-text);
+  font-size: 10px;
+  line-height: 14px;
+  pointer-events: none;
+}
+
+/* ===== 贴纸广场 ===== */
+.mcmodder-attitude-plaza-grid {
+  grid-template-rows: none;
+  grid-template-columns: repeat(auto-fill, 64px);
+  grid-auto-rows: 74px;
+  align-content: start;
+}
+
+.mcmodder-attitude-plaza-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.mcmodder-attitude-plaza-item img {
+  flex: none;
+}
+
+.mcmodder-attitude-plaza-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--mcmodder-color-text-dark2);
+}
+
+.mcmodder-attitude-plaza-desc {
+  height: 46px;
+}
+
+.mcmodder-attitude-plaza-content .mcmodder-attitude-sticker-preview-img-container {
+  height: calc(100% - 46px);
+}
+
+.mcmodder-attitude-plaza-uploader-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 16px;
+  overflow: hidden;
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mcmodder-attitude-plaza-uploader-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.mcmodder-attitude-plaza-uploader-link:hover {
+  color: var(--mcmodder-color-accent-dark1);
+}
+
+.mcmodder-attitude-plaza-uploader-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcmodder-attitude-plaza-avatar {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mcmodder-attitude-plaza-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
 .mcmodder-attitude-sticker-viewer {
   width: 200px;
   height: 200px;
@@ -435,7 +540,8 @@ img.mcmodder-attitude-sticker-image {
 }
 
 @media (max-width: 639px) {
-  #mcmodder-attitude-panel[data-mcmodder-tab="sticker"] {
+  #mcmodder-attitude-panel[data-mcmodder-tab="sticker"],
+  #mcmodder-attitude-panel[data-mcmodder-tab="plaza"] {
     width: 220px;
   }
 

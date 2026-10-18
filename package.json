@@ -8,6 +8,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
+    "smoke:attitude": "node smoke/attitude-plaza.mjs",
     "lint:config": "eslint eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",
     "format": "prettier --write src",
     "format:check": "prettier --check src eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",

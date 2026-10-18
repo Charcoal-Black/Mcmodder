@@ -171,9 +171,9 @@
   </div>
 
   <div class="center-block-head">
-    <span class="mcmodder-title-new">我上传的表态贴纸</span>
+    <span class="mcmodder-title-new">我的表态贴纸</span>
     <span class="text"
-      >所有曾经由我上传的表态贴纸都会显示在这里。贴纸的图片文件均保存在百科图床，因此同样会受到百科图床的上传限制。</span
+      >我上传与收藏的表态贴纸都会显示在这里；上传的贴纸可以共享到贴纸广场，供其他用户使用。贴纸的图片文件均保存在百科图床，因此同样会受到百科图床的上传限制。</span
     >
   </div>
 
@@ -184,6 +184,8 @@
         :stickers="attitudeStickers"
         :quota="attitudeStickerQuota"
         :on-upload="uploadAttitudeSticker"
+        :on-share="shareAttitudeSticker"
+        :on-favorite="unfavoriteAttitudeSticker"
       />
       <button class="btn btn-light" @click="refreshAttitudeStickers(true)">刷新列表</button>
     </template>
@@ -485,6 +487,18 @@ async function refreshAttitudeStickers(force = false) {
 async function uploadAttitudeSticker(file: File) {
   await props.parent.attitudeSystem.uploadSticker(file);
   await refreshAttitudeStickers(true);
+}
+
+async function shareAttitudeSticker(sticker: SupabaseAttitudeSticker) {
+  const ok = await props.parent.attitudeSystem.shareSticker(sticker.id, !sticker.shared_at);
+  if (ok) await refreshAttitudeStickers(true);
+  return ok;
+}
+
+async function unfavoriteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
+  const ok = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
+  if (ok) await refreshAttitudeStickers(true);
+  return ok;
 }
 
 onMounted(() => void refreshAttitudeStickers());

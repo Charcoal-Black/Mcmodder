@@ -230,6 +230,8 @@ export class Values {
       uploadAccept: "image/png,image/jpeg,image/gif,image/bmp",
       /** 「我的贴纸」列表与今日额度的缓存有效期 */
       listCacheTtl: 30 * 1000,
+      /** 贴纸广场单页条数 */
+      plazaPageSize: 24,
       /** 单次 `resolve` 携带的贴纸 id 上限（与服务端一致） */
       maxResolvePerRequest: 200,
     },

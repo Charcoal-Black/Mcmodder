@@ -166,16 +166,53 @@ export class SupabaseUtils {
   }
 
   /**
-   * 读取我上传的表态贴纸（RPC `mcmodder_attitude_sticker_list`）。
+   * 读取“我的贴纸”集合（RPC `mcmodder_attitude_sticker_collection`）：
+   * 我上传的贴纸 + 我收藏的贴纸，行序由服务端决定（我上传的在前）。
    *
    * `onError` 用于后台调用（选择面板打开时预取）自行消化错误，避免弹出模态框。
    */
-  async fetchAttitudeStickers(authKey: string, onError?: (error: string) => void) {
+  async fetchAttitudeStickerCollection(authKey: string, onError?: (error: string) => void) {
     return await this.rpc<SupabaseAttitudeSticker>(
-      "mcmodder_attitude_sticker_list",
+      "mcmodder_attitude_sticker_collection",
       { p_auth_key: authKey },
       onError,
     );
+  }
+
+  /**
+   * 读取贴纸广场的一页（RPC `mcmodder_attitude_sticker_plaza`，公开读）。
+   *
+   * `authKey` 只用于标注「我上传的 / 我收藏的」；未认证时传 `undefined`，列表照常返回。
+   */
+  async fetchAttitudeStickerPlaza(
+    authKey: string | undefined,
+    limit: number,
+    offset: number,
+    onError?: (error: string) => void,
+  ) {
+    return await this.rpc<SupabaseAttitudeStickerPlazaRow>(
+      "mcmodder_attitude_sticker_plaza",
+      { p_auth_key: authKey ?? null, p_limit: limit, p_offset: offset },
+      onError,
+    );
+  }
+
+  /** 共享 / 取消共享自己上传的贴纸（RPC `mcmodder_attitude_sticker_share`，幂等） */
+  async shareAttitudeSticker(payload: { authKey: string; id: number; shared: boolean }) {
+    const rows = await this.rpc<{ id: number; shared_at: string | null }>(
+      "mcmodder_attitude_sticker_share",
+      { p_auth_key: payload.authKey, p_id: payload.id, p_shared: payload.shared },
+    );
+    return rows?.[0];
+  }
+
+  /** 收藏 / 取消收藏他人上传的贴纸（RPC `mcmodder_attitude_sticker_favorite`，幂等） */
+  async favoriteAttitudeSticker(payload: { authKey: string; id: number; favorite: boolean }) {
+    const rows = await this.rpc<{ id: number; is_favorite: boolean }>(
+      "mcmodder_attitude_sticker_favorite",
+      { p_auth_key: payload.authKey, p_id: payload.id, p_favorite: payload.favorite },
+    );
+    return rows?.[0];
   }
 
   /** 读取今日贴纸额度（RPC `mcmodder_attitude_sticker_quota`，恒返回一行） */

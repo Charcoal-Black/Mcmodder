@@ -126,6 +126,28 @@ export interface AttitudeStickerListProps {
   onPick?: (attitudeType: string) => void;
   /** 上传本地图片；不传则不显示上传入口；用户上传本地图片作为贴纸（`AttitudeSystem` 接管；成功后直接用它表态） */
   onUpload?: (file: File) => Promise<void> | void;
+  /** 共享 / 取消共享自己上传的贴纸；不传则不显示共享按钮 */
+  onShare?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 取消收藏他人上传的贴纸；不传则不显示取消收藏按钮 */
+  onFavorite?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+}
+
+export interface AttitudeStickerPlazaProps {
+  parent?: import("../Mcmodder").Mcmodder;
+  /** 广场贴纸（按共享时间倒序） */
+  stickers?: SupabaseAttitudeSticker[];
+  /** 广场总条数（用于「加载更多」） */
+  total?: number;
+  /** 正在加载下一页 */
+  loading?: boolean;
+  /** 已表态的类型（高亮用） */
+  active?: string[];
+  /** 点击贴纸发送表态；不传 = 只预览 */
+  onPick?: (attitudeType: string) => void;
+  /** 收藏 / 取消收藏 */
+  onFavorite?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 加载下一页 */
+  onLoadMore?: () => Promise<void> | void;
 }
 
 export interface StickerViewerOption extends PopoverBaseOption {

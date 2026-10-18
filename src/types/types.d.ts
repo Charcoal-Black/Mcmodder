@@ -2003,6 +2003,18 @@ interface SupabaseAttitudeSticker {
   /** 原始文件名（展示用，服务端截断） */
   name?: string;
   created_at: string;
+  /** 共享到贴纸广场的时间；null/undefined = 未共享 */
+  shared_at?: string | null;
+  /** 是否我上传的（“我的贴纸”集合行；广场行同义） */
+  is_mine?: boolean;
+  /** 是否我收藏的（“我的贴纸”集合行 / 广场行） */
+  is_favorite?: boolean;
+}
+
+/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 分页总数 */
+interface SupabaseAttitudeStickerPlazaRow extends SupabaseAttitudeSticker {
+  /** 与当前过滤条件对应的总条数（服务端 `count(*) over ()`） */
+  total: number;
 }
 
 /** 贴纸上传额度（东八区自然日） */

@@ -1,5 +1,5 @@
 <template>
-  <div class="mcmodder-attitude-sticker-panel">
+  <div class="mcmodder-attitude-sticker-panel mcmodder-attitude-my-stickers">
     <div class="mcmodder-attitude-sticker-bar">
       <label v-if="onUpload" class="mcmodder-attitude-sticker-upload btn btn-light">
         <input type="file" :accept="accept" :disabled="uploading" @change="onFileChange" />
@@ -8,9 +8,9 @@
       <span v-if="quotaText" class="mcmodder-attitude-sticker-quota">{{ quotaText }}</span>
     </div>
 
-    <p v-if="loading" class="mcmodder-attitude-empty-hint">正在加载我上传的表态贴纸…</p>
+    <p v-if="loading" class="mcmodder-attitude-empty-hint">正在加载我的表态贴纸…</p>
     <p v-else-if="stickers!.length === 0" class="mcmodder-attitude-empty-hint">
-      还没有上传过表态贴纸，上传一张吧~
+      还没有上传或收藏过表态贴纸，上传一张吧~
     </p>
     <div v-else class="mcmodder-attitude-sticker-content">
       <div class="mcmodder-attitude-sticker-grid">
@@ -27,6 +27,9 @@
           @click="selected = selected === sticker ? null : sticker"
         >
           <img :src="sticker.image_url" :alt="sticker.name || '自定义贴纸'" />
+          <span v-if="sticker.is_favorite" class="mcmodder-attitude-sticker-favorite-badge">
+            收藏
+          </span>
         </button>
       </div>
       <div class="mcmodder-attitude-sticker-preview">
@@ -47,7 +50,12 @@
           <div class="mcmodder-attitude-sticker-preview-desc">
             <template v-if="!renaming">
               <div class="mcmodder-attitude-sticker-preview-desc-text" v-text="selected.name" />
-              <a class="mcmodder-attitude-sticker-preview-rename" tabindex="0" @click="onRename">
+              <a
+                v-if="isMine(selected)"
+                class="mcmodder-attitude-sticker-preview-rename"
+                tabindex="0"
+                @click="onRename"
+              >
                 <i v-if="!renamePending" class="fa fa-pencil"></i>
                 <i v-else class="fa fa-pulse spinner"></i>
               </a>
@@ -71,7 +79,26 @@
           <template v-if="!isActive(selected)"><i class="fa fa-paper-plane" /> 发送</template>
           <template v-else><i class="fa fa-reply" /> 撤销</template>
         </button>
-        <button class="btn btn-danger" @click="onDelete(selected)">删除</button>
+        <button
+          v-if="onShare && isMine(selected)"
+          class="btn btn-light"
+          :disabled="sharePending"
+          @click="onShareClick"
+        >
+          <template v-if="selected.shared_at"> <i class="fa fa-ban" /> 取消共享 </template>
+          <template v-else><i class="fa fa-share-alt" /> 共享贴纸</template>
+        </button>
+        <button
+          v-if="onFavorite && selected.is_favorite"
+          class="btn btn-light"
+          :disabled="favoritePending"
+          @click="onFavoriteClick"
+        >
+          <i class="fa fa-star" /> 取消收藏
+        </button>
+        <button v-if="isMine(selected)" class="btn btn-danger" @click="onDelete(selected)">
+          删除
+        </button>
       </div>
     </div>
   </div>
@@ -95,12 +122,14 @@ const accept = Values.attitude.sticker.uploadAccept;
 const uploading = ref(false);
 const selected = shallowRef<SupabaseAttitudeSticker | null>(null);
 watch(
-  () => selected.value,
+  () => selected.value?.id,
   () => (imagePending.value = true),
 );
 
 const renaming = ref(false);
 const renamePending = ref(false);
+const sharePending = ref(false);
+const favoritePending = ref(false);
 const imagePending = ref(true);
 
 const quotaText = computed(() => {
@@ -112,6 +141,44 @@ const quotaText = computed(() => {
 
 function isActive(sticker: SupabaseAttitudeSticker) {
   return props.active?.includes(buildStickerType(sticker.id));
+}
+
+/** 兼容旧版服务端：没有 `is_mine` 字段时按“我上传的”处理 */
+function isMine(sticker: SupabaseAttitudeSticker) {
+  return sticker.is_mine !== false;
+}
+
+async function onShareClick() {
+  if (!selected.value || sharePending.value) return;
+  const target = selected.value;
+  const nextShared = !target.shared_at;
+  sharePending.value = true;
+  try {
+    const ok = await props.onShare?.(target);
+    if (ok === false) return;
+    if (selected.value?.id === target.id) {
+      selected.value = {
+        ...selected.value,
+        shared_at: nextShared ? new Date().toISOString() : null,
+      };
+    }
+  } finally {
+    sharePending.value = false;
+  }
+}
+
+async function onFavoriteClick() {
+  if (!selected.value || favoritePending.value) return;
+  const target = selected.value;
+  favoritePending.value = true;
+  try {
+    const ok = await props.onFavorite?.(target);
+    if (ok === false) return;
+    // 「取消收藏」后该项会从父组件的集合列表中移除，预览区一并收起
+    if (selected.value?.id === target.id) selected.value = null;
+  } finally {
+    favoritePending.value = false;
+  }
 }
 
 async function onFileChange(event: Event) {
@@ -174,7 +241,7 @@ function onDelete(sticker: SupabaseAttitudeSticker) {
     preConfirm: async () => {
       const resp = await props.parent?.supabaseUtils?.deleteAttitudeSticker({
         authKey: props.parent.configRepository.getProfile("auth_key")!,
-        id: selected.value!.id,
+        id: sticker.id,
       });
       if (resp && !("error" in resp)) {
         Utils.commonMsg("贴纸删除成功~");

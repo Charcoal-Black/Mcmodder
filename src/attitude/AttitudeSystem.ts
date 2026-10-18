@@ -29,7 +29,7 @@ export class AttitudeSystem {
   private flushTimer?: number;
   private eventsBound = false;
 
-  /** 我上传的贴纸与今日上传额度（`attitude-sticker` 的 `list` 结果，TTL 内复用） */
+  /** 我的贴纸集合（我上传的 + 我收藏的）与今日上传额度（TTL 内复用） */
   myStickers?: {
     time: number;
     stickers: SupabaseAttitudeSticker[];
@@ -265,7 +265,7 @@ export class AttitudeSystem {
   }
 
   /**
-   * 我上传的表态贴纸与今日上传额度。
+   * 我的表态贴纸集合（我上传的 + 我收藏的）与今日上传额度。
    *
    * {@link Values.attitude.sticker.listCacheTtl} 内复用缓存；功能关闭 / 未认证返回 undefined。
    * 列表结果同时写进贴纸解析缓存，随后渲染这些贴纸无需再解析。
@@ -282,7 +282,7 @@ export class AttitudeSystem {
     // 面板打开时的预取：失败只记录日志，不弹模态框
     const onError = (error: string) => console.warn("[Mcmodder] 表态贴纸列表获取失败：", error);
     const [stickers, quota] = await Promise.all([
-      this.parent.supabaseUtils.fetchAttitudeStickers(authKey, onError),
+      this.parent.supabaseUtils.fetchAttitudeStickerCollection(authKey, onError),
       this.parent.supabaseUtils.fetchAttitudeStickerQuota(authKey, onError),
     ]);
     if (!stickers) return cached && { stickers: cached.stickers, quota: cached.quota };
@@ -374,6 +374,85 @@ export class AttitudeSystem {
     this.storeStickers([sticker, ...rest], resp?.quota);
     Utils.commonMsg("表态贴纸上传成功~");
     return buildStickerType(sticker.id);
+  }
+
+  /**
+   * 读取贴纸广场的一页。
+   *
+   * 广场是公开读：即使尚未完成云端认证也能浏览；`auth_key` 仅用于标注我上传/我收藏的贴纸。
+   * 失败时返回 undefined（`onError` 缺省会弹提示，面板里应传入后台回调）。
+   */
+  async listPlazaStickers(offset: number, limit: number, onError?: (error: string) => void) {
+    if (!this.enabled) return undefined;
+    return await this.parent.supabaseUtils.fetchAttitudeStickerPlaza(
+      this.getAuthKey() || undefined,
+      limit,
+      offset,
+      onError,
+    );
+  }
+
+  /**
+   * 共享 / 取消共享自己上传的贴纸。
+   *
+   * 成功后同步 `myStickers` 与贴纸缓存里的 `shared_at`；广场列表由调用方按需刷新。
+   */
+  async shareSticker(id: number, shared: boolean) {
+    if (!this.enabled) {
+      Utils.commonMsg("自定义表态未启用，无法共享表态贴纸。", false);
+      return false;
+    }
+    const authKey = this.getAuthKey();
+    if (!authKey) {
+      Utils.commonMsg("尚未完成云端认证，请先到“个人中心 - 设置”完成认证。", false);
+      return false;
+    }
+    const row = await this.parent.supabaseUtils.shareAttitudeSticker({ authKey, id, shared });
+    if (!row) return false;
+    this.patchSticker(id, { shared_at: row.shared_at });
+    Utils.commonMsg(shared ? "已共享到贴纸广场~" : "已取消共享~");
+    return true;
+  }
+
+  /**
+   * 收藏 / 取消收藏他人上传的贴纸。
+   *
+   * 收藏集合会影响「我的贴纸」列表，成功后让本地列表缓存失效，下次打开时重新拉取。
+   */
+  async favoriteSticker(id: number, favorite: boolean) {
+    if (!this.enabled) {
+      Utils.commonMsg("自定义表态未启用，无法收藏表态贴纸。", false);
+      return false;
+    }
+    const authKey = this.getAuthKey();
+    if (!authKey) {
+      Utils.commonMsg("尚未完成云端认证，请先到“个人中心 - 设置”完成认证。", false);
+      return false;
+    }
+    const row = await this.parent.supabaseUtils.favoriteAttitudeSticker({
+      authKey,
+      id,
+      favorite,
+    });
+    if (!row) return false;
+    this.myStickers = undefined;
+    Utils.commonMsg(favorite ? "已收藏贴纸~" : "已取消收藏~");
+    return true;
+  }
+
+  /** 就地更新 `myStickers` 与解析缓存中的某张贴纸 */
+  private patchSticker(id: number, patch: Partial<SupabaseAttitudeSticker>) {
+    const attitudeType = buildStickerType(id);
+    const cached = this.stickerCache.get(attitudeType);
+    if (cached) this.stickerCache.set(attitudeType, { ...cached, ...patch });
+    if (this.myStickers) {
+      this.myStickers = {
+        ...this.myStickers,
+        stickers: this.myStickers.stickers.map((item) =>
+          item.id === id ? { ...item, ...patch } : item,
+        ),
+      };
+    }
   }
 
   /**
