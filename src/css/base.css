@@ -2751,6 +2751,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   position: relative;
   padding: var(--mcmodder-width-padding-2);
   border-radius: var(--mcmodder-width-radius);
+  color: var(--mcmodder-color-text);
   background-image: linear-gradient(
     45deg,
     var(--mcmodder-color-primary-background),
