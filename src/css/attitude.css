@@ -355,6 +355,10 @@ img.mcmodder-attitude-sticker-image {
   position: relative;
 }
 
+.center-setting-block .mcmodder-attitude-sticker-preview-desc .form-control {
+  width: 100%;
+}
+
 .mcmodder-attitude-sticker-preview-desc-text,
 .mcmodder-attitude-sticker-viewer-name {
   width: calc(100% - 2em);
@@ -367,6 +371,10 @@ img.mcmodder-attitude-sticker-image {
   font-size: 14px;
   color: var(--mcmodder-color-text-dark2);
   margin: 0 auto;
+}
+
+.mcmodder-attitude-sticker-viewer-name {
+  margin: 3px auto;
 }
 
 .mcmodder-attitude-sticker-preview-empty {
@@ -424,6 +432,10 @@ img.mcmodder-attitude-sticker-image {
   width: 48px;
   height: 48px;
   object-fit: contain;
+}
+
+.mcmodder-attitude-sticker-viewer-container {
+  padding: 3px;
 }
 
 /* 「我的贴纸」里的收藏标识 */
@@ -537,6 +549,10 @@ img.mcmodder-attitude-sticker-image {
 
 .mcmodder-attitude-sticker-viewer-desc {
   width: 200px;
+}
+
+.mcmodder-attitude-sticker-viewer-addfav button {
+  width: 100%;
 }
 
 @media (max-width: 639px) {

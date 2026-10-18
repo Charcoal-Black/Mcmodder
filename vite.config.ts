@@ -1,10 +1,41 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import monkey from "vite-plugin-monkey";
+
+// 开发期补丁：让 Firefox 的 Private Network Access 预检通过。
+// 宿主页面是 https://*.mcmod.cn（公网源），dev server 在 http://127.0.0.1（本地地址空间），
+// Firefox 会先发一个 OPTIONS 预检并要求响应带 `Access-Control-Allow-Private-Network: true`，
+// 预检失败就表现为「已拦截跨源请求…（原因：CORS 请求未能成功）。状态码：(null)」。
+// vite 自带的 cors 中间件在插件的 configureServer 钩子之前注册，并会直接结束预检请求，
+// 所以 vite-plugin-monkey 里设置该响应头的中间件来不及生效（只对非预检请求有效）。
+// 这里把预检响应插到 cors 中间件之前，仅在 serve 模式生效。
+const devPrivateNetworkAccess: Plugin = {
+  name: "dev-private-network-access",
+  apply: "serve",
+  configureServer(server) {
+    server.middlewares.stack.unshift({
+      route: "",
+      handle(req, res, next) {
+        if (req.method !== "OPTIONS") return next();
+        res.setHeader("access-control-allow-origin", "*");
+        res.setHeader("access-control-allow-methods", "GET,HEAD,OPTIONS");
+        res.setHeader(
+          "access-control-allow-headers",
+          req.headers["access-control-request-headers"] ?? "*",
+        );
+        res.setHeader("access-control-max-age", "86400");
+        res.setHeader("access-control-allow-private-network", "true");
+        res.statusCode = 204;
+        res.end();
+      },
+    });
+  },
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    devPrivateNetworkAccess,
     vue(),
     monkey({
       entry: "src/main.ts",

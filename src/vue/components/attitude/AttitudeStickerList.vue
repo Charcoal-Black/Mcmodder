@@ -109,10 +109,12 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { Values } from "../../../Values";
 import { buildStickerType } from "../../../attitude/attitudeIcon";
 import type { AttitudeStickerListProps } from "../../../types/props";
+import type { AttitudeStickerListEmitPayload } from "../../../types/emits";
 import TextInput from "../input/TextInput.vue";
 import { Utils } from "../../../Utils.ts";
 
 const props = defineProps<AttitudeStickerListProps>();
+const emit = defineEmits<AttitudeStickerListEmitPayload>();
 
 const loading = computed(() => {
   return props.parent === undefined || props.stickers === undefined;
@@ -123,11 +125,15 @@ const uploading = ref(false);
 const selected = shallowRef<SupabaseAttitudeSticker | null>(null);
 watch(
   () => selected.value?.id,
-  () => (imagePending.value = true),
+  () => {
+    renaming.value = false;
+    imagePending.value = true;
+  },
 );
 
 const renaming = ref(false);
 const renamePending = ref(false);
+const deletePending = ref(false);
 const sharePending = ref(false);
 const favoritePending = ref(false);
 const imagePending = ref(true);
@@ -213,16 +219,12 @@ async function onCompleteRename(info: InputValidInfo<string>) {
     });
     if (resp && !("error" in resp)) {
       const finalName = resp.sticker?.name ?? info.final!;
-      // 重新赋值以触发渲染，并就地更新父组件传入的列表数组
-      if (selected.value) {
-        selected.value = { ...selected.value, name: finalName };
-      }
-      const propSticker = props.stickers?.find((item) => item.id === stickerId);
-      if (propSticker) {
-        propSticker.name = finalName;
-      }
+      // 重新赋值以触发渲染，父组件传入的列表由事件通知更新
+      const renamed = { ...selected.value!, name: finalName };
+      selected.value = renamed;
+      emit("stickerRenamed", renamed);
       // 本地重命名成功后立即同步 AttitudeSystem 缓存
-      props.parent?.attitudeSystem?.renameSticker(stickerId, finalName, resp.sticker);
+      props.parent?.attitudeSystem?.patchSticker(stickerId, { name: finalName }, resp.sticker);
       Utils.commonMsg("贴纸重命名成功~");
     }
     renamePending.value = false;
@@ -239,14 +241,25 @@ function onDelete(sticker: SupabaseAttitudeSticker) {
     cancelButtonText: "取消",
     confirmButtonColor: "var(--mcmodder-color-danger)",
     preConfirm: async () => {
+      deletePending.value = true;
       const resp = await props.parent?.supabaseUtils?.deleteAttitudeSticker({
         authKey: props.parent.configRepository.getProfile("auth_key")!,
         id: sticker.id,
       });
       if (resp && !("error" in resp)) {
+        // 删除成功后立即同步 AttitudeSystem 缓存，避免面板继续显示已删除的贴纸
+        props.parent?.attitudeSystem?.removeSticker(sticker.id, true);
+        dropFromList(sticker);
         Utils.commonMsg("贴纸删除成功~");
       }
+      deletePending.value = false;
     },
   });
+}
+
+/** 把贴纸移出父组件的列表（交由父组件更新传入的数组），正在预览的则清空 */
+function dropFromList(sticker: SupabaseAttitudeSticker) {
+  emit("stickerRemoved", sticker);
+  if (selected.value?.id === sticker.id) selected.value = null;
 }
 </script>

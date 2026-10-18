@@ -186,6 +186,8 @@
         :on-upload="uploadAttitudeSticker"
         :on-share="shareAttitudeSticker"
         :on-favorite="unfavoriteAttitudeSticker"
+        @sticker-renamed="onStickerRenamed"
+        @sticker-removed="onStickerRemoved"
       />
       <button class="btn btn-light" @click="refreshAttitudeStickers(true)">刷新列表</button>
     </template>
@@ -489,6 +491,17 @@ async function uploadAttitudeSticker(file: File) {
   await refreshAttitudeStickers(true);
 }
 
+/** 面板内重命名成功：替换列表里的旧记录（AttitudeSystem 的缓存已由面板同步） */
+function onStickerRenamed(sticker: SupabaseAttitudeSticker) {
+  const index = attitudeStickers.value.findIndex((item) => item.id === sticker.id);
+  if (index >= 0) attitudeStickers.value[index] = sticker;
+}
+
+/** 贴纸被删除 / 移出贴纸库：把列表里的对应项剔除 */
+function onStickerRemoved(sticker: SupabaseAttitudeSticker) {
+  attitudeStickers.value = attitudeStickers.value.filter((item) => item.id !== sticker.id);
+}
+
 async function shareAttitudeSticker(sticker: SupabaseAttitudeSticker) {
   const ok = await props.parent.attitudeSystem.shareSticker(sticker.id, !sticker.shared_at);
   if (ok) await refreshAttitudeStickers(true);
@@ -715,10 +728,11 @@ onBeforeUnmount(() => treeObserver?.disconnect());
 
 .center-block-settings-content {
   flex: 1;
+  min-width: 0;
 }
 
 .center-block-settings-sidebar {
-  width: 280px;
+  flex: 0 0 280px;
 }
 
 .mcmodder-menutree {

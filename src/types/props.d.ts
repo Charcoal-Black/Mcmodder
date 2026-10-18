@@ -152,6 +152,7 @@ export interface AttitudeStickerPlazaProps {
 
 export interface StickerViewerOption extends PopoverBaseOption {
   type: "stickerViewer";
+  parent: import("../Mcmodder").Mcmodder;
   sticker: SupabaseAttitudeSticker;
 }
 

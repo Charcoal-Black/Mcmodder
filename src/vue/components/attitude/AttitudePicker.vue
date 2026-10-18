@@ -82,8 +82,10 @@
         :active="active"
         :on-pick="onPick"
         :on-upload="onUpload"
-        :on-share="onShare"
         :on-favorite="onUnfavorite"
+        :on-share="onShare"
+        @sticker-renamed="onStickerRenamed"
+        @sticker-removed="onStickerRemoved"
       />
       <AttitudeStickerPlaza
         v-show="tab === 'plaza'"
@@ -172,6 +174,18 @@ async function loadStickers() {
   } finally {
     stickersLoading = false;
   }
+}
+
+/** 面板内重命名成功：替换列表里的旧记录（`stickers` 是 shallowRef，整体换新数组才会触发重渲染） */
+function onStickerRenamed(sticker: SupabaseAttitudeSticker) {
+  if (!stickers.value) return;
+  stickers.value = stickers.value.map((item) => (item.id === sticker.id ? sticker : item));
+}
+
+/** 贴纸被删除 / 移出贴纸库：把列表里的对应项剔除 */
+function onStickerRemoved(sticker: SupabaseAttitudeSticker) {
+  if (!stickers.value) return;
+  stickers.value = stickers.value.filter((item) => item.id !== sticker.id);
 }
 
 /** 拉取贴纸广场一页；`reset` 为真时从第一页重新开始 */

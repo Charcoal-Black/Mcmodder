@@ -40,6 +40,7 @@
     "pinyin": "^4.0.0",
     "playwright": "^1.60.0",
     "prettier": "^3.9.9",
+    "supabase": "^2.121.0",
     "systemjs": "^6.15.1",
     "turndown": "^7.2.4",
     "typescript": "^5.9.2",

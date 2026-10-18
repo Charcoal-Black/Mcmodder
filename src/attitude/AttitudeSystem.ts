@@ -304,30 +304,19 @@ export class AttitudeSystem {
   }
 
   /**
-   * 本地同步重命名后的贴纸缓存：服务端确认重命名成功后，立即把新名称写入
-   * `myStickers` 与 `stickerCache`，避免 TTL 缓存继续返回旧名称。
+   * 本地同步一张贴纸被移出「我的贴纸库」（删除 / 取消收藏）后的缓存：把它从 `myStickers`
+   * 的列表里剔除，避免 TTL 缓存继续把它交给面板。
    *
-   * `serverSticker` 优先使用服务端返回的记录（便于沿用服务端截断后的名称）。
+   * `deleted` 为真表示贴纸已被删除：解析缓存里的记录一并清除，下次解析时由服务端决定它是否
+   * 还在（解析不到才会走降级样式）；取消收藏只影响贴纸库列表，贴纸本身仍在云端，故保留解析
+   * 缓存，别处引用它的短评照常渲染。
    */
-  renameSticker(id: number, name: string, serverSticker?: SupabaseAttitudeSticker) {
-    const resolvedName = serverSticker?.name ?? name;
-    const resolved = serverSticker ?? this.myStickers?.stickers.find((item) => item.id === id);
-    if (resolved || serverSticker) {
-      this.stickerCache.set(buildStickerType(id), {
-        ...(resolved ?? {}),
-        ...serverSticker,
-        id,
-        name: resolvedName,
-      } as SupabaseAttitudeSticker);
+  removeSticker(id: number, deleted = false) {
+    const stickers = this.myStickers?.stickers;
+    if (this.myStickers && stickers?.some((item) => item.id === id)) {
+      this.myStickers = { ...this.myStickers, stickers: stickers.filter((item) => item.id !== id) };
     }
-    if (this.myStickers) {
-      this.myStickers = {
-        ...this.myStickers,
-        stickers: this.myStickers.stickers.map((item) =>
-          item.id === id ? { ...item, ...serverSticker, name: resolvedName } : item,
-        ),
-      };
-    }
+    if (deleted) this.stickerCache.delete(buildStickerType(id));
   }
 
   /**
@@ -417,7 +406,7 @@ export class AttitudeSystem {
   /**
    * 收藏 / 取消收藏他人上传的贴纸。
    *
-   * 收藏集合会影响「我的贴纸」列表，成功后让本地列表缓存失效，下次打开时重新拉取。
+   * 收藏集合会影响「我的贴纸」列表：取得到整行时就地同步本地缓存，否则让缓存失效，下次打开时重新拉取。
    */
   async favoriteSticker(id: number, favorite: boolean) {
     if (!this.enabled) {
@@ -435,13 +424,29 @@ export class AttitudeSystem {
       favorite,
     });
     if (!row) return false;
-    this.myStickers = undefined;
+    const cached = this.myStickers;
+    const sticker = this.stickerCache.get(buildStickerType(id));
+    if (!favorite) {
+      this.removeSticker(id);
+    } else if (sticker && cached) {
+      this.storeStickers(
+        [sticker, ...cached.stickers.filter((item) => item.id !== id)],
+        cached.quota,
+      );
+    } else {
+      this.myStickers = undefined;
+    }
     Utils.commonMsg(favorite ? "已收藏贴纸~" : "已取消收藏~");
     return true;
   }
 
-  /** 就地更新 `myStickers` 与解析缓存中的某张贴纸 */
-  private patchSticker(id: number, patch: Partial<SupabaseAttitudeSticker>) {
+  /** 就地更新 `myStickers` 与解析缓存中的某张贴纸；`row` 为服务端返回的最新整行，会与 `patch` 合并 */
+  public patchSticker(
+    id: number,
+    patch: Partial<SupabaseAttitudeSticker>,
+    row?: SupabaseAttitudeSticker,
+  ) {
+    if (row) patch = { ...row, ...patch };
     const attitudeType = buildStickerType(id);
     const cached = this.stickerCache.get(attitudeType);
     if (cached) this.stickerCache.set(attitudeType, { ...cached, ...patch });
@@ -591,6 +596,7 @@ export class AttitudeSystem {
             PopoverController.instance.addStickerViewer(img, {
               type: "stickerViewer",
               anchorElement: img,
+              parent: this.parent,
               sticker,
             });
           }

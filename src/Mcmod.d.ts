@@ -13,6 +13,16 @@ declare global {
     type?: "success" | "warning" | "info" | "error" | "question";
     title?: string;
     text?: string;
+    input?:
+      | "text"
+      | "email"
+      | "password"
+      | "number"
+      | "tel"
+      | "select"
+      | "radio"
+      | "checkbox"
+      | "textarea";
     html?: string;
     footer?: string;
     customClass?: string;
@@ -24,7 +34,7 @@ declare global {
     cancelButtonColor?: string;
     allowOutsideClick?: boolean;
     allowEscapeKey?: boolean;
-    preConfirm?: () => any;
+    preConfirm?: (...args: any[]) => any;
   }
   interface SweetAlertCallbackState {
     value: boolean;

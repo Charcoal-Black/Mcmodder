@@ -888,6 +888,15 @@ body:not(.view),
   background-color: var(--mcmodder-color-accent-light-transparent1);
   border-color: var(--mcmodder-color-text-dark3);
 }
+.btn-success.disabled,
+.btn-success:disabled,
+.btn-warning.disabled,
+.btn-warning:disabled,
+.btn-danger.disabled,
+.btn-danger:disabled {
+  color: var(--mcmodder-color-text-dark2);
+}
+
 .item-list-table th,
 .item-list-table td {
   border-color: var(--mcmodder-color-background-dark3);

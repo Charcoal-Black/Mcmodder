@@ -66,6 +66,9 @@ export class PopoverController {
   private readonly typeMap;
   private readonly eventTriggerMap;
 
+  private timeout: number | null = null;
+  private hoveringPopover = false;
+
   constructor() {
     const body = document.body;
     const inputListContainer = $("<div>").appendTo(body);
@@ -106,10 +109,7 @@ export class PopoverController {
           }
         }
 
-        const inPopover = e
-          .composedPath()
-          .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
-        if (!inPopover) {
+        if (!this.inPopover(e)) {
           this.closeActive();
         }
       },
@@ -124,9 +124,20 @@ export class PopoverController {
         if (!(target instanceof HTMLElement) || this.pendingOptionSet.has(target)) {
           return;
         }
+
+        if (this.timeout !== null && this.inPopover(e)) {
+          clearTimeout(this.timeout);
+          this.timeout = null;
+          this.hoveringPopover = true;
+        }
+
         const option = this.hasOption(target);
         if (option) {
-          await this.serve("pointerover", target, option);
+          const success = await this.serve("pointerover", target, option);
+          if (success && this.timeout !== null) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+          }
         }
       },
       this.opt,
@@ -137,11 +148,17 @@ export class PopoverController {
       "pointerout",
       async (e) => {
         if (
-          this.activeType !== null &&
-          this.activeTarget === e.target &&
-          this.eventTriggerMap[this.activeType] === "pointerover"
+          (this.activeType !== null &&
+            this.activeTarget === e.target &&
+            this.eventTriggerMap[this.activeType] === "pointerover" &&
+            this.timeout === null) ||
+          (this.hoveringPopover && !this.inPopover(e))
         ) {
-          this.activeApp!.close();
+          this.hoveringPopover = false;
+          this.timeout = setTimeout(() => {
+            this.activeApp?.close();
+            this.timeout = null;
+          }, 300);
         }
       },
       this.opt,
@@ -222,6 +239,12 @@ export class PopoverController {
         };
       }
     }
+  }
+
+  private inPopover(e: PointerEvent) {
+    return e
+      .composedPath()
+      .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
   }
 
   /**

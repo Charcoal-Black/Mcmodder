@@ -1,6 +1,7 @@
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 type LinkMarkReplaceRule = {
   regExp: RegExp;
@@ -126,7 +127,7 @@ export class MainText {
       const contentType = resp.headers.get("content-type") ?? "?";
       const isLocalized = src.includes("mcmod.cn");
       if (isLocalized) return;
-      if (size > 1024000)
+      if (size > Values.ueditorFileMaxSize)
         container // editor.options.fileMaxSize
           .append(
             `<span class="badge badge-warning mcmodder-localize-check>该图片尚未本地化，但是体积 (${Utils.getFormattedSize(size)}) 超过了本地图床最大体积限制</span>`,

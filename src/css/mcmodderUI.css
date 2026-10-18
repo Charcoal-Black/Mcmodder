@@ -46,46 +46,46 @@
     var(--mcmodder-color-danger-light-transparent1)
   );
 }
-.btn:hover,
-.btn.btn-dark:hover,
-.btn.btn-light:hover {
+.btn:not(:disabled):not(.disabled):hover,
+.btn.btn-dark:not(:disabled):not(.disabled):hover,
+.btn.btn-light:not(:disabled):not(.disabled):hover {
   background-color: var(--mcmodder-color-accent-background);
   background-image: none;
   color: var(--mcmodder-color-accent-dark2);
 }
-.btn.btn-success:hover,
-.btn.btn-dark.btn-success:hover,
-.btn.btn-light.btn-success:hover {
+.btn.btn-success:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-success:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-success:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-success),
     var(--mcmodder-color-success-transparent1)
   );
 }
-.btn.btn-warning:hover,
-.btn.btn-dark.btn-warning:hover,
-.btn.btn-light.btn-warning:hover {
+.btn.btn-warning:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-warning:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-warning:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-warning),
     var(--mcmodder-color-warning-transparent1)
   );
 }
-.btn.btn-danger:hover,
-.btn.btn-dark.btn-danger:hover,
-.btn.btn-light.btn-danger:hover {
+.btn.btn-danger:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-danger:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-danger:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-danger),
     var(--mcmodder-color-danger-transparent1)
   );
 }
-.btn:active,
-.btn-dark:active,
-.btn-light:active,
-.btn:focus,
-.btn-dark:focus,
-.btn-light:focus {
+.btn:not(:disabled):not(.disabled):active,
+.btn-dark:not(:disabled):not(.disabled):active,
+.btn-light:not(:disabled):not(.disabled):active,
+.btn:not(:disabled):not(.disabled):focus,
+.btn-dark:not(:disabled):not(.disabled):focus,
+.btn-light:not(:disabled):not(.disabled):focus {
   color: var(--mcmodder-color-accent-dark2);
 }
 .dropdown-menu > .active > a,
