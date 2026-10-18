@@ -1726,6 +1726,7 @@ interface RequestToastRecord {
 }
 
 interface ScheduleRequestTypes {
+  annualCelebration: import("../schedulerequest/types/AnnualCelebrationScheduleRequest").AnnualCelebrationScheduleRequest;
   autoCheckin: import("../schedulerequest/types/AutoCheckinScheduleRequest").AutoCheckinScheduleRequest;
   autoCheckUpdate: import("../schedulerequest/types/AutoCheckUpdateScheduleRequest").AutoCheckUpdateScheduleRequest;
   autoCheckVerify: import("../schedulerequest/types/AutoCheckVerifyScheduleRequest").AutoCheckVerifyScheduleRequest;

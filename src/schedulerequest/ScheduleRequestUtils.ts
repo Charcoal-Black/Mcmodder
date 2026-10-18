@@ -7,12 +7,24 @@ import { ScheduleRequestType } from "./ScheduleRequestType";
  * 计划任务的触发方式。
  *
  * - `NONE` —— 不由此处触发（预留）；
- * - `CONFIG` —— 由一个用户配置项决定是否启用、以及最小启用阈值（见 {@link ScheduleRequestUtils.addRequestType}）。
+ * - `CONFIG` —— 由一个用户配置项决定是否启用、以及最小启用阈值（见 {@link ScheduleRequestUtils.addRequestType}）；
+ * - `ALWAYS` —— 不依赖任何配置项，始终启用（可选要求登录用户）。
  */
 export const enum ScheduleRequestTriggerType {
   NONE,
   CONFIG,
+  ALWAYS,
 }
+
+/**
+ * 任务注册参数：首项为触发方式，其后随触发方式变化。
+ *
+ * - `CONFIG`：`[配置项 id, 最小启用阈值, 是否要求登录用户]`；
+ * - `ALWAYS`：`[是否要求登录用户]`。
+ */
+type ScheduleRequestTriggerParam =
+  | [ScheduleRequestTriggerType.CONFIG, KeysOfType<Settings, number | boolean>, number, boolean]
+  | [ScheduleRequestTriggerType.ALWAYS, boolean];
 
 /**
  * 计划任务调度器：管理「到点该执行什么」的队列，并按优先级依次执行到期任务。
@@ -58,18 +70,15 @@ export class ScheduleRequestUtils {
    *
    * @param key 任务 id，同时是待办列表中的 `todo` 字段。
    * @param request 任务实例。
-   * @param trigger 触发方式。
-   * @param param 触发参数三元组，依次为
-   *   「关联的配置项 id」、「该配置项的最小启用阈值」、「是否要求登录用户」。
+   * @param param 触发方式及其参数，见 {@link ScheduleRequestTriggerParam}。
    */
   addRequestType(
     key: keyof ScheduleRequestTypes,
     request: ScheduleRequestType,
-    trigger: ScheduleRequestTriggerType,
-    ...param: [KeysOfType<Settings, number | boolean>, number, boolean]
+    ...param: ScheduleRequestTriggerParam
   ) {
     this.requestData[key] = request;
-    this.init(key, trigger, param);
+    this.init(key, ...param);
   }
 
   /**
@@ -81,20 +90,15 @@ export class ScheduleRequestUtils {
    * - 配置已启用但已有待办 → 什么都不做，保留原有排期；
    * - 配置未启用 → 清除该任务的待办，任务就此停摆。
    *
+   * `ALWAYS` 模式不读取配置：满足登录要求且没有待办时立刻排期，否则保留原有排期。
+   *
    * @param key 任务 id。
-   * @param trigger 触发方式。
-   * @param param 同 {@link addRequestType} 的 `param`。
+   * @param param 触发方式及其参数，见 {@link ScheduleRequestTriggerParam}。
    */
-  init(
-    key: keyof ScheduleRequestTypes,
-    trigger: ScheduleRequestTriggerType,
-    param: [KeysOfType<Settings, number | boolean>, number, boolean],
-  ) {
-    switch (trigger) {
+  init(key: keyof ScheduleRequestTypes, ...param: ScheduleRequestTriggerParam) {
+    switch (param[0]) {
       case ScheduleRequestTriggerType.CONFIG: {
-        const configID = param[0],
-          minimum = param[1] ?? 0,
-          hasUserLimit = param[2];
+        const [, configID, minimum, hasUserLimit] = param;
         const configValue = this.configs.getSettings(configID);
         if (
           (hasUserLimit ? this.parent.currentUID > 0 : true) &&
@@ -105,6 +109,16 @@ export class ScheduleRequestUtils {
           this.create(0, key, hasUserLimit ? this.parent.currentUID : undefined);
         } else if (!configValue) {
           this.deleteByTodo(key);
+        }
+        break;
+      }
+      case ScheduleRequestTriggerType.ALWAYS: {
+        const [, hasUserLimit] = param;
+        if (
+          (hasUserLimit ? this.parent.currentUID > 0 : true) &&
+          !this.find(key, hasUserLimit ? this.parent.currentUID : undefined)?.time
+        ) {
+          this.create(0, key, hasUserLimit ? this.parent.currentUID : undefined);
         }
         break;
       }
