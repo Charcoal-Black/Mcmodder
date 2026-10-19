@@ -143,8 +143,10 @@ export interface AttitudeStickerListProps {
  * `desc-extra`（描述区默认内容之后追加）。
  */
 export interface AttitudeStickerBrowserProps {
-  /** 展示的贴纸列表 */
+  /** 展示的贴纸列表（`loading` 时忽略） */
   stickers: SupabaseAttitudeSticker[];
+  /** 正在拉取列表：列表区铺骨架块占位，预览区照常渲染，操作区暂不显示 */
+  loading?: boolean;
   /** 已表态的类型（高亮用）；只查看时传空数组 */
   active?: string[];
   /** 点击贴纸发送表态；不传 = 只预览 */

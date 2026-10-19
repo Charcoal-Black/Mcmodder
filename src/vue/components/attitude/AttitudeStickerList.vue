@@ -8,14 +8,14 @@
       <span v-if="quotaText" class="mcmodder-attitude-sticker-quota">{{ quotaText }}</span>
     </div>
 
-    <p v-if="loading" class="mcmodder-attitude-empty-hint">正在加载我的表态贴纸…</p>
-    <p v-else-if="stickers!.length === 0" class="mcmodder-attitude-empty-hint">
+    <p v-if="!loading && stickers!.length === 0" class="mcmodder-attitude-empty-hint">
       还没有上传或收藏过表态贴纸，上传一张吧~
     </p>
     <AttitudeStickerBrowser
       v-else
       v-model:selected="selected"
-      :stickers="stickers!"
+      :stickers="stickers ?? []"
+      :loading="loading"
       :active="active"
       :on-pick="onPick"
       :on-share="onShare"

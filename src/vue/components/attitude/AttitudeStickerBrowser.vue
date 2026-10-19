@@ -6,23 +6,37 @@
     <div
       class="mcmodder-attitude-sticker-grid"
       :class="{ 'mcmodder-attitude-plaza-grid': variant === 'plaza' }"
+      :aria-busy="loading || undefined"
     >
-      <button
-        v-for="sticker in stickers"
-        :key="sticker.id"
-        type="button"
-        class="mcmodder-attitude-sticker-item"
-        :class="{
-          'mcmodder-attitude-plaza-item': variant === 'plaza',
-          'mcmodder-attitude-choice-selected': sticker === selected,
-          'mcmodder-attitude-choice-active': isActive(sticker),
-        }"
-        :title="sticker.name || '自定义贴纸'"
-        @click="selected = selected === sticker ? null : sticker"
-      >
-        <img :src="sticker.image_url" :alt="sticker.name || '自定义贴纸'" />
-        <slot name="item" :sticker="sticker" />
-      </button>
+      <template v-if="loading">
+        <div
+          v-for="index in SKELETON_ITEMS"
+          :key="index"
+          class="mcmodder-attitude-sticker-skeleton-item"
+          aria-hidden="true"
+        >
+          <span class="mcmodder-attitude-sticker-skeleton-thumb mcmodder-skeleton" />
+          <span class="mcmodder-attitude-sticker-skeleton-name mcmodder-skeleton" />
+        </div>
+      </template>
+      <template v-else>
+        <button
+          v-for="sticker in stickers"
+          :key="sticker.id"
+          type="button"
+          class="mcmodder-attitude-sticker-item"
+          :class="{
+            'mcmodder-attitude-plaza-item': variant === 'plaza',
+            'mcmodder-attitude-choice-selected': sticker === selected,
+            'mcmodder-attitude-choice-active': isActive(sticker),
+          }"
+          :title="sticker.name || '自定义贴纸'"
+          @click="selected = selected === sticker ? null : sticker"
+        >
+          <img :src="sticker.image_url" :alt="sticker.name || '自定义贴纸'" />
+          <slot name="item" :sticker="sticker" />
+        </button>
+      </template>
     </div>
     <div class="mcmodder-attitude-sticker-preview">
       <template v-if="selected">
@@ -54,7 +68,8 @@
       </template>
       <span v-else class="mcmodder-attitude-sticker-preview-empty">轻触一张贴纸来预览~</span>
     </div>
-    <div v-if="selected" class="mcmodder-attitude-sticker-opt">
+    <!-- 列表刷新中不显示操作区：此刻列表是骨架块，按钮指向的贴纸未必还在结果里 -->
+    <div v-if="selected && !loading" class="mcmodder-attitude-sticker-opt">
       <button v-if="onPick" class="btn btn-success" @click="onPick(buildStickerType(selected.id))">
         <template v-if="!isActive(selected)"><i class="fa fa-paper-plane" /> 发送</template>
         <template v-else><i class="fa fa-reply" /> 撤销</template>
@@ -103,6 +118,9 @@ const emit = defineEmits<AttitudeStickerBrowserEmitPayload>();
 
 /** 正在预览的贴纸（`null` = 未选中）；使用方通过 `v-model:selected` 读写，重命名 / 移除后由它收起预览 */
 const selected = defineModel<SupabaseAttitudeSticker | null>("selected", { default: null });
+
+/** `loading` 时列表区铺几个骨架块，铺满两行足够撑住版面 */
+const SKELETON_ITEMS = 8;
 const imagePending = ref(true);
 const sharePending = ref(false);
 const favoritePending = ref(false);

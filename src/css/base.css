@@ -1081,6 +1081,33 @@ body:not(.view),
   right: calc(50% - 2em);
   animation: mcmodder-loading-second 1s ease-in-out 0s infinite alternate;
 }
+/* 骨架屏：内容还在路上时用灰块占位，一道色带循环扫过表示仍在加载。
+ * 用法是给任意元素加上 .mcmodder-skeleton（自带底色、圆角与裁剪），尺寸交给使用方。
+ */
+.mcmodder-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: var(--mcmodder-color-background-dark1);
+}
+.mcmodder-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--mcmodder-color-background-dark2),
+    transparent
+  );
+  animation: mcmodder-skeleton-shimmer 1.5s ease-in-out 0s infinite;
+}
+@keyframes mcmodder-skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
 .verify-rowlist,
 #mcmodder-verify-search,
 #mcmodder-mod-search,

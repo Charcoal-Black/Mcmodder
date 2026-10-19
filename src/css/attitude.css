@@ -428,6 +428,16 @@ img.mcmodder-attitude-sticker-image {
   box-shadow: 0 0 0 1px var(--mcmodder-color-primary);
 }
 
+.mcmodder-attitude-sticker-item.mcmodder-attitude-choice-active::after {
+  content: "\f00c";
+  color: var(--mcmodder-color-primary);
+  position: absolute;
+  font-family: "FontAwesome";
+  bottom: 0;
+  right: 0;
+  line-height: 1em;
+}
+
 .mcmodder-attitude-sticker-item img {
   display: block;
   width: 48px;
@@ -540,6 +550,31 @@ img.mcmodder-attitude-sticker-image {
   display: flex;
   justify-content: center;
   margin-top: 6px;
+}
+
+/* 加载中的骨架屏：只占列表区，尺寸对齐真实网格项，数据到达时不会跳动 */
+.mcmodder-attitude-sticker-skeleton-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.mcmodder-attitude-sticker-skeleton-thumb {
+  width: 48px;
+  height: 48px;
+}
+
+/* 「我的贴纸」网格项没有名称行，广场才有 */
+.mcmodder-attitude-sticker-skeleton-name {
+  display: none;
+  width: 40px;
+  height: 8px;
+}
+
+.mcmodder-attitude-plaza-grid .mcmodder-attitude-sticker-skeleton-name {
+  display: block;
 }
 
 .mcmodder-attitude-sticker-viewer {

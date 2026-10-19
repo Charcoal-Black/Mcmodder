@@ -173,7 +173,9 @@ const plazaStickers = computed(() => {
   if (!rows || !collection) return rows;
   const favorited = new Set(collection.map((item) => item.id));
   return rows.map((row) => {
-    const isFavorite = favorited.has(row.id);
+    // 自己上传的贴纸本来就在集合里，「在不在集合里」不能当收藏用（也收藏不了自己），
+    // 这类行沿用服务端给的 `is_favorite`
+    const isFavorite = row.is_mine ? !!row.is_favorite : favorited.has(row.id);
     return isFavorite === !!row.is_favorite ? row : { ...row, is_favorite: isFavorite };
   });
 });

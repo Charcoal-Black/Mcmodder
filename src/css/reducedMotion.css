@@ -37,6 +37,11 @@
     animation: none !important;
   }
 
+  /* 骨架屏：色带不再扫过，灰块本身仍能表示「内容还没到」 */
+  .mcmodder-skeleton::after {
+    animation: none !important;
+  }
+
   /* 个人中心头像被点击时的抖动（5 次） */
   body .center-header .user-icon .user-icon-img.tapped {
     animation: none !important;

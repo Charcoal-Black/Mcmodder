@@ -7,15 +7,15 @@
       <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
     </div>
 
-    <p v-if="stickers === undefined" class="mcmodder-attitude-empty-hint">正在加载贴纸广场…</p>
-    <p v-else-if="stickers.length === 0" class="mcmodder-attitude-empty-hint">
+    <p v-if="stickers !== undefined && stickers.length === 0" class="mcmodder-attitude-empty-hint">
       广场里还没有贴纸，去「我的贴纸」共享一张吧~
     </p>
     <AttitudeStickerBrowser
       v-else
       v-model:selected="selected"
       variant="plaza"
-      :stickers="stickers"
+      :stickers="stickers ?? []"
+      :loading="stickers === undefined"
       :active="active"
       :on-pick="onPick"
       :on-share="onShare"
