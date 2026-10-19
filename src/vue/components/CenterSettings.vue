@@ -186,6 +186,7 @@
         :on-upload="uploadAttitudeSticker"
         :on-share="shareAttitudeSticker"
         :on-favorite="unfavoriteAttitudeSticker"
+        :on-delete="deleteAttitudeSticker"
         @sticker-renamed="onStickerRenamed"
         @sticker-removed="onStickerRemoved"
       />
@@ -511,6 +512,12 @@ async function shareAttitudeSticker(sticker: SupabaseAttitudeSticker) {
 async function unfavoriteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
   const ok = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
   if (ok) await refreshAttitudeStickers(true);
+  return ok;
+}
+
+async function deleteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
+  const ok = await props.parent.attitudeSystem.deleteSticker(sticker.id);
+  if (ok) attitudeStickers.value = attitudeStickers.value.filter((item) => item.id !== sticker.id);
   return ok;
 }
 

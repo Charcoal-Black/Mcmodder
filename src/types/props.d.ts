@@ -130,6 +130,33 @@ export interface AttitudeStickerListProps {
   onShare?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
   /** 取消收藏他人上传的贴纸；不传则不显示取消收藏按钮 */
   onFavorite?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 删除自己上传的贴纸；不传则不显示删除按钮 */
+  onDelete?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+}
+
+/**
+ * 贴纸浏览区（网格 + 预览 + 操作栏），「我的贴纸」与「贴纸广场」共用。
+ *
+ * 操作栏里的发送 / 共享 / 收藏 / 删除都在这里：各自是否显示由传入的回调与贴纸归属决定
+ * （共享、删除仅限自己上传的；收藏对他人贴纸可切换，自己的贴纸只能取消收藏）。
+ * 差异部分由插槽补齐：`item`（网格项附加内容）、`desc`（预览描述区，整体替换）、
+ * `desc-extra`（描述区默认内容之后追加）。
+ */
+export interface AttitudeStickerBrowserProps {
+  /** 展示的贴纸列表 */
+  stickers: SupabaseAttitudeSticker[];
+  /** 已表态的类型（高亮用）；只查看时传空数组 */
+  active?: string[];
+  /** 点击贴纸发送表态；不传 = 只预览 */
+  onPick?: (attitudeType: string) => void;
+  /** 共享 / 取消共享自己上传的贴纸；不传则不显示共享按钮 */
+  onShare?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 收藏 / 取消收藏；不传则不显示收藏按钮 */
+  onFavorite?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 删除自己上传的贴纸；不传则不显示删除按钮 */
+  onDelete?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 外观变体：`plaza` 启用广场专用的网格 / 网格项 / 描述区样式 */
+  variant?: "default" | "plaza";
 }
 
 export interface AttitudeStickerPlazaProps {
@@ -146,6 +173,10 @@ export interface AttitudeStickerPlazaProps {
   onPick?: (attitudeType: string) => void;
   /** 收藏 / 取消收藏 */
   onFavorite?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 共享 / 取消共享自己上传的贴纸；不传则不显示共享按钮 */
+  onShare?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
+  /** 删除自己上传的贴纸；不传则不显示删除按钮 */
+  onDelete?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
   /** 加载下一页 */
   onLoadMore?: () => Promise<void> | void;
 }

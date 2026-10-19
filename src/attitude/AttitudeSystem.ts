@@ -9,7 +9,7 @@ import {
 } from "./attitudeIcon";
 import { PopoverController } from "../widget/PopoverController.ts";
 import type { ConfigRepository } from "../config/ConfigRepository.ts";
-import { computed } from "vue";
+import { computed, shallowRef } from "vue";
 
 /**
  * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
@@ -29,12 +29,17 @@ export class AttitudeSystem {
   private flushTimer?: number;
   private eventsBound = false;
 
-  /** 我的贴纸集合（我上传的 + 我收藏的）与今日上传额度（TTL 内复用） */
-  myStickers?: {
+  /**
+   * 我的贴纸集合（我上传的 + 我收藏的）与今日上传额度（TTL 内复用）
+   *
+   * 响应式：任何变更都换新对象，旁观者（如贴纸弹窗）据此即可知道「这张贴纸是否已在我的贴纸库里」，
+   * 不必等重新打开面板才刷新。
+   */
+  readonly myStickers = shallowRef<{
     time: number;
     stickers: SupabaseAttitudeSticker[];
     quota?: SupabaseAttitudeStickerQuota;
-  };
+  }>();
   /** `sticker:<id>` → 贴纸记录（贴纸不可变，命中即长期有效） */
   private readonly stickerCache = new Map<string, SupabaseAttitudeSticker>();
   /** 服务端答复「不存在」的贴纸 id（不再重复请求） */
@@ -275,7 +280,7 @@ export class AttitudeSystem {
     const authKey = this.getAuthKey();
     if (!authKey) return undefined;
 
-    const cached = this.myStickers;
+    const cached = this.myStickers.value;
     if (!force && cached && Date.now() - cached.time < Values.attitude.sticker.listCacheTtl) {
       return { stickers: cached.stickers, quota: cached.quota };
     }
@@ -299,8 +304,12 @@ export class AttitudeSystem {
     for (const sticker of stickers) {
       this.stickerCache.set(buildStickerType(sticker.id), sticker);
     }
-    this.myStickers = { time: Date.now(), stickers, quota: quota ?? this.myStickers?.quota };
-    return this.myStickers;
+    this.myStickers.value = {
+      time: Date.now(),
+      stickers,
+      quota: quota ?? this.myStickers.value?.quota,
+    };
+    return this.myStickers.value;
   }
 
   /**
@@ -312,9 +321,10 @@ export class AttitudeSystem {
    * 缓存，别处引用它的短评照常渲染。
    */
   removeSticker(id: number, deleted = false) {
-    const stickers = this.myStickers?.stickers;
-    if (this.myStickers && stickers?.some((item) => item.id === id)) {
-      this.myStickers = { ...this.myStickers, stickers: stickers.filter((item) => item.id !== id) };
+    const cached = this.myStickers.value;
+    const stickers = cached?.stickers;
+    if (cached && stickers?.some((item) => item.id === id)) {
+      this.myStickers.value = { ...cached, stickers: stickers.filter((item) => item.id !== id) };
     }
     if (deleted) this.stickerCache.delete(buildStickerType(id));
   }
@@ -359,7 +369,7 @@ export class AttitudeSystem {
       return undefined;
     }
 
-    const rest = (this.myStickers?.stickers ?? []).filter((item) => item.id !== sticker.id);
+    const rest = (this.myStickers.value?.stickers ?? []).filter((item) => item.id !== sticker.id);
     this.storeStickers([sticker, ...rest], resp?.quota);
     Utils.commonMsg("表态贴纸上传成功~");
     return buildStickerType(sticker.id);
@@ -370,15 +380,21 @@ export class AttitudeSystem {
    *
    * 广场是公开读：即使尚未完成云端认证也能浏览；`auth_key` 仅用于标注我上传/我收藏的贴纸。
    * 失败时返回 undefined（`onError` 缺省会弹提示，面板里应传入后台回调）。
+   *
+   * 读到的行一并进解析缓存（贴纸不可变）：在广场里收藏时才有整行可补进「我的贴纸库」。
    */
   async listPlazaStickers(offset: number, limit: number, onError?: (error: string) => void) {
     if (!this.enabled) return undefined;
-    return await this.parent.supabaseUtils.fetchAttitudeStickerPlaza(
+    const rows = await this.parent.supabaseUtils.fetchAttitudeStickerPlaza(
       this.getAuthKey() || undefined,
       limit,
       offset,
       onError,
     );
+    if (rows) {
+      for (const row of rows) this.stickerCache.set(buildStickerType(row.id), row);
+    }
+    return rows;
   }
 
   /**
@@ -424,19 +440,46 @@ export class AttitudeSystem {
       favorite,
     });
     if (!row) return false;
-    const cached = this.myStickers;
+    const cached = this.myStickers.value;
     const sticker = this.stickerCache.get(buildStickerType(id));
     if (!favorite) {
       this.removeSticker(id);
     } else if (sticker && cached) {
+      // 入库存的是「我收藏的」行：`is_favorite` 得补上（解析缓存里未必有），
+      // 而收藏入口只对他人贴纸开放，故 `is_mine` 固定为 false，别让列表当成我上传的
       this.storeStickers(
-        [sticker, ...cached.stickers.filter((item) => item.id !== id)],
+        [
+          { ...sticker, is_favorite: true, is_mine: false },
+          ...cached.stickers.filter((item) => item.id !== id),
+        ],
         cached.quota,
       );
     } else {
-      this.myStickers = undefined;
+      this.myStickers.value = undefined;
     }
     Utils.commonMsg(favorite ? "已收藏贴纸~" : "已取消收藏~");
+    return true;
+  }
+
+  /**
+   * 删除自己上传的贴纸。
+   *
+   * 成功后把它移出「我的贴纸」集合与解析缓存，广场上的那一行也随之失效。
+   */
+  async deleteSticker(id: number) {
+    if (!this.enabled) {
+      Utils.commonMsg("自定义表态未启用，无法删除表态贴纸。", false);
+      return false;
+    }
+    const authKey = this.getAuthKey();
+    if (!authKey) {
+      Utils.commonMsg("尚未完成云端认证，请先到“个人中心 - 设置”完成认证。", false);
+      return false;
+    }
+    const resp = await this.parent.supabaseUtils.deleteAttitudeSticker({ authKey, id });
+    if (!resp || "error" in resp) return false;
+    this.removeSticker(id, true);
+    Utils.commonMsg("贴纸删除成功~");
     return true;
   }
 
@@ -450,10 +493,11 @@ export class AttitudeSystem {
     const attitudeType = buildStickerType(id);
     const cached = this.stickerCache.get(attitudeType);
     if (cached) this.stickerCache.set(attitudeType, { ...cached, ...patch });
-    if (this.myStickers) {
-      this.myStickers = {
-        ...this.myStickers,
-        stickers: this.myStickers.stickers.map((item) =>
+    const collection = this.myStickers.value;
+    if (collection) {
+      this.myStickers.value = {
+        ...collection,
+        stickers: collection.stickers.map((item) =>
           item.id === id ? { ...item, ...patch } : item,
         ),
       };

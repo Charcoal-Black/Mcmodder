@@ -84,8 +84,7 @@
         :on-upload="onUpload"
         :on-favorite="onUnfavorite"
         :on-share="onShare"
-        @sticker-renamed="onStickerRenamed"
-        @sticker-removed="onStickerRemoved"
+        :on-delete="deleteAttitudeSticker"
       />
       <AttitudeStickerPlaza
         v-show="tab === 'plaza'"
@@ -96,7 +95,10 @@
         :active="active"
         :on-pick="onPick"
         :on-favorite="onFavoritePlaza"
+        :on-share="onShare"
+        :on-delete="deleteAttitudeSticker"
         :on-load-more="onLoadMorePlaza"
+        @sticker-removed="onPlazaStickerRemoved"
       />
     </div>
   </Popover>
@@ -147,55 +149,81 @@ const active = shallowRef<string[]>([]);
 const recents = computed(() => {
   return system.value?.recentEmojis.value;
 });
-/** 我上传与收藏的贴纸（面板打开时懒加载） */
-const stickers = shallowRef<SupabaseAttitudeSticker[]>();
-const quota = shallowRef<SupabaseAttitudeStickerQuota | null>(null);
-/** 贴纸广场（按共享时间倒序，分页加载） */
-const plazaStickers = shallowRef<SupabaseAttitudeSticker[]>();
+/**
+ * 我上传与收藏的贴纸 / 今日额度（面板打开时懒加载）
+ *
+ * 直接由 `AttitudeSystem` 的集合缓存派生，不再另存一份快照：任何写操作（面板内的上传、重命名、
+ * 共享、收藏、删除，以及贴纸小窗里的快捷收藏）都已就地同步进那份缓存，这里自然跟着变。
+ */
+const stickers = computed(() => system.value?.myStickers.value?.stickers);
+const quota = computed(() => system.value?.myStickers.value?.quota ?? null);
+/** 贴纸广场：服务端返回的原始列表（按共享时间倒序，分页加载） */
+const plazaRows = shallowRef<SupabaseAttitudeSticker[]>();
+
+/**
+ * 交给广场面板的列表：行上的「我收藏的」标记改由集合缓存派生。
+ *
+ * 服务端只在拉取那一刻告诉我们哪些贴纸被收藏过；之后在广场、贴纸小窗或「我的贴纸」里改了收藏
+ * 状态，这份列表本身不会更新（`plazaRows` 只在拉取 / 分页 / 下架时换新），按钮文案与徽标就会
+ * 停在旧值上。集合缓存尚未加载时没有依据，保留服务端的判断。
+ */
+const plazaStickers = computed(() => {
+  const rows = plazaRows.value;
+  const collection = system.value?.myStickers.value?.stickers;
+  if (!rows || !collection) return rows;
+  const favorited = new Set(collection.map((item) => item.id));
+  return rows.map((row) => {
+    const isFavorite = favorited.has(row.id);
+    return isFavorite === !!row.is_favorite ? row : { ...row, is_favorite: isFavorite };
+  });
+});
 const plazaTotal = ref(0);
 const plazaLoading = ref(false);
 /** 贴纸列表请求进行中（避免切页签时重复发请求） */
 let stickersLoading = false;
 /** 广场请求进行中 */
 let plazaLoadingGuard = false;
+/** 有请求在飞时收到的整页刷新请求，等当前请求结束后补一次 */
+let plazaReloadQueued = false;
 /** 面板内已点击表态的次数：写请求的返回比打开时的后台刷新更权威，点过之后即丢弃过期刷新 */
 let pickCount = 0;
 
-/** 拉取「我的贴纸」与今日额度；失败时保持未加载状态，切页签可重试 */
+/** 拉取「我的贴纸」与今日额度（结果落在 `AttitudeSystem` 的集合缓存里）；失败时保持未加载状态，切页签可重试 */
 async function loadStickers() {
   const instance = system.value;
   if (!instance || stickersLoading) return;
   stickersLoading = true;
   try {
-    const data = await instance.listMyStickers();
-    if (!data) return;
-    stickers.value = data.stickers;
-    quota.value = data.quota ?? null;
+    await instance.listMyStickers();
   } finally {
     stickersLoading = false;
   }
 }
 
-/** 面板内重命名成功：替换列表里的旧记录（`stickers` 是 shallowRef，整体换新数组才会触发重渲染） */
-function onStickerRenamed(sticker: SupabaseAttitudeSticker) {
-  if (!stickers.value) return;
-  stickers.value = stickers.value.map((item) => (item.id === sticker.id ? sticker : item));
-}
-
-/** 贴纸被删除 / 移出贴纸库：把列表里的对应项剔除 */
-function onStickerRemoved(sticker: SupabaseAttitudeSticker) {
-  if (!stickers.value) return;
-  stickers.value = stickers.value.filter((item) => item.id !== sticker.id);
+/**
+ * 广场里取消共享 / 删除：先把这行移出视野，再重新拉取一页。
+ *
+ * 不能只靠广场组件上报的事件来刷新：共享、删除成功后会把广场列表置为 `undefined`，
+ * 广场随即切到「正在加载贴纸广场…」并卸载浏览区，事件就发不出来了（组件卸载后 `emit` 会被丢弃）。
+ */
+function onPlazaStickerRemoved(sticker: SupabaseAttitudeSticker) {
+  plazaRows.value = plazaRows.value?.filter((item) => item.id !== sticker.id);
+  void loadPlaza(true);
 }
 
 /** 拉取贴纸广场一页；`reset` 为真时从第一页重新开始 */
 async function loadPlaza(reset = false) {
   const instance = system.value;
-  if (!instance || plazaLoadingGuard) return;
+  if (!instance) return;
+  if (plazaLoadingGuard) {
+    // 已有请求在飞：记下这次整页刷新，等它结束后再拉一次，免得漏掉刚刚下架 / 删除的贴纸
+    plazaReloadQueued = plazaReloadQueued || reset;
+    return;
+  }
   plazaLoadingGuard = true;
   plazaLoading.value = true;
   try {
-    const offset = reset ? 0 : (plazaStickers.value?.length ?? 0);
+    const offset = reset ? 0 : (plazaRows.value?.length ?? 0);
     const rows = await instance.listPlazaStickers(
       offset,
       Values.attitude.sticker.plazaPageSize,
@@ -203,11 +231,14 @@ async function loadPlaza(reset = false) {
     );
     if (!rows) return;
     plazaTotal.value = rows[0]?.total ?? 0;
-    plazaStickers.value =
-      reset || plazaStickers.value === undefined ? rows : [...plazaStickers.value, ...rows];
+    plazaRows.value = reset || plazaRows.value === undefined ? rows : [...plazaRows.value, ...rows];
   } finally {
     plazaLoadingGuard = false;
     plazaLoading.value = false;
+    if (plazaReloadQueued) {
+      plazaReloadQueued = false;
+      void loadPlaza(true);
+    }
   }
 }
 
@@ -222,6 +253,16 @@ watch(
   },
 );
 
+/**
+ * 广场页签打开期间，广场列表被置为待刷新（共享、删除等写操作之后）就自动重拉。
+ *
+ * 有了它，广场不必依赖自己的组件事件来触发刷新（列表一旦变成 `undefined`，浏览区就会被卸载，
+ * 卸载后 Vue 会丢弃它发出的事件）；切到广场页签时的首次加载也一并由这里负责。
+ */
+watch([() => tab.value, () => plazaRows.value], () => {
+  if (tab.value === "plaza" && plazaRows.value === undefined) void loadPlaza(true);
+});
+
 function isSticker(attitudeType: string) {
   return parseStickerId(attitudeType) !== undefined;
 }
@@ -235,7 +276,7 @@ function stickerUrl(attitudeType: string) {
 function switchTab(next: "emoji" | "sticker" | "plaza") {
   tab.value = next;
   if (next === "sticker") void loadStickers();
-  else if (next === "plaza" && plazaStickers.value === undefined) void loadPlaza(true);
+  // 切到广场页签时的首次加载交给上面的 watch（广场列表为空时自动重拉）
   // void nextTick(clampAttitudePanelPosition);
   popoverRef.value?.onPopoverHeightChange();
   updateIndicator();
@@ -395,23 +436,19 @@ function onPick(attitudeType: string, keepOpen?: boolean) {
 /** 上传本地图片；不传则不显示上传入口；用户上传本地图片作为贴纸（`AttitudeSystem` 接管；成功后直接用它表态） */
 async function onUpload(file: File) {
   const attitudeType = await system.value!.uploadSticker(file);
-  stickers.value = system.value?.myStickers?.stickers;
-  quota.value = system.value?.myStickers?.quota ?? null;
   // 上传后面板仍停在同一条短评上就直接用它表态（否则只加入「我的贴纸」）
   if (attitudeType && visible.value && state.value!.commentId === state.value!.target.commentId) {
     onPick(attitudeType);
   }
 }
 
-/** 共享 / 取消共享自己上传的贴纸 */
+/** 共享 / 取消共享自己上传的贴纸（共享状态由 `AttitudeSystem` 就地同步进集合缓存） */
 async function onShare(sticker: SupabaseAttitudeSticker) {
   const shared = !sticker.shared_at;
   const ok = await system.value!.shareSticker(sticker.id, shared);
   if (!ok) return false;
-  const item = stickers.value?.find((s) => s.id === sticker.id);
-  if (item) item.shared_at = shared ? new Date().toISOString() : null;
   // 广场列表需要重新拉取（新增或下架）
-  plazaStickers.value = undefined;
+  plazaRows.value = undefined;
   return true;
 }
 
@@ -419,8 +456,15 @@ async function onShare(sticker: SupabaseAttitudeSticker) {
 async function onUnfavorite(sticker: SupabaseAttitudeSticker) {
   const ok = await system.value!.favoriteSticker(sticker.id, false);
   if (!ok) return false;
-  stickers.value = stickers.value?.filter((item) => item.id !== sticker.id);
-  plazaStickers.value = undefined;
+  plazaRows.value = undefined;
+  return true;
+}
+
+/** 删除自己上传的贴纸：「我的贴纸」与广场里都不再保留 */
+async function deleteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
+  const ok = await system.value!.deleteSticker(sticker.id);
+  if (!ok) return false;
+  plazaRows.value = undefined;
   return true;
 }
 
@@ -429,11 +473,13 @@ async function onFavoritePlaza(sticker: SupabaseAttitudeSticker) {
   const favorite = !sticker.is_favorite;
   const ok = await system.value!.favoriteSticker(sticker.id, favorite);
   if (!ok) return false;
-  plazaStickers.value = plazaStickers.value?.map((item) =>
-    item.id === sticker.id ? { ...item, is_favorite: favorite } : item,
-  );
-  // 「我的贴纸」集合已变化，下次切页签时重新拉取
-  stickers.value = undefined;
+  // 收藏标记已由 `favoriteSticker` 写进集合缓存、进而派生出新的行；这里补的是集合缓存尚未
+  // 加载过（本次会话没打开过贴纸页签）的场合，那时尚无依据，只能就地回填一次
+  if (!system.value?.myStickers.value) {
+    plazaRows.value = plazaRows.value?.map((item) =>
+      item.id === sticker.id ? { ...item, is_favorite: favorite } : item,
+    );
+  }
   return true;
 }
 
@@ -468,7 +514,7 @@ function setOption(option: AttitudePickerState) {
     });
     // 我的贴纸：打开时不预取，切到该页签（或打开时正停在它上面）才拉取列表与今日额度
     if (tab.value === "sticker") void loadStickers();
-    else if (tab.value === "plaza" && plazaStickers.value === undefined) void loadPlaza(true);
+    else if (tab.value === "plaza" && plazaRows.value === undefined) void loadPlaza(true);
   }
 
   initializeStickerUrls();

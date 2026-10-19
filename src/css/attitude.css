@@ -407,6 +407,7 @@ img.mcmodder-attitude-sticker-image {
   display: flex;
   flex-direction: row-reverse;
   gap: 4px;
+  overflow-x: auto;
 }
 
 .mcmodder-attitude-sticker-item:hover {

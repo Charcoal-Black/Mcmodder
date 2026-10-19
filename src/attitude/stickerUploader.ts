@@ -1,5 +1,4 @@
 import type { Mcmodder } from "../Mcmodder";
-import { Utils } from "../Utils";
 
 /** 贴纸上传者的展示资料：从个人中心主页爬取，仅用于前端展示 */
 export interface StickerUploaderProfile {
@@ -56,20 +55,23 @@ async function fetchStickerUploader(
   try {
     const resp = await parent.utils.createRequest(
       {
-        url: Utils.getCenterURL(uid),
-        method: "GET",
+        url: "https://www.mcmod.cn/object/UserCard/",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          Host: "www.mcmod.cn",
+          Origin: parent.hostname,
+          Referer: window.location.href,
+          "Sec-Fetch-Dest": "empty",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Site": "same-site",
+        },
+        data: $.param({ uid }),
+        anonymous: true,
       },
       "上传者资料",
     );
-    const doc = new DOMParser().parseFromString(resp.responseText ?? "", "text/html");
-    const keywords = doc.querySelector('meta[name="keywords"]')?.getAttribute("content") ?? "";
-    const image = doc.querySelector<HTMLImageElement>(".user-icon-img img");
-    const nickname =
-      image?.alt.trim() ||
-      keywords.split(",")[0]?.trim() ||
-      (doc.title.includes("的主页") ? doc.title.split("的主页")[0]?.trim() : "") ||
-      undefined;
-    const rawAvatar = image?.getAttribute("src") ?? undefined;
+    const { username: nickname, avatar: rawAvatar } = JSON.parse(resp.responseText).data;
     const avatar = rawAvatar?.startsWith("//") ? `https:${rawAvatar}` : rawAvatar;
     return { nickname, avatar };
   } catch (error) {

@@ -41,7 +41,7 @@ const sticker = computed(() => option.value?.sticker);
 const visible = ref(false);
 const imagePending = ref(true);
 const likePending = ref(false);
-/** 这张贴纸是否已在「我的贴纸库」里（`myStickers` 不是响应式的，故每次开窗时自行取值） */
+/** 这张贴纸是否已在「我的贴纸库」里；开窗时取值，之后跟着 `AttitudeSystem` 的集合缓存走 */
 const liked = ref(false);
 const isMine = computed(() => sticker.value?.uid === option.value?.parent.currentUID);
 
@@ -55,9 +55,22 @@ function setOption(newOption: StickerViewerOption) {
 }
 
 function isLiked(target: StickerViewerOption) {
-  const stickers = target.parent.attitudeSystem.myStickers?.stickers;
+  const stickers = target.parent.attitudeSystem.myStickers.value?.stickers;
   return !!stickers?.some((item) => item.id === target.sticker.id);
 }
+
+/**
+ * 「我的贴纸库」集合变化时重算：面板里收藏 / 取消收藏后，这个开着的小窗不必重开才更新按钮文案。
+ *
+ * 集合本身不在时（从未打开过贴纸页签）读不出结果，此时仍以本窗的操作结果为准 —— 缓存没变化，
+ * 也就不会触发这里。
+ */
+watch(
+  () => option.value?.parent.attitudeSystem.myStickers.value,
+  () => {
+    if (option.value) liked.value = isLiked(option.value);
+  },
+);
 
 watch(
   () => visible.value,
