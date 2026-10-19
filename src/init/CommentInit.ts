@@ -84,23 +84,36 @@ export class CommentInit extends Init {
     });
   }
 
-  /** 已完成注入的短评行/楼中楼行标记：MutationObserver 会因我们自己的异步写入（表态计数、贴纸解析等）再次回调，靠它保证不重复注入 */
+  /** 已完成注入的顶层短评行标记：MutationObserver 会因我们自己的异步写入（表态计数、贴纸解析等）再次回调，靠它保证不重复注入 */
   private static readonly PROCESSED_ATTR = "data-mcmodder-comment-processed";
+  /** 楼中楼行标记：与顶层楼分用，避免嵌套结构下两级标记互相干扰 */
+  private static readonly REPLY_PROCESSED_ATTR = "data-mcmodder-comment-reply-processed";
   /** 发布时间倒计时容器的标记类 */
   private static readonly PUBLISH_TIME_CLASS = "mcmodder-comment-publish-time";
-
-  /** 待处理的 DOM 变更，同一 tick 内的多次触发合并为一次处理 */
-  private pendingMutations: MutationRecord[] = [];
-  private flushScheduled = false;
 
   private readonly commentObserver = new MutationObserver((mutationList) => {
     // 防广告误触发：站点的广告楼层始终单独插入，遇到即跳过整批
     if (mutationList.some((mutation) => CommentInit.isAdFloor(mutation))) return;
-    this.pendingMutations.push(...mutationList);
-    if (this.flushScheduled) return;
-    this.flushScheduled = true;
-    // 推迟到下一个宏任务：本次触发之后写入的变更（我们自己的异步表态计数等）会并入同一次处理
-    window.setTimeout(() => this.flushMutations(), 0);
+    for (const mutation of mutationList) {
+      if (mutation.addedNodes.length === 0) continue;
+      const commentFloor = $(mutation.target);
+      // 投递到我们手上时，该楼层可能已被站点重渲染或整块替换
+      if (!commentFloor.get(0)?.isConnected) continue;
+      const className = commentFloor.prop("class");
+      if (className === "comment-floor" || className === "comment-reply-floor") {
+        // 显示短评发布时间：顶层楼与楼中楼都要处理
+        this.displayPublishTime(commentFloor);
+        if (className === "comment-floor") {
+          this.processCommentFloor(commentFloor);
+        } else {
+          this.processCommentReplyFloor(commentFloor);
+        }
+      } else if (className === "common-comment-block lazy") {
+        this.unlockComment();
+        // 整块重渲染（如翻页）时兜底重注入
+        void this.attitude.processCommentRows(commentFloor);
+      }
+    }
   });
 
   /** 站点单独插入的广告楼层 */
@@ -110,32 +123,7 @@ export class CommentInit extends Init {
     );
   }
 
-  private flushMutations() {
-    this.flushScheduled = false;
-    const mutationList = this.pendingMutations;
-    this.pendingMutations = [];
-    for (const mutation of mutationList) {
-      const commentFloor = $(mutation.target);
-      // 等待期间该楼层可能已被重渲染或整块替换
-      if (!commentFloor.get(0)?.isConnected) continue;
-      const className = commentFloor.prop("class");
-      if (mutation.addedNodes.length === 0) continue;
-      if (className === "comment-floor") {
-        this.processCommentFloor(commentFloor);
-      } else if (className === "comment-reply-floor") {
-        this.processCommentReplyFloor(commentFloor);
-      } else if (className === "common-comment-block lazy") {
-        this.unlockComment();
-        // 整块重渲染（如翻页）时兜底重注入
-        void this.attitude.processCommentRows(commentFloor);
-      }
-    }
-  }
-
   private processCommentFloor(commentFloor: JQuery) {
-    // 显示短评发布时间
-    this.displayPublishTime(commentFloor);
-
     // 显示快速跳转面板
     this.renderPagination();
 
@@ -207,8 +195,8 @@ export class CommentInit extends Init {
     if (!this.configs.getSettings("replyLink")) return;
     $("div.comment-reply-row", commentFloor).each((_, _e) => {
       const e = $(_e);
-      if (e.attr(CommentInit.PROCESSED_ATTR)) return;
-      e.attr(CommentInit.PROCESSED_ATTR, "1");
+      if (e.attr(CommentInit.REPLY_PROCESSED_ATTR)) return;
+      e.attr(CommentInit.REPLY_PROCESSED_ATTR, "1");
       const uid = Number(e.find("a.poped").attr("data-uid"));
       if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) e.remove();
       this.setReplyLink(e);
