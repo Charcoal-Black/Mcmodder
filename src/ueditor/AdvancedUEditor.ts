@@ -4,9 +4,19 @@ import { Utils } from "../Utils";
 import { Values } from "../Values";
 import { UEditor as UEditor } from "./UEditor";
 import CodeMirror from "codemirror";
+// npm 版 codemirror 主入口不含任何 mode，必须显式引入，否则 `mode: "markdown"` / `"xml"`
+// 会回退到 null mode（编辑器里完全没有语法高亮）。
+// core / mode / 基础样式表都随产物一起打包，dev 与 build 行为一致，
+// 也不再依赖 CDN 全局（dev 下 CDN 脚本在 Tampermonkey 沙箱里，页面 realm 取不到）。
+import "codemirror/mode/markdown/markdown.js";
+import "codemirror/mode/xml/xml.js";
+import "codemirror/lib/codemirror.css";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
-import html_beautify from "js-beautify";
+// js-beautify 的默认导出是一个「默认按 JS 美化」的可调用对象，HTML 美化在 .html_beautify 上。
+// 之前 build 走 CDN 全局（全局名恰好就是 HTML 美化函数）、dev 走 npm（拿到的是 JS 美化），
+// 同一行代码两端行为不同且不报错，故统一走 npm 并显式取 .html_beautify。
+import jsBeautify from "js-beautify";
 import { createApp } from "vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import AutoLink from "../vue/components/AutoLink.vue";
@@ -486,13 +496,6 @@ export class AdvancedUEditor extends UEditor {
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirror, null, "mcmodder-script-codemirror");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.markdown, null, "mcmodder-script-codemirror-mod-markdown");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.htmlEmbedded, null, "mcmodder-script-codemirror-mod-htmlembedded");
-      await Utils.loadStyle(
-        document.head,
-        null,
-        Values.assets.css.codemirror,
-        null,
-        "mcmodder-style-codemirror",
-      );
 
       if (!this.mdEditor) {
         this.mdEditor = CodeMirror(this.mdEditorContainer.get(0), {
@@ -555,13 +558,6 @@ export class AdvancedUEditor extends UEditor {
     if (!this.htmlEditorContainer || !this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
-      await Utils.loadStyle(
-        document.head,
-        null,
-        Values.assets.css.codemirror,
-        null,
-        "mcmodder-style-codemirror",
-      );
       if (!this.htmlEditor) {
         this.htmlEditor = CodeMirror(this.htmlEditorContainer.get(0), {
           mode: "xml",
@@ -1119,7 +1115,7 @@ export class AdvancedUEditor extends UEditor {
     if (this.htmlEditor && !this.contentLock) {
       this.contentLock = true;
       const text = this.$body?.html() || "";
-      const formatted = html_beautify(text, { indent_size: 2 });
+      const formatted = jsBeautify.html_beautify(text, { indent_size: 2 });
       this.htmlEditor?.setValue(formatted);
       this.contentLock = false;
     }
