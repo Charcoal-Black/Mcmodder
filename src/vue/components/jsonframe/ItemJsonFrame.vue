@@ -138,7 +138,7 @@ import { TableUtils } from "../../../table/Table.ts";
 import { Utils } from "../../../Utils.ts";
 import LogPanel from "../LogPanel.vue";
 import JsonFrame from "./JsonFrame.vue";
-import { PopoverController } from "../../../widget/PopoverController.ts";
+import { InputListPopoverController } from "../../../widget/popover/InputListPopoverController.ts";
 import ButtonWithSpinner from "../ButtonWithSpinner.vue";
 import { InferItemListRequestQueue } from "../../../requestqueue/InferRequestQueue.ts";
 import { DetailedItemListRequestQueue } from "../../../requestqueue/DetailedItemRequestQueue.ts";
@@ -327,7 +327,7 @@ onMounted(() => {
     logger.value!,
   );
 
-  PopoverController.instance.addInputList(typeInput.value!, {
+  InputListPopoverController.instance.add(typeInput.value!, {
     type: "inputList",
     suggestionManager: {
       onInitSuggestion: () => {

@@ -7,7 +7,8 @@ import {
   fillStickerIcon,
   parseStickerId,
 } from "./attitudeIcon";
-import { PopoverController } from "../widget/PopoverController.ts";
+import { StickerViewerPopoverController } from "../widget/popover/StickerViewerPopoverController.ts";
+import { AttitudePickerPopoverController } from "../widget/popover/AttitudePickerPopoverController.ts";
 import type { ConfigRepository } from "../config/ConfigRepository.ts";
 import { computed, shallowRef } from "vue";
 
@@ -637,7 +638,7 @@ export class AttitudeSystem {
           fillStickerIcon($icon, sticker);
           const img = icon.firstElementChild as HTMLElement | null;
           if (img !== null) {
-            PopoverController.instance.addStickerViewer(img, {
+            StickerViewerPopoverController.instance.add(img, {
               type: "stickerViewer",
               anchorElement: img,
               parent: this.parent,
@@ -748,7 +749,7 @@ export class AttitudeSystem {
         `<li class="mcmodder-attitude-tools"><a class="mcmodder-attitude-button" href="javascript:void(0);" title="自定义表态"><span class="mcmodder-attitude-emoji">😀</span><i class="fas fa-caret-up"></i></a></li>`,
       );
       const button = $tools.find(".mcmodder-attitude-button").get(0) as HTMLElement;
-      PopoverController.instance.addAttitudePicker(button, (button) => this.bindOption(button));
+      AttitudePickerPopoverController.instance.add(button, (button) => this.bindOption(button));
     }
     if (!$tools.children("ol.comment-attitude-result").length) {
       $('<ol class="comment-attitude-result mcmodder-attitude-result-custom"></ol>').insertAfter(

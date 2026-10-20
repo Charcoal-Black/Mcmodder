@@ -6,9 +6,8 @@
     :class="{
       'expand-upward': expandUpward,
       faded: classFaded,
-      'z-index': zIndex,
     }"
-    :style="cssPos"
+    :style="[cssPos, { zIndex: props.zIndex }]"
   >
     <div class="mcmodder-popover-inner" :style="heightCss">
       <slot />

@@ -69,17 +69,17 @@ export interface PopoverBaseOption {
   /**
    * 决定弹出框样式中的 z-index 值，在诸如需要区分是否会被 swal 弹出框（z-index=1000）
    * 覆盖的场景下很有用 @default 500
-   * */
+   */
   zIndex?: number;
 }
 
 // types.d.ts 迁移
 /**
- * 候选列表（`InputList`）的绑定选项。传给 `PopoverController.add*` 的**第一个参数**是
+ * 候选列表（`InputList`）的绑定选项。传给 `InputListPopoverController.add` 的**第一个参数**是
  * 「交互元素」（被注册、被监听 focus/keydown 的那个真实 DOM 节点），本接口描述它的行为。
  *
  * # 交互元素 ≠ 输入元素
- * 多数场景下两者是同一个元素（`PopoverController` 省略 `inputListBindElement` 即按 `add`
+ * 多数场景下两者是同一个元素（`InputListPopoverController` 省略 `inputListBindElement` 即按 `add`
  * 的第一个参数处理）；但也允许**分开指定**——此时交互元素只负责「什么时候弹列表」，
  * 文本的读写、选区维护、补全替换全部发生在 `inputListBindElement` 上。
  * `DropdownMenuInput.vue` 就靠这种方式把「显示成按钮的下拉菜单」复用了普通候选列表的逻辑。
@@ -198,7 +198,7 @@ export interface PopoverExpose<
   TOption extends PopoverOption,
   TInputEvents extends Record<string, (e: Event) => void>,
 > {
-  /** 切换当前服务的输入元素与选项（由 `PopoverController` 在聚焦时调用） */
+  /** 切换当前服务的输入元素与选项（由 `InputListPopoverController` 在聚焦时调用） */
   setOption: (option: TOption) => void;
   /** 转发给输入框的事件表（控制器据此在 `window` 上挂监听，也可被宿主直接调用） */
   inputEvents: TInputEvents;
@@ -208,7 +208,7 @@ export interface PopoverExpose<
   close: () => void;
 }
 
-/** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `PopoverController` */
+/** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `InputListPopoverController` */
 export interface DropdownTextInputProps extends InputProps<string>, InputListOption {}
 
 /** 一段文本的命中区间集合；区间均为左闭右开，彼此可能相交或相邻（`MatchedText` 会自行合并） */

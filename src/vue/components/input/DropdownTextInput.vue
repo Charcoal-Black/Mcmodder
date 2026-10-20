@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 /**
- * 带候选列表的文本输入：在 `TextInput` 外包一层，负责把自身登记进全局的 `PopoverController`。
+ * 带候选列表的文本输入：在 `TextInput` 外包一层，负责把自身登记进全局的 `InputListPopoverController`。
  *
  * 与 `DropdownMenuInput` 不同，这里**交互元素与输入元素是同一个**（`TextInput` 内部那个 input），
  * 因此无需传 `inputListBindElement`；props 直接充当 `InputListOption`（候选来源、别名等），
@@ -17,7 +17,7 @@
  */
 import { onMounted, useTemplateRef } from "vue";
 import TextInput from "./TextInput.vue";
-import { PopoverController } from "../../../widget/PopoverController.ts";
+import { InputListPopoverController } from "../../../widget/popover/InputListPopoverController.ts";
 import type { DropdownTextInputProps } from "../../../types/props";
 
 const props = defineProps<Omit<DropdownTextInputProps, "type">>();
@@ -27,7 +27,7 @@ const inputRef = useTemplateRef("textInput");
 onMounted(() => {
   // 登记的是最内层的 input：候选列表的 focus / 键盘 / 输入事件都挂在它上面
   const target = inputRef.value!.getInstance();
-  PopoverController.instance?.addInputList(target as InputListBindElement, {
+  InputListPopoverController.instance?.add(target as InputListBindElement, {
     type: "inputList",
     ...props,
   });

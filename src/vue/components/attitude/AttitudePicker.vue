@@ -1,5 +1,5 @@
 <template>
-  <Popover ref="popoverRef" :anchor-element="state?.anchorElement">
+  <Popover ref="popoverRef" v-bind="popoverProps">
     <div id="mcmodder-attitude-panel" class="mcmodder-attitude-panel" :data-mcmodder-tab="tab">
       <div class="mcmodder-swiper-tab-container">
         <div class="mcmodder-attitude-tabs">
@@ -122,6 +122,15 @@ import AttitudeStickerList from "./AttitudeStickerList.vue";
 import AttitudeStickerPlaza from "./AttitudeStickerPlaza.vue";
 import Popover from "../Popover.vue";
 import TabIndicator from "../TabIndicator.vue";
+import { usePopoverHost } from "../../composables/usePopoverHost.ts";
+
+/**
+ * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里；
+ * 面板打开时顺带把页签指示器挪到当前页签上。
+ */
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close } = usePopoverHost({
+  onOpen: () => updateIndicator(),
+});
 
 const state = shallowRef<AttitudePickerState>();
 const configs = shallowRef<ConfigRepository>();
@@ -131,8 +140,6 @@ const pickerHost = ref<HTMLDivElement>();
 const allEmojisVisible = ref(false);
 const tab = ref<"emoji" | "sticker" | "plaza">("emoji");
 
-const visible = ref(false);
-const popoverRef = useTemplateRef("popoverRef");
 const indicatorRef = useTemplateRef("indicatorRef");
 const emojiTabRef = useTemplateRef("emojiTabRef");
 const stickerTabRef = useTemplateRef("stickerTabRef");
@@ -243,17 +250,6 @@ async function loadPlaza(reset = false) {
     }
   }
 }
-
-watch(
-  () => visible.value,
-  (newValue) => {
-    popoverRef.value?.onPopoverVisibilityChange(newValue ?? false);
-    if (newValue) {
-      popoverRef.value?.onPopoverHeightChange();
-      updateIndicator();
-    }
-  },
-);
 
 /**
  * 广场页签打开期间，广场列表被置为待刷新（共享、删除等写操作之后）就自动重拉。
@@ -412,18 +408,18 @@ function onDocumentPointerDown(event: Event) {
   if (!(target instanceof Element)) return;
   if (target.closest("#mcmodder-attitude-panel")) return;
   if (target.closest("a.mcmodder-attitude-button")) return;
-  onClose();
+  close();
 }
 
 function onDocumentKeyDown(event: Event) {
   if (event instanceof KeyboardEvent && event.key === "Escape") {
-    onClose();
+    close();
   }
 }
 
 /** 点击贴纸；不传 = 只查看（贴纸不可点；`keepOpen` 为真时保持面板打开（字母连续拼词） */
 function onPick(attitudeType: string, keepOpen?: boolean) {
-  if (!keepOpen) visible.value = false;
+  if (!keepOpen) close();
   pickCount += 1;
   system.value!.rememberRecentEmoji(attitudeType);
   const target = state.value!.target;
@@ -490,17 +486,13 @@ function onLoadMorePlaza() {
   return loadPlaza(false);
 }
 
-/** 请求关闭面板（`AttitudeSystem` 落地） */
-function onClose() {
-  visible.value = false;
-}
-
 /**
  * 打开面板：`active` 由 `AttitudeSystem` 取打开瞬间的本地缓存给出，这里不再等云端；
  * 随后后台刷新一次计数，响应到达时补上「我点过」高亮（用户已点击表态则丢弃这次刷新结果）。
  */
 function setOption(option: AttitudePickerState) {
   state.value = option;
+  applyOption(option);
   configs.value = state.value ? state.value.parent.configRepository : undefined;
   system.value = state.value ? AttitudeSystem.for(state.value.parent) : undefined;
   active.value = option.active;
@@ -551,7 +543,7 @@ function initializeStickerUrls() {
 //   );
 // }
 
-/** 输入框事件名 → 处理函数：由 `PopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
+/** 输入框事件名 → 处理函数：由 `AttitudePickerPopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
   pointerdown: onDocumentPointerDown,
   keydown: onDocumentKeyDown,
@@ -560,7 +552,7 @@ const inputEvents = {
 defineExpose<PopoverExpose<AttitudePickerState, typeof inputEvents>>({
   setOption,
   inputEvents,
-  updatePos: () => popoverRef.value?.updatePos(),
-  close: onClose,
+  updatePos,
+  close,
 });
 </script>

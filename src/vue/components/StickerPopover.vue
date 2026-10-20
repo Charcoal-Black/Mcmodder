@@ -1,5 +1,5 @@
 <template>
-  <Popover ref="popoverRef" :anchor-element="option?.anchorElement">
+  <Popover ref="popoverRef" v-bind="popoverProps">
     <div v-if="sticker" class="mcmodder-attitude-sticker-viewer-container">
       <div class="mcmodder-attitude-sticker-viewer">
         <img
@@ -30,15 +30,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, useTemplateRef, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import Popover from "./Popover.vue";
+import { usePopoverHost } from "../composables/usePopoverHost.ts";
 import type { PopoverExpose, StickerViewerOption } from "../../types/props";
 
-const popoverRef = useTemplateRef("popoverRef");
+/**
+ * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里，
+ * 这里只管贴纸本身的内容与操作。
+ */
+const { visible, popoverProps, applyOption, updatePos, close } = usePopoverHost();
 
 const option = shallowRef<StickerViewerOption>();
 const sticker = computed(() => option.value?.sticker);
-const visible = ref(false);
 const imagePending = ref(true);
 const likePending = ref(false);
 /** 这张贴纸是否已在「我的贴纸库」里；开窗时取值，之后跟着 `AttitudeSystem` 的集合缓存走 */
@@ -50,6 +54,7 @@ function setOption(newOption: StickerViewerOption) {
     imagePending.value = true;
   }
   option.value = newOption;
+  applyOption(newOption);
   liked.value = isLiked(newOption);
   visible.value = true;
 }
@@ -71,20 +76,6 @@ watch(
     if (option.value) liked.value = isLiked(option.value);
   },
 );
-
-watch(
-  () => visible.value,
-  (newValue) => {
-    popoverRef.value?.onPopoverVisibilityChange(newValue ?? false);
-    if (newValue) {
-      popoverRef.value?.onPopoverHeightChange();
-    }
-  },
-);
-
-function onClose() {
-  visible.value = false;
-}
 
 /** 收藏 / 取消收藏，与广场共用 `AttitudeSystem.favoriteSticker`（提示与缓存同步都在其中） */
 async function onFavoriteClick() {
@@ -109,7 +100,7 @@ async function onFavoriteClick() {
 defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({
   setOption,
   inputEvents: {},
-  updatePos: () => popoverRef.value?.updatePos(),
-  close: onClose,
+  updatePos,
+  close,
 });
 </script>
