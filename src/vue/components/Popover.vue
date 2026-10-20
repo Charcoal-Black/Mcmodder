@@ -6,6 +6,7 @@
     :class="{
       'expand-upward': expandUpward,
       faded: classFaded,
+      'z-index': zIndex,
     }"
     :style="cssPos"
   >
@@ -26,10 +27,16 @@ const props = withDefaults(
     anchorElement?: HTMLElement;
     /** 最大高度限制；缺省或 null 为无限制 */
     maxHeight?: number | null;
+    /**
+     * 决定弹出框样式中的 z-index 值，在诸如需要区分是否会被 swal 弹出框（z-index=1000）
+     * 覆盖的场景下很有用 @default 500
+     * */
+    zIndex?: number;
   }>(),
   {
     anchorElement: undefined,
     maxHeight: null,
+    zIndex: 500,
   },
 );
 

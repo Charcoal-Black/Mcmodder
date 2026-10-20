@@ -686,6 +686,8 @@ onBeforeUnmount(() => treeObserver?.disconnect());
   border-radius: var(--mcmodder-width-radius);
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .center-block-section-label {
@@ -705,6 +707,8 @@ onBeforeUnmount(() => treeObserver?.disconnect());
 
 .center-block-setting-container {
   margin-top: var(--mcmodder-width-padding-1);
+  width: 100%;
+  overflow-x: auto;
 }
 
 .center-setting-search {
@@ -749,12 +753,6 @@ onBeforeUnmount(() => treeObserver?.disconnect());
   overflow-y: auto;
   position: sticky;
   top: 60px;
-}
-
-@media (max-width: 959px) {
-  .mcmodder-menutree {
-    padding-left: 1em;
-  }
 }
 
 @media (max-width: 899px) {

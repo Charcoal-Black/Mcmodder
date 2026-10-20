@@ -89,7 +89,7 @@ import Popover from "./Popover.vue";
  * 候选列表（快速补全）组件。
  *
  * # 它不是「自己长在输入框下面」的
- * 组件本体不监听任何输入框，而是由 `InputListController` 统一挂载到 `document.body`，
+ * 组件本体不监听任何输入框，而是由 `PopoverController` 统一挂载到 `document.body`，
  * 并把 `inputEvents` 转发到 `window`（捕获阶段）——事件命中某个已登记的输入元素时，控制器才会
  * 调 `setOption` 告诉本组件「当前服务的是哪个输入框、候选从哪来」。
  * 因此组件内部没有「当前输入框」这个状态，只有 `setOption` 之后的一段生命周期。
@@ -187,7 +187,7 @@ const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
 let closeLock = false;
 
 /**
- * 由 `InputListController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
+ * 由 `PopoverController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
  * 这是本组件唯一的入口——组件自身不观察任何输入框。
  *
  * @param option 当前输入框及其行为选项；`inputNode` 即 `inputListBindElement` 的值
@@ -438,7 +438,7 @@ function onInputKeyup(e: Event) {
   }
 }
 
-/** 输入框事件名 → 处理函数：由 `InputListController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
+/** 输入框事件名 → 处理函数：由 `PopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
   click: onInputClick,
   keydown: onInputKeydown,

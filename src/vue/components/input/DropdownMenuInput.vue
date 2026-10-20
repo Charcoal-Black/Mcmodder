@@ -23,7 +23,7 @@
  *
  * # 交互元素 ≠ 输入元素（这里是重点）
  * 组件里有两个 input，职责完全不同：
- * - `ref="input"`（模板中的按钮）：**交互元素**。它被登记进 `InputListController`，
+ * - `ref="input"`（模板中的按钮）：**交互元素**。它被登记进 `PopoverController`，
  *   负责 focus 触发候选列表、显示展开态、点击外部收起；
  * - `ref="valueInput"`（模板中的隐藏 input）：**输入元素**。候选列表的一切输入逻辑都作用在它上面——
  *   值的读写、补全写回、以及 `useInputBase` 的校验流程（`getDOMValue` 从它取值、
@@ -46,7 +46,7 @@ interface Props extends InputProps<number> {
 const props = defineProps<Props>();
 /** 外层容器（作为 `InputControlRef.getInstance` 返回的元素） */
 const containerRef = useTemplateRef("container");
-/** **交互元素**：可见的按钮，登记到 `InputListController` 的是它 */
+/** **交互元素**：可见的按钮，登记到 `PopoverController` 的是它 */
 const inputRef = useTemplateRef("input");
 /** **输入元素**：隐藏的 input，候选列表与 `useInputBase` 的读写都作用在它上面 */
 const valueInputRef = useTemplateRef("valueInput");

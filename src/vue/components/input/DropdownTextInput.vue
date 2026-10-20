@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 /**
- * 带候选列表的文本输入：在 `TextInput` 外包一层，负责把自身登记进全局的 `InputListController`。
+ * 带候选列表的文本输入：在 `TextInput` 外包一层，负责把自身登记进全局的 `PopoverController`。
  *
  * 与 `DropdownMenuInput` 不同，这里**交互元素与输入元素是同一个**（`TextInput` 内部那个 input），
  * 因此无需传 `inputListBindElement`；props 直接充当 `InputListOption`（候选来源、别名等），

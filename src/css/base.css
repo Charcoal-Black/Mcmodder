@@ -2707,7 +2707,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   margin-bottom: 0;
   background-color: var(--mcmodder-color-background);
   backdrop-filter: blur(10px);
-  z-index: 1001;
+  z-index: 500;
   box-shadow: 0px 2px 5px var(--mcmodder-color-box-shadow);
   border-radius: calc(var(--mcmodder-width-radius) * 0.5);
   /* 和下拉菜单的高度预测功能冲突了，依旧 TODO */

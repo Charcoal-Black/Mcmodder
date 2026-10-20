@@ -25,9 +25,19 @@
         <i v-if="keyVisible" class="fa fa-eye-slash" title="隐藏密钥" />
         <i v-else class="fa fa-eye" title="显示密钥" />
       </a>
+      <a tabindex=0 :aria-disabled="keyChecking" @click="onCheckKey">
+        <i
+          class="fa fa-refresh"
+          :class="{ 'fa-spin': keyChecking }"
+          :title="keyChecking ? '密钥状态检测中...' : '检测密钥状态（仅用于测试密钥可用性，不会对当前的认证信息产生副作用）'"
+        />
+      </a>
       <a tabindex=0 @click="onCopyKey">
         <i v-if="keyCopied" class="fa fa-check" title="复制成功" />
         <i v-else class="fa fa-copy" title="复制密钥" />
+      </a>
+      <a tabindex=0 @click="onDeleteKey">
+        <i class="fa fa-trash" title="删除密钥" />
       </a>
     </span>
   </template>
@@ -54,6 +64,7 @@ const name = ref<string>();
 const key = ref<string>();
 const buttonRef = useTemplateRef("button");
 const keyVisible = ref(false);
+const keyChecking = ref(false);
 const keyCopied = ref(false);
 
 function updateAuthState() {
@@ -78,22 +89,52 @@ async function onKeyButtonClick() {
         Utils.commonMsg("密钥需要是一个合法的 UUID 字符串...", false);
         return false;
       }
-      await updateAuthData(uuid);
+      await updateAuthData({
+        withKey: uuid,
+      });
     }
   })
 }
 
-async function updateAuthData(withKey?: string) {
+function buildAuthenticatorBody(
+  uuid: string | undefined,
+  withKey: string | undefined,
+  deleteKey: boolean | undefined,
+  checkKey: boolean | undefined
+) {
+  const body: Record<string, unknown> = {};
+  // 删除密钥时不需要带上任何身份凭证
+  if (!deleteKey) {
+    // `_uuid` 为 HttpOnly cookie，document.cookie 不包含它，需要通过油猴接口单独取出
+    body.cookie = [uuid && `_uuid=${uuid}`, document.cookie].filter(Boolean).join("; ");
+  }
+  // 传入密钥或删除密钥时都需要指定要操作的密钥
+  if (withKey || deleteKey || checkKey) {
+    body.auth_key = withKey || configs.value.getProfile("auth_key");
+  }
+  if (deleteKey) {
+    body.delete_key = true;
+  }
+  if (checkKey) {
+    body.check_key = true;
+    body.uid = parent.currentUID;
+  }
+  return body;
+}
+
+async function updateAuthData(options: {
+  withKey?: string,
+  deleteKey?: boolean,
+  checkKey?: boolean,
+} = {}) {
+  const { withKey, deleteKey, checkKey } = options;
   if (!parent.supabaseUtils.hasClient()) {
     return;
   }
   // `_uuid` 为 HttpOnly cookie，document.cookie 不包含它，需要通过油猴接口单独取出
   const uuid = await Utils.getUuidCookie();
   const resp = await parent.supabaseUtils.invoke<SupabaseAuthenticatorResponse>("authenticator", {
-    body: {
-      cookie: [uuid && `_uuid=${uuid}`, document.cookie].filter(Boolean).join("; "),
-      ...(withKey ? { auth_key: withKey } : undefined) // 若同时传入了 auth_key 且与云端的 auth_key 匹配，则认证时不重置 auth_key
-    },
+    body: buildAuthenticatorBody(uuid, withKey, deleteKey, checkKey),
   });
   if (!resp) {
     return;
@@ -108,6 +149,20 @@ function onToggleVisibility() {
   keyVisible.value = !keyVisible.value;
 }
 
+async function onCheckKey() {
+  if (keyChecking.value) {
+    return;
+  }
+  keyChecking.value = true;
+  try {
+    await updateAuthData({
+      checkKey: true,
+    });
+  } finally {
+    keyChecking.value = false;
+  }
+}
+
 function onCopyKey() {
   if (key.value === undefined) {
     return;
@@ -117,6 +172,23 @@ function onCopyKey() {
   setTimeout(() => {
     keyCopied.value = false;
   }, 1500);
+}
+
+function onDeleteKey() {
+  swal.fire({
+    type: "warning",
+    title: "警告",
+    text: `删除当前所记录的密钥后，该密钥将不再能够用于验证您本人，您将需要重新完成用户认证以正常使用云端服务。无论如何都要继续嘛？`,
+    showCancelButton: true,
+    confirmButtonText: "删除",
+    cancelButtonText: "取消",
+    confirmButtonColor: "var(--mcmodder-color-danger)",
+    preConfirm: async () => {
+      await updateAuthData({
+        deleteKey: true,
+      });
+    },
+  });
 }
 </script>
 
