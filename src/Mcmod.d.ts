@@ -48,9 +48,6 @@ declare global {
 
   var iziToast: any;
 
-  /* Turndown */
-  var turndownPluginGfm: any;
-
   /* MCMOD */
   function common_msg(title: string, message: string, state: string): void;
 

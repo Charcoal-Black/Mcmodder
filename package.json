@@ -58,6 +58,7 @@
     "opentype.js": "^2.0.0",
     "pinyin-match": "^1.2.10",
     "three": "^0.184.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "vue": "^3.4.0",
     "vue-component-type-helpers": "^3.3.12",
     "vue-virtual-scroller": "^3.0.5"

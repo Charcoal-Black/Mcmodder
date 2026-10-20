@@ -86,7 +86,6 @@ export default defineConfig({
           "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/xml/xml.min.js",
           "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.4/beautify-html.min.js",
           "https://unpkg.com/turndown/dist/turndown.js",
-          "https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js",
           "https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2",
           "https://cdn.jsdelivr.net.cn/npm/three@0.160.0/build/three.min.js",
           "https://cdn.jsdelivr.net.cn/npm/opentype.js@1.3.4/dist/opentype.min.js",

@@ -29,6 +29,7 @@ npm run format   # prettier --write src
 - External libraries are not bundled:
   - CDN libraries from `vite.config.ts` (`require:` + `externalGlobals`): `codemirror`, `turndown`, `js-beautify`, `@supabase/supabase-js`, `three`, `opentype.js`. Consume them as the mapped globals (e.g. `window.THREE`) and rely on their npm `@types` packages for type-checking. The CDN `three` is used only by `Splash3D`.
   - mcmod.cn's own libraries: jQuery, SweetAlert (`swal`), Bootstrap, UEditor (`editor`), ECharts (`echarts`), `structure_browser`, and the site's Three.js — use page globals or lazy-load via `Utils.loadScript(..., Values.assets.mcmod.js.*)` as `StructureEditor.vue` does.
+  - Exception: `turndown-plugin-gfm` is bundled from npm (dev and build). The dev-mode entry runs in the page realm, so a CDN `@require` global (Tampermonkey sandbox) is invisible there — a bare global reference like `turndownPluginGfm` would only work in the built userscript.
   - Do not upgrade the intentionally old pins (jQuery, SweetAlert) or swap host libraries for npm packages; compatibility with the legacy site is the reason for both.
 
 ## Where to change what

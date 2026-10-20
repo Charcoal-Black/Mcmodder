@@ -5,6 +5,7 @@ import { Values } from "../Values";
 import { UEditor as UEditor } from "./UEditor";
 import CodeMirror from "codemirror";
 import TurndownService from "turndown";
+import { gfm } from "turndown-plugin-gfm";
 import html_beautify from "js-beautify";
 import { createApp } from "vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
@@ -504,7 +505,7 @@ export class AdvancedUEditor extends UEditor {
             this.heightAutoResize();
           }, 300),
         );
-        this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
+        this.turndownSurvice = new TurndownService().use(gfm);
         if (this.$body) {
           const content = this.$body.clone();
           content
