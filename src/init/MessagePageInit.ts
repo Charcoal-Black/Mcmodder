@@ -131,18 +131,19 @@ export class MessageInit extends Init {
     return $(".message-list > ul > li").not(".mcmodder-attitude-message").length;
   }
 
-  /** 表态合计与未读徽标（徽标始终渲染，合计行只在列表存在时渲染；统计走 `AttitudeSystem.getStats` 的 GM 缓存） */
+  /** 表态合计与未读徽标（徽标只在有未读时渲染，合计行只在列表存在时渲染；统计走 `AttitudeSystem.getStats` 的 GM 缓存） */
   private async renderStats(force = false) {
     const stats = await this.attitude.getStats(force);
     if (!stats) return;
 
     // 内容不变时不改 DOM，避免与本页的 MutationObserver 形成注入/刷新循环
-    const badgeClass = `badge mcmodder-attitude-total ${stats.unread > 0 ? "badge-danger" : "badge-light"}`;
-    const badgeTitle = `共 ${stats.total} 条，未读 ${stats.unread} 条`;
-    const badgeText = stats.unread > 0 ? `${stats.unread}/${stats.total}` : String(stats.total);
+    // 徽标只显示未读数；未读为 0 时整个徽标（绿点）不渲染
+    const badgeClass = "badge mcmodder-attitude-total badge-danger";
+    const badgeTitle = `未读 ${stats.unread} 条`;
+    const badgeText = String(stats.unread);
     const $link = $('.message-submenu a[href*="type=attitude"]').first();
     const $badge = $link.children(".mcmodder-attitude-total");
-    if (stats.total === 0) {
+    if (stats.unread === 0) {
       $badge.remove();
     } else if (
       $badge.attr("class") !== badgeClass ||
