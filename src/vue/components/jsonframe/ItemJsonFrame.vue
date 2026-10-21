@@ -134,12 +134,11 @@
 
 <script setup lang="ts">
 import { computed, type ComputedRef, onMounted, ref, useTemplateRef } from "vue";
-import { InputType } from "../../../config/ConfigUtils.ts";
 import { TableUtils } from "../../../table/Table.ts";
 import { Utils } from "../../../Utils.ts";
 import LogPanel from "../LogPanel.vue";
 import JsonFrame from "./JsonFrame.vue";
-import { InputListController } from "../../../widget/InputListController.ts";
+import { InputListPopoverController } from "../../../widget/popover/InputListPopoverController.ts";
 import ButtonWithSpinner from "../ButtonWithSpinner.vue";
 import { InferItemListRequestQueue } from "../../../requestqueue/InferRequestQueue.ts";
 import { DetailedItemListRequestQueue } from "../../../requestqueue/DetailedItemRequestQueue.ts";
@@ -227,42 +226,42 @@ const columnOptions = {
   maxDurability: ["最大耐久", TableUtils.DISPLAYRULE_NUMBER],
 } satisfies ColumnOptionsInitializer<Item>;
 const editConfigs = {
-  id: InputType.NUMBER,
+  id: "number",
   itemType: {
-    type: InputType.NUMBER,
+    type: "number",
     value: 1,
   },
-  classID: InputType.NUMBER,
+  classID: "number",
   classAbbr: null,
   className: null,
   classEname: null,
   registerName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   metadata: {
-    type: InputType.NUMBER,
+    type: "number",
     optional: true,
   },
   smallIcon: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   largeIcon: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
-  name: InputType.TEXT,
+  name: "text",
   englishName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   creativeTabName: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   branch: {
-    type: InputType.TEXT,
+    type: "text",
     optional: true,
   },
   type: null,
@@ -273,8 +272,8 @@ const editConfigs = {
   generalNum: null,
   OredictList: null,
   harvestTools: null,
-  maxStackSize: InputType.NUMBER,
-  maxDurability: InputType.NUMBER,
+  maxStackSize: "number",
+  maxDurability: "number",
   content: null,
 } satisfies EditOptionsInitializer<Item>;
 
@@ -328,7 +327,8 @@ onMounted(() => {
     logger.value!,
   );
 
-  InputListController.instance.add(typeInput.value!, {
+  InputListPopoverController.instance.add(typeInput.value!, {
+    type: "inputList",
     suggestionManager: {
       onInitSuggestion: () => {
         const classID = Number(idInput.value!.value);
@@ -852,7 +852,7 @@ async function performClassSearch(classID: number, typeID: number) {
     return;
   }
 
-  const configTemp: Record<string, any> = { classID, typeID };
+  const configTemp: Record<string, unknown> = { classID, typeID };
   $(classSearchFrame.value!)
     .find("input[name]")
     .each((_, _input) => {
@@ -860,7 +860,8 @@ async function performClassSearch(classID: number, typeID: number) {
       const name = input.getAttribute("name") as keyof ItemJsonFrameConfig;
       if (name) configTemp[name] = input.checked;
     });
-  const config = configTemp as ItemJsonFrameConfig;
+  // 表单里取到的都是原始字符串 / 布尔值，统一在这里断言成配置对象
+  const config = configTemp as unknown as ItemJsonFrameConfig;
 
   let itemList: ItemList = [];
 
@@ -1078,24 +1079,24 @@ function onDownloadClick(e: Event) {
 }
 
 function convertToImportableFormat(data: Partial<Item>) {
-  const entry: Record<string, any> = {};
+  const entry: Record<string, unknown> = {};
   for (const key of Values.importableKeys) {
-    let value = (data as any)[key];
-    if (value === undefined || value === null || (typeof value === "number" && isNaN(value)))
-      value = "";
+    const raw = data[key];
+    const value =
+      raw === undefined || raw === null || (typeof raw === "number" && isNaN(raw)) ? "" : raw;
     switch (key) {
       case "OredictList":
-        entry[key] = value.replaceAll(",", ", ");
+        entry[key] = typeof value === "string" ? value.replaceAll(",", ", ") : String(value);
         break;
       case "smallIcon":
       case "largeIcon":
-        entry[key] = Utils.removeBase64ImgPrefix(value);
+        entry[key] = typeof value === "string" ? Utils.removeBase64ImgPrefix(value) : String(value);
         break;
       default:
         entry[key] = value;
     }
   }
-  return entry as Item;
+  return entry as unknown as Item;
 }
 
 function exportJson(fileName: string) {

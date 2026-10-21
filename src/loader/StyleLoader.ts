@@ -127,12 +127,14 @@ export class StyleLoader {
 
     const baseCss = importCSS("base");
     const mcmodderUICss = importCSS("mcmodderUI");
+    const attitudeCss = importCSS("attitude");
     const aprilFoolsCss = importCSS("aprilFools");
     const tableThemeColorCss = importCSS("tableThemeColor");
     const tableLeftAlignCss = importCSS("tableLeftAlign");
     const tabSelectorInfoCss = importCSS("tabSelectorInfo");
     const splitScreenOnVerifyCss = importCSS("splitScreenOnVerify");
     const codemirrorCss = importCSS("codemirror");
+    const reducedMotionCss = importCSS("reducedMotion");
 
     const basePalette: Palette = {
       background: "#fff",
@@ -404,6 +406,8 @@ export class StyleLoader {
         "attitude-grintears": "#ad901c",
         "attitude-heart": "#c03",
         "attitude-flushed": "#000",
+        "attitude-cry": "#36c",
+        "attitude-meh": "#777",
         "attitude-down": "#222",
         "attitude-lemon": "#938626",
         "attitude-horsehead": "#74260c",
@@ -412,6 +416,7 @@ export class StyleLoader {
         "attitude-tired": "#960",
         "attitude-snowflake": "#39c",
         "attitude-handshake": "#363",
+        "attitude-devil-angry": "#8a1212",
         "classstatus-1": "#2cbe4e",
         "classstatus-2": "#cb6431",
         "classstatus-3": "#cb2431",
@@ -470,6 +475,8 @@ export class StyleLoader {
         "attitude-grintears": "#db1",
         "attitude-heart": "#f14",
         "attitude-flushed": "#fff",
+        "attitude-cry": "#9be",
+        "attitude-meh": "#999",
         "attitude-down": "#666",
         "attitude-lemon": "#a93",
         "attitude-horsehead": "#d64",
@@ -478,6 +485,7 @@ export class StyleLoader {
         "attitude-tired": "#b71",
         "attitude-snowflake": "#7ac",
         "attitude-handshake": "#383",
+        "attitude-devil-angry": "#ff4d4d",
         "classstatus-1": "#183",
         "classstatus-2": "#852",
         "classstatus-3": "#822",
@@ -518,12 +526,15 @@ export class StyleLoader {
       }`,
       base: baseCss,
       mcmodderUI: mcmodderUICss,
+      attitude: attitudeCss,
       aprilFools: aprilFoolsCss,
       tableThemeColor: tableThemeColorCss,
       tableLeftAlign: tableLeftAlignCss,
       tabSelectorInfo: tabSelectorInfoCss,
       splitScreenOnVerify: splitScreenOnVerifyCss,
       codemirrorCss: codemirrorCss,
+      // 末尾追加：减弱动效规则需要压过同选择器的静态样式
+      reducedMotion: reducedMotionCss,
     };
 
     const htmlNode = $("html");
@@ -540,6 +551,9 @@ export class StyleLoader {
     // if (configs.get("mcmodderUI")) {
     style += css.mcmodderUI;
     // }
+    if (configs.getSettings("customAttitude")) {
+      style += css.attitude;
+    }
     if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {
       style += css.tableThemeColor;
     }
@@ -559,6 +573,7 @@ export class StyleLoader {
       /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
       style += css.aprilFools;
     }
+    style += css.reducedMotion;
 
     parent.css = style;
     Utils.addStyle(style);

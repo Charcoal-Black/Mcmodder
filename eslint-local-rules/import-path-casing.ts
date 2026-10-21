@@ -58,14 +58,16 @@ function resolveRealName(fromDir, specifier) {
   if (!specifier.startsWith(".")) {
     return null;
   }
-  const segments = path.resolve(fromDir, specifier).split(path.sep);
+  const resolved = path.resolve(fromDir, specifier);
+  /** 路径根：POSIX 为 `/`，Windows 为 `C:\`（盘符是根的一部分，不能当目录名去查） */
+  const root = path.parse(resolved).root;
+  const segments = resolved.slice(root.length).split(path.sep);
   /** import 路径里写的最后一段，可能不含扩展名 */
   const usedBase = /** @type {string} */ segments.pop();
   /** 逐段校验目录段，同时修正其真实大小写 */
-  let dir = "/";
+  let dir = root;
   for (const segment of segments) {
-    // 绝对路径的首段为空串（根目录），无需查找
-    const realSegment = segment === "" ? "" : getEntries(dir)?.get(segment.toLowerCase());
+    const realSegment = getEntries(dir)?.get(segment.toLowerCase());
     if (realSegment === undefined) {
       return null;
     }

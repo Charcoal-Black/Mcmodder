@@ -1,3 +1,6 @@
+// 必须放在所有其它 import 之前：ESM 的依赖会先于本模块体求值，
+// 这里要赶在 Values 的静态初始化（会读 GM_info）之前完成 dev 期自检。
+import "./devCheck";
 import { GM_getValue, GM_addValueChangeListener } from "$";
 import { Mcmodder } from "./Mcmodder";
 import bbsCss from "./css/bbs.css?raw";

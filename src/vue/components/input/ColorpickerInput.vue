@@ -4,6 +4,7 @@
     type="color"
     class="form-control"
     :placeholder="title + '..'"
+    :aria-label="title"
     @change="onChange"
   />
 </template>

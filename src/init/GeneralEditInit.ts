@@ -1,5 +1,5 @@
 import { Utils } from "../Utils";
-import { InputListController } from "../widget/InputListController";
+import { InputListPopoverController } from "../widget/popover/InputListPopoverController";
 import { Init } from "./Init";
 
 export class GeneralEditInit extends Init {
@@ -20,6 +20,7 @@ export class GeneralEditInit extends Init {
     const leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
       .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+      .replace("Alt + Z", Utils.keyToHTML({ altKey: true, key: "Z" }))
       .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
     // Bug修复：快速存档时当前菜单自动关闭
@@ -88,7 +89,8 @@ export class GeneralEditInit extends Init {
     // 下拉菜单
     $("#mcmodder-textarea-remark, #mcmodder-textarea-reason").each((_, e) => {
       const textarea = e as HTMLTextAreaElement;
-      InputListController.instance.add(textarea, {
+      InputListPopoverController.instance.add(textarea, {
+        type: "inputList",
         delimiter: "；",
         hideBeforeInput: true,
         suggestionManager: {
@@ -100,7 +102,7 @@ export class GeneralEditInit extends Init {
 
     // 针对应用 InputList 后原生输入框无法被检测到的修复
     const parent = $(".common-rowlist-block .text");
-    parent.on("change", ".mcmodder-input-container textarea", (e) => {
+    parent.on("change", ".mcmodder-input-list textarea", (e) => {
       parent.find(`[data-multi-id=${e.target.id.split("-").slice(-1)[0]}]`).val($(e.target).val());
     });
   }

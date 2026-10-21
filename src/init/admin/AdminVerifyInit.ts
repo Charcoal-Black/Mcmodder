@@ -1,10 +1,10 @@
-import { createApp, ref, type App, type ShallowRef } from "vue";
+import { createApp, ref, shallowRef, type App, type ShallowRef } from "vue";
 import { HorizontalDraggableFrame } from "../../widget/draggable/HorizontalDraggableFrame";
 import Countdown from "../../vue/components/Countdown.vue";
 import { TimerUtils } from "../../widget/TimerUtils.ts";
 import { Utils } from "../../Utils.ts";
 import type { Mcmodder } from "../../Mcmodder.ts";
-import { InputListController } from "../../widget/InputListController.ts";
+import { InputListPopoverController } from "../../widget/popover/InputListPopoverController.ts";
 import { OredictCompareFrame } from "../../widget/compare/OredictCompareFrame.ts";
 import { PlatformCompareFrame } from "../../widget/compare/PlatformCompareFrame.ts";
 import { RelationCompareFrame } from "../../widget/compare/RelationCompareFrame.ts";
@@ -15,6 +15,7 @@ import { Values } from "../../Values.ts";
 import { ClassEditRules } from "../../editrule/ClassEditRules.ts";
 import { ItemEditRules } from "../../editrule/ItemEditRules.ts";
 import { TabEditRules } from "../../editrule/TabEditRules.ts";
+import VerifyTimeline from "../../vue/components/VerifyTimeline.vue";
 
 type ParsedOpinion = [number, number, number, number];
 
@@ -45,11 +46,15 @@ export class AdminVerifyInit extends AdminBaseInit {
   private notifyTimer?: number;
   /** 挂载在审核窗内、仅创建一个实例的正文对比组件（`TextComparator`） */
   private textComparator?: App;
+  /** 挂载在审核窗内、仅创建一个实例的审核足迹时间线组件（`VerifyTimeline`） */
+  private timeline?: App;
   /** 正文对比组件的挂载点，每次加载待审项后被重新插回审核按钮之前 */
   private comparatorContainer?: HTMLElement;
+  /** 时间线组件的挂载点，每次加载待审项后被重新插回审核按钮之后 */
+  private timelineContainer?: HTMLElement;
   /** 正文对比组件当前读取的编辑前后正文（`modifyMainText` 写，`mountTextComparator` 读） */
-  private readonly comparatorTextA: ShallowRef<JQuery> = ref($());
-  private readonly comparatorTextB: ShallowRef<JQuery> = ref($());
+  private readonly comparatorTextA = shallowRef($());
+  private readonly comparatorTextB = shallowRef($());
   /** 传给组件的正文来源，组件据此在原地刷新对比结果 */
   private get comparatorTexts(): { textA: ShallowRef<JQuery>; textB: ShallowRef<JQuery> } {
     return { textA: this.comparatorTextA, textB: this.comparatorTextB };
@@ -58,6 +63,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.comparatorTextA.value = texts.textA;
     this.comparatorTextB.value = texts.textB;
   }
+  /** 时间线组件相关参数 */
+  private readonly lastRefundElement = shallowRef($());
+  private readonly assistantSuggestionElement = shallowRef($());
+  private readonly lastSubmission = ref(0);
+  /** 审核页面分屏是否可用且已启用 */
   private get enableSplit() {
     return this.splitScreenOnVerify && !this.parent.isMobileClient;
   }
@@ -74,8 +84,23 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   constructor(parent: Mcmodder) {
     super(parent);
-    this.assistantViewed = this.configs.getAll("assistantViewed") ?? {};
-    this.assistantViewedSet = new Set<number>();
+
+    const assistantViewed = this.configs.getAll("assistantViewed") ?? {};
+    Object.values(assistantViewed).forEach((numberList) => {
+      const length = numberList.length;
+      for (let i = 0; i < length; i++) {
+        const el = numberList[i];
+        if (typeof el === "number") {
+          numberList[i] = [el, 0];
+        }
+      }
+    });
+    this.assistantViewed = assistantViewed as Record<
+      keyof typeof assistantViewed,
+      Exclude<ElementOf<ValueOf<typeof assistantViewed>>, number>[]
+    >;
+
+    this.assistantViewedMap = new Map<number, number>();
     this.splitScreenOnVerify = this.configs.getSettings("splitScreenOnVerify") ?? false;
   }
 
@@ -96,6 +121,8 @@ export class AdminVerifyInit extends AdminBaseInit {
       this.frameMounted = false;
       this.textComparator?.unmount();
       this.textComparator = undefined;
+      this.timeline?.unmount();
+      this.timeline = undefined;
     }
     if (this.enableSplit && !this.frameMounted) {
       const connectedFrame = document.getElementById("connect-frame");
@@ -331,6 +358,9 @@ export class AdminVerifyInit extends AdminBaseInit {
     // 表内的正文已被搬运到审核窗内，组件可挂载（或复用）了
     this.mountTextComparator();
 
+    // 审核足迹时间线同理
+    this.mountTimeline();
+
     // 附言缓存
     this.cacheMessage();
   }
@@ -393,7 +423,8 @@ export class AdminVerifyInit extends AdminBaseInit {
       );
     }
 
-    InputListController.instance.add(this.reasonInput.get(0) as HTMLInputElement, {
+    InputListPopoverController.instance.add(this.reasonInput.get(0) as HTMLInputElement, {
+      type: "inputList",
       delimiter: "；",
       hideBeforeInput: true,
       suggestionManager: {
@@ -462,14 +493,18 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   private parseAndModifyTable(contents: Record<string, VerifyContent>) {
     const data: McmodClassEditorInnerData | McmodItemEditorInnerData | McmodTabEditorInnerData = {};
-    const isClass = this.verifyInfo["操作类型"] === "模组添加";
-    const isItem = this.verifyInfo["操作类型"] === "资料添加";
-    const isTab = this.verifyInfo["操作类型"] === "合成表添加";
+    const type = this.verifyInfo["操作类型"];
+    const isClass = type.startsWith("模组");
+    const isItem = type.startsWith("资料");
+    const isTab = type.startsWith("合成表");
+    const isAdd = type.endsWith("添加");
+    let hasText = false;
 
     Object.values(contents).forEach((content) => {
       const rowText = content.title;
       if (rowText.includes("介绍") || rowText.includes("正文")) {
         this.modifyMainText(content, data as McmodClassEditorInnerData | McmodItemEditorInnerData);
+        hasText = true;
       }
       if (isClass) {
         this.classModifiers[rowText]?.(content, data as McmodClassEditorInnerData);
@@ -480,13 +515,21 @@ export class AdminVerifyInit extends AdminBaseInit {
       }
     });
 
+    // 若没有出现正文栏，则隐藏文本对比
+    if (!hasText) {
+      this.comparatorTexts = {
+        textA: $(),
+        textB: $(),
+      };
+    }
+
     let result;
     if (isClass) {
-      result = ClassEditRules.check(data as McmodClassEditorInnerData);
+      result = ClassEditRules.check(data as McmodClassEditorInnerData, isAdd);
     } else if (isItem) {
-      result = ItemEditRules.check(data as McmodItemEditorInnerData);
+      result = ItemEditRules.check(data as McmodItemEditorInnerData, isAdd);
     } else if (isTab) {
-      result = TabEditRules.check(data as McmodTabEditorInnerData);
+      result = TabEditRules.check(data as McmodTabEditorInnerData, isAdd);
     } else {
       return;
     }
@@ -732,40 +775,97 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     /**
-     * 为开源许可中出现的链接文本添加快速跳转。
+     * 解析开源许可信息，并为开源许可中出现的链接文本添加快速跳转。
      *
-     * 现有编辑检查规则尚无涉及开源许可的条目，故暂时跳过解析。
+     * 原始 HTML 范例，注意&lt;b&gt;标签与方括号之间的一个空格，以及方括号与备注括号之间的一个空格，
+     * 且类型、链接与备注都是可选字段，为空串时不会显示（连带外周的括号与空格）：
      *
-     * 原始 HTML 范例（注意&lt;b&gt;标签与方括号之间的一个空格）：
      * ```html
      * <p><b class="text-primary">通用</b></p>
-     * <p>声明许可协议为: <b>MIT License</b> 【{{ link }}】</p>
+     * <p><b>源码 / 资产 / 构件</b> 声明许可协议为: <b>MIT License</b> 【{{ link }}】 (这里是备注)</p>
      * ```
      */
     开源许可: (content, data) => {
-      // let title = "";
-      content.row
-        .find("p")
-        .contents()
-        .each((_, e) => {
-          // if (e.nodeType === Node.ELEMENT_NODE && e.tagName === "B") {
-          //   const text = e.textContent;
-          //   if (e.classList.contains("text-primary")) {
-          //     title = text;
-          //     return;
-          //   }
-          // }
-          if (e.nodeType === Node.TEXT_NODE) {
-            const text = e as unknown as Text;
-            if (text.data.startsWith(" 【") && text.data.endsWith("】")) {
-              const link = text.data.slice(2, -1);
-              const mid = text.splitText(2);
-              mid.splitText(link.length);
-              Utils.textToAnchor(mid);
-            }
-          }
-        });
       data.license = {};
+      let title = "";
+      let listIndex = 0;
+      let index = 0;
+      let currentList: ValueOf<Required<typeof data>["license"]>;
+      type License = ValueOf<(typeof currentList)["list"]>;
+      content.row.find("p").each((_, p) => {
+        const contents = $(p).contents();
+        let types: License["type"] = [];
+        let isCustomType = false;
+        let name: License["name"] = "other";
+        let link: License["link"] = "";
+        let extras: License["text"] = "";
+        if (contents.length === 1 && contents.attr("class") === "text-primary") {
+          title = p.textContent;
+          currentList = { title, list: {} };
+          data.license![listIndex++] = currentList;
+          index = 0;
+          return;
+        } else {
+          contents.each((childIndex, element) => {
+            if (
+              childIndex === 0 &&
+              element.nodeType === Node.ELEMENT_NODE &&
+              element.tagName === "B"
+            ) {
+              element.textContent
+                .split("/")
+                .map((type) => type.trim())
+                .forEach((rawType) => {
+                  const type = Utils.getKeyValueOfObject(Values.reversedLicenseTypeMap, rawType);
+                  if (type === undefined) {
+                    isCustomType = true;
+                  } else {
+                    (types as Exclude<typeof types, string>).push(type);
+                  }
+                });
+              if (isCustomType) {
+                types = element.textContent;
+              }
+            } else {
+              const prev = element.previousSibling;
+              if (
+                prev !== null &&
+                Utils.isTextNode(prev) &&
+                prev.data.endsWith("声明许可协议为: ")
+              ) {
+                const rawName = element.textContent;
+                const mappedName = Utils.getKeyValueOfObject(Values.reversedLicenseMap, rawName);
+                if (mappedName === undefined) {
+                  console.warn("未知的许可协议: " + rawName);
+                } else {
+                  name = mappedName;
+                }
+              }
+            }
+            if (element.nodeType === Node.TEXT_NODE) {
+              const text = element as unknown as Text;
+              const linkStartPos = text.data.indexOf(" 【");
+              const linkEndPos = text.data.indexOf("】");
+              if (linkStartPos >= 0 && linkEndPos > linkStartPos) {
+                link = text.data.slice(2, -1);
+                const mid = text.splitText(2);
+                mid.splitText(link.length);
+                Utils.textToAnchor(mid);
+              }
+              const lastText = text.data.slice(linkEndPos + 1);
+              if (lastText.startsWith(" (") && lastText.endsWith(")")) {
+                extras = lastText.slice(2, -1);
+              }
+            }
+          });
+          currentList.list[index++] = {
+            type: types,
+            name,
+            link,
+            text: extras,
+          };
+        }
+      });
     },
 
     /**
@@ -896,7 +996,11 @@ export class AdminVerifyInit extends AdminBaseInit {
         if (i === 0) return;
         const text = e.textContent;
         const type = this.parent.utils.getItemTypeData(this.verifyClassID, text);
-        if (type && this.verifyClassID) {
+        if (type === undefined) {
+          data.category = { 0: "-1" };
+          return;
+        }
+        if (this.verifyClassID) {
           e.innerHTML = `<a target="_blank" href="${Utils.getItemTypeURL(
             this.verifyClassID,
             type.typeID,
@@ -1052,6 +1156,35 @@ export class AdminVerifyInit extends AdminBaseInit {
     $(insertPos).before(this.comparatorContainer!);
   }
 
+  private mountTimeline() {
+    this.lastRefundElement.value = this.verifyFrame!.find(
+      '[style="color:#FFF;background:indianred;font-size:12px;display:inline;word-break:break-all;"]',
+    );
+    const lastSubmissionText = this.verifyInfo["最后提交时间"].match(
+      /\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/,
+    );
+    if (lastSubmissionText === null) {
+      throw new Error("`lastSubmissionText` is null");
+    }
+    this.lastSubmission.value = Date.parse(lastSubmissionText[0]);
+    this.assistantSuggestionElement.value = this.verifyFrame!.find(".assistant-sug");
+
+    if (this.timeline === undefined) {
+      this.timelineContainer = document.createElement("div");
+      this.timelineContainer.classList.add("mcmodder-verify-timeline");
+      this.timeline = createApp(VerifyTimeline, {
+        lastRefundElement: this.lastRefundElement,
+        lastSubmission: this.lastSubmission,
+        assistantSuggestionElement: this.assistantSuggestionElement,
+      });
+      this.timeline.mount(this.timelineContainer);
+    }
+
+    $(this.timelineContainer!).insertAfter(
+      this.verifyFrame!.find(".verify-action-btns, .assistant-action-btns"),
+    );
+  }
+
   /**
    * 将所填写的附言自动暂存在 {@link lastRefundText} 中（仅限当前会话，不持久储存）。
    * 下次打开同待审项时，自动读取并重新填充在附言输入框内。
@@ -1190,11 +1323,27 @@ export class AdminVerifyInit extends AdminBaseInit {
     2: "text-warning",
   } as Record<number, string>;
 
-  /** 获取展示「意见变化」的元素。 */
+  /** 获取展示待审项行元素中「意见变化」的元素。 */
   private getOpinions(elem: JQuery) {
     return elem
       .find("td:nth-child(2) b.text")
       .filter((e) => !$(e).parents(".mcmodder-verify-changedopinions").length);
+  }
+
+  /** 获取并解析待审项行元素中「退回次数」的元素。 */
+  private getRefundCount(elem: JQuery) {
+    const texts = elem
+      .find("td:nth-child(2)")
+      .contents()
+      .filter((_, e) => Utils.isTextNode(e))
+      .toArray() as unknown[] as Text[];
+    for (const text of texts) {
+      const data = text.data;
+      if (data.match(/\[🔍被退回\d+次\]/)) {
+        return Number(data.match(/.d+/));
+      }
+    }
+    return 0;
   }
 
   /**
@@ -1351,10 +1500,14 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   /** 根据日期分类的已提交意见的待审项 ID 列表。 */
   private readonly assistantViewed;
-  /** 与 {@link assistantViewed} 组合使用，存储根据日期分类的已提交意见的待审项 ID 集合，便于快速查重。 */
-  private readonly assistantViewedSet;
+  /**
+   * 与 {@link assistantViewed} 组合使用，存储根据日期分类的已提交意见的待审项 ID 集合与最近一次
+   * 提交意见时的该待审项已经被审核员退回的次数，便于快速查重与获取退回次数。已经提交过意见的
+   * 待审项如果后来被退回并被重新提交，那么标记会被自动隐藏，等到下次提交意见才会被重新标记。
+   */
+  private readonly assistantViewedMap;
 
-  /** 从本地配置加载已提交意见的待审项列表，并同步给 {@link assistantViewed} 和 {@link assistantViewedSet}。 */
+  /** 从本地配置加载已提交意见的待审项列表，并同步给 {@link assistantViewed} 和 {@link assistantViewedMap}。 */
   private initAssistantViewed() {
     const keys = Object.keys(this.assistantViewed).map(Number);
     const time = Utils.getStartTime(Date.now(), 0);
@@ -1362,26 +1515,29 @@ export class AdminVerifyInit extends AdminBaseInit {
       if (time - date > 30 * 24 * 60 * 60 * 1e3) {
         delete this.assistantViewed[date];
       } else {
-        this.assistantViewed[date].forEach((id) => {
-          this.assistantViewedSet.add(id);
+        this.assistantViewed[date].forEach(([id, refund]) => {
+          this.assistantViewedMap.set(id, refund);
         });
       }
     });
   }
 
   /**
-   * 标记待审项为已提交意见，并向 {@link assistantViewed} 和 {@link assistantViewedSet} 同步。
+   * 标记待审项为已提交意见，并向 {@link assistantViewed} 和 {@link assistantViewedMap} 同步。
    *
    * @param id 要标记的待审项的数字 ID
    */
   private markEntryAsViewed(id: number) {
+    const entry = this.getEntry(id);
+    const refund = this.getRefundCount(entry);
+    const record: [number, number] = [id, refund];
     const date = Utils.getStartTime(Date.now(), 0);
     if (this.assistantViewed[date] === undefined) {
-      this.assistantViewed[date] = [id];
+      this.assistantViewed[date] = [record];
     } else {
-      this.assistantViewed[date].push(id);
+      this.assistantViewed[date].push(record);
     }
-    this.assistantViewedSet.add(id);
+    this.assistantViewedMap.set(id, refund);
     this.configs.setAll("assistantViewed", this.assistantViewed);
   }
 
@@ -1399,7 +1555,9 @@ export class AdminVerifyInit extends AdminBaseInit {
   private checkEntry(elem: JQuery | Node) {
     elem = $(elem);
     const id = this.getVerifyID(elem);
-    if (this.assistantViewedSet.has(id)) {
+    const refund = this.getRefundCount(elem);
+    const prevRefund = this.assistantViewedMap.get(id) ?? -1;
+    if (refund <= prevRefund) {
       elem.addClass("mcmodder-verify-commented");
     }
   }

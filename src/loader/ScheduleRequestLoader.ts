@@ -2,6 +2,7 @@ import {
   ScheduleRequestTriggerType,
   ScheduleRequestUtils,
 } from "../schedulerequest/ScheduleRequestUtils";
+import { AnnualCelebrationScheduleRequest } from "../schedulerequest/types/AnnualCelebrationScheduleRequest";
 import { AutoCheckinScheduleRequest } from "../schedulerequest/types/AutoCheckinScheduleRequest";
 import { AutoCheckUpdateScheduleRequest } from "../schedulerequest/types/AutoCheckUpdateScheduleRequest";
 import { AutoCheckVerifyScheduleRequest } from "../schedulerequest/types/AutoCheckVerifyScheduleRequest";
@@ -11,7 +12,7 @@ import { AutoSubscribeScheduleRequest } from "../schedulerequest/types/AutoSubsc
 /**
  * 计划任务加载器：注册全部计划任务，并挂上每秒一次的轮询。
  *
- * 各任务的「关联配置项 / 最小阈值 / 是否要求登录」三元组见下面每个 `addRequestType` 的参数，
+ * 各任务的触发方式与参数（配置项 / 最小阈值 / 是否要求登录）见下面每个 `addRequestType` 的调用，
  * 间隔的具体数值则由各任务自己的 `run` 决定。
  */
 export class ScheduleRequestLoader {
@@ -37,6 +38,12 @@ export class ScheduleRequestLoader {
       0,
       true,
     ); // 自动签到
+    list.addRequestType(
+      "annualCelebration",
+      new AnnualCelebrationScheduleRequest(list.parent),
+      ScheduleRequestTriggerType.ALWAYS,
+      true,
+    ); // 建号周年纪念
     list.addRequestType(
       "autoCheckVerify",
       new AutoCheckVerifyScheduleRequest(list.parent),

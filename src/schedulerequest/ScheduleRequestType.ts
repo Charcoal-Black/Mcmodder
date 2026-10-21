@@ -19,7 +19,7 @@ export abstract class ScheduleRequestType {
   protected readonly configs: ConfigRepository;
   /**
    * 执行优先级，数值越小越先执行。
-   * 现有约定：待审查询（2）< 检查更新/签到（10）< 关注列表（100）< 预编辑提交（200）。
+   * 现有约定：待审查询（2）< 检查更新/签到/周年纪念（10）< 关注列表（100）< 预编辑提交（200）。
    */
   abstract readonly priority: number;
 

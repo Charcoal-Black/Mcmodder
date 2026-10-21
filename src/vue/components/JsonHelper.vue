@@ -22,5 +22,5 @@ interface Props {
   parent: Mcmodder;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 </script>

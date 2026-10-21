@@ -98,17 +98,6 @@ export class Values {
       markdownit: "https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.1/markdown-it.min.js",
       pangu: "https://cdn.jsdelivr.net/npm/pangu@7.2.0/dist/browser/pangu.umd.min.js",
       turndown: "https://cdnjs.cloudflare.com/ajax/libs/turndown/7.2.1/turndown.min.js",
-      codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js",
-      codemirrorMod: {
-        htmlEmbedded:
-          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/htmlembedded/htmlembedded.min.js",
-        markdown:
-          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js",
-      },
-      jsBeautify: "https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.4/beautify-html.min.js",
-    },
-    css: {
-      codemirror: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css",
     },
     nightMode: {
       bg: "https://s41.ax1x.com/2026/05/13/peXw6Sg.png",
@@ -124,6 +113,14 @@ export class Values {
         2: '"Noto Sans SC", sans-serif',
         3: '"Inter", sans-serif',
       },
+    },
+    icon: {
+      fileUpload: (
+        import.meta.glob("./assets/icons/fileUpload.svg", {
+          query: "?raw",
+          eager: true,
+        })["./assets/icons/fileUpload.svg"] as { default: string }
+      ).default,
     },
     storage: {
       indexes: {
@@ -180,6 +177,67 @@ export class Values {
         ],
       },
     },
+  } as const;
+
+  /**
+   * 自定义表态（短评）相关常量。
+   *
+   * 请求批量上限（`maxCountsPerRequest` / `maxResolvePerRequest`）须与服务端一致：
+   * `mcmodder_attitude_counts` 与 `mcmodder_attitude_stickers_by_ids` 均为 200。
+   */
+  static readonly attitude = {
+    devilAngry: {
+      type: "devil-angry",
+      title: "恶魔安格瑞",
+      icon: (
+        import.meta.glob("./assets/attitude/devilAngry.svg", {
+          query: "?raw",
+          eager: true,
+        })["./assets/attitude/devilAngry.svg"] as { default: string }
+      ).default,
+    },
+    emojiDataUrl:
+      "https://cdn.jsdelivr.net.cn/npm/emoji-picker-element-data@1/zh/emojibase/data.json",
+    /** Twemoji 官方 SVG 目录（`<codepoint>.svg`） */
+    emojiSvgUrl: "https://cdn.jsdelivr.net.cn/gh/jdecked/twemoji@v15.0.3/assets/svg/",
+    /** Twemoji COLR 字体覆盖到 Emoji 15.0，选择器据此裁剪超出部分 */
+    emojiVersion: 15.0,
+    /** 选择面板「最近使用」保留的 emoji 个数 */
+    recentEmojisLimit: 12,
+    /**
+     * 表态贴纸：图片本体上传到百科图床（站点 UEditor 图片接口），云端只登记归属，
+     * 表态类型为 `sticker:<贴纸 id>`；每日新建数量由服务端限制。
+     */
+    sticker: {
+      /** 表态类型前缀：`sticker:<贴纸 id>`（服务端 `attitude-put` 按同一前缀解析） */
+      prefix: "sticker:",
+      /** 百科图床（站点 UEditor 图片上传接口） */
+      uploadUrl: "https://center.mcmod.cn/ueditor/php/controller.php?action=uploadimage",
+      /** 本地图片体积上限（字节）：与站点 UEditor 默认的 `imageMaxSize` 一致 */
+      maxUploadBytes: 2 * 1024 * 1024,
+      /** 可选图片来源：`<input accept>` 与服务端按扩展名判定的图床白名单对齐 */
+      uploadAccept: "image/png,image/jpeg,image/gif,image/bmp",
+      /** 「我的贴纸」列表与今日额度的缓存有效期 */
+      listCacheTtl: 30 * 1000,
+      /** 贴纸广场单页条数 */
+      plazaPageSize: 24,
+      /** 单次 `resolve` 携带的贴纸 id 上限（与服务端一致） */
+      maxResolvePerRequest: 200,
+    },
+    /** 表态消息中心单页条数 */
+    inboxPageSize: 20,
+    /** 表态消息未读数缓存有效期（页头提醒与消息中心徽标共用） */
+    unreadCacheTtl: 60 * 1000,
+    /**
+     * 表态提醒检查结果的复用窗口：同一浏览器连续开页时去重，检查本身只在进入页面时发起一次。
+     *
+     * 这是「每次导航都可能发一次请求」的关口：取 1 分钟，红点最多滞后 1 分钟，同时把活跃浏览时的
+     * 检查次数压到每分钟一次（原先 20 秒等于每次导航都发）。
+     */
+    remindCacheTtl: 60 * 1000,
+    countsCacheTtl: 60 * 1000,
+    countsDebounce: 300,
+    maxCountsPerRequest: 200,
   } as const;
 
   static readonly mcmodderVersion = GM_info.script.version || "Unknown";
@@ -369,6 +427,20 @@ export class Values {
     "subscript",
     "header",
   ];
+  /**
+   * 站点 UEditor 的接口入口：`action=` 后接动作名。短评工具栏上只暴露了图片上传，
+   * 附件上传（`uploadfile`）与附件列表（`listfile`）都是站点未在界面上给出的隐藏入口，
+   * 后者用于找回上传后没拿到地址的文件，见 `src/ueditor/UploadFileButton.ts`。
+   */
+  static readonly ueditorActionUrl = "/ueditor/php/controller.php?action=";
+  /**
+   * 「上传文件」按钮可选的文件类型：与站点 UEditor 服务端的 `fileAllowFiles` 对齐，
+   * 只用于文件选择框的过滤，最终是否放行仍由服务端判定。
+   */
+  static readonly ueditorFileAccept =
+    ".png,.jpg,.jpeg,.gif,.bmp,.flv,.swf,.mkv,.avi,.rm,.rmvb,.mpeg,.mpg,.ogg,.ogv,.mov,.wmv,.mp4,.webm,.mp3,.wav,.mid,.rar,.zip,.tar,.gz,.7z,.bz2,.cab,.iso,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.md,.xml";
+  /** 站点 UEditor 服务端的 `fileMaxSize`：超过它的文件只作提示、照常尝试上传 */
+  static readonly ueditorFileMaxSize = 1024000;
   static readonly adminIDList = [
     2, 8, 9, 208, 331, 7926, 7949, 10167, 12422, 14115, 17038, 21294, 29797, 672797,
   ];
@@ -383,7 +455,7 @@ export class Values {
     "icon:",
   ];
   static readonly supportedImageSuffix = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
-  static readonly importableKeys = [
+  static readonly importableKeys: (keyof Item)[] = [
     "name",
     "englishName",
     "registerName",
@@ -639,11 +711,13 @@ export class Values {
 
   static readonly reversedAuthorPositionMap = this.reverseMap(this.authorPositionMap);
 
-  static readonly licenseTypeName = {
+  static readonly licenseTypeMap = {
     source: "源码",
     asset: "资产",
     artifact: "构建",
   } as const;
+
+  static readonly reversedLicenseTypeMap = this.reverseMap(this.licenseTypeMap);
 
   static readonly classCategories = [
     { index: 0, name: "科技", type: 0, value: "1,1" },
@@ -688,141 +762,140 @@ export class Values {
   static readonly classCategoryValueMap = this.arrayToMap(this.classCategories, "value");
 
   static readonly licenseName = {
-    ARR: "[ARR] All Rights Reserved（非许可协议）",
-    "BSD-1-Clause": "[BSD-1-Clause] 1-clause BSD License",
-    "AFL-3.0": "[AFL-3.0] Academic Free License v. 3.0",
-    "APL-1.0": "[APL-1.0] Adaptive Public License 1.0",
-    "Apache-2.0": "[Apache-2.0] Apache License, Version 2.0",
-    "Apache-1.1": "[Apache-1.1] Apache Software License, version 1.1",
-    "APSL-2.0": "[APSL-2.0] Apple Public Source License 2.0",
-    "Artistic-1.0-Perl": "[Artistic-1.0-Perl] Artistic License (Perl) 1.0",
-    "Artistic-1.0": "[Artistic-1.0] Artistic License 1.0",
-    "Artistic-2.0": "[Artistic-2.0] Artistic License 2.0",
-    AAL: "[AAL] Attribution Assurance License",
-    "BlueOak-1.0.0": "[BlueOak-1.0.0] Blue Oak Model License",
-    "BSL-1.0": "[BSL-1.0] Boost Software License 1.0",
-    "BSD-2-Clause-Patent": "[BSD-2-Clause-Patent] BSD+Patent",
-    "BSD-3-Clause-Open-MPI": "[BSD-3-Clause-Open-MPI] BSD-3-Clause-Open-MPI",
-    CC0: "[CC0] CC0",
-    "CC-BY-4.0": "[CC-BY-4.0] CC BY 4.0",
-    "CC-BY-SA-4.0": "[CC-BY-SA-4.0] CC BY-SA 4.0",
-    "CC-BY-NC-4.0": "[CC-BY-NC-4.0] CC BY-NC 4.0",
-    "CC-BY-NC-SA-4.0": "[CC-BY-NC-SA-4.0] CC BY-NC-SA 4.0",
-    "CC-BY-ND-4.0": "[CC-BY-ND-4.0] CC BY-ND 4.0",
-    "CC-BY-NC-ND-4.0": "[CC-BY-NC-ND-4.0] CC BY-NC-ND 4.0",
-    "CECILL-2.1": "[CECILL-2.1] Cea Cnrs Inria Logiciel Libre License, version 2.1",
-    "CERN-OHL-P-2.0": "[CERN-OHL-P-2.0] CERN Open Hardware Licence Version 2 – Permissive",
-    "CERN-OHL-S-2.0": "[CERN-OHL-S-2.0] CERN Open Hardware Licence Version 2 – Strongly Reciprocal",
-    "CERN-OHL-W-2.0": "[CERN-OHL-W-2.0] CERN Open Hardware Licence Version 2 – Weakly Reciprocal",
-    "MIT-CMU": "[MIT-CMU] CMU License",
-    "CDDL-1.1": "[CDDL-1.1] COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL)",
-    "CDDL-1.0": "[CDDL-1.0] Common Development and Distribution License 1.0",
-    "CPAL-1.0": "[CPAL-1.0] Common Public Attribution License Version 1.0",
-    "CPL-1.0": "[CPL-1.0] Common Public License Version 1.0",
-    "CATOSL-1.1": "[CATOSL-1.1] Computer Associates Trusted Open Source License 1.1",
-    "CAL-1.0": "[CAL-1.0] Cryptographic Autonomy License",
-    "CUA-OPL-1.0": "[CUA-OPL-1.0] CUA Office Public License",
-    curl: "[curl] curl License",
-    "EPL-1.0": "[EPL-1.0] Eclipse Public License -v 1.0",
-    "EPL-2.0": "[EPL-2.0] Eclipse Public License version 2.0",
-    "eCos-2.0": "[eCos-2.0] eCos License version 2.0",
-    "ECL-1.0": "[ECL-1.0] Educational Community License, Version 1.0",
-    "ECL-2.0": "[ECL-2.0] Educational Community License, Version 2.0",
-    "EFL-1.0": "[EFL-1.0] Eiffel Forum License, version 1",
-    "EFL-2.0": "[EFL-2.0] Eiffel Forum License, Version 2",
-    Entessa: "[Entessa] Entessa Public License Version. 1.0",
-    EUDatagrid: "[EUDatagrid] EU DataGrid Software License",
-    "EUPL-1.2": "[EUPL-1.2] European Union Public Licence, version 1.2",
-    Fair: "[Fair] Fair License",
-    "Frameworx-1.0": "[Frameworx-1.0] Frameworx License 1.0",
-    "AGPL-3.0": "[AGPL-3.0] GNU Affero General Public License version 3",
-    "GPL-3.0": "[GPL-3.0] GNU General Public License version 3",
-    "GPL-2.0": "[GPL-2.0] GNU General Public License version 2",
-    "GPL-1.0": "[GPL-1.0] GNU General Public License, version 1",
-    "LGPL-3.0": "[LGPL-3.0] GNU Lesser General Public License version 3",
-    "LGPL-2.1": "[LGPL-2.1] GNU Lesser General Public License version 2.1",
-    "LGPL-2.0": "[LGPL-2.0] GNU Library General Public License version 2",
-    HPND: "[HPND] Historical Permission Notice and Disclaimer",
-    "IPL-1.0": "[IPL-1.0] IBM Public License Version 1.0",
-    ICU: "[ICU] ICU License",
-    Intel: "[Intel] Intel Open Source License",
-    IPA: "[IPA] IPA Font License",
-    ISC: "[ISC] ISC License",
-    JOSL: "[JOSL] Jabber Open Source License",
-    Jam: "[Jam] JAM License",
-    "LPPL-1.3c": "[LPPL-1.3c] LaTeX Project Public License, Version 1.3c",
-    "BSD-3-Clause-LBNL": "[BSD-3-Clause-LBNL] Lawrence Berkeley National Labs BSD Variant License",
-    "LiLiQ-P-1.1": "[LiLiQ-P-1.1] Licence Libre du Québec – Permissive version 1.1",
-    "LiLiQ-Rplus-1.1": "[LiLiQ-Rplus-1.1] Licence Libre du Québec – Réciprocité forte version 1.1",
-    "LiLiQ-R-1.1": "[LiLiQ-R-1.1] Licence Libre du Québec – Réciprocité version 1.1",
-    LANLBV: "[LANLBV] Los Alamos National Labs BSD-3 Variant",
-    "LPL-1.02": "[LPL-1.02] Lucent Public License Version 1.02",
-    "LPL-1.0": "[LPL-1.0] Lucent Public License, Plan 9, version 1.0",
-    "MS-PL": "[MS-PL] Microsoft Public License",
-    "MS-RL": "[MS-RL] Microsoft Reciprocal License",
-    MirOS: "[MirOS] MirOS Licence",
-    "MIT-0": "[MIT-0] MIT No Attribution License",
-    MCVWL: "[MCVWL] MITRE Collaborative Virtual Workspace License",
-    Motosoto: "[Motosoto] Motosoto Open Source License",
-    "MPL-2.0": "[MPL-2.0] Mozilla Public License 2.0",
-    "MPL-1.1": "[MPL-1.1] Mozilla Public License 1.1",
-    "MPL-1.0": "[MPL-1.0] Mozilla Public License, version 1.0",
-    "MulanPSL-2.0": "[MulanPSL-2.0] Mulan Permissive Software License v2",
-    Multics: "[Multics] Multics License",
-    "NASA-1.3": "[NASA-1.3] NASA Open Source Agreement v1.3",
-    Naumen: "[Naumen] NAUMEN Public License",
-    NOKIA: "[NOKIA] Nokia Open Source License Version 1.0a",
-    "NPOSL-3.0": "[NPOSL-3.0] Non-Profit Open Software License version 3.0",
-    NTP: "[NTP] NTP License",
-    OGTSL: "[OGTSL] Open Group Test Suite License",
-    "OLFL-1.3": "[OLFL-1.3] Open Logistics Foundation License v1.3",
-    "OSL-2.1": "[OSL-2.1] Open Software License 2.1",
-    "OSL-1.0": "[OSL-1.0] Open Software License, version 1.0",
-    "OLDAP-2.8": "[OLDAP-2.8] OpenLDAP Public License Version 2.8",
-    "OSC-1.0": "[OSC-1.0] OSC License 1.0",
-    "OSET-PL-2.1": "[OSET-PL-2.1] OSET Public License version 2.1",
-    "PHP-3.0": "[PHP-3.0] PHP License 3.0",
-    "PHP-3.01": "[PHP-3.01] PHP License 3.01",
-    "Python-2.0": "[Python-2.0] Python License, Version 2",
-    "RPSL-1.0": "[RPSL-1.0] RealNetworks Public Source License Version 1.0",
-    "RPL-1.5": "[RPL-1.5] Reciprocal Public License 1.5",
-    "RPL-1.1": "[RPL-1.1] Reciprocal Public License, version 1.1",
-    "OFL-1.1": "[OFL-1.1] SIL OPEN FONT LICENSE",
-    "SimPL-2.0": "[SimPL-2.0] Simple Public License",
-    SISSL: "[SISSL] Sun Industry Standards Source License",
-    "SPL-1.0": "[SPL-1.0] Sun Public License, Version 1.0",
-    "BSD-2-Clause": "[BSD-2-Clause] 2-Clause BSD License",
-    "BSD-3-Clause": "[BSD-3-Clause] 3-Clause BSD License",
-    "CNRI-Python": "[CNRI-Python] CNRI portion of the multi-part Python License",
-    "EUPL-1.1": "[EUPL-1.1] European Union Public License, version 1.1",
-    MIT: "[MIT] MIT License",
-    NGPL: "[NGPL] Nethack General Public License",
-    "OCLC-2.0": "[OCLC-2.0] OCLC Research Public License 2.0 License",
-    "OSL-3.0": "[OSL-3.0] Open Software License 3.0",
-    PostgreSQL: "[PostgreSQL] PostgreSQL License",
-    "QPL-1.0": "[QPL-1.0] Q Public License Version",
-    RSCPL: "[RSCPL] Ricoh Source Code Public License",
-    Sleepycat: "[Sleepycat] Sleepycat License",
-    "Watcom-1.0": "[Watcom-1.0] Sybase Open Source Licence",
-    "UPL-1.0": "[UPL-1.0] Universal Permissive License Version 1.0",
-    NCSA: "[NCSA] University of Illinois/NCSA Open Source License",
-    Unlicense: "[Unlicense] Unlicense",
-    "VSL-1.0": "[VSL-1.0] Vovida Software License v. 1.0",
-    "W3C-20150513": "[W3C-20150513] W3C® Software and Document license",
-    wxWindows: "[wxWindows] wxWindows Library Licence",
-    Xnet: "[Xnet] X.Net, Inc. License",
-    Zlib: "[Zlib] zlib/libpng License",
-    "Unicode-3.0": "[Unicode-3.0] UNICODE LICENSE V3",
-    "Unicode-DFS-2016":
-      "[Unicode-DFS-2016] Unicode, Inc. License Agreement – Data Files and Software",
-    "UCL-1.0": "[UCL-1.0] Upstream Compatibility License v1.0",
-    WordNet: "[WordNet] WordNet",
-    WTFPL: "[WTFPL] WTFPL License",
-    "0BSD": "[0BSD] Zero-Clause BSD",
-    "ZPL-2.0": "[ZPL-2.0] Zope Public License 2.0",
-    "ZPL-2.1 ": "[ZPL-2.1 ] Zope Public License 2.1",
+    ARR: "All Rights Reserved（非许可协议）",
+    "BSD-1-Clause": "1-clause BSD License",
+    "AFL-3.0": "Academic Free License v. 3.0",
+    "APL-1.0": "Adaptive Public License 1.0",
+    "Apache-2.0": "Apache License, Version 2.0",
+    "Apache-1.1": "Apache Software License, version 1.1",
+    "APSL-2.0": "Apple Public Source License 2.0",
+    "Artistic-1.0-Perl": "Artistic License (Perl) 1.0",
+    "Artistic-1.0": "Artistic License 1.0",
+    "Artistic-2.0": "Artistic License 2.0",
+    AAL: "Attribution Assurance License",
+    "BlueOak-1.0.0": "Blue Oak Model License",
+    "BSL-1.0": "Boost Software License 1.0",
+    "BSD-2-Clause-Patent": "BSD+Patent",
+    "BSD-3-Clause-Open-MPI": "BSD-3-Clause-Open-MPI",
+    CC0: "CC0",
+    "CC-BY-4.0": "CC BY 4.0",
+    "CC-BY-SA-4.0": "CC BY-SA 4.0",
+    "CC-BY-NC-4.0": "CC BY-NC 4.0",
+    "CC-BY-NC-SA-4.0": "CC BY-NC-SA 4.0",
+    "CC-BY-ND-4.0": "CC BY-ND 4.0",
+    "CC-BY-NC-ND-4.0": "CC BY-NC-ND 4.0",
+    "CECILL-2.1": "Cea Cnrs Inria Logiciel Libre License, version 2.1",
+    "CERN-OHL-P-2.0": "CERN Open Hardware Licence Version 2 – Permissive",
+    "CERN-OHL-S-2.0": "CERN Open Hardware Licence Version 2 – Strongly Reciprocal",
+    "CERN-OHL-W-2.0": "CERN Open Hardware Licence Version 2 – Weakly Reciprocal",
+    "MIT-CMU": "CMU License",
+    "CDDL-1.1": "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL)",
+    "CDDL-1.0": "Common Development and Distribution License 1.0",
+    "CPAL-1.0": "Common Public Attribution License Version 1.0",
+    "CPL-1.0": "Common Public License Version 1.0",
+    "CATOSL-1.1": "Computer Associates Trusted Open Source License 1.1",
+    "CAL-1.0": "Cryptographic Autonomy License",
+    "CUA-OPL-1.0": "CUA Office Public License",
+    curl: "curl License",
+    "EPL-1.0": "Eclipse Public License -v 1.0",
+    "EPL-2.0": "Eclipse Public License version 2.0",
+    "eCos-2.0": "eCos License version 2.0",
+    "ECL-1.0": "Educational Community License, Version 1.0",
+    "ECL-2.0": "Educational Community License, Version 2.0",
+    "EFL-1.0": "Eiffel Forum License, version 1",
+    "EFL-2.0": "Eiffel Forum License, Version 2",
+    Entessa: "Entessa Public License Version. 1.0",
+    EUDatagrid: "EU DataGrid Software License",
+    "EUPL-1.2": "European Union Public Licence, version 1.2",
+    Fair: "Fair License",
+    "Frameworx-1.0": "Frameworx License 1.0",
+    "AGPL-3.0": "GNU Affero General Public License version 3",
+    "GPL-3.0": "GNU General Public License version 3",
+    "GPL-2.0": "GNU General Public License version 2",
+    "GPL-1.0": "GNU General Public License, version 1",
+    "LGPL-3.0": "GNU Lesser General Public License version 3",
+    "LGPL-2.1": "GNU Lesser General Public License version 2.1",
+    "LGPL-2.0": "GNU Library General Public License version 2",
+    HPND: "Historical Permission Notice and Disclaimer",
+    "IPL-1.0": "IBM Public License Version 1.0",
+    ICU: "ICU License",
+    Intel: "Intel Open Source License",
+    IPA: "IPA Font License",
+    ISC: "ISC License",
+    JOSL: "Jabber Open Source License",
+    Jam: "JAM License",
+    "LPPL-1.3c": "LaTeX Project Public License, Version 1.3c",
+    "BSD-3-Clause-LBNL": "Lawrence Berkeley National Labs BSD Variant License",
+    "LiLiQ-P-1.1": "Licence Libre du Québec – Permissive version 1.1",
+    "LiLiQ-Rplus-1.1": "Licence Libre du Québec – Réciprocité forte version 1.1",
+    "LiLiQ-R-1.1": "Licence Libre du Québec – Réciprocité version 1.1",
+    LANLBV: "Los Alamos National Labs BSD-3 Variant",
+    "LPL-1.02": "Lucent Public License Version 1.02",
+    "LPL-1.0": "Lucent Public License, Plan 9, version 1.0",
+    "MS-PL": "Microsoft Public License",
+    "MS-RL": "Microsoft Reciprocal License",
+    MirOS: "MirOS Licence",
+    "MIT-0": "MIT No Attribution License",
+    MCVWL: "MITRE Collaborative Virtual Workspace License",
+    Motosoto: "Motosoto Open Source License",
+    "MPL-2.0": "Mozilla Public License 2.0",
+    "MPL-1.1": "Mozilla Public License 1.1",
+    "MPL-1.0": "Mozilla Public License, version 1.0",
+    "MulanPSL-2.0": "Mulan Permissive Software License v2",
+    Multics: "Multics License",
+    "NASA-1.3": "NASA Open Source Agreement v1.3",
+    Naumen: "NAUMEN Public License",
+    NOKIA: "Nokia Open Source License Version 1.0a",
+    "NPOSL-3.0": "Non-Profit Open Software License version 3.0",
+    NTP: "NTP License",
+    OGTSL: "Open Group Test Suite License",
+    "OLFL-1.3": "Open Logistics Foundation License v1.3",
+    "OSL-2.1": "Open Software License 2.1",
+    "OSL-1.0": "Open Software License, version 1.0",
+    "OLDAP-2.8": "OpenLDAP Public License Version 2.8",
+    "OSC-1.0": "OSC License 1.0",
+    "OSET-PL-2.1": "OSET Public License version 2.1",
+    "PHP-3.0": "PHP License 3.0",
+    "PHP-3.01": "PHP License 3.01",
+    "Python-2.0": "Python License, Version 2",
+    "RPSL-1.0": "RealNetworks Public Source License Version 1.0",
+    "RPL-1.5": "Reciprocal Public License 1.5",
+    "RPL-1.1": "Reciprocal Public License, version 1.1",
+    "OFL-1.1": "SIL OPEN FONT LICENSE",
+    "SimPL-2.0": "Simple Public License",
+    SISSL: "Sun Industry Standards Source License",
+    "SPL-1.0": "Sun Public License, Version 1.0",
+    "BSD-2-Clause": "2-Clause BSD License",
+    "BSD-3-Clause": "3-Clause BSD License",
+    "CNRI-Python": "CNRI portion of the multi-part Python License",
+    "EUPL-1.1": "European Union Public License, version 1.1",
+    MIT: "MIT License",
+    NGPL: "Nethack General Public License",
+    "OCLC-2.0": "OCLC Research Public License 2.0 License",
+    "OSL-3.0": "Open Software License 3.0",
+    PostgreSQL: "PostgreSQL License",
+    "QPL-1.0": "Q Public License Version",
+    RSCPL: "Ricoh Source Code Public License",
+    Sleepycat: "Sleepycat License",
+    "Watcom-1.0": "Sybase Open Source Licence",
+    "UPL-1.0": "Universal Permissive License Version 1.0",
+    NCSA: "University of Illinois/NCSA Open Source License",
+    Unlicense: "Unlicense",
+    "VSL-1.0": "Vovida Software License v. 1.0",
+    "W3C-20150513": "W3C® Software and Document license",
+    wxWindows: "wxWindows Library Licence",
+    Xnet: "X.Net, Inc. License",
+    Zlib: "zlib/libpng License",
+    "Unicode-3.0": "UNICODE LICENSE V3",
+    "Unicode-DFS-2016": "Unicode, Inc. License Agreement – Data Files and Software",
+    "UCL-1.0": "Upstream Compatibility License v1.0",
+    WordNet: "WordNet",
+    WTFPL: "WTFPL License",
+    "0BSD": "Zero-Clause BSD",
+    "ZPL-2.0": "Zope Public License 2.0",
+    "ZPL-2.1 ": "Zope Public License 2.1",
     other: "其他",
-  };
+  } as const;
 
   static readonly reversedLicenseMap = this.reverseMap(this.licenseName);
 

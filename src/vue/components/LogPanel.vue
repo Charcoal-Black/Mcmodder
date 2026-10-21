@@ -12,7 +12,7 @@ interface Props {
   parent: Mcmodder;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 const root = useTemplateRef("root");
 
 function getScrollTopMax() {

@@ -11,32 +11,44 @@ type KeysOfExactType<T, P> = {
   [K in keyof T]-?: Equal<T[K], P> extends true ? K : never;
 }[keyof T];
 
-type ValueOf<T extends Readonly<Record<PropertyKey, unknown>>> = T[keyof T];
+type ValueOf<T extends Record<PropertyKey, unknown>> = T[keyof T];
 
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-type ReverseMap<T extends Readonly<PropertyKey, PropertyKey>> = {
+type ReverseMap<T extends Record<PropertyKey, PropertyKey>> = {
   [K in keyof T as T[K]]: K;
 };
 
 type ElementOf<T extends readonly unknown[]> = T[number];
 
 type ArrayToMap<
-  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  T extends ReadonlyArray<Record<PropertyKey, unknown>>,
   K extends keyof ElementOf<T>,
 > = {
   [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>;
 };
 
 type ArrayToMap2<
-  T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
+  T extends ReadonlyArray<Record<PropertyKey, unknown>>,
   K extends keyof ElementOf<T>,
   K2 extends keyof ElementOf<T>,
 > = {
   [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
 };
+
+type WithDefault<T, V> =
+  Equal<Extract<T, undefined>, undefined> extends true ? Exclude<T, undefined> | V : T;
+
+type WithDefaultKey<T extends Record<PropertyKey, unknown>, K extends PropertyKey, V> = Omit<
+  T,
+  K
+> & {
+  [P in K]: P extends keyof T ? WithDefault<T[P], V> : V;
+};
+
+type Awaitable<T> = T | Promise<T>;
 
 type IndexedType<T extends object, K extends number | string | symbol = number> = T & {
   _primaryKey: K;
@@ -115,7 +127,7 @@ interface AppStorage {
   guiBound?: RecipeJsonFrameGuiBound[];
   classData?: Record<string, string>;
   inputList?: Record<string, InputSimplifiedSuggestion[]>;
-  assistantViewed?: Record<string, number[]>;
+  assistantViewed?: Record<string, (number | [id: number, refund: number])[]>;
   /**
    * 跨标签页弹窗广播槽：仅存放**当前唯一一条**待弹记录（键不存在即表示无挂起）。
    *
@@ -130,6 +142,22 @@ interface AppStorage {
    * 读写均直接走 GM Storage。结构见 {@link RequestToastRecord}。
    */
   mcmodderRequestToasts?: RequestToastRecord[];
+  /**
+   * 自定义表态的轻量缓存（与 {@link AppStorage.mcmodderModalBroadcast} 一样不登记为可缓存键，
+   * 读写直接走 GM Storage），供跨页面的未读表态提醒复用。
+   */
+  attitudeCache?: {
+    unread?: number;
+    total?: number;
+    unreadAt?: number;
+    /** 已确认看到的最大表态记录 id（打开消息中心 / 点击铃铛时推进） */
+    lastSeenId?: number;
+    /** 最近一次增量检查看到的最大表态记录 id */
+    latestId?: number;
+    /** 最近一次增量检查的时间戳与结果（多标签去重用） */
+    checkedAt?: number;
+    checkedCount?: number;
+  };
 }
 
 interface Settings {
@@ -140,7 +168,11 @@ interface Settings {
   fetchCustomSplashes: boolean;
   customSplashRate: number;
   supabaseSplash: boolean;
+  anonymiseSplashContributor: boolean;
   supabaseByteChart: boolean;
+  showUserBadge: boolean;
+  customAttitude: boolean;
+  attitudeTwemoji: boolean;
   moveAds: boolean;
   customFont: 0 | 1 | 2 | 3;
   disableGradient: boolean;
@@ -175,6 +207,9 @@ interface Settings {
   tabSelectorInfo: boolean;
   rememberModRelation: boolean;
   editorStats: number;
+  mdEditorInlineCodeConverter: 0 | 1 | 2;
+  mdEditorBlockquoteConverter: 0 | 1 | 2;
+  htmlEditorIndentSize: 0 | 1 | 2 | 4 | 8;
   anonymousUknowtoomuch: boolean;
   autoExpandPage: boolean;
   autoCloseSwal: boolean;
@@ -208,6 +243,7 @@ interface Settings {
   expCalculator: boolean;
   freezeAdvancements: boolean;
   unlockComment: boolean;
+  uploadFileButton: boolean;
   ignoreEmptyLine: boolean;
   replyLink: boolean;
   missileAlert: boolean;
@@ -242,6 +278,8 @@ interface Settings {
   lastRequestTime: number;
   itemCustomTypeList: ItemType[];
   userFavList: string;
+  /** 最近使用的自定义表态 emoji（JSON 数组字符串，本机维度） */
+  attitudeRecentEmojis: string;
   recentlyVisited: string;
   recentlyVisitedMods: RecentlyVisited[];
   myProfiles: string;
@@ -264,6 +302,175 @@ interface Settings {
   useNotoSans?: boolean;
   almanacsList?: Almanacs[];
   jsonDatabase?: string[];
+}
+
+interface OnlineSettings {
+  anonymiseSplashContributor: boolean;
+  showUserBadge: boolean;
+}
+
+interface SettingsSection {
+  id: string;
+  label: string;
+  settings: ConfigParams[];
+}
+
+interface SettingsCategory {
+  id: string;
+  label: string;
+  sections: SettingsSection[];
+}
+
+type InputType =
+  | "checkbox"
+  | "number"
+  | "slider"
+  | "text"
+  | "colorpicker"
+  | "keybind"
+  | "dropdownMenu"
+  | "dropdownTextMenu";
+
+type Permission = "banned" | "none" | "editor" | "developer" | "manager" | "admin";
+
+type ConfigurableSettings = ElementOf<
+  ElementOf<ElementOf<typeof import("../loader/ConfigLoader").settings>["sections"]>["settings"]
+>;
+
+type ConfigurableSettingsOption<V extends ConfigurableSettings["id"]> = WithDefaultKey<
+  WithDefaultKey<
+    Omit<Extract<ConfigurableSettings, { id: V }>, "id">,
+    "value",
+    (typeof import("../config/ConfigUtils.ts").ConfigUtils.defaultValue)[Extract<
+      ConfigurableSettings,
+      { id: V }
+    >["type"]]
+  >,
+  "permission",
+  "none"
+>;
+
+type ConfigurableSettingsOptions = {
+  [V in ConfigurableSettings["id"]]: ConfigurableSettingsOption<V>;
+};
+
+/**
+ * 配置项注册参数的公共部分，`id`/`value` 的取值类型由各输入类型的参数接口指定。
+ *
+ * @template T 配置项字段名，须与输入类型匹配（如复选框类只能是布尔值字段）。
+ * @template V 配置项默认值的类型。
+ * @template R 输入范围的类型，取 `never` 表示该输入类型不接受范围。
+ */
+interface ConfigParamsBase<T extends ConfigurableSettings["id"], V, R> {
+  /** 配置项字段名 */
+  id: T;
+  /** 配置项标题 */
+  title: string;
+  /** 配置项说明 */
+  description: string;
+  /** 配置项默认值，缺省时取 `ConfigUtils.defaultValue` 中该输入类型的默认值 */
+  value?: V | null;
+  /** 输入范围：数值区间或枚举值集合（仅数值/滑块/下拉类输入有效） */
+  range?: R;
+  /** 可见性，缺省为始终可见 */
+  visible?: (ctx: ConfigVisibilityContext) => boolean | undefined;
+  /** 配置项需要与云端同步 */
+  syncWithSupabase?: T extends keyof OnlineSettings ? true : false;
+}
+
+/** 复选框类配置项 */
+interface CheckboxConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, boolean>,
+  boolean,
+  never
+> {
+  type: "checkbox";
+}
+
+/** 文本类配置项 */
+interface TextConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "text";
+}
+
+/** 取色器类配置项 */
+interface ColorpickerConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "colorpicker";
+}
+
+/** 数字类配置项 */
+interface NumberConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueNumericRange
+> {
+  type: "number";
+}
+
+/** 滑块类配置项 */
+interface SliderConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueFiniteNumericRange
+> {
+  type: "slider";
+}
+
+/** 快捷键类配置项 */
+interface KeybindConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, Key>,
+  Key,
+  never
+> {
+  type: "keybind";
+}
+
+/** 下拉菜单类配置项 */
+interface DropdownConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueSet
+> {
+  type: "dropdownMenu";
+}
+
+/** 下拉文本类配置项 */
+interface DropdownTextConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  never
+> {
+  type: "dropdownTextMenu";
+  /** 输入框的候选列表 */
+  suggestion?: InputSimplifiedSuggestion[];
+}
+
+/** `ConfigUtils.add` 接受的注册参数：以 `type` 区分的各种输入类型 */
+type ConfigParams =
+  | CheckboxConfigParams
+  | TextConfigParams
+  | ColorpickerConfigParams
+  | NumberConfigParams
+  | SliderConfigParams
+  | KeybindConfigParams
+  | DropdownConfigParams
+  | DropdownTextConfigParams;
+
+/** 用于决定配置项是否显示的上下文 */
+interface ConfigVisibilityContext {
+  /** 所有配置项 */
+  configs: import("../config/ConfigRepository.ts").ConfigRepository;
+  /** 当前是否为移动端环境 _（不具有响应性）_ */
+  mobile: boolean;
+  /** 当前用户组 _（不具有响应性）_ */
+  permission: Permission;
 }
 
 interface Item {
@@ -667,13 +874,7 @@ type EditConfigs<T> = {
  * 空值（只读）、`InputType` 数值、`InputLimit`/`InputOption`/`TableInputOption` 对象、`{ readonly: true }`。
  */
 type EditOptionInitializer =
-  | null
-  | undefined
-  | import("../config/ConfigUtils").InputType
-  | InputLimit
-  | InputOption
-  | TableInputOption
-  | { readonly: true };
+  null | undefined | InputType | InputLimit | InputOption | TableInputOption | { readonly: true };
 /** 全部字段的编辑配置初始化表 */
 type EditOptionsInitializer<T> = Record<keyof T, EditOptionInitializer>;
 
@@ -769,6 +970,14 @@ interface SuggestionConfigManager {
 
 type InputListOption = import("./props").InputListOption;
 
+type AttitudePickerState = import("./props").AttitudePickerState;
+
+type AttitudeStickerListProps = import("./props").AttitudeStickerListProps;
+
+type StickerViewerOption = import("./props").StickerViewerOption;
+
+type PopoverOption = InputListOption | AttitudePickerState | StickerViewerOption;
+
 interface McmodItemEditorInnerData {
   /**
    * HTML 正文。
@@ -816,6 +1025,9 @@ interface McmodItemEditorInnerData {
 
   /**
    * 资料所属的**资料类型**。键值 Number() 后必须是正整数，代表资料类型的数字 ID。
+   *
+   * @warning 考虑到自定义资料类型在解析时可能会因为脚本尚未记录此名称而解析失败，在解析返回的结果中允许
+   * 将 ID 设置为 -1 以标记为解析失败（而不是缺少此字段）。
    *
    * > 资料的所属类型。
    */
@@ -1047,13 +1259,13 @@ interface McmodClassEditorInnerData {
         number,
         {
           /** 指定本协议适用的区域（源码/资产/构建）。若为 `string` 类型，则属于自定义类型 */
-          type: string | (keyof typeof import("../Values").Values.licenseTypeName)[];
+          type: string | (keyof typeof import("../Values").Values.licenseTypeMap)[];
           /** 协议英文 ID */
           name: keyof typeof import("../Values").Values.licenseName;
           /** 开源信息链接 */
           link: string;
           /** 开源信息备注 */
-          name: string;
+          text: string;
         }
       >;
     }
@@ -1517,6 +1729,7 @@ interface RequestToastRecord {
 }
 
 interface ScheduleRequestTypes {
+  annualCelebration: import("../schedulerequest/types/AnnualCelebrationScheduleRequest").AnnualCelebrationScheduleRequest;
   autoCheckin: import("../schedulerequest/types/AutoCheckinScheduleRequest").AutoCheckinScheduleRequest;
   autoCheckUpdate: import("../schedulerequest/types/AutoCheckUpdateScheduleRequest").AutoCheckUpdateScheduleRequest;
   autoCheckVerify: import("../schedulerequest/types/AutoCheckVerifyScheduleRequest").AutoCheckVerifyScheduleRequest;
@@ -1644,6 +1857,33 @@ type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
   runningIndex: number[];
 };
 
+/** 一条短评的自定义表态聚合结果 */
+interface AttitudeRecord {
+  /** `attitude_type` → 数量 */
+  counts: AttitudeCounts;
+  /** 我点过的 `attitude_type`；未认证时为空 */
+  mine: string[];
+}
+
+/** 我收到的表态统计（页头提醒、消息中心徽标与合计行共用） */
+interface AttitudeStats {
+  /** 未读条数 */
+  unread: number;
+  /** 我收到的表态总条数 */
+  total: number;
+}
+
+/** 写一条表态所需的短评上下文 */
+interface AttitudeTarget {
+  commentId: string;
+  toUid: number;
+  toUsername: string;
+  commentText: string;
+  sourceUrl: string;
+  /** 短评节点：顶层 `.comment-row` 或楼中楼 `.comment-reply-row` */
+  row: HTMLElement;
+}
+
 type MapKeyHandler<V, K> = (data: V) => K | K[];
 
 interface StructureEditorBlocktype {
@@ -1699,4 +1939,111 @@ interface SupabaseUploadSplashResponse {
 interface SupabaseGetCustomSplashesResponse {
   splashes?: SupabaseCustomSplash[];
   error?: string;
+}
+
+/** 单条表态的聚合计数：`attitude_type` → 数量 */
+type AttitudeCounts = Record<string, number>;
+
+/**
+ * RPC `mcmodder_attitude_counts` 的一行：某短评下某类型的聚合计数。
+ *
+ * 行序（`order by min(id)`）即「各类别首次表态的时间序」，客户端按行序构造展示顺序；服务端不返回
+ * 聚合对象，避免 json 聚合打乱键序。
+ */
+interface SupabaseAttitudeCountRow {
+  comment_id: string;
+  attitude_type: string;
+  total: number;
+  /** 我是否点过该类型（未认证时恒为 false） */
+  mine: boolean;
+}
+
+/** RPC `mcmodder_attitude_user_counts` 的一行：某用户收到的某类型表态数量（行序同 `SupabaseAttitudeCountRow`） */
+interface SupabaseAttitudeUserCountRow {
+  attitude_type: string;
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_sticker_quota` 的一行：今日贴纸额度（东八区自然日） */
+interface SupabaseAttitudeStickerQuotaRow {
+  used_today: number;
+  daily_limit: number;
+  remaining: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_list` 的一行：一条表态消息 + 符合条件的总条数 */
+interface SupabaseAttitudeInboxListRow extends SupabaseAttitudeInboxItem {
+  /** 与 `unreadOnly` 对应的总条数（服务端 `count(*) over ()`） */
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_stats` 的一行：我收到的表态统计 */
+interface SupabaseAttitudeStatsRow {
+  /** 未读条数 */
+  unread: number;
+  /** 总条数 */
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_inbox_check` 的一行：`since_id` 之后的新表态数量与我的最新记录 id */
+interface SupabaseAttitudeCheckRow {
+  new_count: number;
+  latest_id: number;
+}
+
+/** `attitude-put`（Edge，写操作）的响应：目标短评的最新聚合计数与我的表态类型 */
+interface SupabaseAttitudePutResponse {
+  counts?: AttitudeCounts;
+  mine?: string[];
+  error?: string;
+}
+
+/** 一张自定义表态贴纸（图片本体在百科图床，云端只登记归属与创建时间） */
+interface SupabaseAttitudeSticker {
+  id: number;
+  uid: number;
+  image_url: string;
+  /** 原始文件名（展示用，服务端截断） */
+  name?: string;
+  created_at: string;
+  /** 共享到贴纸广场的时间；null/undefined = 未共享 */
+  shared_at?: string | null;
+  /** 是否我上传的（“我的贴纸”集合行；广场行同义） */
+  is_mine?: boolean;
+  /** 是否我收藏的（“我的贴纸”集合行 / 广场行） */
+  is_favorite?: boolean;
+}
+
+/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 分页总数 */
+interface SupabaseAttitudeStickerPlazaRow extends SupabaseAttitudeSticker {
+  /** 与当前过滤条件对应的总条数（服务端 `count(*) over ()`） */
+  total: number;
+}
+
+/** 贴纸上传额度（东八区自然日） */
+interface SupabaseAttitudeStickerQuota {
+  limit?: number;
+  used?: number;
+  remaining?: number;
+}
+
+/** `attitude-sticker`（Edge）的 `put` 响应：登记的贴纸与最新额度 */
+interface SupabaseAttitudeStickerPutResponse {
+  sticker?: SupabaseAttitudeSticker;
+  quota?: SupabaseAttitudeStickerQuota;
+  error?: string;
+}
+
+/** 表态消息中心的一条记录（RPC `mcmodder_attitude_inbox_list` 的行去掉 `total`） */
+interface SupabaseAttitudeInboxItem {
+  id: number;
+  comment_id: string;
+  attitude_type: string;
+  from_uid: number;
+  from_username?: string;
+  from_avatar?: string;
+  comment_text?: string;
+  source_url?: string;
+  is_read: boolean;
+  created_at: string;
 }

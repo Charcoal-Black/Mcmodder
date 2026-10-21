@@ -1,6 +1,5 @@
 import { GM_cookie } from "$";
 import { AdvancementID } from "../../advancement/AdvancementUtils";
-import { Permission } from "../../config/ConfigUtils";
 import { Utils } from "../../Utils";
 import { Values } from "../../Values";
 import { CommentInit } from "../CommentInit";
@@ -106,7 +105,7 @@ export class CenterHomeInit extends CenterBaseInit {
       editAvg: Number(
         $(stats.get(3).textContent).children().eq(1).text().slice(0, -2).replaceAll(",", ""),
       ),
-      permission: Permission.NONE,
+      permission: "none",
     };
 
     // 记录模组区域
@@ -128,13 +127,13 @@ export class CenterHomeInit extends CenterBaseInit {
 
     // 计算权限等级
     let permission: Permission;
-    if (Values.adminIDList.includes(this.parent.currentUID)) permission = Permission.ADMIN;
-    else if (profile.adminModList) permission = Permission.MANAGER;
-    else if (profile.devModList) permission = Permission.DEVELOPER;
-    else if (profile.editorModList) permission = Permission.EDITOR;
+    if (Values.adminIDList.includes(this.parent.currentUID)) permission = "admin";
+    else if (profile.adminModList) permission = "manager";
+    else if (profile.devModList) permission = "developer";
+    else if (profile.editorModList) permission = "editor";
     else if (["禁止发言", "禁止编辑", "禁止访问"].includes(profile.userGroup))
-      permission = Permission.BANNED;
-    else permission = Permission.NONE;
+      permission = "banned";
+    else permission = "none";
     profile.permission = permission;
 
     this.center.pageProfile = profile;

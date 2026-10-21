@@ -224,6 +224,7 @@ export class TemplateFrame {
         this.editor.editor.execCommand("insertHtml", matched.content);
       } else {
         this.editor.editor.setContent(matched.content);
+        this.editor.editor.fireEvent("saveScene"); // 快照，供撤销，百科原生无此步骤
       }
       swal.close();
       this.editor.$body?.keyup();

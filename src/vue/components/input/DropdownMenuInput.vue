@@ -1,10 +1,13 @@
 <template>
   <span ref="container" class="mcmodder-dropdown-container" :class="{ expanded: selected }">
-    <input ref="valueInput" readonly class="hidden" @change="onChange" />
+    <input ref="valueInput" readonly class="hidden" :aria-hidden="true" @change="onChange" />
     <input
       ref="input"
       readonly
       class="btn mcmodder-dropdown-button"
+      :aria-label="title"
+      :aria-haspopup="'listbox'"
+      :aria-expanded="selected"
       :value="content"
       @click="onClick"
       @focus="onFocus"
@@ -15,12 +18,12 @@
 
 <script setup lang="ts">
 /**
- * 下拉菜单式的枚举值选择器（`InputType.DROPDOWN_MENU` 的实现）：外观是一个只读按钮，
+ * 下拉菜单式的枚举值选择器（`"dropdownMenu"` 的实现）：外观是一个只读按钮，
  * 展开后用全局的候选列表（`InputList`）来选值——**不自己实现下拉逻辑，而是复用候选列表**。
  *
  * # 交互元素 ≠ 输入元素（这里是重点）
  * 组件里有两个 input，职责完全不同：
- * - `ref="input"`（模板中的按钮）：**交互元素**。它被登记进 `InputListController`，
+ * - `ref="input"`（模板中的按钮）：**交互元素**。它被登记进 `InputListPopoverController`，
  *   负责 focus 触发候选列表、显示展开态、点击外部收起；
  * - `ref="valueInput"`（模板中的隐藏 input）：**输入元素**。候选列表的一切输入逻辑都作用在它上面——
  *   值的读写、补全写回、以及 `useInputBase` 的校验流程（`getDOMValue` 从它取值、
@@ -32,7 +35,7 @@
  * 若让两者合一，候选列表就会把「按钮」当作文本框来改写，`readonly` 的按钮将无法承载补全过程。
  */
 import { computed, onMounted, ref, useTemplateRef } from "vue";
-import { InputListController } from "../../../widget/InputListController.ts";
+import { InputListPopoverController } from "../../../widget/popover/InputListPopoverController.ts";
 import { useInputBase } from "../../composables/useInputBase.ts";
 import type { InputProps } from "../../../types/props";
 
@@ -43,13 +46,13 @@ interface Props extends InputProps<number> {
 const props = defineProps<Props>();
 /** 外层容器（作为 `InputControlRef.getInstance` 返回的元素） */
 const containerRef = useTemplateRef("container");
-/** **交互元素**：可见的按钮，登记到 `InputListController` 的是它 */
+/** **交互元素**：可见的按钮，登记到 `InputListPopoverController` 的是它 */
 const inputRef = useTemplateRef("input");
 /** **输入元素**：隐藏的 input，候选列表与 `useInputBase` 的读写都作用在它上面 */
 const valueInputRef = useTemplateRef("valueInput");
 
 /** 手动向候选列表派发事件的函数（`add` 的返回值），用于补发该元素收不到的事件 */
-let eventSender: ReturnType<typeof InputListController.instance.add>;
+let eventSender: ReturnType<typeof InputListPopoverController.instance.add>;
 /** 是否处于展开态（决定按钮的 `.expanded` 样式） */
 const selected = ref(false);
 /** 刚被程序化聚焦的 100ms 内的标记：用于区分「点按钮展开」与「点按钮收起」 */
@@ -80,7 +83,7 @@ function getDOMValue() {
 /** 点击按钮：已展开且不是「刚聚焦」时才收起（点自己弹出的那次不算） */
 function onClick() {
   if (selected.value && !focusLock) {
-    inputRef.value!.blur();
+    inputRef.value!.click();
   }
 }
 
@@ -100,9 +103,11 @@ function onBlur() {
 
 onMounted(() => {
   // 登记交互元素（按钮），但把输入逻辑指向隐藏的 `valueInput`，定位锚点也用按钮
-  eventSender = InputListController.instance.add(inputRef.value!, {
+  eventSender = InputListPopoverController.instance.add(inputRef.value!, {
+    type: "inputList",
     inputListBindElement: valueInputRef.value!,
     anchorElement: inputRef.value!,
+    closeWhenClickAgain: true,
     // 枚举选择是「列出全部」而非「按输入过滤」，不做拼音匹配
     alwaysShowAllSuggestions: true,
     // 将下拉列表的默认选项设置为当前内存态的对应数值

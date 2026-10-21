@@ -1,5 +1,11 @@
 <template>
-  <input ref="inputRef" class="form-control" :placeholder="title + '..'" @change="onChange" />
+  <input
+    ref="inputRef"
+    class="form-control"
+    :placeholder="title + '..'"
+    :aria-label="title"
+    @change="onChange"
+  />
 </template>
 
 <script setup lang="ts">

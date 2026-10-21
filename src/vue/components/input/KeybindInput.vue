@@ -2,6 +2,7 @@
   <input
     ref="inputRef"
     class="form-control mcmodder-keybind-input"
+    :aria-label="title"
     :value="content"
     @focus="onFocus"
     @keydown="onKeydown"

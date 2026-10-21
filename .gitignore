@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local-only working directories (never committed): agent workspace, Supabase project
+.agents/
+supabase/
+# DeepSeek's favorite thing
+smoke/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

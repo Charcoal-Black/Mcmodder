@@ -9,6 +9,7 @@ import {
 import type { Mcmodder } from "../Mcmodder";
 import type { StorageBuffer } from "../StorageBuffer";
 import { GM_getValue, GM_setValue } from "$";
+import { Utils } from "../Utils";
 
 /**
  * 配置仓库：对 GM Storage 的类型化读写门面。
@@ -40,7 +41,8 @@ export class ConfigRepository {
 
   /** 取某个配置项在 `ConfigUtils` 中登记的元数据（标题/描述/类型/默认值等），供可写 ref 读取默认值 */
   private getConfigData(id: keyof Settings) {
-    return this.parent.cfgutils.data[id];
+    const options = this.parent.cfgutils.options;
+    return Utils.getKeyValueOfObject(options, id);
   }
 
   /** @param parent 全局上下文 `Mcmodder` 实例，由此取得 `storageBuffer` 与 `ConfigUtils` */
@@ -281,8 +283,8 @@ export class ConfigRepository {
   getSettingsWritableRef<K extends keyof Settings>(key: K) {
     const ref = this.getRef("mcmodderSettings", key) as ComputedRef<Settings[K] | undefined>;
     return computed<Settings[K]>({
-      get: () => ref.value ?? (this.getConfigData(key).value as Settings[K]),
-      set: (value) => this.set("mcmodderSettings", key, value),
+      get: () => ref.value ?? (this.getConfigData(key)?.value as Settings[K]),
+      set: (value) => this.setSettings(key, value),
     });
   }
 

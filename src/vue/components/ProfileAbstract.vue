@@ -5,6 +5,7 @@
     <span v-else-if="profile.userGroup === '资深编辑员'" class="mcmodder-admin-admin"
       >资深编辑员</span
     >
+    <span v-else v-text="profile.userGroup" />
     <span v-if="showLv">Lv.{{ profile.lv }}</span>
     <span v-if="profile.editNum">{{ profile.editNum.toLocaleString() }} 次编辑</span>
     <span v-if="profile.editByte">{{ profile.editByte.toLocaleString() }} 字节</span>

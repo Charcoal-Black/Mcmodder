@@ -1,6 +1,6 @@
 import { Utils } from "../Utils";
 import { TableUtils } from "./Table";
-import { ConfigUtils, InputType } from "../config/ConfigUtils";
+import { ConfigUtils } from "../config/ConfigUtils";
 
 /**
  * 可编辑表格的静态工具类：从旧版「EditableTable 类」迁移后保留的静态部分。
@@ -58,18 +58,18 @@ export class McmodderEditableTable extends TableUtils {
         readonly: true,
       };
     }
-    if (typeof config === "number") {
+    if (typeof config === "string") {
       result = {
         type: config,
-        value: ConfigUtils.defaultValue[config as InputType],
+        value: ConfigUtils.defaultValue[config],
       };
     } else {
       // 已经忘了这一块是什么逻辑了，能跑就行，而且确实能跑（
       // eslint-disable-next-line
       result = Utils.simpleDeepCopy(config) as any;
       if (result.readonly) {
-        if (result) result.type = InputType.TEXT;
-        result.value = ConfigUtils.defaultValue[InputType.TEXT];
+        if (result) result.type = "text";
+        result.value = ConfigUtils.defaultValue["text"];
       }
       if (result.value === undefined) {
         result.value = ConfigUtils.defaultValue[result.type as InputType];

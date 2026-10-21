@@ -3,7 +3,6 @@ import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils"
 import { ConfigUtils } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
 import { AdvancementLoader } from "./loader/AdvancementLoader";
-import { ConfigLoader } from "./loader/ConfigLoader";
 import { MemuCommandLoader } from "./loader/MenuCommandLoader";
 import { ScheduleRequestLoader } from "./loader/ScheduleRequestLoader";
 import { StorageBufferLoader } from "./loader/StorageBufferLoader";
@@ -22,6 +21,7 @@ import { GeneralEditInit } from "./init/GeneralEditInit";
 import { EditorInit } from "./init/EditorInit";
 import { Swiper } from "./widget/Swiper";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
+import { AttitudeSystem } from "./attitude/AttitudeSystem";
 import { Splash3D } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
 import { createApp } from "vue";
@@ -54,6 +54,8 @@ export class Mcmodder {
   screenAttachedFrame: ScreenAttachedFrameData[];
   cfgutils: ConfigUtils;
   supabaseUtils: SupabaseUtils;
+  /** 自定义表态系统（全站单例：短评页与消息中心共用同一份计数缓存与未读统计） */
+  attitudeSystem: AttitudeSystem;
   echartsUtils: EchartsUtils;
   styleColors: ThemeColorSet;
   splash3D?: Splash3D;
@@ -64,7 +66,10 @@ export class Mcmodder {
   itemTypeList?: ItemCustomTypeList;
   readonly hostname: string;
   private msgAlertCount = 0;
+  /** 站点自身的未读消息数（页头铃铛的基底，自定义表态数在此之上叠加） */
+  private msgSiteCount = 0;
   private readonly titleNode = $("title");
+  private readonly linkPendingSet = new Set<string>();
   private readonly linkContentDictionary: Record<string, string> = {};
   private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
   private readonly elementColorCache: Map<string, string> = new Map();
@@ -102,7 +107,6 @@ export class Mcmodder {
     this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new ConfigUtils(this);
-    ConfigLoader.run(this.cfgutils);
     this.styleColors = Utils.getThemeColors(this.configRepository);
 
     this.advutils = new AdvancementUtils(this);
@@ -112,6 +116,8 @@ export class Mcmodder {
     ScheduleRequestLoader.run(this.scheduleRequestUtils);
 
     this.supabaseUtils = new SupabaseUtils(this);
+
+    this.attitudeSystem = AttitudeSystem.for(this);
 
     InitLoader.run(this, this.initList);
 
@@ -193,21 +199,30 @@ export class Mcmodder {
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${sourceUrl}"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
-        if (!$(target).attr("aria-describedby")) return;
+        const describedby = $(target).attr("aria-describedby");
+        if (!describedby) return;
+        const tooltip = $("#" + describedby);
+        if (!tooltip.length || !tooltip.hasClass("show")) return;
         if (previewFrame.attr("data-status")) return;
         const storagedContent = this.linkContentDictionary[sourceUrl];
-        if (storagedContent != undefined) {
+        if (storagedContent !== undefined) {
           previewFrame.attr("data-status", "fulfilled");
           $(target).attr("data-original-title", storagedContent);
           previewFrame.children().html(storagedContent);
+          return;
         }
+        if (this.linkPendingSet.has(sourceUrl)) return;
         previewFrame.attr("data-status", "pending");
+        this.linkPendingSet.add(sourceUrl);
         await Utils.sleep(750);
-        const resp = await this.utils.createRequest({
-          url: target.href,
-          method: "GET",
-          anonymous: true,
-        });
+        const resp = await this.utils.createRequest(
+          {
+            url: target.href,
+            method: "GET",
+            anonymous: true,
+          },
+          "链接预览",
+        );
         if (!resp.responseXML) return;
         if (previewFrame.attr("data-status") === "fulfilled") return;
         const doc = $(resp.responseXML);
@@ -266,6 +281,7 @@ export class Mcmodder {
         const final = previewContainer.prop("outerHTML");
         $(target).attr("data-original-title", final);
         this.linkContentDictionary[sourceUrl] = final;
+        this.linkPendingSet.delete(sourceUrl);
         previewFrame.attr("data-status", "fulfilled");
       });
     }
@@ -282,6 +298,21 @@ export class Mcmodder {
       redNum.hide();
     }
     this.updateTitleNode();
+  }
+
+  /**
+   * 刷新页头铃铛未读数：站点消息数 + 未确认的自定义表态数（表态数走 `attitude-inbox` 的增量
+   * `check`，只在进入页面时调用一次）。
+   */
+  async refreshBellNotify() {
+    const count = await this.attitudeSystem.getNewCount();
+    if (count === undefined) return;
+    this.notifyUnreadMessage(this.msgSiteCount + count);
+  }
+
+  /** 只按缓存数据重画铃铛（站点刷新消息数时用，不发请求） */
+  private applyBellNotify() {
+    this.notifyUnreadMessage(this.msgSiteCount + this.attitudeSystem.getCachedNewCount());
   }
 
   updateTitleNode(count = this.msgAlertCount) {
@@ -493,10 +524,13 @@ export class Mcmodder {
           const time = Date.now() - last;
           const formattedTime = Utils.getFormattedTime(time);
           const username = resp.last_visited_user_name;
-          const userID = resp.last_visited_user_id
-            ? `用户 ${username} (UID:${resp.last_visited_user_id}) `
+          const userID = resp.last_visited_user_id;
+          const user = userID
+            ? userID > 0
+              ? `用户 ${username} (UID:${resp.last_visited_user_id}) `
+              : "匿名用户"
             : "未登录用户";
-          msg += `，上一次由${userID}于 ${formattedTime} 前记录`;
+          msg += `，上一次由${user}于 ${formattedTime} 前记录`;
         }
         msg += "~";
       }
@@ -574,6 +608,14 @@ export class Mcmodder {
     }
   }
 
+  /** 切换表态 emoji 的 Twemoji 渲染（`html.mcmodder-attitude-twemoji` 为样式开关，无需重载） */
+  updateAttitudeFont() {
+    $("html").toggleClass(
+      "mcmodder-attitude-twemoji",
+      !!this.configRepository.getSettings("attitudeTwemoji"),
+    );
+  }
+
   switchNightMode() {
     if (this.isNightMode) {
       this.configRepository.setSettings("nightMode", false);
@@ -598,6 +640,7 @@ export class Mcmodder {
   private watchRef() {
     this.configRepository.watchSettingsRef("nightMode", () => this.updateNightMode());
     this.configRepository.watchSettingsRef("preferredWiderScreen", () => this.updatePageWidth());
+    this.configRepository.watchSettingsRef("attitudeTwemoji", () => this.updateAttitudeFont());
   }
 
   main() {
@@ -818,6 +861,7 @@ export class Mcmodder {
 
     this.updateNightMode();
     this.updatePageWidth();
+    this.updateAttitudeFont();
 
     if (!this.configRepository.getSettings("adaptableNightMode")) {
       $(
@@ -860,15 +904,23 @@ export class Mcmodder {
         .appendTo(".header-container .header-search")
         .click(() => {
           GM_openInTab(`${this.hostname}/message/`, { active: true });
+          this.msgSiteCount = 0;
           this.notifyUnreadMessage(0);
+          // 表态消息同样清空未读并确认提醒
+          void this.attitudeSystem
+            .markAllRead()
+            .then(() => this.attitudeSystem.acknowledgeNew())
+            .then(() => this.refreshBellNotify());
         });
     }
 
-    const msgAlert = Number($(".header-user-msg b").text());
+    this.msgSiteCount = Number($(".header-user-msg b").text());
     if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       $(".header-user-msg").remove();
       $(`<div class="mcmodder-rednum">`).appendTo("#mcmodder-message-center");
-      this.notifyUnreadMessage(msgAlert);
+      this.applyBellNotify();
+      // 自定义表态提醒：进入页面时检查一次，结果与站点消息数叠加
+      if (this.currentUID) void this.refreshBellNotify();
     }
 
     if (typeof editor != "undefined") this.callEditor();
@@ -955,11 +1007,11 @@ export class Mcmodder {
             .then((resp) => {
               try {
                 const data = JSON.parse(resp.responseText);
-                if (data.state || !data.user.login || !data.user.msg_count) {
-                  this.notifyUnreadMessage(0);
-                } else {
-                  this.notifyUnreadMessage(data.user.msg_count);
-                }
+                const siteCount =
+                  data.state || !data.user.login || !data.user.msg_count ? 0 : data.user.msg_count;
+                this.msgSiteCount = siteCount;
+                // 站点刷新消息数时叠加已缓存的新表态数，不额外请求云端
+                this.applyBellNotify();
               } catch (e) {
                 if (e instanceof SyntaxError) {
                   console.error("Failed to parse data: " + resp.responseText);

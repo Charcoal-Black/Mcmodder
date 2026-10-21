@@ -1,25 +1,12 @@
 <template>
-  <div
-    v-show="!classHidden"
-    ref="list"
-    class="mcmodder-input-list"
-    :class="{
-      'expand-upward': expandUpward,
-      faded: classFaded,
-      editable: onModifySuggestion,
-    }"
-    :style="{
-      left: cssPos.left,
-      top: cssPos.top,
-    }"
-  >
+  <Popover ref="popoverRef" v-bind="popoverProps">
     <div
-      class="mcmodder-input-list-innerframe"
-      :style="{
-        'min-width': cssPos['min-width'],
-        'max-width': cssPos['max-width'],
-        'max-height': cssPos['max-height'],
+      ref="listRef"
+      class="mcmodder-input-list"
+      :class="{
+        editable: onModifySuggestion,
       }"
+      :style="sizeCss"
     >
       <a
         v-for="(entry, i) in suggestedList"
@@ -76,7 +63,7 @@
         <span class="mcmodder-slim-dark">+ 保存为快捷输入项</span>
       </a>
     </div>
-  </div>
+  </Popover>
 </template>
 
 <script setup lang="ts">
@@ -93,14 +80,17 @@ import {
 import { Utils } from "../../Utils";
 import { Values } from "../../Values";
 import type { ConfigRepository } from "../../config/ConfigRepository";
+import type { InputListProps, PopoverExpose } from "../../types/props";
 import Pinyin from "pinyin-match";
 import MatchedText from "./MatchedText";
+import Popover from "./Popover.vue";
+import { usePopoverHost } from "../composables/usePopoverHost.ts";
 
 /**
  * 候选列表（快速补全）组件。
  *
  * # 它不是「自己长在输入框下面」的
- * 组件本体不监听任何输入框，而是由 `InputListController` 统一挂载到 `document.body`，
+ * 组件本体不监听任何输入框，而是由 `InputListPopoverController` 统一挂载到 `document.body`，
  * 并把 `inputEvents` 转发到 `window`（捕获阶段）——事件命中某个已登记的输入元素时，控制器才会
  * 调 `setOption` 告诉本组件「当前服务的是哪个输入框、候选从哪来」。
  * 因此组件内部没有「当前输入框」这个状态，只有 `setOption` 之后的一段生命周期。
@@ -176,19 +166,12 @@ const selectionValue = computed(() => {
 
 const suggestedList = shallowRef<InputRatedSuggestion[]>([]);
 
-/** `setOption` 的入参：在 `InputListOption` 之外必须显式给出**当前绑定的是哪个输入元素** */
-interface Props extends InputListOption {
-  inputNode: HTMLInputElement | HTMLTextAreaElement;
-}
-
 // === 来自 setOption 的选项（组件没有自身的「当前输入框」状态，全部由此驱动） ===
 
 /** 忽略输入内容，直接展示全部候选（显示成按钮的下拉菜单用法） */
 const alwaysShowAllSuggestions = ref(false);
 /** 当 {@link alwaysShowAllSuggestions} 启用时，提供默认候选序号的回调 */
 const defaultSelectionProvider = ref(() => 0 as number);
-/** 定位锚点；缺省为输入元素本身（下拉菜单会把它指向那个可见的按钮） */
-const anchorElement = shallowRef<HTMLElement>();
 /** 多段输入的分隔符：补全只替换光标所在段落 */
 const delimiter = ref<string>();
 /** 输入为空时不弹列表 */
@@ -200,18 +183,21 @@ const onInitSuggestion = shallowRef<InputListOnInitSuggestion>();
 /** 实际生效的候选保存回调；为 `undefined` 时不提供「新增 / 删除候选」的操作 */
 const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
 
+let closeLock = false;
+
 /**
- * 由 `InputListController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
+ * 由 `InputListPopoverController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
  * 这是本组件唯一的入口——组件自身不观察任何输入框。
  *
  * @param option 当前输入框及其行为选项；`inputNode` 即 `inputListBindElement` 的值
  *               （交互元素与输入元素是同一个时，控制器会把两者一并传进来）。
  */
-function setOption(option: Props) {
+function setOption(option: InputListProps) {
   inputRef.value = option.inputNode;
   alwaysShowAllSuggestions.value = option.alwaysShowAllSuggestions ?? false;
   defaultSelectionProvider.value = option.defaultSelectionProvider ?? (() => 0);
-  anchorElement.value = option.anchorElement ?? option.inputNode;
+  // 定位锚点缺省为输入元素本身（下拉菜单会把它指向那个可见的按钮）
+  applyOption({ ...option, anchorElement: option.anchorElement ?? option.inputNode });
   delimiter.value = option.delimiter;
   hideBeforeInput.value = option.hideBeforeInput ?? false;
   suggestionManager.value = option.suggestionManager;
@@ -226,6 +212,9 @@ function setOption(option: Props) {
   );
 
   updatePos();
+
+  // 强制重算
+  triggerRef(defaultSelectionProvider);
 }
 
 // === 内部状态 ===
@@ -247,66 +236,18 @@ const selectable = ref(false);
 // let isFocused = false;
 /** 是否展示「+ 保存为快捷输入项」这一项（需要可保存回调且当前段非空） */
 const canCreateNew = ref(false);
-/** 锚点元素的矩形缓存（`updatePos` 在聚焦、页面滚动与缩放时刷新） */
-const rectRef = shallowRef<DOMRect>();
-/** 列表自身高度（向上弹出时用来算 top，也是 `expandUpward` 的判断依据） */
-const listHeight = ref(0);
-/** 淡出中（`selectable` 由真变假时置 true） */
-const classFaded = ref(false);
-/** 完全隐藏（`v-show` 开关；淡出 200ms 结束后才置 true） */
-const classHidden = ref(true);
 
 /** 列表根节点（量高度、按 `data-index` 找选项节点） */
-const listRef = useTemplateRef("list");
+const listRef = useTemplateRef("listRef");
 
 /**
- * 是否需要向上弹出：下方放不下而上方放得下时向上；两侧都放得下但上方更宽裕时也向上
- * （上方的可用空间扣除了吸顶导航高度，避免列表被页头遮住）。
+ * 弹出框宿主的接线：显隐同步、锚点定位、`updatePos` / `close` 都在 `usePopoverHost` 里。
+ *
+ * 候选列表的「是否显示」就是 `selectable`（由匹配结果决定），故把它作为弹出框的显示状态传进去。
  */
-const expandUpward = computed(() => {
-  const rect = rectRef.value;
-  if (!rect) {
-    return false;
-  }
-  const topSpace = rect.top - Values.headerContainerHeight;
-  const bottomSpace = innerHeight - rect.bottom;
-  if (bottomSpace < listHeight.value && topSpace >= listHeight.value) {
-    return true;
-  } else if (bottomSpace >= listHeight.value && topSpace > bottomSpace) {
-    return true;
-  }
-  return false;
-});
-
-/** 列表的定位与尺寸样式（相对锚点：向下为锚点下方，向上为锚点上方且减去自身高度） */
-const cssPos = computed(() => {
-  if (!anchorElement.value) {
-    return {
-      left: 0,
-      top: 0,
-      "min-width": "0px",
-    };
-  }
-
-  const { x: absPosX, y: absPosY } = Utils.getAbsolutePos(anchorElement.value);
-
-  const rect = rectRef.value!;
-  const left = absPosX;
-  const top = expandUpward.value ? absPosY - listHeight.value - 4 : absPosY + rect.height;
-
-  const minWidth = rect.width;
-  const maxWidth = innerWidth - rect.left - 16;
-  const maxHeight = expandUpward.value
-    ? rect.top - Values.headerContainerHeight - 16
-    : innerHeight - rect.bottom - 16;
-
-  return {
-    left: left + "px",
-    top: top + "px",
-    "min-width": minWidth + "px",
-    "max-width": maxWidth + "px",
-    "max-height": Math.min(maxHeight, 300) + "px",
-  };
+const { popoverRef, popoverProps, applyOption, updatePos, close } = usePopoverHost({
+  visible: selectable,
+  maxHeight: 300,
 });
 
 // 候选数量变化后重新量一次列表高度（向上弹出时需要它来定位）
@@ -317,30 +258,34 @@ watch(
       return;
     }
     nextTick(() => {
-      listHeight.value = listRef.value!.getBoundingClientRect().height;
+      popoverRef.value?.onPopoverHeightChange();
+      triggerRef(popoverRef);
     });
   },
 );
 
 // 显隐动画：显示时先取消隐藏、下一帧再取消淡出；隐藏时先淡出、200ms 后才真正隐藏
+// （显隐本身由 `usePopoverHost` 同步给 `Popover`，这里只管「隐藏后短暂别再弹回来」的锁）
 watch(
   () => selectable.value,
-  (newValue, oldValue) => {
-    if (newValue && !oldValue) {
-      classHidden.value = false;
-      setTimeout(() => {
-        classFaded.value = false;
-      }, 0);
-    } else if (oldValue && !newValue) {
-      classFaded.value = true;
-      setTimeout(() => {
-        if (!selectable.value) {
-          classHidden.value = true;
-        }
-      }, 200);
-    }
+  () => {
+    closeLock = true;
+    setTimeout(() => {
+      closeLock = false;
+    }, 100);
   },
 );
+
+const sizeCss = computed(() => {
+  const rect = popoverRef.value?.rectRef ?? new DOMRect();
+  const minWidth = rect.width;
+  const maxWidth = innerWidth - rect.left - 16;
+
+  return {
+    "min-width": minWidth + "px",
+    "max-width": maxWidth + "px",
+  };
+});
 
 /**
  * 通过 watchEffect 计算当前展示的候选列表（全局唯一的「匹配 → 过滤 → 排序」入口）。
@@ -350,19 +295,34 @@ watch(
  * 是因为它依赖 `valueRef` / `selectionStart` / `suggestionList` 等响应式源——任何一次输入变化都会触发重算。
  */
 watchEffect(() => {
+  void selectable.value;
+  void defaultSelectionProvider.value;
+  void suggestionList.value;
+  void canCreateNew.value;
+  void suggestedList.value;
+  void hideBeforeInput.value;
+  void selectionValue.value;
+
   selected.value = 0;
+
+  if (closeLock && !selectable.value) {
+    return;
+  }
+
   const content = selectionValue.value.toLowerCase();
   if (alwaysShowAllSuggestions.value) {
     selectable.value = true;
     selected.value = defaultSelectionProvider.value();
     suggestedList.value = suggestionList.value;
+    canCreateNew.value = false;
     return;
   }
 
   if (!content && hideBeforeInput.value) {
     selectable.value = false;
     canCreateNew.value = false;
-    suggestedList.value = [];
+    suggestedList.value.length = 0;
+    triggerRef(suggestedList);
     return;
   }
 
@@ -486,21 +446,11 @@ function onInputKeyup(e: Event) {
   }
 }
 
-/** 输入元素失焦：延迟 100ms 关闭——给「点击候选项」留出时间（否则 mousedown 先于 click 触发失焦） */
-function onInputBlur() {
-  // isFocused = false;
-  setTimeout(() => {
-    selectable.value = false;
-  }, 100);
-}
-
-/** 输入框事件名 → 处理函数：由 `InputListController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
+/** 输入框事件名 → 处理函数：由 `InputListPopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
-  focus: onInputFocus,
   click: onInputClick,
   keydown: onInputKeydown,
   keyup: onInputKeyup,
-  blur: onInputBlur,
   input: updateValueRef,
 } as const;
 
@@ -525,13 +475,12 @@ function onNewOptionClick() {
 }
 
 /**
- * 采纳一条候选：把它的文本写回输入元素，随后按「已失焦」收尾。
+ * 采纳一条候选：把它的文本写回输入元素。
  *
  * @param val 被采纳候选的 `value`。
  */
 function onOptionClick(val: string) {
   setSelectionValue(val, !!delimiter.value);
-  onInputBlur();
 }
 
 /**
@@ -611,7 +560,7 @@ function onOptionPointerenter(index: number) {
  * 按候选来源类型选择回调的取法：配置式（`SuggestionConfigManager`）自动包装成读写回调，
  * 回调式（`SuggestionCallbackManager`）直接取宿主给的函数（可能为 `undefined`）。
  */
-const pick = <T extends Function>(
+const pick = <T extends (...args: never[]) => unknown>(
   fromConfig: (manager: SuggestionConfigManager) => T,
   fromCallback: (manager: SuggestionCallbackManager) => T | undefined,
 ) => {
@@ -733,22 +682,10 @@ function getSelectedOptionNode() {
   return getOptionNode(selected.value);
 }
 
-/** 刷新锚点矩形缓存（聚焦时、以及页面滚动 / 缩放时由控制器调用） */
-function updatePos() {
-  if (!anchorElement.value) {
-    return;
-  }
-  rectRef.value = anchorElement.value.getBoundingClientRect();
-}
-
-defineExpose({
-  /** 切换当前服务的输入元素与选项（由 `InputListController` 在聚焦时调用） */
+defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({
   setOption,
-  /** 转发给输入框的事件表（控制器据此在 `window` 上挂监听，也可被宿主直接调用） */
   inputEvents,
-  /** 重新量一次锚点矩形（页面滚动 / 缩放时调用以跟随位置） */
   updatePos,
-  /** 是否需要向上弹出（`false` 时向下） */
-  expandUpward,
+  close,
 });
 </script>

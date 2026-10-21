@@ -7,17 +7,21 @@
   }
 }
 .btn,
-.btn-dark {
+.btn.btn-dark {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-primary-light),
     var(--mcmodder-color-accent-light)
   );
   color: var(--mcmodder-color-text);
-  border-color: 1px solid var(--mcmodder-color-background-transparent);
+  border: 1px solid var(--mcmodder-color-background);
+}
+.btn.btn-light {
+  border-color: var(--mcmodder-color-text);
 }
 .btn.btn-success,
-.btn-dark.btn-success {
+.btn.btn-dark.btn-success,
+.btn.btn-light.btn-success {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-success-light),
@@ -25,7 +29,8 @@
   );
 }
 .btn.btn-warning,
-.btn-dark.btn-warning {
+.btn.btn-dark.btn-warning,
+.btn.btn-light.btn-warning {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-warning-light),
@@ -33,47 +38,54 @@
   );
 }
 .btn.btn-danger,
-.btn-dark.btn-danger {
+.btn.btn-dark.btn-danger,
+.btn.btn-light.btn-danger {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-danger-light),
     var(--mcmodder-color-danger-light-transparent1)
   );
 }
-.btn:hover,
-.btn-dark:hover {
+.btn:not(:disabled):not(.disabled):hover,
+.btn.btn-dark:not(:disabled):not(.disabled):hover,
+.btn.btn-light:not(:disabled):not(.disabled):hover {
   background-color: var(--mcmodder-color-accent-background);
   background-image: none;
   color: var(--mcmodder-color-accent-dark2);
 }
-.btn.btn-success:hover,
-.btn-dark.btn-success:hover {
+.btn.btn-success:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-success:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-success:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-success),
     var(--mcmodder-color-success-transparent1)
   );
 }
-.btn.btn-warning:hover,
-.btn-dark.btn-warning:hover {
+.btn.btn-warning:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-warning:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-warning:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-warning),
     var(--mcmodder-color-warning-transparent1)
   );
 }
-.btn.btn-danger:hover,
-.btn-dark.btn-danger:hover {
+.btn.btn-danger:not(:disabled):not(.disabled):hover,
+.btn.btn-dark.btn-danger:not(:disabled):not(.disabled):hover,
+.btn.btn-light.btn-danger:not(:disabled):not(.disabled):hover {
   background: linear-gradient(
     45deg,
     var(--mcmodder-color-danger),
     var(--mcmodder-color-danger-transparent1)
   );
 }
-.btn:active,
-.btn-dark:active,
-.btn:focus,
-.btn-dark:focus {
+.btn:not(:disabled):not(.disabled):active,
+.btn-dark:not(:disabled):not(.disabled):active,
+.btn-light:not(:disabled):not(.disabled):active,
+.btn:not(:disabled):not(.disabled):focus,
+.btn-dark:not(:disabled):not(.disabled):focus,
+.btn-light:not(:disabled):not(.disabled):focus {
   color: var(--mcmodder-color-accent-dark2);
 }
 .dropdown-menu > .active > a,
@@ -150,6 +162,39 @@ body > .content,
   font-size: 18px;
   font-weight: unset;
   color: var(--mcmodder-color-text);
+}
+.mcmodder-title-new {
+  font-size: 24px;
+  position: relative;
+  text-decoration: none;
+}
+.mcmodder-title-new::after {
+  content: "";
+  position: absolute;
+  bottom: -0.2em;
+  left: 0;
+  width: 80%;
+  height: 0.125em;
+  background-image: linear-gradient(
+    90deg,
+    var(--mcmodder-color-primary-dark1),
+    var(--mcmodder-color-accent-dark1-transparent2)
+  );
+  border-radius: 0.0625em;
+}
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: var(--mcmodder-width-padding-3);
+}
+.center-block-section .setting-item {
+  overflow-x: auto;
+  overflow-y: clip;
+  padding: 5px 0;
+  text-wrap: nowrap;
+}
+.setting-item .checkbox label {
+  margin: 0.25rem 0;
 }
 .itemname h5 {
   margin: 0 0 0.5em 0;
@@ -376,6 +421,9 @@ body .edui-default .edui-bubble .edui-popup-content {
   background-color: var(--mcmodder-color-background);
 }
 .swiper-wrapper.page-ul {
+  position: relative;
+}
+.mcmodder-swiper-tab-container {
   position: relative;
 }
 .mcmodder-swiper-tab {
@@ -996,6 +1044,27 @@ body .edui-default .edui-editor-toolbarboxinner {
 .center-item-popover-b {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
+.checkbox label::before {
+  outline-offset: -2px;
+}
+.checkbox label::before,
+.form-control {
+  outline-width: 0;
+  transition:
+    outline-width 0.2s ease,
+    border-color 0.2s ease;
+}
+.checkbox label {
+  transition: color 0.3s ease;
+}
+.checkbox:hover label::before,
+.form-control:hover {
+  outline: 0.125em solid var(--mcmodder-color-accent-transparent1) !important;
+  border-color: var(--mcmodder-color-accent);
+}
+.checkbox:hover label {
+  color: var(--mcmodder-color-accent-dark2);
+}
 .form-control:focus,
 .mcmodder-slider-tap.focus {
   border-color: var(--mcmodder-color-accent);
@@ -1264,6 +1333,23 @@ body .edui-default .edui-toolbar .edui-combox-body .edui-arrow {
   text-align: center;
   line-height: 2;
   font-size: 0.7em;
+}
+/* 编辑器工具栏的「上传文件」按钮：图标是内联的 FA5 file-upload 轮廓（见 UploadFileButton.ts），
+   需盖掉站点图标背景（.edui-icon 的精灵图），否则图标底下会露出一块错位的贴图 */
+body div.edui-box.mcmodder-edui-upload {
+  background-image: none !important;
+  display: inline-flex !important;
+}
+body .edui-default .edui-toolbar .edui-for-mcmodderupload .edui-button-wrap:hover {
+  background-color: var(--mcmodder-color-primary-transparent1);
+  border: 1px solid var(--mcmodder-color-primary);
+  padding: 0;
+}
+/* 上传中：按钮变淡并拒绝再次点击，避免重复上传 */
+body .edui-default .edui-toolbar .edui-for-mcmodderupload.mcmodder-edui-uploading {
+  opacity: 0.5;
+  cursor: progress;
+  pointer-events: none;
 }
 .info-frame .radio {
   display: inline-block;

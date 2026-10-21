@@ -5,6 +5,9 @@
   width: 100%;
   height: 100%;
 }
+.mcmodder-editor-container .CodeMirror-scroll {
+  height: 100%;
+}
 .mcmodder-editor-container .CodeMirror span {
   font-family: monospace;
 }

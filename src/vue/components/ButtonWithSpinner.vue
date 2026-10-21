@@ -3,6 +3,7 @@
     class="btn"
     :class="{ disabled: isDisabled }"
     :disabled="isDisabled"
+    :aria-busy="isDisabled"
     @click="onButtonClick"
   >
     <slot />

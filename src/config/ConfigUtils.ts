@@ -1,197 +1,99 @@
+import { settings } from "../loader/ConfigLoader";
 import { Mcmodder } from "../Mcmodder";
 import { StorageBuffer } from "../StorageBuffer";
 import type { ConfigRepository } from "./ConfigRepository";
 
-export const enum InputType {
-  CHECKBOX,
-  NUMBER,
-  SLIDER,
-  TEXT,
-  COLORPICKER,
-  KEYBIND,
-  DROPDOWN_MENU,
-  DROPDOWN_TEXT_MENU,
-}
-
-export const enum Permission {
-  BANNED = -1,
-  NONE,
-  EDITOR,
-  DEVELOPER,
-  MANAGER,
-  ADMIN,
-}
-
 export class ConfigUtils {
   static readonly defaultValue = {
-    [InputType.CHECKBOX]: false,
-    [InputType.NUMBER]: 0,
-    [InputType.SLIDER]: 0,
-    [InputType.TEXT]: "",
-    [InputType.COLORPICKER]: "#000",
-    [InputType.KEYBIND]: new Object(),
-    [InputType.DROPDOWN_MENU]: 0,
-    [InputType.DROPDOWN_TEXT_MENU]: "",
-  } as const;
+    checkbox: false,
+    number: 0,
+    slider: 0,
+    text: "",
+    colorpicker: "#000",
+    keybind: {},
+    dropdownMenu: 0,
+    dropdownTextMenu: "",
+  } as const satisfies Record<InputType, unknown>;
 
   private readonly configs: ConfigRepository;
-  data: Record<keyof Settings, ConfigOption>;
+  private data: ConfigurableSettingsOptions;
   buffer: StorageBuffer;
 
   constructor(parent: Mcmodder) {
     this.configs = parent.configRepository;
-    this.data = {} as Record<keyof Settings, ConfigOption>;
     this.buffer = new StorageBuffer(parent);
+    this.data = this.buildData();
   }
 
-  addCheckboxConfig<T extends KeysOfType<Required<Settings>, boolean>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T] | null,
-    permission?: Permission,
-  ) {
-    return this.addConfig(id, title, description, InputType.CHECKBOX, value, undefined, permission);
-  }
-  addTextConfig<T extends KeysOfType<Required<Settings>, string>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T] | null,
-    permission?: Permission,
-  ) {
-    return this.addConfig(id, title, description, InputType.TEXT, value, undefined, permission);
-  }
-  addColorpickerConfig<T extends KeysOfType<Required<Settings>, string>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T] | null,
-    permission?: Permission,
-  ) {
-    return this.addConfig(
-      id,
-      title,
-      description,
-      InputType.COLORPICKER,
-      value,
-      undefined,
-      permission,
-    );
-  }
-  addNumberConfig<T extends KeysOfType<Required<Settings>, number>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T] | null,
-    rangeOrPermission?: InputValueNumericRange | Permission,
-    permission?: Permission,
-  ) {
-    if (rangeOrPermission instanceof Array) {
-      return this.addConfig(
-        id,
-        title,
-        description,
-        InputType.NUMBER,
-        value,
-        rangeOrPermission,
-        permission,
-      );
-    } else {
-      return this.addConfig(
-        id,
-        title,
-        description,
-        InputType.NUMBER,
-        value,
-        [null, null],
-        rangeOrPermission,
-      );
-    }
-  }
-  addSliderConfig<T extends KeysOfType<Required<Settings>, number>>(
-    id: T,
-    title: string,
-    description: string,
-    value: Settings[T],
-    range: [number, number],
-    permission?: Permission,
-  ) {
-    return this.addConfig(id, title, description, InputType.SLIDER, value, range, permission);
-  }
-  addKeybindConfig<T extends KeysOfType<Required<Settings>, Key>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T] | null,
-    permission?: Permission,
-  ) {
-    return this.addConfig(id, title, description, InputType.KEYBIND, value, undefined, permission);
-  }
-  addDropdownConfig<T extends KeysOfType<Required<Settings>, number>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T],
-    range?: InputValueSet,
-    permission?: Permission,
-  ) {
-    return this.addConfig(
-      id,
-      title,
-      description,
-      InputType.DROPDOWN_MENU,
-      value,
-      range,
-      permission,
-    );
-  }
-  addDropdownTextConfig<T extends KeysOfType<Required<Settings>, string>>(
-    id: T,
-    title: string,
-    description: string,
-    value?: Settings[T],
-    Suggestion?: InputSimplifiedSuggestion[],
-    permission?: Permission,
-  ) {
-    return this.addConfig(
-      id,
-      title,
-      description,
-      InputType.DROPDOWN_TEXT_MENU,
-      value,
-      undefined,
-      permission,
-      Suggestion,
-    );
+  private buildData() {
+    const data: Partial<ConfigurableSettingsOptions> = {};
+
+    settings.forEach((category) => {
+      category.sections.forEach((section) => {
+        section.settings.forEach((singleSettings) => {
+          this.add(singleSettings, data);
+        });
+      });
+    });
+
+    return data as ConfigurableSettingsOptions;
   }
 
-  private addConfig<T extends keyof Settings>(
-    id: T,
-    title: string,
-    description: string,
-    type = InputType.CHECKBOX,
-    value: Settings[T] | null = null,
-    range: InputValueRange | undefined,
-    permission = Permission.NONE,
-    Suggestion?: InputSimplifiedSuggestion[],
+  /**
+   * 注册一个配置项。
+   *
+   * `type` 决定 `id` 与 `value` 的类型；`range` 仅数值、滑块与下拉类输入有效；
+   * `Suggestion` 仅下拉文本输入有效。若该配置项此前从未写入过，则以 `value`
+   * （或该输入类型的默认值）作为初始值写入配置仓库。
+   *
+   * @param params 注册参数。
+   * @returns 返回自身，以便链式注册多个配置项。
+   */
+  private add<T extends ConfigurableSettings>(
+    params: T,
+    data: Partial<ConfigurableSettingsOptions>,
   ) {
-    this.data[id] = {
+    const { id, title, description, type } = params;
+    const value = "value" in params ? params.value : ConfigUtils.defaultValue[type];
+    const option = {
       title: title,
       description: description,
       type: type,
       value: value,
-      permission: permission,
-      ...(range != undefined && { range }),
-      ...(Suggestion != undefined && { Suggestion }),
-    };
+      permission: "permission" in params ? params.permission : "none",
+      ...("range" in params && { range: params.range }),
+      ...("suggestion" in params && { suggestion: params.suggestion }),
+      ...("visible" in params && { visible: params.visible }),
+      ...("syncWithSupabase" in params && { syncWithSupabase: params.syncWithSupabase }),
+    } as ConfigurableSettingsOption<ConfigurableSettings["id"]>;
+    this.setOption(data as ConfigurableSettingsOptions, id, option);
     if (this.configs.getSettings(id) === undefined) {
-      this.configs.setSettings(id, value || ConfigUtils.defaultValue[type]);
+      this.configs.setSettings(id, value);
     }
     return this;
   }
 
-  getData<T extends keyof Settings>(id: T) {
+  /**
+   * 将配置项写入 `data` 的某个键下。
+   *
+   * `data` 是以 `id` 为键的映射类型，而 `id` 的类型来自泛型参数：直接写 `data[id]` 时
+   * TypeScript 会把所有候选键的类型求成交集（`type` 等字段在各类配置项间相互冲突，
+   * 交集退化为 `never`）。这里把容器收窄为只含该键的映射类型，写入即可正确取到
+   * `Option<V>` 而不丢失类型检查。
+   */
+  private setOption<V extends ConfigurableSettings["id"]>(
+    data: { [K in V]: ConfigurableSettingsOption<K> },
+    id: V,
+    option: ConfigurableSettingsOption<V>,
+  ) {
+    data[id] = option;
+  }
+
+  get options() {
+    return this.data;
+  }
+
+  getOption<T extends ConfigurableSettings["id"]>(id: T) {
     return this.data[id];
   }
 }

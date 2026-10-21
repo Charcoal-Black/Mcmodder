@@ -48,8 +48,8 @@ function load() {
   }
   let config = props.configParser(rawData);
   table.value!.showLoading();
-  Object.keys(config).forEach((key) => {
-    table.value!.appendData(props.dataParser(key, (config as any)[key]));
+  Object.entries(config).forEach(([key, value]) => {
+    table.value!.appendData(props.dataParser(key, value));
   });
   table.value!.refreshAll();
   isLoaded = true;

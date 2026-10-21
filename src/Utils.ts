@@ -4,8 +4,10 @@ import {
   GM_setValue,
   GM_xmlhttpRequest,
   type GmResponseEvent,
+  type GmResponseType,
   type GmXmlhttpRequestOption,
 } from "$";
+import { AnimationFrameScheduler } from "./AnimationFrameScheduler";
 import { ConfigRepository } from "./config/ConfigRepository";
 import { Mcmodder } from "./Mcmodder";
 import { Values } from "./Values";
@@ -331,6 +333,26 @@ export class Utils {
       else content.push(`<span class="text-danger">登录信息已过期（须重新登录以刷新状态）</span>`);
     }
     return content.join(" · ");
+  }
+
+  /** 当前用户组是否可以进入通用后台 */
+  static hasAdminAccess(permission: Permission) {
+    return permission === "editor" || permission === "manager" || permission === "admin";
+  }
+
+  /** 当前用户组是否可以进入模组区审核，且可以通过/退回编辑（即并非只是审核助理） */
+  static hasVerifyOperateAccess(permission: Permission) {
+    return permission === "manager" || permission === "admin";
+  }
+
+  /** 当前用户组是否可以进入模组区审核（包括审核助理） */
+  static hasVerifyAccess(permission: Permission) {
+    return this.hasAdminAccess(permission);
+  }
+
+  /** 当前用户组是否可以进入文件管理后台 */
+  static hasModfileDLAccess(permission: Permission) {
+    return permission === "developer" || permission === "manager" || permission === "admin";
   }
 
   /** 按 id 取出交互数据并立即清除该条目；id 为空时返回 undefined */
@@ -1107,14 +1129,14 @@ export class Utils {
   };
 
   /** 基于 `requestAnimationFrame` 的节流：每帧最多执行一次 */
-  static animationThrottle = <T extends (...args: never[]) => void>(func: T) => {
+  static animationThrottle = <T extends (...args: never[]) => void>(func: T, priority = 0) => {
     let isTicking = false;
     return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
       if (!isTicking) {
-        requestAnimationFrame(() => {
+        AnimationFrameScheduler.add(() => {
           func.apply(this, args);
           isTicking = false;
-        });
+        }, priority);
         isTicking = true;
       }
     };
@@ -1374,15 +1396,21 @@ export class Utils {
    * 发送限速请求的全局入口：
    * 按 `updateRequestTime` 排定延迟后发出，记录日志；遇到 `yxd_token` 校验响应时写入 cookie 并自动重发。
    *
+   * 允许同时传入一个附加信息。若启用网络请求监控，则会在所有可见的标签页上提示本次发包的同时显示此信息。
+   * 原则上所有网络请求都应当有附加信息，便于在监控中理解请求目的。
+   *
    * @warning 队列超出 {@link Values.MAX_REQUEST_COUNT} 上限时，本请求直接以失败告终、**不会发包**
    *   （此前是把旧的队满哨兵值 `-1` 交给 `setTimeout`，负延迟被当作 0 处理，反而使限速彻底失效）。
    *   对本就无法降级重试的调用方而言失败与「不关心结果」无异；但计划任务与队列必须让失败
    *   可见地冒泡，否则会留下一条已排期、实则永远不会落地的待办。
+   *
+   * @param config 请求配置
+   * @param message 本次请求附带的提示消息
    */
-  createRequest(
-    config: GmXmlhttpRequestOption<"text", unknown>,
+  createRequest<R extends GmResponseType = "text">(
+    config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
-  ): Promise<GmResponseEvent<"text", unknown>> {
+  ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
     if (lastRequestTime === null) {
@@ -1393,7 +1421,8 @@ export class Utils {
     return new Promise((resolve) => {
       setTimeout(() => {
         config.onload = (resp) => {
-          const str = resp.responseText?.trim() ?? "";
+          // 二进制响应（`responseType: "arraybuffer"` 等）下 responseText 未必是字符串，不能直接 trim
+          const str = typeof resp.responseText === "string" ? resp.responseText.trim() : "";
           if (str.startsWith("<script>") && str.endsWith("</script>")) {
             const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
             if (yxdTokenList) {
@@ -1414,7 +1443,7 @@ export class Utils {
                   if (err) {
                     console.warn("Failed to set `yxd_token!`");
                   } else {
-                    this.createRequest(config).then((resp) => resolve(resp));
+                    this.createRequest(config, message).then((resp) => resolve(resp));
                   }
                 },
               );

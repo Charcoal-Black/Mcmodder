@@ -1,13 +1,14 @@
 {
   "name": "mcmodder",
   "private": true,
-  "version": "2.3",
+  "version": "2.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
+    "smoke:attitude": "node smoke/attitude-plaza.mjs",
     "lint:config": "eslint eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",
     "format": "prettier --write src",
     "format:check": "prettier --check src eslint.config.ts eslint-local-rules vite.config.ts prettier.config.ts lint-staged.config.ts",
@@ -39,6 +40,7 @@
     "pinyin": "^4.0.0",
     "playwright": "^1.60.0",
     "prettier": "^3.9.9",
+    "supabase": "^2.121.0",
     "systemjs": "^6.15.1",
     "turndown": "^7.2.4",
     "typescript": "^5.9.2",
@@ -52,10 +54,13 @@
     "dexie": "^4.4.4",
     "diff": "^9.0.0",
     "dompurify": "^3.4.16",
+    "emoji-picker-element": "^1.29.1",
     "opentype.js": "^2.0.0",
     "pinyin-match": "^1.2.10",
     "three": "^0.184.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "vue": "^3.4.0",
+    "vue-component-type-helpers": "^3.3.12",
     "vue-virtual-scroller": "^3.0.5"
   }
 }

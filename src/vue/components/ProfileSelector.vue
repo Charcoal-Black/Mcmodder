@@ -4,7 +4,11 @@
     <div id="mcmodder-profile-frame">
       <ul>
         <li>
-          <div class="profile-option empty-profile" :class="{ 'profile-selected': !uuid }">
+          <div
+            class="profile-option empty-profile"
+            :class="{ 'profile-selected': !uuid }"
+            @click="onClick($event, 0)"
+          >
             -- 未登录状态 --
           </div>
         </li>
@@ -19,7 +23,7 @@
             </div>
             <div class="info">
               <div class="title">
-                <span class="uid mcmodder-slim-dark">[UID:{{ uid }}]</span>
+                <span class="uid mcmodder-slim-dark">{{ uid }}</span>
                 <span class="username mcmodder-subtitle">{{ getSubtitle(profile) }}</span>
                 <span class="lv">
                   <a :class="`common-user-lv lv-${profile.lv}`">Lv.{{ profile.lv || "null" }}</a>
@@ -65,7 +69,7 @@ function getSubtitle(profile: Profile) {
   return profile.username + (profile.nickname ? ` (${profile.nickname})` : "");
 }
 
-function onClick(e: Event, uid: number, profile: Profile) {
+function onClick(e: Event, uid: number, profile?: Profile) {
   const target = e.target as HTMLElement;
   if (target.className === "delete" || target.parentElement?.className === "delete") {
     configs.value.delete("userProfile", uid.toString());
@@ -75,7 +79,7 @@ function onClick(e: Event, uid: number, profile: Profile) {
   }
   parent.switchProfile(uid).then((result) => {
     if (result) {
-      uuid.value = profile.uuid;
+      uuid.value = profile?.uuid;
     }
   });
 }

@@ -4,8 +4,19 @@ import { Utils } from "../Utils";
 import { Values } from "../Values";
 import { UEditor as UEditor } from "./UEditor";
 import CodeMirror from "codemirror";
+// npm 版 codemirror 主入口不含任何 mode，必须显式引入，否则 `mode: "markdown"` / `"xml"`
+// 会回退到 null mode（编辑器里完全没有语法高亮）。
+// core / mode / 基础样式表都随产物一起打包，dev 与 build 行为一致，
+// 也不再依赖 CDN 全局（dev 下 CDN 脚本在 Tampermonkey 沙箱里，页面 realm 取不到）。
+import "codemirror/mode/markdown/markdown.js";
+import "codemirror/mode/xml/xml.js";
+import "codemirror/lib/codemirror.css";
 import TurndownService from "turndown";
-import html_beautify from "js-beautify";
+import { gfm } from "turndown-plugin-gfm";
+// js-beautify 的默认导出是一个「默认按 JS 美化」的可调用对象，HTML 美化在 .html_beautify 上。
+// 之前 build 走 CDN 全局（全局名恰好就是 HTML 美化函数）、dev 走 npm（拿到的是 JS 美化），
+// 同一行代码两端行为不同且不报错，故统一走 npm 并显式取 .html_beautify。
+import jsBeautify from "js-beautify";
 import { createApp } from "vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import AutoLink from "../vue/components/AutoLink.vue";
@@ -93,8 +104,37 @@ export class AdvancedUEditor extends UEditor {
   autoLink?: InstanceType<typeof AutoLink>;
   /** 模板面板（惰性初始化，见 {@link templateObserver}） */
   template = new TemplateFrame(this);
-  /** 重入锁：防止原生编辑器与 HTML 编辑器互相触发 change 造成死循环 */
-  private contentLock = false;
+  /**
+   * 源码编辑器中是否有**尚未写回原生编辑器**的用户改动。
+   *
+   * 为真时禁止用原生正文覆盖源码编辑器（否则用户正在编辑的内容会被冲掉、光标被弹回开头）。
+   */
+  private htmlEditorDirty = false;
+  /**
+   * 最近一次已知的原生正文 HTML（`null` 表示尚未同步过），
+   * 用于判断「原生正文是否真的发生了变化」——没变就绝不去动源码编辑器。
+   */
+  private lastNativeHtml: string | null = null;
+  /** 源码编辑器中已经与原生编辑器同步过的内容，用于判断是否还需要再写回 */
+  private syncedHtml = "";
+  /** 原生正文有变化、但因源码编辑器正在被编辑而暂缓拉取 */
+  private pullPending = false;
+  /**
+   * 写回原生编辑器：尾沿防抖。
+   *
+   * 必须用防抖而非节流：{@link Utils.throttle} 是「前缘触发 + 丢弃尾沿」，
+   * 用户停止输入后的最后几次改动会被直接丢掉，导致原生编辑器里的正文停留在旧内容。
+   */
+  private readonly pushHtmlToNative = Utils.debounce(() => this.doPushHtmlToNative(), 300);
+  /** 从原生编辑器拉取：尾沿防抖，避免连续 contentchange 时反复美化整篇正文 */
+  private readonly pullHtmlFromNative = Utils.debounce(() => this.doPullHtmlFromNative(), 300);
+  /**
+   * 字节数统计：节流（最多每 300ms 一次），避免连续 contentchange 时反复遍历整篇正文。
+   *
+   * 注意节流器**必须复用同一个实例**：`Utils.throttle(fn, wait)` 返回的是带内部时间戳的闭包，
+   * 每次调用都新建一个的话时间戳恒为 0，等于完全没有节流。
+   */
+  private readonly throttledCalculateBytes = Utils.throttle(() => this.calculateBytes(), 300);
   /** 构造期间为 true，表示「等待基类 init 来触发 advinit」 */
   private pending = true;
   /** 基类 init 完成后为 true */
@@ -485,13 +525,6 @@ export class AdvancedUEditor extends UEditor {
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirror, null, "mcmodder-script-codemirror");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.markdown, null, "mcmodder-script-codemirror-mod-markdown");
       // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.htmlEmbedded, null, "mcmodder-script-codemirror-mod-htmlembedded");
-      await Utils.loadStyle(
-        document.head,
-        null,
-        Values.assets.css.codemirror,
-        null,
-        "mcmodder-style-codemirror",
-      );
 
       if (!this.mdEditor) {
         this.mdEditor = CodeMirror(this.mdEditorContainer.get(0), {
@@ -504,7 +537,7 @@ export class AdvancedUEditor extends UEditor {
             this.heightAutoResize();
           }, 300),
         );
-        this.turndownSurvice = new TurndownService().use(turndownPluginGfm.gfm);
+        this.turndownSurvice = new TurndownService().use(gfm);
         if (this.$body) {
           const content = this.$body.clone();
           content
@@ -547,20 +580,17 @@ export class AdvancedUEditor extends UEditor {
 
   /**
    * 「源代码编辑器」开关：惰性创建 XML 模式的 CodeMirror，并与原生编辑器**双向同步**：
-   * 在源码编辑器里改动会写回 `editor.setContent`，原生编辑器改动则由 {@link syncHtml} 拉回。
-   * 两个方向的同步都靠 {@link contentLock} 互斥，避免互相触发造成循环。
+   * 在源码编辑器里改动会写回 `editor.setContent`（{@link doPushHtmlToNative}），
+   * 原生编辑器改动则由 {@link doPullHtmlFromNative} 拉回。
+   *
+   * 两个方向的同步靠「内容比对 + 归属标记」互相让位，而不是靠一把锁硬拦：
+   * - 写回后立刻记下原生正文的**实际** HTML，使这次写回引发的回拉成为空操作；
+   * - 源码编辑器里有未写回的改动时，原生正文的变化只会被暂缓，绝不覆盖用户正在编辑的内容。
    */
   private async readyHtmlEditor() {
     if (!this.htmlEditorContainer || !this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
-      await Utils.loadStyle(
-        document.head,
-        null,
-        Values.assets.css.codemirror,
-        null,
-        "mcmodder-style-codemirror",
-      );
       if (!this.htmlEditor) {
         this.htmlEditor = CodeMirror(this.htmlEditorContainer.get(0), {
           mode: "xml",
@@ -572,18 +602,14 @@ export class AdvancedUEditor extends UEditor {
             this.heightAutoResize();
           }, 300),
         );
-        this.htmlEditor.on(
-          "change",
-          Utils.throttle((instance: CodeMirror.Editor) => {
-            if (!this.contentLock) {
-              this.contentLock = true;
-              this.editor?.setContent(instance.getValue());
-              this.refreshHtmlNode?.hide();
-              this.contentLock = false;
-            }
-          }, 300),
-        );
-        this.syncHtml();
+        // 记录用户改动：脚本自己写入的内容（origin === "setValue"）不算用户改动。
+        // 这个监听器**不能**节流，否则被丢弃的那次改动会让「有未写回改动」的标记丢失。
+        this.htmlEditor.on("change", (_instance, change) => {
+          if (change?.origin !== "setValue") this.htmlEditorDirty = true;
+        });
+        // 写回原生编辑器：尾沿防抖，保证用户停止输入后最后一次改动一定被写回
+        this.htmlEditor.on("change", this.pushHtmlToNative);
+        this.doPullHtmlFromNative();
       }
       $("#mcmodder-htmleditor").show();
     } else {
@@ -638,9 +664,14 @@ export class AdvancedUEditor extends UEditor {
   /**
    * 「Markdown → HTML」：把 md 编辑器的内容渲染进正文。
    *
-   * 渲染后还要做若干**针对百科编辑器的适配与体检**：
+   * 渲染时通过**重写 markdown-it 的渲染规则**做针对百科编辑器的适配：
+   * - 软换行不再输出 "\n"（markdown-it 没有对应选项，只能改渲染规则）；
+   * - 行内代码 `<code>` 按配置渲染成纯文本或斜体文本 `<em>`；
+   * - 引用块 `<blockquote>` 按配置渲染成纯文本或灰色斜体文本。
+   *
+   * 渲染后还要做若干**事后处理与体检**：
    * - 把渲染出的 `h1`~`h6` 反向转成 `[hN=标题]` 占位符（百科正文以这种标记表达标题）；
-   * - `code`/`blockquote` 是百科不支持的标签，给它们描红并提示用户手动调整；
+   * - `code`/`blockquote` 若选择「保留」，则给它们描红并提示用户手动调整；
    * - `pre` 剥掉标签只留文本，未指定语言的提醒补语言；
    * - 统一 `ul` 列表的缩进类，并把 `li` 里的裸文本包成 `<p>`（百科只接受 `li > p` 结构）。
    */
@@ -648,7 +679,68 @@ export class AdvancedUEditor extends UEditor {
     // 预处理
     // this.mdEditor.find("p > br").remove();
     if (!this.mdEditorOuterContainer || !this.mdEditor || !this.body || !this.$document) return;
+    const inlineCodeConverter = this.configs.getSettings("mdEditorInlineCodeConverter") ?? 0;
+    const blockquoteConverter = this.configs.getSettings("mdEditorBlockquoteConverter") ?? 0;
+
     const md = (this.window as any).markdownit();
+    // markdown-it 没有「软换行不输出字符」的选项（`breaks` 只决定软换行是否转成 <br>），
+    // 默认情况下段落内的换行会被渲染成一个 "\n"。
+    // 这里直接重写渲染规则，让软换行输出单个空格以实现「词间分隔」的作用。
+    md.renderer.rules.softbreak = () => " ";
+
+    // 行内代码：markdown-it 默认渲染成 <code>…</code>，而百科不支持该标签。
+    // 这里在渲染阶段就改写成纯文本（1）或斜体文本（2），
+    // 比事后遍历 DOM 再替换标签干净得多（也不用操心相邻文本节点的合并）。
+    if (inlineCodeConverter === 1) {
+      md.renderer.rules.code_inline = (tokens: any[], idx: number) =>
+        md.utils.escapeHtml(tokens[idx].content);
+    } else if (inlineCodeConverter === 2) {
+      md.renderer.rules.code_inline = (tokens: any[], idx: number) =>
+        `<em>${md.utils.escapeHtml(tokens[idx].content)}</em>`;
+    }
+
+    // 引用块：markdown-it 用 blockquote_open / blockquote_close 两个 token 渲染引用块，
+    // 这里替换成纯文本（1）或灰色斜体文本（2）。
+    // 嵌套引用（>>、>>> …）一律拍平：引用块本身不再输出任何标签，
+    // 只由其中的**每个段落**各自成块（<p><span …><em>…</em></span></p>），
+    // 这样既不会嵌套出一堆重复的 <span> / <em>，
+    // 又能让不同层级的引用（语义上本就是不同的块）落在不同的段落里。
+    if (blockquoteConverter === 1 || blockquoteConverter === 2) {
+      let depth = 0;
+      md.renderer.rules.blockquote_open = () => {
+        depth++;
+        return "";
+      };
+      md.renderer.rules.blockquote_close = () => {
+        depth--;
+        return "";
+      };
+      // 引用块内部是块级内容（段落 <p>），而 <em> 是行内容器：
+      // 浏览器解析时会把 <p> 从 <em> 里甩出去，故这里让每个段落自成一块
+      md.renderer.rules.paragraph_open = (
+        tokens: any[],
+        idx: number,
+        options: any,
+        _env: any,
+        slf: any,
+      ) => {
+        if (depth === 0) return slf.renderToken(tokens, idx, options);
+        if (tokens[idx].hidden) return ""; // 紧凑列表里的段落本就不渲染
+        return blockquoteConverter === 2 ? `<p><span style="color: rgb(127, 127, 127);"><em>` : "";
+      };
+      md.renderer.rules.paragraph_close = (
+        tokens: any[],
+        idx: number,
+        options: any,
+        _env: any,
+        slf: any,
+      ) => {
+        if (depth === 0) return slf.renderToken(tokens, idx, options);
+        if (tokens[idx].hidden) return "";
+        return blockquoteConverter === 2 ? `</em></span></p>` : "\n";
+      };
+    }
+
     const htmlOutput = md.render(this.mdEditor.getValue());
     const content = this.$body?.html(htmlOutput);
     for (let i = 1; i <= 6; i++) {
@@ -659,88 +751,123 @@ export class AdvancedUEditor extends UEditor {
       });
     }
 
-    // 后期检测
-    this.$document
-      .find("code")
-      .css("border", "3px solid red")
-      .each(() => {
-        Utils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~");
-      });
+    // 后期检测：代码与引用块已在渲染阶段按配置转换，
+    // 这里只处理「保留并警告」的情况
+    if (inlineCodeConverter === 0) {
+      this.$document
+        .find("code")
+        .css("border", "3px solid red")
+        .each(() => {
+          Utils.commonMsg("转换结果中出现不受支持的行间代码块 (code)，请适当调整~");
+        });
+    }
+
     this.$document.find("pre").each((_, c) => {
       $(c).html($(c).text());
       if (!c.classList.length) Utils.commonMsg("转换结果中出现代码块 (pre)，记得设置相应语言~");
     });
-    this.$document
-      .find("blockquote")
-      .css("border", "3px solid red")
-      .each(() =>
-        Utils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false),
-      );
+
+    if (blockquoteConverter === 0) {
+      this.$document
+        .find("blockquote")
+        .css("border", "3px solid red")
+        .each(() =>
+          Utils.commonMsg("转换结果中出现不受支持的引用块 (blockquote)，请适当调整~", false),
+        );
+    }
 
     // 列表统一标准
     this.$document
-      .find("ul")
+      .find("ul, ol")
       .addClass("list-paddingleft-2")
       .each((_, ul) => {
         ul.childNodes.forEach((li) => {
           if (li.nodeType === Node.ELEMENT_NODE && (li as HTMLElement).tagName === "LI") {
-            li.childNodes.forEach((e) => {
-              if ((e as Text).nodeType === Node.TEXT_NODE) {
-                const p = document.createElement("p");
-                p.textContent = (e as Text).data;
-                const next = e.nextSibling;
-                if (
-                  next?.nodeType === Node.ELEMENT_NODE &&
-                  (next as HTMLElement).tagName === "BR"
-                ) {
-                  next.remove();
-                }
-                e.replaceWith(p);
-              }
-            });
+            const childNodes = Array.from(li.childNodes);
+            if (!childNodes.some((child) => Utils.isHTMLElement(child) && child.tagName === "P")) {
+              const p = document.createElement("p");
+              p.append(...childNodes);
+              li.appendChild(p);
+            }
           }
         });
       });
 
-    this.updateEditorStats();
+    this.saveScene();
   }
 
   /**
-   * 「修复 br 换行」：百科正文的 `<br>` 无法表达段落结构（粘贴正文时常见），
+   * 「修复 br 换行」：在非正常编辑（如粘贴正文）时，正文内会出现使用 `<br>` 标签换行的情况。
    * 此处把含 `<br>` 的段落按 `<br>` 切成多个段落。
+   * ```html
+   * <!-- 切分前 -->
+   * <p>
+   *   第一行
+   *   <br>
+   *   第二行
+   * </p>
+   * <!-- 切分后 -->
+   * <p>第一行</p>
+   * <p>第二行</p>
+   * ```
    */
   performBrFix() {
     if (!this.$body) return;
-    const p = this.$body.find("p");
-    const ps: JQuery[] = [];
-    p.each((_, _e) => {
-      const e = $(_e);
-      const contents = p.contents();
-      const contentsLength = contents.length - 1;
-      for (let i = 1; i < contentsLength; i++) {
-        if (contents.get(i).tagName === "BR") {
-          ps.push(e);
-          break;
+    let count = 0;
+    this.$body.find("p").each((_, _p) => {
+      const p = $(_p);
+      // 按直接子级 <br> 切段（Array.from 取快照，搬家时不会漏项）
+      const segments: Node[][] = [];
+      let segment: Node[] = [];
+      segments.push(segment);
+      Array.from(_p.childNodes).forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
+          segment = [];
+          segments.push(segment);
+        } else {
+          segment.push(node);
         }
+      });
+      if (segments.length < 2) {
+        // 段落内没有 <br>
+        return;
       }
+
+      const hasContent = (nodes: Node[]) =>
+        nodes.some(
+          (node) => node.nodeType === Node.ELEMENT_NODE || (node.textContent ?? "").trim(),
+        );
+      // 行首/行尾的 <br> 不产生新行，去掉对应空段，避免切出空段落
+      while (segments.length > 1 && !hasContent(segments[0])) {
+        segments.shift();
+      }
+      while (segments.length > 1 && !hasContent(segments[segments.length - 1])) {
+        segments.pop();
+      }
+      if (!segments.some(hasContent)) {
+        return; // 整段只有 <br>（通常就是空白行的写法），保持原样
+      }
+      if (segments.length === 1) {
+        p.children("br").remove(); // 只剩一段有内容：摘掉换行符即可，无需切段
+        count++;
+        return;
+      }
+
+      let anchor = p;
+      segments.forEach((nodes) => {
+        const np = p.clone().html("").insertAfter(anchor);
+        nodes.forEach((node) => np.append(node as unknown as Element)); // 逐项 append 以保持原有顺序
+        anchor = np;
+      });
+      p.remove();
+      count++; // 连续 <br> 产生的中间空段保留为空段落，留住原本的空行
     });
-    const count = ps.length;
     if (!count) {
       Utils.commonMsg(`未发现 br 换行问题~`);
       return;
     }
-    ps.forEach((p) => {
-      let np = p.clone().html("").insertAfter(p);
-      p.contents().each((_, e) => {
-        if (e.tagName === "BR") {
-          np = p.clone().html("").insertAfter(np);
-        } else {
-          np.append(e);
-        }
-      });
-      p.remove();
-    });
     Utils.commonMsg(`${count} 处 br 换行问题已被修复~`);
+    this.saveScene();
   }
 
   /**
@@ -764,6 +891,7 @@ export class AdvancedUEditor extends UEditor {
       Utils.commonMsg("未发现异常链接~");
     } else {
       Utils.commonMsg(`${count} 处异常链接已被修复~`);
+      this.saveScene();
     }
   }
 
@@ -873,6 +1001,7 @@ export class AdvancedUEditor extends UEditor {
         });
 
         this.body!.contentEditable = "true";
+        this.saveScene();
       }, 1e2); // pangu.spacingPage 并不是同步方法，强制延迟 100ms 以保证执行时 pangu 已完成空格插入
   }
 
@@ -1016,19 +1145,29 @@ export class AdvancedUEditor extends UEditor {
   }
 
   /**
+   * 快照，供撤销，并更新统计数据。
+   */
+  private saveScene() {
+    this.editor.fireEvent("saveScene");
+    this.updateEditorStats();
+  }
+
+  /**
    * 内容变化后的统一处理：重算高度（仅非全屏时，全屏下改高度会抖），
-   * 并在正文未超过阈值时**节流**地重算字节数与同步 HTML 源码。
+   * 并在正文未超过阈值时**节流**地重算字节数、**防抖**地同步 HTML 源码。
    *
    * 超过 {@link autoUpdateEditorStatsThreshold} 时停止自动统计（逐字重算 + 美化 HTML 开销太大），
    * 改为显示「轻触刷新」按钮交由用户手动触发。
+   *
+   * @warning 这里**不能**写成 `Utils.throttle(fn, 300)()` —— 那样每次调用都会新建一个节流器，
+   * 其内部的时间戳恒为 0，等于完全没有节流，整篇正文会被反复美化。
    */
   override updateEditorStats() {
     if (!this.isEditorFullScreen()) this.heightAutoResize();
     if (this.currentTextLength <= this.autoUpdateEditorStatsThreshold) {
-      Utils.throttle(() => {
-        this.calculateBytes();
-        this.syncHtml();
-      }, 300)();
+      this.throttledCalculateBytes();
+      // 源码同步走防抖：整篇正文的美化开销大，且必须保证「最后一次」一定被同步
+      this.pullHtmlFromNative();
     } else {
       this.refreshTextNode?.show();
       this.refreshHtmlNode?.show();
@@ -1046,7 +1185,7 @@ export class AdvancedUEditor extends UEditor {
   /** HTML 编辑器「轻触刷新」：正文过大时由用户手动重新拉取源码 */
   private manualTriggerHtmlUpdate() {
     if (this.currentTextLength > this.autoUpdateEditorStatsThreshold) {
-      this.syncHtml();
+      this.doPullHtmlFromNative();
       this.refreshHtmlNode?.hide();
     }
   }
@@ -1065,17 +1204,69 @@ export class AdvancedUEditor extends UEditor {
   }
 
   /**
-   * 把当前正文同步到 HTML 源代码编辑器（经 `html_beautify` 美化，便于手改）。
-   * 同步期间上锁，防止 `setValue` 触发的 change 再写回原生编辑器。
+   * 把源码编辑器的内容写回原生编辑器（防抖后的实际执行体）。
+   *
+   * - 内容与原生编辑器里已有的内容一致时直接跳过，避免无谓地重置原生编辑器的选区；
+   * - 写回后立刻记下原生正文的**实际** HTML：UEditor 的 `setContent` 会过滤并规范化 HTML
+   *   （`filterInputRule` + 给裸文本套 `<p>`），所以原生正文并不等于我们写进去的文本。
+   *   记下它，随后来自这次写回的 `contentchange`（同步或异步）所触发的拉取，
+   *   都会因为「原生正文没变」而成为空操作——这才是真正切断「推 → 拉 → 再推」乒乓的地方。
    */
-  private syncHtml() {
-    if (this.htmlEditor && !this.contentLock) {
-      this.contentLock = true;
-      const text = this.$body?.html() || "";
-      const formatted = html_beautify(text, { indent_size: 2 });
-      this.htmlEditor?.setValue(formatted);
-      this.contentLock = false;
+  private doPushHtmlToNative() {
+    if (!this.htmlEditor || !this.editor) return;
+    const value = this.htmlEditor.getValue();
+    if (value !== this.syncedHtml) {
+      this.editor.setContent(value);
+      // 写回成功后才更新状态：万一 setContent 抛错，下次仍会重试
+      this.syncedHtml = value;
+      this.refreshHtmlNode?.hide();
+      // 原生正文的实际结果（已被 UEditor 规范化），供后续拉取比对
+      this.lastNativeHtml = this.$body?.html() ?? "";
     }
+    // 本地改动已写回（或本来就与原生编辑器一致）
+    this.htmlEditorDirty = false;
+    if (this.pullPending) {
+      // 之前有一次拉取被暂缓（用户在源码编辑器里改过），现在本地改动已写回，重新同步一次
+      this.pullPending = false;
+      this.pullHtmlFromNative();
+    }
+  }
+
+  /**
+   * 从原生编辑器拉取正文到源码编辑器（防抖后的实际执行体）。
+   *
+   * 三重保护，缺一不可：
+   * 1. 原生正文没变 → 直接返回，**不碰**源码编辑器
+   *    （`setValue` 会把光标弹回文档开头、滚动位置归零，这正是「内容跳动」的元凶）；
+   * 2. 源码编辑器里有尚未写回的用户改动 → 暂缓拉取（记在 {@link pullPending}），
+   *    绝不覆盖用户正在编辑的内容，等本地改动写回后再同步；
+   * 3. 美化后的结果与源码编辑器现有内容相同 → 不调用 `setValue`（同上，光标会丢）。
+   */
+  private doPullHtmlFromNative() {
+    if (!this.htmlEditor) return;
+    const text = this.$body?.html() ?? "";
+    if (text === this.lastNativeHtml) return; // 原生正文没变，别去动源码编辑器
+    if (this.htmlEditorDirty) {
+      // 用户正在源码编辑器里编辑：不能覆盖，等本地改动写回后再同步
+      this.pullPending = true;
+      return;
+    }
+    this.lastNativeHtml = text;
+    const indentStyle = this.configs.getSettings("htmlEditorIndentSize") ?? 2;
+    const formatted =
+      indentStyle === 0
+        ? text
+        : jsBeautify.html_beautify(text, {
+            indent_size: indentStyle,
+            indent_char: indentStyle === 1 ? "\t" : " ",
+          });
+    if (formatted === this.htmlEditor.getValue()) {
+      // 内容一致，视为已同步（否则会被原样写回原生编辑器，白白重置一次原生编辑器的选区）
+      this.syncedHtml = formatted;
+      return;
+    }
+    this.htmlEditor.setValue(formatted);
+    this.syncedHtml = formatted;
   }
 
   /**
