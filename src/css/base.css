@@ -3328,6 +3328,8 @@ body .top-main .navs .app-url .li .text,
   width: 100%;
   overflow: clip;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
 }
 .mcmodder-attitude-stat-name {
   overflow: clip;

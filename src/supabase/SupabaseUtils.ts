@@ -3,6 +3,7 @@ import {
   type FunctionInvokeOptions,
   type SupabaseClient,
 } from "@supabase/supabase-js";
+import { watch, type ComputedRef } from "vue";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import type { ConfigRepository } from "../config/ConfigRepository";
@@ -12,32 +13,64 @@ export class SupabaseUtils {
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
 
   private readonly configs: ConfigRepository;
-  private readonly instance: SupabaseClient | null;
+  /** 云端客户端实例；随「启用云端服务」配置的开合而创建/释放 */
+  private instance: SupabaseClient | null = null;
+  /** 「启用云端服务」配置的响应式引用（`mcmodderSettings` 是可缓存键，故可响应式读取） */
+  private readonly useSupabaseRef: ComputedRef<boolean | undefined>;
+  /** 上一次创建客户端是否失败；失败后不反复重试，除非配置再次变化 */
+  private createFailed = false;
 
   constructor(parent: Mcmodder) {
     this.configs = parent.configRepository;
+    this.useSupabaseRef = this.configs.getSettingsRef("useSupabase");
 
-    if (!this.configs.getSettings("useSupabase")) {
+    // 初始化时若已开启云端服务，立刻创建客户端
+    this.syncInstance();
+
+    // 配置变化时同步：开启后立即创建客户端，关闭后释放引用
+    watch(this.useSupabaseRef, () => this.syncInstance(true));
+  }
+
+  /** 当前是否启用了云端服务（取响应式配置的即时快照） */
+  private isEnabled() {
+    return !!this.useSupabaseRef.value;
+  }
+
+  /**
+   * 依据「启用云端服务」配置同步客户端实例。
+   *
+   * @param retry 是否允许在先前创建失败后重试（配置发生变化时传入 true）。
+   */
+  private syncInstance(retry = false) {
+    if (!this.isEnabled()) {
       this.instance = null;
-    } else
-      try {
-        this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
-          auth: {
-            persistSession: false,
-          },
-        });
-      } catch (e) {
-        console.warn("Failed to create Supabase client: ", e);
-        this.instance = null;
-      }
+      this.createFailed = false;
+      return;
+    }
+    if (this.instance) return;
+    if (this.createFailed && !retry) return;
+    try {
+      this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
+        auth: {
+          persistSession: false,
+        },
+      });
+      this.createFailed = false;
+    } catch (e) {
+      console.warn("Failed to create Supabase client: ", e);
+      this.instance = null;
+      this.createFailed = true;
+    }
   }
 
   getClient() {
+    // `watch` 回调是异步触发的，配置刚变更时此处补一次同步，保证即时生效
+    this.syncInstance();
     return this.instance;
   }
 
   hasClient() {
-    return !!this.instance;
+    return !!this.getClient();
   }
 
   async invoke<SupabaseSuccessfulResponse extends object>(

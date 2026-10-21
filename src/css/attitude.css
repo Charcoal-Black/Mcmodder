@@ -72,13 +72,15 @@ html.mcmodder-attitude-twemoji emoji-picker {
 }
 
 .common-comment-block .comment-tools ol.comment-attitude-result img {
-  margin-left: 0;
-  margin-right: 3px;
+  margin: auto;
 }
 
-.mcmodder-attitude-sticker img {
+.mcmodder-attitude-sticker img,
+img.mcmodder-attitude-sticker-image {
   max-height: 100%;
   max-width: 100%;
+  border-radius: 3px;
+  margin: auto;
 }
 
 .comment-tools ol.comment-attitude-result li.mcmodder-attitude-item > a {
@@ -197,9 +199,9 @@ html.mcmodder-attitude-twemoji emoji-picker {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
+  width: 28px;
   height: 28px;
-  padding: 0 4px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 4px;
   background: none;
@@ -242,13 +244,15 @@ html.mcmodder-attitude-twemoji emoji-picker {
 }
 
 /* ===== 贴纸图标（结果条 / 最近使用 / 消息中心徽标 / 统计行共用） ===== */
-.mcmodder-attitude-sticker,
-img.mcmodder-attitude-sticker-image {
-  display: inline-block;
-  max-width: calc(1.3em * var(--mcmodder-attitude-scale));
-  max-height: calc(1.3em * var(--mcmodder-attitude-scale));
+.mcmodder-attitude-sticker {
+  display: inline-flex;
+  width: calc(1.3em * var(--mcmodder-attitude-scale));
+  height: calc(1.3em * var(--mcmodder-attitude-scale));
   border-radius: 3px;
-  background-color: var(--mcmodder-color-background-dark1);
+}
+
+.mcmodder-attitude-stat .mcmodder-attitude-sticker {
+  margin-right: 0.25em;
 }
 
 /* 图片地址尚未解析 / 解析失败时的占位块（保持行内尺寸不跳动） */
@@ -643,7 +647,7 @@ img.mcmodder-attitude-sticker-image {
 }
 
 .mcmodder-attitude-badge {
-  display: inline-block;
+  display: inline-flex;
   padding: 2px 6px;
   border: 1px solid var(--mcmodder-color-background-dark2);
   border-radius: 4px;

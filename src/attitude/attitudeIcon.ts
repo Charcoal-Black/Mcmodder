@@ -19,7 +19,7 @@ export function buildStickerType(id: number) {
 export function buildAttitudeIcon(attitudeType: string) {
   const stickerId = parseStickerId(attitudeType);
   if (stickerId !== undefined) {
-    return $('<div class="mcmodder-attitude-sticker"></div>').attr(
+    return $('<div class="mcmodder-attitude-sticker mcmodder-skeleton"></div>').attr(
       "data-mcmodder-sticker-id",
       stickerId,
     );
@@ -42,5 +42,6 @@ export function fillStickerIcon($icon: JQuery, sticker: SupabaseAttitudeSticker)
   return $icon
     .attr("title", getAttitudeTitle(buildStickerType(sticker.id), sticker.name))
     .removeAttr("data-mcmodder-sticker-failed")
+    .removeClass("mcmodder-skeleton")
     .append(img);
 }

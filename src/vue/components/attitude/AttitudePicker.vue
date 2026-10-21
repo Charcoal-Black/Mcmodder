@@ -52,7 +52,7 @@
             />
             <span
               v-else-if="isSticker(attitudeType)"
-              class="mcmodder-attitude-sticker mcmodder-attitude-sticker-pending"
+              class="mcmodder-attitude-sticker mcmodder-attitude-sticker-pending mcmodder-skeleton"
             ></span>
             <template v-else>{{ attitudeType }}</template>
           </button>

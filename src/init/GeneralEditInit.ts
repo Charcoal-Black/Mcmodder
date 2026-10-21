@@ -20,6 +20,7 @@ export class GeneralEditInit extends Init {
     const leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
       .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+      .replace("Alt + Z", Utils.keyToHTML({ altKey: true, key: "Z" }))
       .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
     // Bug修复：快速存档时当前菜单自动关闭

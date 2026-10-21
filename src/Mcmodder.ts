@@ -69,6 +69,7 @@ export class Mcmodder {
   /** 站点自身的未读消息数（页头铃铛的基底，自定义表态数在此之上叠加） */
   private msgSiteCount = 0;
   private readonly titleNode = $("title");
+  private readonly linkPendingSet = new Set<string>();
   private readonly linkContentDictionary: Record<string, string> = {};
   private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
   private readonly elementColorCache: Map<string, string> = new Map();
@@ -198,15 +199,21 @@ export class Mcmodder {
         const sourceUrl = $(target).attr("data-source-url");
         const previewContainer = $(`.mcmodder-preview-container[data-source-url="${sourceUrl}"]`);
         const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
-        if (!$(target).attr("aria-describedby")) return;
+        const describedby = $(target).attr("aria-describedby");
+        if (!describedby) return;
+        const tooltip = $("#" + describedby);
+        if (!tooltip.length || !tooltip.hasClass("show")) return;
         if (previewFrame.attr("data-status")) return;
         const storagedContent = this.linkContentDictionary[sourceUrl];
-        if (storagedContent != undefined) {
+        if (storagedContent !== undefined) {
           previewFrame.attr("data-status", "fulfilled");
           $(target).attr("data-original-title", storagedContent);
           previewFrame.children().html(storagedContent);
+          return;
         }
+        if (this.linkPendingSet.has(sourceUrl)) return;
         previewFrame.attr("data-status", "pending");
+        this.linkPendingSet.add(sourceUrl);
         await Utils.sleep(750);
         const resp = await this.utils.createRequest(
           {
@@ -274,6 +281,7 @@ export class Mcmodder {
         const final = previewContainer.prop("outerHTML");
         $(target).attr("data-original-title", final);
         this.linkContentDictionary[sourceUrl] = final;
+        this.linkPendingSet.delete(sourceUrl);
         previewFrame.attr("data-status", "fulfilled");
       });
     }

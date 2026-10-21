@@ -778,25 +778,17 @@ export class AdvancedUEditor extends UEditor {
 
     // 列表统一标准
     this.$document
-      .find("ul")
+      .find("ul, ol")
       .addClass("list-paddingleft-2")
       .each((_, ul) => {
         ul.childNodes.forEach((li) => {
           if (li.nodeType === Node.ELEMENT_NODE && (li as HTMLElement).tagName === "LI") {
-            li.childNodes.forEach((e) => {
-              if ((e as Text).nodeType === Node.TEXT_NODE) {
-                const p = document.createElement("p");
-                p.textContent = (e as Text).data;
-                const next = e.nextSibling;
-                if (
-                  next?.nodeType === Node.ELEMENT_NODE &&
-                  (next as HTMLElement).tagName === "BR"
-                ) {
-                  next.remove();
-                }
-                e.replaceWith(p);
-              }
-            });
+            const childNodes = Array.from(li.childNodes);
+            if (!childNodes.some((child) => Utils.isHTMLElement(child) && child.tagName === "P")) {
+              const p = document.createElement("p");
+              p.append(...childNodes);
+              li.appendChild(p);
+            }
           }
         });
       });

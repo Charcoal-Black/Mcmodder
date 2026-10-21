@@ -75,10 +75,10 @@ const userscriptMeta = {
     "cdn.jsdelivr.net.cn",
   ],
   require: [
-    "https://unpkg.com/turndown/dist/turndown.js",
-    "https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2",
-    "https://cdn.jsdelivr.net.cn/npm/three@0.160.0/build/three.min.js",
-    "https://cdn.jsdelivr.net.cn/npm/opentype.js@1.3.4/dist/opentype.min.js",
+    "https://registry.npmmirror.com/turndown/7.2.4/files/dist/turndown.js",
+    "https://cdn.jsdmirror.com/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://registry.npmmirror.com/three/0.160.0/files/build/three.min.js",
+    "https://registry.npmmirror.com/opentype.js/1.3.4/files/dist/opentype.min.js",
   ],
 } as const;
 
