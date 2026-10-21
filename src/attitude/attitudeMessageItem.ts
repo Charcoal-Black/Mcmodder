@@ -125,8 +125,7 @@ export function buildAttitudeMessageItem($template: JQuery, item: SupabaseAttitu
     .empty()
     .append($('<li class="text-muted"></li>').text(formatMessageTime(item.created_at)));
 
-  const $ground = $item.find(".content-ground").empty();
-  if (!item.is_read) $ground.append($('<span class="text-muted small"></span>').text("未读"));
+  if (!item.is_read) $item.find(".username").append('<span class="badge badge-danger">!</span>');
 
   return $item.get(0) as HTMLElement;
 }

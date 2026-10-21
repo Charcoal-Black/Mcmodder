@@ -1,5 +1,4 @@
 import { AttitudeSystem } from "../attitude/AttitudeSystem";
-import { buildAttitudeIcon } from "../attitude/attitudeIcon";
 import {
   buildAttitudeMessageItem,
   findAttitudeMessageTemplate,
@@ -83,47 +82,6 @@ export class MessageInit extends Init {
       if (commentId) items.push({ $item, commentId });
     });
     if (items.length === 0) return;
-
-    const records = await this.attitude.requestCounts(items.map(({ commentId }) => commentId));
-    items.forEach(({ $item, commentId }) => {
-      const record = records.get(commentId);
-      if (record) this.renderCountBadge($item, record);
-    });
-  }
-
-  /** 写入数量标签；内容不变时不改 DOM（避免与 `MutationObserver` 形成循环） */
-  private renderCountBadge($item: JQuery, record: AttitudeRecord) {
-    const $ground = $item.find(".content-ground").first();
-    if (!$ground.length) return;
-
-    const entries = Object.entries(record.counts).filter(([, count]) => count > 0);
-    const total = entries.reduce((sum, [, count]) => sum + count, 0);
-    const detail = entries.map(([attitudeType, count]) => `${attitudeType}×${count}`).join(" ");
-    const signature = `${detail}|${total}`;
-    const $existing = $ground.children(".mcmodder-attitude-count");
-
-    if (entries.length === 0) {
-      $existing.remove();
-      return;
-    }
-    if ($existing.attr("data-mcmodder-attitude-signature") === signature) return;
-    $existing.remove();
-
-    const $badge = $("<span></span>").attr({
-      class: "mcmodder-attitude-count",
-      title: detail,
-      "data-mcmodder-attitude-signature": signature,
-    });
-    if (entries.length <= 2) {
-      entries.forEach(([attitudeType, count], index) => {
-        if (index > 0) $badge.append(document.createTextNode(" "));
-        $badge.append(buildAttitudeIcon(attitudeType), document.createTextNode(String(count)));
-      });
-    } else {
-      $badge.text(`自定义表态 ${total}`);
-    }
-    $ground.append($badge);
-    void this.attitude.hydrateStickers($badge);
   }
 
   /** 「短评表态」子 tab：注入表态消息列表 */

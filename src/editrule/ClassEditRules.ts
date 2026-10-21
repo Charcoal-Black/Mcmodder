@@ -217,7 +217,22 @@ export class ClassEditRules {
       return;
     }
     const modid = data.modid?.trim() ?? "";
-    if (modid.length === 0) {
+    const platforms = Object.values(data.api ?? {});
+    if (
+      modid.length === 0 &&
+      !platforms.some((platform) =>
+        (
+          [
+            Values.loaderID["JavaAgent"],
+            Values.loaderID["内容包"],
+            Values.loaderID["命令方块"],
+            Values.loaderID["数据包"],
+            Values.loaderID["文件覆盖"],
+            Values.loaderID["行为包"],
+          ] as string[]
+        ).includes(platform),
+      )
+    ) {
       result.warning.push("缺少 MODID。"); // class_modid_empty
     } else if (modid.includes("，") || modid.includes(" ")) {
       result.warning.push("MODID 中含有异常符号，请检查是否准确。"); // class_modid_wrong_spliter

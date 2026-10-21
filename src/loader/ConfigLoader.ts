@@ -240,19 +240,13 @@ export const settings = [
     label: "编辑与资料",
     sections: [
       {
-        id: "editor",
-        label: "编辑",
+        id: "common",
+        label: "通用",
         settings: [
           {
             id: "classAddHelper",
             title: "展开模组添加分页",
             description: "使模组添加页面中的所有内容全部同屏显示。",
-            type: "checkbox",
-          },
-          {
-            id: "editorAutoResize",
-            title: "编辑器尺寸自适应",
-            description: "使编辑器的长度随正文内容，宽度随窗口尺寸自动调整。",
             type: "checkbox",
           },
           {
@@ -273,15 +267,6 @@ export const settings = [
             title: "快速提交修复",
             description: "修复百科本体 Bug：快速提交时编辑框意外换行。",
             type: "checkbox",
-          },
-          {
-            id: "editorStats",
-            title: "编辑量实时统计",
-            description:
-              "实时显示编辑器中的有效正文字节数和字节变动量，该配置值大于 0 时启用该特性，字节量超过该配置值时，字节数自动统计和源代码编辑器的内容自动同步会暂停，以避免卡顿。字节数统计不保证 100% 精确，且除正文改动外的其他操作也可能会影响最终的字节变动量。",
-            type: "number",
-            value: 10000,
-            range: [0, null],
           },
           {
             id: "anonymousUknowtoomuch",
@@ -315,6 +300,65 @@ export const settings = [
             title: "快速催审",
             description: "在待审列表中显示“一键催审”按钮。",
             type: "checkbox",
+          },
+        ],
+      },
+      {
+        id: "editor",
+        label: "编辑器",
+        settings: [
+          {
+            id: "editorAutoResize",
+            title: "编辑器尺寸自适应",
+            description: "使编辑器的长度随正文内容，宽度随窗口尺寸自动调整。",
+            type: "checkbox",
+          },
+          {
+            id: "editorStats",
+            title: "编辑量实时统计",
+            description:
+              "实时显示编辑器中的有效正文字节数和字节变动量，该配置值大于 0 时启用该特性，字节量超过该配置值时，字节数自动统计和源代码编辑器的内容自动同步会暂停，以避免卡顿。字节数统计不保证 100% 精确，且除正文改动外的其他操作也可能会影响最终的字节变动量。",
+            type: "number",
+            value: 10000,
+            range: [0, null],
+          },
+          {
+            id: "mdEditorInlineCodeConverter",
+            title: "Markdown 编辑器行内代码标签转换方式",
+            description:
+              "选择在将 Markdown 编辑器的内容转换为富文本中，遇到由反引号括起的内容所转换而成的行内代码标签时，脚本所自动执行的操作。",
+            type: "dropdownMenu",
+            range: {
+              0: "保留并警告",
+              1: "转换为纯文本",
+              2: "转换为斜体文本",
+            },
+          },
+          {
+            id: "mdEditorBlockquoteConverter",
+            title: "Markdown 编辑器块引用标签转换方式",
+            description:
+              '选择在将 Markdown 编辑器的内容转换为富文本中，遇到由 ">" 开头的段落所转换而成的块引用标签时，脚本所自动执行的操作。',
+            type: "dropdownMenu",
+            range: {
+              0: "保留并警告",
+              1: "转换为纯文本",
+              2: "转换为灰色斜体文本",
+            },
+          },
+          {
+            id: "htmlEditorIndentSize",
+            title: "源代码编辑器自动缩进风格",
+            description: "选择源代码编辑器自动美化 HTML 文档所使用的缩进风格。",
+            type: "dropdownMenu",
+            value: 2,
+            range: {
+              0: "关闭自动美化",
+              1: "Tab",
+              2: "2 个空格",
+              4: "4 个空格",
+              8: "8 个空格",
+            },
           },
         ],
       },
@@ -453,6 +497,7 @@ export const settings = [
             title: "在资料预览显示正文图片",
             description: "在资料的正文预览中显示正文中的图片。",
             type: "checkbox",
+            visible: (ctx) => ctx.configs.getSettings("hoverImage"),
           },
           {
             id: "rememberVisitedMods",

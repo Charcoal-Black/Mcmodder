@@ -23,7 +23,7 @@
             </div>
             <div class="info">
               <div class="title">
-                <span class="uid mcmodder-slim-dark">[UID:{{ uid }}]</span>
+                <span class="uid mcmodder-slim-dark">{{ uid }}</span>
                 <span class="username mcmodder-subtitle">{{ getSubtitle(profile) }}</span>
                 <span class="lv">
                   <a :class="`common-user-lv lv-${profile.lv}`">Lv.{{ profile.lv || "null" }}</a>

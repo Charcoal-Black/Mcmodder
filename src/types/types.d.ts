@@ -207,6 +207,9 @@ interface Settings {
   tabSelectorInfo: boolean;
   rememberModRelation: boolean;
   editorStats: number;
+  mdEditorInlineCodeConverter: 0 | 1 | 2;
+  mdEditorBlockquoteConverter: 0 | 1 | 2;
+  htmlEditorIndentSize: 0 | 1 | 2 | 4 | 8;
   anonymousUknowtoomuch: boolean;
   autoExpandPage: boolean;
   autoCloseSwal: boolean;

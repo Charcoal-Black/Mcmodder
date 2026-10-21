@@ -642,10 +642,6 @@ img.mcmodder-attitude-sticker-image {
   margin-left: 4px;
 }
 
-.message-list li.mcmodder-attitude-message.mcmodder-attitude-unread {
-  background-color: var(--mcmodder-color-background-dark1);
-}
-
 .mcmodder-attitude-badge {
   display: inline-block;
   padding: 2px 6px;
