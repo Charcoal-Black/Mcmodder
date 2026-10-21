@@ -254,6 +254,8 @@ export class CommentInit extends Init {
       "fa-grin-tears",
       "fa-heart",
       "fa-flushed",
+      "fa-sad-cry",
+      "fa-meh",
       "fa-thumbs-down",
       "fa-lemon",
       "fa-horse-head",
@@ -307,7 +309,9 @@ export class CommentInit extends Init {
       });
 
     // 自定义表态：绑定工具条事件，并刷新页面上已有的短评
-    this.attitude.bindEvents();
-    void this.attitude.processCommentRows($(document.body));
+    if (this.configs.getSettings("customAttitude")) {
+      this.attitude.bindEvents();
+      this.attitude.processCommentRows($(document.body));
+    }
   }
 }

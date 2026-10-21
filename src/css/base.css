@@ -3279,6 +3279,14 @@ body .top-main .navs .app-url .li .text,
 .comment-attitude.flushed.colourful:hover {
   color: var(--mcmodder-color-attitude-flushed);
 }
+.comment-attitude.cry.colourful,
+.comment-attitude.cry.colourful:hover {
+  color: var(--mcmodder-color-attitude-cry);
+}
+.comment-attitude.meh.colourful,
+.comment-attitude.meh.colourful:hover {
+  color: var(--mcmodder-color-attitude-meh);
+}
 .comment-attitude.down.colourful,
 .comment-attitude.down.colourful:hover {
   color: var(--mcmodder-color-attitude-down);

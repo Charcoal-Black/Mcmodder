@@ -712,7 +712,8 @@ export const settings = [
           {
             id: "anonymiseSplashContributor",
             title: "匿名闪烁标语贡献者",
-            description: "[需要用户认证] 启用后，您所提交的闪烁标语的贡献信息将对其他用户隐藏。",
+            description:
+              "(WIP) [需要用户认证] 启用后，您所提交的闪烁标语的贡献信息将对其他用户隐藏。",
             type: "checkbox",
             visible: (ctx) =>
               ctx.configs.getSettings("useSupabase") && ctx.configs.getSettings("supabaseSplash"),
@@ -730,7 +731,7 @@ export const settings = [
             id: "showUserBadge",
             title: "脚本用户展示",
             description:
-              "[需要用户认证] 启用后，您将能够在短评区/留言板中看到其他同样正在使用 Mcmodder 且启用了此选项的用户！同时，您对于其他用户也是如此。",
+              "(WIP) [需要用户认证] 启用后，您将能够在短评区/留言板中看到其他同样正在使用 Mcmodder 且启用了此选项的用户！同时，您对于其他用户也是如此。",
             type: "checkbox",
             visible: (ctx) => ctx.configs.getSettings("useSupabase"),
             syncWithSupabase: true,
