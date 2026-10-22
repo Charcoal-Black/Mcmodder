@@ -331,7 +331,8 @@ body .uknowtoomuch:hover {
 .center-item-popover-amount,
 .center-item-popover-p,
 .center-item-popover-title,
-.sweet-alert h2 {
+.sweet-alert h2,
+.version-content-right .title .name {
   color: var(--mcmodder-color-text-dark1);
 }
 .class_block .left .list .frame,
@@ -424,7 +425,8 @@ body .copyleft a:hover,
 .recent-card .content .primary a:hover,
 .nav-frame .links a:hover .title,
 .common-center .links a:hover .icon svg,
-.common-center .links a:hover .icon i {
+.common-center .links a:hover .icon i,
+.version-content-right .title .tools span a:hover {
   color: var(--mcmodder-color-accent-dark2);
 }
 .recent-buttons .refresh,
@@ -440,7 +442,8 @@ body .copyleft a:hover,
   margin-right: 5px;
 }
 .verify-list-list td a.text-muted:hover,
-.message-list li .content-tools li a:hover {
+.message-list li .content-tools li a:hover,
+.version-add-btn.text-muted:hover {
   color: var(--mcmodder-color-accent-dark2) !important;
 }
 a.text-danger:focus,
@@ -538,7 +541,8 @@ body .top-main .pulldown .top_content,
 .message-menu ul,
 .edit-dataverify-frame,
 .common-center .item-skip-list fieldset,
-.comment-row .comment-delimiter {
+.comment-row .comment-delimiter,
+.version-content-right .content {
   border-color: var(--mcmodder-color-background-dark2);
 }
 .news_block .left .text #random_refresh,
@@ -1681,7 +1685,8 @@ body > .container > *,
 #mcversion-frame fieldset,
 .relation-list fieldset,
 .modlist-list fieldset,
-.license-list fieldset {
+.license-list fieldset,
+.version-content-right {
   border-color: var(--mcmodder-color-background-dark2);
 }
 #mcmodder-fabric-hidever {
@@ -3173,7 +3178,8 @@ h6 .small,
 h6 small {
   color: var(--mcmodder-color-text-dark3);
 }
-#result .table {
+#result .table,
+.version-content-left .node {
   background-color: var(--mcmodder-color-background-dark1);
   border-color: var(--mcmodder-color-background-dark2);
   box-shadow: 1px 1px 15px var(--mcmodder-color-box-shadow);
