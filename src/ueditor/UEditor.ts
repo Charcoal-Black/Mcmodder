@@ -113,12 +113,15 @@ export class UEditor {
     // 把自己登记进全局列表，并给**所有**已登记的编辑器 iframe 补注入样式与夜间模式
     // （含此前已初始化的那些，保证页面上多个编辑器时样式一致）
     this.parent.ueditorFrame.push(this);
+    const isDark = $("html").hasClass("dark");
     this.parent.ueditorFrame.forEach((e) => {
       if (!e.document) return;
       Utils.addStyle(this.parent.css, "", e.document);
-      if (this.parent.isNightMode) {
-        e.$document!.find("html").addClass("dark");
-      }
+      // 以父页面实际的 dark 类为准，而不是父实例上可能滞后的 isNightMode：
+      // 夜间模式自适应、跨标签页同步等场景下字段可能尚未刷新，
+      // 若此时漏掉 dark 类，iframe 会继续使用亮色变量；
+      // 而 UEditor 又在 iframe 内写死了 p { color:#333 }，于是出现深色底 + 深色字。
+      e.$document?.find("html").toggleClass("dark", isDark);
     });
 
     // 现代化按钮
