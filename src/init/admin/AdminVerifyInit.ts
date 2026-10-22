@@ -431,6 +431,7 @@ export class AdminVerifyInit extends AdminBaseInit {
         configs: this.configs,
         configKey: "verifyReasons",
       },
+      zIndex: 999, // swal2 = 1000, sidebar = 500, .model = 999（但是已经被脚本的 #verify-window 覆写成 998）
     });
   }
 

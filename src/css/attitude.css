@@ -128,7 +128,7 @@ img.mcmodder-attitude-sticker-image {
 
 /* 我点过的类型：计数文字取主色；恶魔安格瑞额外取专属色 */
 .comment-tools ol.comment-attitude-result li.mcmodder-attitude-item > a.mcmodder-attitude-active {
-  color: var(--mcmodder-color-primary);
+  color: var(--mcmodder-color-primary-dark2);
 }
 
 .comment-tools

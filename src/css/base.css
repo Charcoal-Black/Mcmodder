@@ -1475,6 +1475,9 @@ div#mcmodder-text-result {
   width: 288px;
   height: 288px;
 }
+#verify-window {
+  z-index: 998;
+}
 #verify-window .common-text img.mcmodder-compare-icon,
 #mcmodder-verify-window .common-text img.mcmodder-compare-icon {
   image-rendering: pixelated;

@@ -1,4 +1,5 @@
 import type { Mcmodder } from "../Mcmodder";
+import { Utils } from "../Utils";
 
 /** 用户卡片资料：贴纸广场上传者与表态用户列表共用，仅用于前端展示 */
 export interface StickerUploaderProfile {
@@ -75,7 +76,7 @@ async function fetchStickerUploader(
     const avatar = rawAvatar?.startsWith("//") ? `https:${rawAvatar}` : rawAvatar;
     return { nickname, avatar };
   } catch (error) {
-    console.warn("[Mcmodder] 用户资料获取失败：", uid, error);
+    Utils.commonMsg(`试图获取用户资料 (UID:${uid}) 时遇到了问题... (${error})`);
     return {};
   }
 }

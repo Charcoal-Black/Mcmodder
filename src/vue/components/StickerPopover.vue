@@ -75,7 +75,7 @@ const reactorGeneration = ref(0);
 let favoriteStateLoading = false;
 
 function setOption(newOption: StickerViewerOption) {
-  if (newOption.sticker !== option.value?.sticker) {
+  if (newOption.sticker.image_url !== option.value?.sticker.image_url) {
     imagePending.value = true;
   }
   option.value = newOption;

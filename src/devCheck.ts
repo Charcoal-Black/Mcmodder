@@ -16,7 +16,7 @@ import { GM_getValue } from "$";
 
 if (import.meta.env.DEV && typeof GM_getValue !== "function") {
   console.error(
-    "[mcmodder] dev 模式下未取到 GM API：Tampermonkey 里的用户脚本多半已过期" +
+    "[Mcmodder] dev 模式下未取到 GM API：Tampermonkey 里的用户脚本多半已过期" +
       "（改动 @require 等元数据后需重装，且浏览器可能缓存了旧的 dev 依赖，需硬刷新）。" +
       "请打开 dev server 的 /__vite-plugin-monkey.install.user.js 重新安装，然后硬刷新（Cmd/Ctrl+Shift+R）本页。",
   );

@@ -125,6 +125,7 @@ import AttitudeStickerPlaza from "./AttitudeStickerPlaza.vue";
 import Popover from "../Popover.vue";
 import TabIndicator from "../TabIndicator.vue";
 import { usePopoverHost } from "../../composables/usePopoverHost.ts";
+import { Utils } from "../../../Utils.ts";
 
 /**
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里；

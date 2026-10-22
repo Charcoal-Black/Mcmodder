@@ -98,9 +98,8 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.at < Values.attitude.unreadCacheTtl) {
       return { unread: cached.unread, total: cached.total };
     }
-    // 后台提醒用：失败只记录日志，不弹模态框
     const resp = await this.parent.supabaseUtils.fetchAttitudeInboxStats(authKey, (error) =>
-      console.warn("[Mcmodder] 表态消息统计获取失败：", error),
+      Utils.commonMsg(`表态消息统计获取失败... (${error})`, false),
     );
     if (!resp) return cached && { unread: cached.unread, total: cached.total };
     const stats = { unread: resp.unread ?? 0, total: resp.total ?? 0 };
@@ -125,7 +124,7 @@ export class AttitudeSystem {
 
     const sinceId = this.configs.get("attitudeCache", "lastSeenId") ?? 0;
     const resp = await this.parent.supabaseUtils.checkNewAttitudes(authKey, sinceId, (error) =>
-      console.warn("[Mcmodder] 表态提醒检查失败：", error),
+      Utils.commonMsg(`表态提醒检查失败... (${error})`, false),
     );
     if (!resp) return checkedAt ? cachedCount : undefined;
 
@@ -288,8 +287,7 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.time < Values.attitude.sticker.listCacheTtl) {
       return { stickers: cached.stickers, quota: cached.quota };
     }
-    // 面板打开时的预取：失败只记录日志，不弹模态框
-    const onError = (error: string) => console.warn("[Mcmodder] 表态贴纸列表获取失败：", error);
+    const onError = (error: string) => Utils.commonMsg(`表态贴纸列表获取失败... (${error})`, false);
     const [stickers, quota] = await Promise.all([
       this.parent.supabaseUtils.fetchAttitudeStickerCollection(authKey, onError),
       this.parent.supabaseUtils.fetchAttitudeStickerQuota(authKey, onError),
@@ -549,14 +547,14 @@ export class AttitudeSystem {
         url?: string;
       };
       if (result.state !== "SUCCESS" || !result.url) {
-        Utils.commonMsg(`图片上传失败：${result.state || "未知错误"}`, false);
+        Utils.commonMsg(`贴纸图片上传失败... (${result.state || "未知错误"})`, false);
         return undefined;
       }
       return result.url;
     } catch (error) {
       // 图床异常响应（登录失效会返回 HTML 报错页）会走到这里，原始错误留在控制台
       console.warn("[Mcmodder] 表态贴纸上传失败：", error);
-      Utils.commonMsg("图片上传失败，请稍后再试。", false);
+      Utils.commonMsg(`贴纸图片上传失败... (${error})`, false);
       return undefined;
     }
   }
@@ -615,7 +613,7 @@ export class AttitudeSystem {
       if (ids.length === 0) continue;
       // 后台批量解析：失败只记录日志，不弹模态框
       const resp = await this.parent.supabaseUtils.resolveAttitudeStickers(ids, (error) =>
-        console.warn("[Mcmodder] 表态贴纸解析失败：", error),
+        Utils.commonMsg(`表态贴纸解析失败... (${error})`, false),
       );
       if (!resp) continue;
       const unanswered = new Set(ids);
@@ -922,7 +920,7 @@ export class AttitudeSystem {
     const commentId = target.commentId;
     const job = (this.writeQueues.get(commentId) ?? Promise.resolve())
       .then(() => this.sendWrite(target, attitudeType, authKey))
-      .catch((error) => console.warn("[Mcmodder] 自定义表态写入失败：", error));
+      .catch((error) => Utils.commonMsg(`表态失败... (${error})`));
     this.writeQueues.set(commentId, job);
     return job.then((attitudeRecord) => {
       // 排空后清理，避免 Map 无限增长

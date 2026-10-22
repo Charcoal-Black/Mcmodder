@@ -153,12 +153,12 @@ export class RankInit extends Init {
     }
 
     ranklists
-      .on("pointerenter", "li", (e) => {
+      .on("pointerover", "li", (e) => {
         const uid = $(e.currentTarget).attr("data-uid");
         const result = ranklists.find(`[data-uid=${uid}]`);
         if (result.length > 1) result.addClass("hover");
       })
-      .on("pointerleave", "li", () => {
+      .on("pointerout", "li", () => {
         ranklists.find(".hover").removeClass("hover");
       });
   }
