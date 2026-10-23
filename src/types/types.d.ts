@@ -249,6 +249,7 @@ interface Settings {
   missileAlert: boolean;
   missileAlertHeight: number;
   commentExpandHeight: number;
+  commentJumpRequestLimit: number;
   userBlacklist: string;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;

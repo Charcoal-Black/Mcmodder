@@ -3,6 +3,7 @@ import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import { Utils } from "../Utils";
 import Countdown from "../vue/components/Countdown.vue";
 import { TimerUtils } from "../widget/TimerUtils.ts";
+import { CommentJumpController } from "./CommentJump";
 import { Init } from "./Init";
 
 export class CommentInit extends Init {
@@ -12,6 +13,9 @@ export class CommentInit extends Init {
 
   /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存 */
   private readonly attitude = AttitudeSystem.for(this.parent);
+
+  /** 短评跨页跳转：查找、翻页与 loading 都由它负责 */
+  private readonly jump = new CommentJumpController(this.parent, this.configs);
 
   private displayPublishTime(target: JQuery) {
     target.find(".comment-reply-row-time").each((_, node) => {
@@ -188,11 +192,13 @@ export class CommentInit extends Init {
       // 移动端图标优化
       this.replaceMobileClientIcon(target);
     });
+
+    this.jump.onCommentPageRendered();
   }
 
   private processCommentReplyFloor(commentFloor: JQuery) {
     void this.attitude.processCommentRows(commentFloor);
-    if (!this.configs.getSettings("replyLink")) return;
+    const autoLink = this.configs.getSettings("replyLink");
     $("div.comment-reply-row", commentFloor).each((_, _e) => {
       const e = $(_e);
       if (e.attr(CommentInit.REPLY_PROCESSED_ATTR)) return;
@@ -200,6 +206,7 @@ export class CommentInit extends Init {
       const uid = Number(e.find("a.poped").attr("data-uid"));
       if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) e.remove();
       this.setReplyLink(e);
+      if (!autoLink) return;
       const replyContent = e.find("div.comment-reply-row-text-content.common-text.font14").first();
       const rawContent = replyContent.html().replaceAll("<br>", " ");
       let newContent = "";
@@ -275,13 +282,7 @@ export class CommentInit extends Init {
   }
 
   private setReplyLink(target: JQuery) {
-    if (target.find("input.comment-id").val() === this.parent.href.split("comment-")[1]) {
-      setTimeout(() => {
-        target.get(0).scrollIntoView({ behavior: "smooth", block: "center" });
-        target.addClass("mcmodder-mark-gold");
-        setTimeout(() => target.removeClass("mcmodder-mark-gold"), 2e3);
-      }, 8e2);
-    }
+    this.jump.notifyCommentRendered(target);
     if (this.configs.getSettings("lieqi")) {
       this.lieqi(target);
     }
@@ -295,7 +296,7 @@ export class CommentInit extends Init {
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {
       this.unlockComment();
     }
-    if (this.parent.href.includes("#comment-")) {
+    if (this.jump.start()) {
       $(".common-comment-block.lazy").get(0)?.scrollIntoView({
         behavior: "smooth",
         block: "center",

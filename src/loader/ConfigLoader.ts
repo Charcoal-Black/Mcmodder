@@ -620,6 +620,15 @@ export const settings = [
             range: [0, null],
           },
           {
+            id: "commentJumpRequestLimit",
+            title: "短评跳转查找请求上限",
+            description:
+              "通过 #comment-<id> 链接跨页跳转短评时，二分查找目标页最多发出的请求数。超过上限仍未定位则停止查找。",
+            type: "number",
+            value: 12,
+            range: [1, null],
+          },
+          {
             id: "userBlacklist",
             title: "用户黑名单",
             description:

@@ -56,6 +56,12 @@ export class Values {
     ? "https://www1.mcmod.cn"
     : "https://www.mcmod.cn";
 
+  /** 短评跨页跳转：消息中心把楼层/回复序号写进目标链接的 query，目标页据此缩小查找范围 */
+  static readonly commentJump = {
+    floorParam: "mcmodder-comment-floor",
+    replyParam: "mcmodder-comment-reply",
+  } as const;
+
   static readonly assets = {
     almanacs: "https://i.mcmod.cn/editor/upload/20250731/1753943312_179043_WEbO.png",
     progress1: "https://i.mcmod.cn/editor/upload/20241008/1728389750_179043_rcRM.png",

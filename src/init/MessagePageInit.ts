@@ -27,6 +27,8 @@ export class MessageInit extends Init {
   }
 
   run() {
+    this.bindCommentJumpHints();
+
     if (this.configs.getSettings("lieqi")) {
       $(".content-comment-attitude > i").attr("class", "fas fa-surprise");
       $(".content-comment-attitude").each((_, c) => {
@@ -45,6 +47,47 @@ export class MessageInit extends Init {
 
     // 进消息中心即视为已看到提醒：页头红点归零
     void this.attitude.acknowledgeNew().then(() => this.parent.refreshBellNotify());
+  }
+
+  /**
+   * 消息中心条目文本里带有「（10436楼）」或「（14楼的第1条回复）」，
+   * 在跳转前把楼层/回复序号写进目标链接的 query，目标页据此缩小二分查找范围。
+   *
+   * 用委托绑定覆盖站点后续 AJAX 渲染的条目；`mousedown` 兼顾中键/新标签页打开。
+   */
+  private bindCommentJumpHints() {
+    $(document)
+      .off("mousedown.mcmodderCommentJump click.mcmodderCommentJump")
+      .on(
+        "mousedown.mcmodderCommentJump click.mcmodderCommentJump",
+        ".message-list a[href*='#comment-']",
+        (event) => this.decorateCommentJumpLink(event.currentTarget as HTMLAnchorElement),
+      );
+  }
+
+  private decorateCommentJumpLink(link: HTMLAnchorElement) {
+    const text = $(link).closest("li").text();
+    if (!text) return;
+
+    const url = new URL(link.href, window.location.href);
+    if (!/^#comment-\d+$/.test(url.hash)) return;
+
+    // 取最后一条匹配：条目正文可能引用其他楼层，通知摘要里的标识通常在末尾
+    const replyMatches = [...text.matchAll(/[（(]\s*(\d+)\s*楼\s*的第\s*(\d+)\s*条回复\s*[）)]/g)];
+    const reply = replyMatches[replyMatches.length - 1];
+    const floorMatches = reply ? [] : [...text.matchAll(/[（(]\s*(\d+)\s*楼\s*[）)]/g)];
+    const floor = floorMatches[floorMatches.length - 1];
+    if (!reply && !floor) return;
+
+    url.searchParams.delete(Values.commentJump.floorParam);
+    url.searchParams.delete(Values.commentJump.replyParam);
+    if (reply) {
+      url.searchParams.set(Values.commentJump.floorParam, reply[1]);
+      url.searchParams.set(Values.commentJump.replyParam, reply[2]);
+    } else if (floor) {
+      url.searchParams.set(Values.commentJump.floorParam, floor[1]);
+    }
+    link.href = url.toString();
   }
 
   /** 站点列表的增删改合并到一次刷新（自身注入也会触发，靠签名去重） */

@@ -1406,10 +1406,12 @@ export class Utils {
    *
    * @param config 请求配置
    * @param message 本次请求附带的提示消息
+   * @param silent 为 true 时不在请求监控中弹出提示（仍写入日志与限速队列），用于脚本内部的批量查找
    */
   createRequest<R extends GmResponseType = "text">(
     config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
+    silent = false,
   ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
@@ -1459,7 +1461,7 @@ export class Utils {
         logs.push(content);
         GM_setValue("mcmodderLogger", logs.join(";"));
         // 调试与监控：在所有可见的标签页上提示本次发包（须置于限速等待之后，否则排队中的请求会提前亮起）
-        this.parent.requestToastBroadcaster.send(config.method, config.url, message);
+        if (!silent) this.parent.requestToastBroadcaster.send(config.method, config.url, message);
         // console.debug("Send Async request: ", config);
         GM_xmlhttpRequest(config);
       }, lastRequestTime - now);

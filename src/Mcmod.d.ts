@@ -74,7 +74,14 @@ declare global {
   var comment_nowpage: any;
   var comment_container: any;
   var comment_type: any;
+  var comment_channel: string | undefined;
   var get_comment: any;
+  var get_reply_comment: (
+    target: JQuery,
+    replyID: string | number,
+    page: number,
+    showLoadImg?: boolean,
+  ) => unknown;
   var editAutoSaveLoop: any;
   var nAutoSave: any;
   var bindFastSubmit: any;
