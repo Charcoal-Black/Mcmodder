@@ -510,9 +510,10 @@ async function shareAttitudeSticker(sticker: SupabaseAttitudeSticker) {
 }
 
 async function unfavoriteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
-  const ok = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
-  if (ok) await refreshAttitudeStickers(true);
-  return ok;
+  const result = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
+  if (!result) return false;
+  await refreshAttitudeStickers(true);
+  return true;
 }
 
 async function deleteAttitudeSticker(sticker: SupabaseAttitudeSticker) {

@@ -2013,12 +2013,26 @@ interface SupabaseAttitudeSticker {
   is_mine?: boolean;
   /** 是否我收藏的（“我的贴纸”集合行 / 广场行） */
   is_favorite?: boolean;
+  /** 收藏人数（广场行；其他来源可能缺省） */
+  favorite_count?: number;
 }
 
-/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 分页总数 */
+/** 贴纸广场的排序方式：latest = 最新共享，favorites = 收藏人数最多 */
+type StickerPlazaSort = "latest" | "favorites";
+
+/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 收藏人数 + 分页总数 */
 interface SupabaseAttitudeStickerPlazaRow extends SupabaseAttitudeSticker {
+  /** 该贴纸被多少用户收藏（服务端聚合 `sticker_likes`） */
+  favorite_count: number;
   /** 与当前过滤条件对应的总条数（服务端 `count(*) over ()`） */
   total: number;
+}
+
+/** RPC `mcmodder_attitude_sticker_favorite` 的一行：操作后的收藏状态与收藏人数 */
+interface SupabaseAttitudeStickerFavoriteRow {
+  id: number;
+  is_favorite: boolean;
+  favorite_count: number;
 }
 
 /** 贴纸上传额度（东八区自然日） */

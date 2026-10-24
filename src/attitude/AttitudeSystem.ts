@@ -380,16 +380,23 @@ export class AttitudeSystem {
    * 读取贴纸广场的一页。
    *
    * 广场是公开读：即使尚未完成云端认证也能浏览；`auth_key` 仅用于标注我上传/我收藏的贴纸。
+   * `sort` 交给服务端排序（最新共享 / 收藏人数最多），分页偏移量按同一排序计算。
    * 失败时返回 undefined（`onError` 缺省会弹提示，面板里应传入后台回调）。
    *
    * 读到的行一并进解析缓存（贴纸不可变）：在广场里收藏时才有整行可补进「我的贴纸库」。
    */
-  async listPlazaStickers(offset: number, limit: number, onError?: (error: string) => void) {
+  async listPlazaStickers(
+    offset: number,
+    limit: number,
+    sort: StickerPlazaSort = "latest",
+    onError?: (error: string) => void,
+  ) {
     if (!this.enabled) return undefined;
     const rows = await this.parent.supabaseUtils.fetchAttitudeStickerPlaza(
       this.getAuthKey() || undefined,
       limit,
       offset,
+      sort,
       onError,
     );
     if (rows) {
@@ -424,6 +431,7 @@ export class AttitudeSystem {
    * 收藏 / 取消收藏他人上传的贴纸。
    *
    * 收藏集合会影响「我的贴纸」列表：取得到整行时就地同步本地缓存，否则让缓存失效，下次打开时重新拉取。
+   * 返回服务端确认后的收藏状态与收藏人数（调用方据此更新广场详情）；失败返回 `false`。
    */
   async favoriteSticker(id: number, favorite: boolean) {
     if (!this.enabled) {
@@ -441,6 +449,11 @@ export class AttitudeSystem {
       favorite,
     });
     if (!row) return false;
+    // 收藏人数以服务端返回为准：先写进解析缓存，收藏进「我的贴纸」时整行会带上最新人数
+    this.patchSticker(id, {
+      is_favorite: row.is_favorite,
+      favorite_count: row.favorite_count,
+    });
     const cached = this.myStickers.value;
     const sticker = this.stickerCache.get(buildStickerType(id));
     if (!favorite) {
@@ -459,7 +472,7 @@ export class AttitudeSystem {
       this.myStickers.value = undefined;
     }
     Utils.commonMsg(favorite ? "已收藏贴纸~" : "已取消收藏~");
-    return true;
+    return row;
   }
 
   /**

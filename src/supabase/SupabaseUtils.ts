@@ -216,16 +216,18 @@ export class SupabaseUtils {
    * 读取贴纸广场的一页（RPC `mcmodder_attitude_sticker_plaza`，公开读）。
    *
    * `authKey` 只用于标注「我上传的 / 我收藏的」；未认证时传 `undefined`，列表照常返回。
+   * `sort` 决定服务端排序：最新共享或收藏人数最多。
    */
   async fetchAttitudeStickerPlaza(
     authKey: string | undefined,
     limit: number,
     offset: number,
+    sort: StickerPlazaSort,
     onError?: (error: string) => void,
   ) {
     return await this.rpc<SupabaseAttitudeStickerPlazaRow>(
       "mcmodder_attitude_sticker_plaza",
-      { p_auth_key: authKey ?? null, p_limit: limit, p_offset: offset },
+      { p_auth_key: authKey ?? null, p_limit: limit, p_offset: offset, p_sort: sort },
       onError,
     );
   }
@@ -241,7 +243,7 @@ export class SupabaseUtils {
 
   /** 收藏 / 取消收藏他人上传的贴纸（RPC `mcmodder_attitude_sticker_favorite`，幂等） */
   async favoriteAttitudeSticker(payload: { authKey: string; id: number; favorite: boolean }) {
-    const rows = await this.rpc<{ id: number; is_favorite: boolean }>(
+    const rows = await this.rpc<SupabaseAttitudeStickerFavoriteRow>(
       "mcmodder_attitude_sticker_favorite",
       { p_auth_key: payload.authKey, p_id: payload.id, p_favorite: payload.favorite },
     );

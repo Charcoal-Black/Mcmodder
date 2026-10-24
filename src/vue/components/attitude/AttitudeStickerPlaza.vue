@@ -4,7 +4,19 @@
       <span class="mcmodder-attitude-sticker-quota"
         >由所有用户共享出来的表态贴纸，轻触即可预览并直接使用或收藏~</span
       >
-      <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
+      <span class="mcmodder-attitude-plaza-tools">
+        <select
+          v-if="onSortChange"
+          class="form-control mcmodder-attitude-plaza-sort"
+          :value="sort"
+          aria-label="排序方式"
+          @change="handleSortChange"
+        >
+          <option value="latest">最新共享</option>
+          <option value="favorites">收藏数</option>
+        </select>
+        <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
+      </span>
     </div>
 
     <p v-if="stickers !== undefined && stickers.length === 0" class="mcmodder-attitude-empty-hint">
@@ -47,6 +59,10 @@
           </a>
           <span v-if="sticker.is_mine">（我）</span>
         </div>
+        <div class="mcmodder-attitude-plaza-favorite-line">
+          <i class="fa fa-star" />
+          <span>收藏 {{ sticker.favorite_count ?? 0 }} 人</span>
+        </div>
       </template>
     </AttitudeStickerBrowser>
 
@@ -66,7 +82,9 @@ import { getStickerUploader, type StickerUploaderProfile } from "../../../attitu
 import type { AttitudeStickerPlazaProps } from "../../../types/props";
 import type { AttitudeStickerPlazaEmitPayload, StickerRemovedReason } from "../../../types/emits";
 
-const props = defineProps<AttitudeStickerPlazaProps>();
+const props = withDefaults(defineProps<AttitudeStickerPlazaProps>(), {
+  sort: "latest",
+});
 const emit = defineEmits<AttitudeStickerPlazaEmitPayload>();
 
 const selected = shallowRef<SupabaseAttitudeSticker | null>(null);
@@ -107,5 +125,12 @@ useStickerSelectionGuard(selected, () => props.stickers);
 function onBrowserRemoved(sticker: SupabaseAttitudeSticker, reason: StickerRemovedReason) {
   if (reason === "unfavorited") return;
   emit("stickerRemoved", sticker);
+}
+
+/** 排序下拉框：值即服务端 `p_sort` 的取值 */
+function handleSortChange(event: Event) {
+  const target = event.target;
+  if (!(target instanceof HTMLSelectElement)) return;
+  props.onSortChange?.(target.value as StickerPlazaSort);
 }
 </script>

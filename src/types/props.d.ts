@@ -168,12 +168,14 @@ export interface AttitudeStickerBrowserProps {
 
 export interface AttitudeStickerPlazaProps {
   parent?: import("../Mcmodder").Mcmodder;
-  /** 广场贴纸（按共享时间倒序） */
+  /** 广场贴纸（按 `sort` 指定的方式排序） */
   stickers?: SupabaseAttitudeSticker[];
   /** 广场总条数（用于「加载更多」） */
   total?: number;
   /** 正在加载下一页 */
   loading?: boolean;
+  /** 当前排序方式（缺省按最新共享） */
+  sort?: StickerPlazaSort;
   /** 已表态的类型（高亮用） */
   active?: string[];
   /** 点击贴纸发送表态；不传 = 只预览 */
@@ -186,6 +188,8 @@ export interface AttitudeStickerPlazaProps {
   onDelete?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
   /** 加载下一页 */
   onLoadMore?: () => Promise<void> | void;
+  /** 切换排序方式；不传则不显示排序控件 */
+  onSortChange?: (sort: StickerPlazaSort) => void;
 }
 
 export interface StickerViewerOption extends PopoverBaseOption {
