@@ -170,6 +170,29 @@ export class SupabaseUtils {
   }
 
   /**
+   * 读取某短评下某类型的表态者（RPC `mcmodder_attitude_reactors`，公开读）。
+   *
+   * 行序为表态先后（`id` 升序）；`total` 为同条件下的总人数，用于分页。
+   */
+  async fetchAttitudeReactors(
+    commentId: string,
+    attitudeType: string,
+    options: { limit?: number; offset?: number; onError?: (error: string) => void } = {},
+  ) {
+    const { limit, offset, onError } = options;
+    return await this.rpc<SupabaseAttitudeReactorRow>(
+      "mcmodder_attitude_reactors",
+      {
+        p_comment_id: commentId,
+        p_attitude_type: attitudeType,
+        p_limit: limit ?? 30,
+        p_offset: offset ?? 0,
+      },
+      onError,
+    );
+  }
+
+  /**
    * 写入 / 取消一条自定义表态，返回该短评的最新聚合计数。
    *
    * `attitudeType` 为字符串时按存在性切换（已存在则取消）；为 `null` 时取消我在该短评下的全部表态。

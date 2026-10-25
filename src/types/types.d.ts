@@ -977,7 +977,10 @@ type AttitudeStickerListProps = import("./props").AttitudeStickerListProps;
 
 type StickerViewerOption = import("./props").StickerViewerOption;
 
-type PopoverOption = InputListOption | AttitudePickerState | StickerViewerOption;
+type AttitudeReactorsOption = import("./props").AttitudeReactorsOption;
+
+type PopoverOption =
+  InputListOption | AttitudePickerState | StickerViewerOption | AttitudeReactorsOption;
 
 interface McmodItemEditorInnerData {
   /**
@@ -1962,6 +1965,16 @@ interface SupabaseAttitudeCountRow {
 /** RPC `mcmodder_attitude_user_counts` 的一行：某用户收到的某类型表态数量（行序同 `SupabaseAttitudeCountRow`） */
 interface SupabaseAttitudeUserCountRow {
   attitude_type: string;
+  total: number;
+}
+
+/** RPC `mcmodder_attitude_reactors` 的一行：某短评下某类型的表态者 + 同条件下的总人数 */
+interface SupabaseAttitudeReactorRow {
+  uid: number;
+  username?: string;
+  avatar?: string;
+  created_at: string;
+  /** 同条件下的总人数（服务端 `count(*) over ()`） */
   total: number;
 }
 

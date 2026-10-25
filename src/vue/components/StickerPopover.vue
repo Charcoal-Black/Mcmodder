@@ -25,6 +25,15 @@
           <template v-else><i class="fa fa-star-o" /> 收藏</template>
         </button>
       </div>
+      <div v-if="reactorOption" class="mcmodder-attitude-sticker-viewer-reactors">
+        <AttitudeReactorList
+          :key="`${reactorOption.commentId}:${reactorOption.attitudeType}:${reactorGeneration}`"
+          :parent="reactorOption.parent"
+          :comment-id="reactorOption.commentId"
+          :attitude-type="reactorOption.attitudeType"
+          @height-change="onHeightChange"
+        />
+      </div>
     </div>
   </Popover>
 </template>
@@ -32,6 +41,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
 import Popover from "./Popover.vue";
+import AttitudeReactorList from "./attitude/AttitudeReactorList.vue";
 import { usePopoverHost } from "../composables/usePopoverHost.ts";
 import type { PopoverExpose, StickerViewerOption } from "../../types/props";
 
@@ -39,7 +49,9 @@ import type { PopoverExpose, StickerViewerOption } from "../../types/props";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里，
  * 这里只管贴纸本身的内容与操作。
  */
-const { visible, popoverProps, applyOption, updatePos, close } = usePopoverHost();
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close } = usePopoverHost({
+  maxHeight: 480,
+});
 
 const option = shallowRef<StickerViewerOption>();
 const sticker = computed(() => option.value?.sticker);
@@ -48,6 +60,17 @@ const likePending = ref(false);
 /** 这张贴纸是否已在「我的贴纸库」里；开窗时取值，之后跟着 `AttitudeSystem` 的集合缓存走 */
 const liked = ref(false);
 const isMine = computed(() => sticker.value?.uid === option.value?.parent.currentUID);
+/** 结果条里的贴纸卡片才带短评上下文；贴纸库 / 消息中心里的预览没有 */
+const reactorOption = computed(() => {
+  const current = option.value;
+  if (!current?.commentId || !current.attitudeType) return undefined;
+  return {
+    parent: current.parent,
+    commentId: current.commentId,
+    attitudeType: current.attitudeType,
+  };
+});
+const reactorGeneration = ref(0);
 /** 「我的贴纸」集合正在补拉：避免连续悬停不同贴纸时重复发起同一请求 */
 let favoriteStateLoading = false;
 
@@ -56,6 +79,7 @@ function setOption(newOption: StickerViewerOption) {
     imagePending.value = true;
   }
   option.value = newOption;
+  reactorGeneration.value += 1;
   applyOption(newOption);
   liked.value = isLiked(newOption);
   ensureFavoriteState(newOption);
@@ -114,6 +138,10 @@ async function onFavoriteClick() {
   } finally {
     likePending.value = false;
   }
+}
+
+function onHeightChange() {
+  popoverRef.value?.onPopoverHeightChange();
 }
 
 defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({

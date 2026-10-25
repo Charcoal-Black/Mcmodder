@@ -1,3 +1,5 @@
+import type { Mcmodder } from "../Mcmodder";
+
 export interface AutoLinkOptionProps<T extends AutoLinkBaseEntry> {
   parent: import("../Mcmodder").Mcmodder;
   entry: T;
@@ -192,10 +194,29 @@ export interface AttitudeStickerPlazaProps {
   onSortChange?: (sort: StickerPlazaSort) => void;
 }
 
+export interface AttitudeReactorListProps {
+  parent: Mcmodder;
+  commentId: string;
+  attitudeType: string;
+  /** 每页条数，默认 30 */
+  pageSize?: number;
+}
+
+/** 表态结果条悬浮卡片的选项：展示某短评下某类型的表态者 */
+export interface AttitudeReactorsOption extends PopoverBaseOption {
+  type: "attitudeReactors";
+  parent: Mcmodder;
+  commentId: string;
+  attitudeType: string;
+}
+
 export interface StickerViewerOption extends PopoverBaseOption {
   type: "stickerViewer";
   parent: import("../Mcmodder").Mcmodder;
   sticker: SupabaseAttitudeSticker;
+  /** 短评上下文：提供时在贴纸卡片下方展示表态用户列表 */
+  commentId?: string;
+  attitudeType?: string;
 }
 
 export interface PopoverExpose<

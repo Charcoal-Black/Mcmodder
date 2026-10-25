@@ -9,6 +9,7 @@ import {
 } from "./attitudeIcon";
 import { StickerViewerPopoverController } from "../widget/popover/StickerViewerPopoverController.ts";
 import { AttitudePickerPopoverController } from "../widget/popover/AttitudePickerPopoverController.ts";
+import { AttitudeReactorsPopoverController } from "../widget/popover/AttitudeReactorsPopoverController.ts";
 import type { ConfigRepository } from "../config/ConfigRepository.ts";
 import { computed, shallowRef } from "vue";
 
@@ -651,11 +652,21 @@ export class AttitudeSystem {
           fillStickerIcon($icon, sticker);
           const img = icon.firstElementChild as HTMLElement | null;
           if (img !== null) {
+            const commentId = String(
+              $icon.closest(".comment-tools").children("input.comment-id").first().val() ?? "",
+            );
+            const attitudeType =
+              $icon
+                .closest("li.mcmodder-attitude-item")
+                .children("a")
+                .first()
+                .attr("data-mcmodder-attitude") ?? "";
             StickerViewerPopoverController.instance.add(img, {
               type: "stickerViewer",
               anchorElement: img,
               parent: this.parent,
               sticker,
+              ...(commentId && attitudeType ? { commentId, attitudeType } : {}),
             });
           }
         } else if (this.missingStickerIds.has(stickerId)) {
@@ -828,6 +839,7 @@ export class AttitudeSystem {
     const $result = $row.find(".comment-tools > ol.comment-attitude-result").first();
     if (!$result.length) return;
 
+    const commentId = String($row.find(".comment-tools > input.comment-id").first().val() ?? "");
     $result.children("li.mcmodder-attitude-item").remove();
     const mine = new Set(record.mine);
     // 顺序即服务端键序（各类别首次表态时间序）
@@ -839,6 +851,7 @@ export class AttitudeSystem {
             attitudeType,
             record.counts[attitudeType] ?? 0,
             mine.has(attitudeType),
+            commentId,
           ),
         );
       });
@@ -851,25 +864,42 @@ export class AttitudeSystem {
     void this.hydrateStickers($result);
   }
 
-  private buildResultItem(attitudeType: string, count: number, active: boolean) {
+  private buildResultItem(attitudeType: string, count: number, active: boolean, commentId: string) {
     const isDevilAngry = attitudeType === Values.attitude.devilAngry.type;
-    return $('<li class="mcmodder-attitude-item"></li>').append(
-      $("<a>")
-        .attr({
-          href: "javascript:void(0);",
-          "data-mcmodder-attitude": attitudeType,
-          title: isDevilAngry ? Values.attitude.devilAngry.title : attitudeType,
-          class: [
-            "mcmodder-attitude-value",
-            isDevilAngry ? "mcmodder-attitude-devil-angry" : "",
-            active ? "mcmodder-attitude-active" : "",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        })
-        .append(buildAttitudeIcon(attitudeType))
-        .append($("<span></span>").text(String(count))),
-    );
+    const hasReactors = !!commentId && parseStickerId(attitudeType) === undefined;
+    const $anchor = $("<a>")
+      .attr({
+        href: "javascript:void(0);",
+        "data-mcmodder-attitude": attitudeType,
+        title: isDevilAngry ? Values.attitude.devilAngry.title : attitudeType,
+        class: [
+          "mcmodder-attitude-value",
+          isDevilAngry ? "mcmodder-attitude-devil-angry" : "",
+          active ? "mcmodder-attitude-active" : "",
+          hasReactors ? "mcmodder-attitude-reactors-anchor" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      })
+      .append(buildAttitudeIcon(attitudeType))
+      .append($("<span></span>").text(String(count)));
+
+    // 贴纸的悬浮卡片由 `hydrateStickers` 注册（卡片里同时展示贴纸与表态用户）；
+    // emoji / 恶魔安格瑞没有贴纸卡片，这里挂纯表态用户列表。
+    if (hasReactors) {
+      const anchor = $anchor.get(0) as HTMLElement | undefined;
+      if (anchor) {
+        AttitudeReactorsPopoverController.instance.add(anchor, {
+          type: "attitudeReactors",
+          anchorElement: anchor,
+          parent: this.parent,
+          commentId,
+          attitudeType,
+        });
+      }
+    }
+
+    return $('<li class="mcmodder-attitude-item"></li>').append($anchor);
   }
 
   /**
