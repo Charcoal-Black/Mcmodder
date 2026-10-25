@@ -727,11 +727,7 @@ export class AttitudeSystem {
     );
   }
 
-  /**
-   * 给一批新插入的短评（顶层短评与楼中楼回复）注入自定义表态入口，并统一刷新这批短评的计数。
-   *
-   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的条目。
-   */
+  /** 给一批新插入的短评（顶层短评与楼中楼回复）注入自定义表态入口，并统一刷新这批短评的计数 */
   async processCommentRows($context: JQuery) {
     if (!this.enabled) return;
     const rows: { $row: JQuery; target: AttitudeTarget }[] = [];
@@ -739,7 +735,7 @@ export class AttitudeSystem {
       const $row = $(row);
       if ($row.attr("data-mcmodder-attitude-row")) return;
       const $tools = $row.find(".comment-tools").first();
-      if (!$tools.find(".comment-attitude-list").length) return;
+      if (!$tools.length) return;
       const target = this.resolveTarget($row);
       if (!target) return;
       $row.attr("data-mcmodder-attitude-row", target.commentId);
@@ -798,11 +794,11 @@ export class AttitudeSystem {
     );
   }
 
-  /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 自己的短评 / 缺 author 信息）时返回 undefined */
+  /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 缺 author 信息）时返回 undefined */
   resolveTarget($row: JQuery): AttitudeTarget | undefined {
     // `.get()` 只给出 `Element`，短评节点实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
-    if (!row) return undefined;
+    if (!row || !this.parent.currentUID) return undefined;
     const $tools = $row.find(".comment-tools").first();
     const commentId = String($tools.find("input.comment-id").first().val() ?? "");
     if (!commentId) return undefined;
@@ -811,7 +807,7 @@ export class AttitudeSystem {
       .find(".comment-row-username a.poped, .comment-reply-row-username a.poped")
       .first();
     const toUid = Number($author.attr("data-uid"));
-    if (!toUid || toUid === this.parent.currentUID) return undefined;
+    if (!toUid) return undefined;
 
     return {
       commentId,
