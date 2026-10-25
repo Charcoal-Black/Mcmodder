@@ -15,8 +15,8 @@ import { computed, shallowRef } from "vue";
 
 /**
  * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
- * 不占 Edge Function 调用额度；计数为 TTL 缓存 + 去抖合并请求），写操作走 `attitude-put` 并以
- * 服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
+ * 不占 Edge Function 调用额度；计数为 TTL 缓存 + 去抖合并请求），公开可读、无需认证；写操作走
+ * `attitude-put` 并以服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
  *
  * 全站单例：短评页与消息中心共用同一份缓存与去抖通道，经 {@link AttitudeSystem.for} 获取。
  */
@@ -194,7 +194,7 @@ export class AttitudeSystem {
     this.configs.set("attitudeCache", "unreadAt", Date.now());
   }
 
-  /** 读取若干短评的表态计数：命中 `countsCacheTtl` 的直接返回，其余合并进一个去抖窗口（{@link fetchCounts}） */
+  /** 读取若干短评的表态计数：公开读，未认证时 `mine` 全为 false；命中 `countsCacheTtl` 的直接返回，其余合并进一个去抖窗口（{@link fetchCounts}） */
   async requestCounts(commentIds: string[]): Promise<Map<string, AttitudeRecord>> {
     const result = new Map<string, AttitudeRecord>();
     if (!this.enabled || commentIds.length === 0) return result;
@@ -247,8 +247,10 @@ export class AttitudeSystem {
     for (let i = 0; i < commentIds.length; i += Values.attitude.maxCountsPerRequest) {
       const chunk = commentIds.slice(i, i + Values.attitude.maxCountsPerRequest);
       // 后台批量读：失败只记录日志，不弹模态框
-      const resp = await this.parent.supabaseUtils.fetchAttitudeCounts(chunk, authKey, (error) =>
-        console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
+      const resp = await this.parent.supabaseUtils.fetchAttitudeCounts(
+        chunk,
+        authKey || undefined,
+        (error) => console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
       );
       if (!resp) continue;
       // 服务端返回行集合，行序即「各类别首次表态的时间序」：按行序还原成展示用的对象
@@ -805,11 +807,11 @@ export class AttitudeSystem {
     );
   }
 
-  /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 缺 author 信息）时返回 undefined */
+  /** 从短评节点解析上下文；浏览不要求登录 / 认证，发送时由 {@link write} 校验认证 */
   resolveTarget($row: JQuery): AttitudeTarget | undefined {
     // `.get()` 只给出 `Element`，短评节点实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
-    if (!row || !this.parent.currentUID) return undefined;
+    if (!row) return undefined;
     const $tools = $row.find(".comment-tools").first();
     const commentId = String($tools.find("input.comment-id").first().val() ?? "");
     if (!commentId) return undefined;

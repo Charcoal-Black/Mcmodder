@@ -11,7 +11,7 @@ export class CommentInit extends Init {
     return !!$(".common-comment-block.lazy").length;
   }
 
-  /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存 */
+  /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存；浏览公开，发送需认证 */
   private readonly attitude = AttitudeSystem.for(this.parent);
 
   /** 短评跨页跳转：查找、翻页与 loading 都由它负责 */

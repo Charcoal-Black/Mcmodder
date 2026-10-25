@@ -164,7 +164,12 @@ const recents = computed(() => {
  * 直接由 `AttitudeSystem` 的集合缓存派生，不再另存一份快照：任何写操作（面板内的上传、重命名、
  * 共享、收藏、删除，以及贴纸小窗里的快捷收藏）都已就地同步进那份缓存，这里自然跟着变。
  */
-const stickers = computed(() => system.value?.myStickers.value?.stickers);
+const stickers = computed(() => {
+  const cached = system.value?.myStickers.value?.stickers;
+  if (cached !== undefined) return cached;
+  // 未认证时没有「我的贴纸」可读：按空列表展示，避免停留在骨架屏；认证后仍走正常加载
+  return system.value?.getAuthKey() ? undefined : [];
+});
 const quota = computed(() => system.value?.myStickers.value?.quota ?? null);
 /** 贴纸广场：服务端返回的原始列表（按当前排序方式，分页加载） */
 const plazaRows = shallowRef<SupabaseAttitudeSticker[]>();

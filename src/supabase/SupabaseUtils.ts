@@ -155,7 +155,7 @@ export class SupabaseUtils {
   ) {
     return await this.rpc<SupabaseAttitudeCountRow>(
       "mcmodder_attitude_counts",
-      { p_comment_ids: commentIds, p_auth_key: authKey ?? null },
+      { p_comment_ids: commentIds, p_auth_key: authKey || null },
       onErrorCallback,
     );
   }
