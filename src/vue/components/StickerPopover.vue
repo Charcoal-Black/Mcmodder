@@ -21,7 +21,7 @@
           :disabled="likePending"
           @click="onFavoriteClick"
         >
-          <template v-if="liked"><i class="fa fa-star" /> 已收藏</template>
+          <template v-if="liked"><i class="fa fa-star" /> 取消收藏</template>
           <template v-else><i class="fa fa-star-o" /> 收藏</template>
         </button>
       </div>
@@ -48,6 +48,8 @@ const likePending = ref(false);
 /** 这张贴纸是否已在「我的贴纸库」里；开窗时取值，之后跟着 `AttitudeSystem` 的集合缓存走 */
 const liked = ref(false);
 const isMine = computed(() => sticker.value?.uid === option.value?.parent.currentUID);
+/** 「我的贴纸」集合正在补拉：避免连续悬停不同贴纸时重复发起同一请求 */
+let favoriteStateLoading = false;
 
 function setOption(newOption: StickerViewerOption) {
   if (newOption.sticker !== option.value?.sticker) {
@@ -56,7 +58,24 @@ function setOption(newOption: StickerViewerOption) {
   option.value = newOption;
   applyOption(newOption);
   liked.value = isLiked(newOption);
+  ensureFavoriteState(newOption);
   visible.value = true;
+}
+
+/**
+ * 收藏状态依赖「我的贴纸」集合；用户没打开过贴纸页签时集合尚未加载，此时补拉一次。
+ * 结果到达后由下面的 watch 更新按钮文案；未认证 / 请求失败时保持「收藏」。
+ */
+function ensureFavoriteState(target: StickerViewerOption) {
+  const system = target.parent.attitudeSystem;
+  if (system.myStickers.value || favoriteStateLoading) return;
+  favoriteStateLoading = true;
+  void system
+    .listMyStickers()
+    .catch(() => undefined)
+    .finally(() => {
+      favoriteStateLoading = false;
+    });
 }
 
 function isLiked(target: StickerViewerOption) {
@@ -67,8 +86,8 @@ function isLiked(target: StickerViewerOption) {
 /**
  * 「我的贴纸库」集合变化时重算：面板里收藏 / 取消收藏后，这个开着的小窗不必重开才更新按钮文案。
  *
- * 集合本身不在时（从未打开过贴纸页签）读不出结果，此时仍以本窗的操作结果为准 —— 缓存没变化，
- * 也就不会触发这里。
+ * 集合尚未加载时由 `ensureFavoriteState` 补拉一次；未认证或请求失败时读不出结果，
+ * 此时仍以本窗最近一次操作的结果为准。
  */
 watch(
   () => option.value?.parent.attitudeSystem.myStickers.value,
@@ -90,7 +109,7 @@ async function onFavoriteClick() {
       nextFavorite,
     );
     if (ok && option.value?.sticker.id === current.sticker.id) {
-      liked.value = nextFavorite;
+      liked.value = ok.is_favorite;
     }
   } finally {
     likePending.value = false;
