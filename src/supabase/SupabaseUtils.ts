@@ -8,8 +8,36 @@ import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import type { ConfigRepository } from "../config/ConfigRepository";
 
+/** 把 fetch 的 `HeadersInit` 转成 `GM_xmlhttpRequest` 需要的普通对象 */
+function normalizeRequestHeaders(headers?: HeadersInit): Record<string, string> {
+  const result: Record<string, string> = {};
+  new Headers(headers).forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+}
+
+/** 把 `GM_xmlhttpRequest` 的原始响应头文本解析成 `Headers` */
+function parseResponseHeaders(raw?: string): Headers {
+  const headers = new Headers();
+  if (!raw) return headers;
+  raw
+    .trim()
+    .split(/[\r\n]+/)
+    .forEach((line) => {
+      const index = line.indexOf(":");
+      if (index <= 0) return;
+      headers.append(line.slice(0, index).trim(), line.slice(index + 1).trim());
+    });
+  return headers;
+}
+
 export class SupabaseUtils {
-  private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
+  /**
+   * 云端入口：Supabase 直连域名在部分网络会被阻断，统一走 Cloudflare Worker 反代。
+   * Worker 源码见 `supabase/proxy`，只转发 `/rest/v1`、`/functions/v1`、`/auth/v1`、`/storage/v1`。
+   */
+  private static readonly supabaseUrl = "https://mcmodder.114514256.xyz";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
 
   private readonly configs: ConfigRepository;
@@ -20,7 +48,7 @@ export class SupabaseUtils {
   /** 上一次创建客户端是否失败；失败后不反复重试，除非配置再次变化 */
   private createFailed = false;
 
-  constructor(parent: Mcmodder) {
+  constructor(private readonly parent: Mcmodder) {
     this.configs = parent.configRepository;
     this.useSupabaseRef = this.configs.getSettingsRef("useSupabase");
 
@@ -30,6 +58,73 @@ export class SupabaseUtils {
     // 配置变化时同步：开启后立即创建客户端，关闭后释放引用
     watch(this.useSupabaseRef, () => this.syncInstance(true));
   }
+
+  /**
+   * supabase-js 的 `fetch` 适配器：改用 `GM_xmlhttpRequest` 发包，绕过浏览器 CORS 预检。
+   *
+   * 浏览器直连 Supabase 时会先发 `OPTIONS` 预检；部分网络环境下该预检被拦截（控制台显示
+   * `CORS Failed`），而 GM 请求不受同源策略约束。REST 与 Edge Function 都复用这一个入口。
+   *
+   * 本项目对 Supabase 只发送 JSON 字符串 / URLSearchParams，故不实现二进制请求体；
+   * 请求超时由 `createRequest` 的 `timeout` 与这里的兜底竞速共同保证，避免 GM 失败时永久挂起。
+   */
+  private readonly gmFetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const request = input instanceof Request ? input : undefined;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const method = (init?.method ?? request?.method ?? "GET").toUpperCase();
+    const headers = normalizeRequestHeaders(init?.headers ?? request?.headers);
+    let rawBody: BodyInit | ReadableStream<Uint8Array> | null | undefined = init?.body;
+    if (rawBody == null && request?.body) rawBody = await request.clone().text();
+    let data: string | undefined;
+    if (typeof rawBody === "string") data = rawBody;
+    else if (rawBody instanceof URLSearchParams) data = rawBody.toString();
+    else if (rawBody != null) throw new Error("Supabase 请求体类型不受支持");
+
+    const signal = init?.signal ?? request?.signal;
+    if (signal?.aborted) throw new DOMException("请求已取消", "AbortError");
+
+    let timer: number | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error("Supabase 请求超时")), 15_000);
+    });
+    try {
+      const resp = await Promise.race([
+        this.parent.utils.createRequest(
+          {
+            url,
+            method,
+            headers,
+            data,
+            anonymous: true,
+            timeout: 15_000,
+          },
+          "云端请求",
+          true,
+          false,
+        ),
+        timeoutPromise,
+      ]);
+      if (!resp.status) throw new Error(resp.statusText || "Supabase 请求失败");
+      const body =
+        method === "HEAD" || resp.status === 204 || resp.status === 205 || resp.status === 304
+          ? null
+          : resp.responseText;
+      return new Response(body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: parseResponseHeaders(resp.responseHeaders),
+      });
+    } catch (error) {
+      // `createRequest` 的 onerror 不会 resolve，这里统一在超时/网络失败时留下可见日志
+      console.warn("[Mcmodder] Supabase 请求失败：", url, error);
+      throw error;
+    } finally {
+      if (timer !== undefined) window.clearTimeout(timer);
+    }
+  };
 
   /** 当前是否启用了云端服务（取响应式配置的即时快照） */
   private isEnabled() {
@@ -53,6 +148,9 @@ export class SupabaseUtils {
       this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
         auth: {
           persistSession: false,
+        },
+        global: {
+          fetch: this.gmFetch,
         },
       });
       this.createFailed = false;

@@ -70,6 +70,8 @@ const userscriptMeta = {
     "raw.githubusercontent.com",
     "hub.gitmirror.com",
     "supabase.co",
+    "kjghwgrbawdtatyrrxin.supabase.co",
+    "mcmodder.114514256.xyz",
     "fastly.jsdelivr.net",
     "cdn.jsdelivr.net",
     "cdn.jsdelivr.net.cn",

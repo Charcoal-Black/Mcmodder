@@ -1406,12 +1406,14 @@ export class Utils {
    *
    * @param config 请求配置
    * @param message 本次请求附带的提示消息
-   * @param silent 为 true 时不在请求监控中弹出提示（仍写入日志与限速队列），用于脚本内部的批量查找
+   * @param silent 为 true 时不在请求监控中弹出提示（仍进入限速队列），用于脚本内部的批量查找
+   * @param log 为 false 时不写请求日志；含认证 key 等敏感数据的内部请求应关闭
    */
   createRequest<R extends GmResponseType = "text">(
     config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
     silent = false,
+    log = true,
   ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
@@ -1445,7 +1447,7 @@ export class Utils {
                   if (err) {
                     console.warn("Failed to set `yxd_token!`");
                   } else {
-                    this.createRequest(config, message).then((resp) => resolve(resp));
+                    this.createRequest(config, message, silent, log).then((resp) => resolve(resp));
                   }
                 },
               );
@@ -1454,12 +1456,14 @@ export class Utils {
             resolve(resp);
           }
         };
-        const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
-        if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
-        let content = `A${lastRequestTime}:${config.url}`;
-        if (config.data) content += `(${config.data})`;
-        logs.push(content);
-        GM_setValue("mcmodderLogger", logs.join(";"));
+        if (log) {
+          const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
+          if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
+          let content = `A${lastRequestTime}:${config.url}`;
+          if (config.data) content += `(${config.data})`;
+          logs.push(content);
+          GM_setValue("mcmodderLogger", logs.join(";"));
+        }
         // 调试与监控：在所有可见的标签页上提示本次发包（须置于限速等待之后，否则排队中的请求会提前亮起）
         if (!silent) this.parent.requestToastBroadcaster.send(config.method, config.url, message);
         // console.debug("Send Async request: ", config);
