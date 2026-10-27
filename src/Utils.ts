@@ -296,7 +296,7 @@ export class Utils {
     return node.nodeType === Node.TEXT_NODE;
   }
 
-  /** 生成 `[l, r]` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
+  /** 生成 `[l, r)` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
   static createRange(l: number, r: number, step = 1) {
     if (!Number.isInteger(l) || !Number.isInteger(r)) {
       throw new Error("端点必须是整数。");
@@ -567,14 +567,15 @@ export class Utils {
     return v.slice(5, pos);
   }
 
-  /** 触发浏览器下载，保存文本内容为文件 */
-  static saveFile(fileName: string, content: string) {
-    const blob = new Blob([content]);
+  /** 触发浏览器下载，保存文本内容或 Blob 为文件 */
+  static saveFile(fileName: string, content: string | Blob) {
+    const blob = content instanceof Blob ? content : new Blob([content]);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = fileName;
     link.click();
-    URL.revokeObjectURL(link.href);
+    // 立刻 revoke 会让部分浏览器拿不到内容，等一拍再释放
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
   }
 
   /** 延迟 `ms` 毫秒的异步等待 */

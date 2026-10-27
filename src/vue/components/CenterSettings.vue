@@ -14,7 +14,7 @@
   </div>
 
   <p
-    class="center-setting-search-empty text-muted mcmodder-intepolate-container"
+    class="center-setting-search-empty text-muted mcmodder-interpolate-container"
     :class="{ collapsed: !(isSearching && !hasVisibleSetting) }"
   >
     <span>没有找到与“{{ searchText.trim() }}”相关的配置项...</span>
@@ -25,7 +25,7 @@
       <div
         v-for="category in settings"
         :key="category.id"
-        class="center-block-category-container mcmodder-intepolate-container"
+        class="center-block-category-container mcmodder-interpolate-container"
         :class="{ collapsed: !hasVisibleSettingInCategory(category) }"
         :data-category="category.id"
       >
@@ -34,7 +34,7 @@
           <div
             v-for="section in category.sections"
             :key="section.id"
-            class="center-block-section-container center-content mcmodder-intepolate-container"
+            class="center-block-section-container center-content mcmodder-interpolate-container"
             :class="{ collapsed: !hasVisibleSettingInSection(section) }"
             :data-section="section.id"
           >
@@ -42,7 +42,7 @@
               <div class="center-block-section-label" v-text="section.label" />
               <template v-for="key in section.settings" :key="key.id">
                 <div
-                  class="center-block-setting-container mcmodder-intepolate-container"
+                  class="center-block-setting-container mcmodder-interpolate-container"
                   :class="{ collapsed: !isSettingVisible(key.id) }"
                 >
                   <ConfigInteractor
@@ -100,7 +100,7 @@
           <li
             v-for="category in settings"
             :key="category.id"
-            class="mcmodder-intepolate-container"
+            class="mcmodder-interpolate-container"
             :class="{ collapsed: !hasVisibleSettingInCategory(category) }"
           >
             <div>
@@ -115,7 +115,7 @@
                 <li
                   v-for="section in category.sections"
                   :key="section.id"
-                  class="mcmodder-intepolate-container"
+                  class="mcmodder-interpolate-container"
                   :class="{ collapsed: !hasVisibleSettingInSection(section) }"
                 >
                   <a

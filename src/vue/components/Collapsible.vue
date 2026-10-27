@@ -9,7 +9,7 @@
       <slot name="header" />
     </div>
     <div
-      class="mcmodder-collapsible-content mcmodder-intepolate-container"
+      class="mcmodder-collapsible-content mcmodder-interpolate-container"
       :class="{ collapsed: !classExpanded }"
     >
       <div class="mcmodder-collapsible-content-inner">

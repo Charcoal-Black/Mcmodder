@@ -447,6 +447,8 @@ export class Values {
     ".png,.jpg,.jpeg,.gif,.bmp,.flv,.swf,.mkv,.avi,.rm,.rmvb,.mpeg,.mpg,.ogg,.ogv,.mov,.wmv,.mp4,.webm,.mp3,.wav,.mid,.rar,.zip,.tar,.gz,.7z,.bz2,.cab,.iso,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.md,.xml";
   /** 站点 UEditor 服务端的 `fileMaxSize`：超过它的文件只作提示、照常尝试上传 */
   static readonly ueditorFileMaxSize = 1024000;
+  /** 资料图标的体积限制 */
+  static readonly iconFileMaxSize = 1572864;
   static readonly adminIDList = [
     2, 8, 9, 208, 331, 7926, 7949, 10167, 12422, 14115, 17038, 21294, 29797, 672797,
   ];

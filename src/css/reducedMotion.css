@@ -88,8 +88,8 @@
   .mcmodder-contextmenu,
   .mcmodder-collapsible-header:after,
   .mcmodder-dropdown-container:after,
-  .mcmodder-intepolate-container,
-  .mcmodder-intepolate-container > *,
+  .mcmodder-interpolate-container,
+  .mcmodder-interpolate-container > *,
 
   /* 页签滑动光标与悬停下划线的位移过渡（光标的 JS 位移动画不在此列） */
   .mcmodder-swiper-cursor,

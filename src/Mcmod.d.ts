@@ -1,3 +1,15 @@
+/* Swal */
+interface SweetAlertInputTypes {
+  text: string;
+  email: string;
+  password: string;
+  number: string;
+  tel: string;
+  select: string;
+  radio: string;
+  checkbox: boolean;
+}
+
 declare global {
   /* JQuery */
   interface JQuery {
@@ -9,20 +21,13 @@ declare global {
   }
 
   /* Swal */
-  interface SweetAlertOption {
+  interface SweetAlertOption<T extends keyof SweetAlertInputTypes | null = null> {
     type?: "success" | "warning" | "info" | "error" | "question";
     title?: string;
     text?: string;
-    input?:
-      | "text"
-      | "email"
-      | "password"
-      | "number"
-      | "tel"
-      | "select"
-      | "radio"
-      | "checkbox"
-      | "textarea";
+    input?: T;
+    inputValue?: T extends null ? undefined : SweetAlertInputTypes[T];
+    inputOptions?: Record<string, string>;
     html?: string;
     footer?: string;
     customClass?: string;
@@ -36,11 +41,13 @@ declare global {
     allowEscapeKey?: boolean;
     preConfirm?: (...args: any[]) => any;
   }
-  interface SweetAlertCallbackState {
-    value: boolean;
+  interface SweetAlertCallbackState<T extends keyof SweetAlertInputTypes | null> {
+    value: SweetAlertInputTypes[T];
   }
   interface SweetAlertStatic {
-    fire(option: SweetAlertOption): Promise<SweetAlertCallbackState>;
+    fire<T extends keyof SweetAlertInputTypes | null = null>(
+      option: SweetAlertOption<T>,
+    ): Promise<T extends null ? { value: boolean } : SweetAlertCallbackState<T>>;
     close(): void;
     isLoading(): boolean;
   }

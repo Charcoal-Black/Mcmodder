@@ -1440,7 +1440,7 @@ div#mcmodder-text-result {
 .mcmodder-compare-invalidversion {
   border: 2px solid var(--mcmodder-color-danger-dark1);
 }
-.mcmodder-compare-icon {
+.mcmodder-iconbg {
   background-image:
     linear-gradient(45deg, var(--mcmodder-color-background-dark1) 25%, transparent 25%),
     linear-gradient(-45deg, var(--mcmodder-color-background-dark1) 25%, transparent 25%),
@@ -2850,18 +2850,18 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   margin: 0 var(--mcmodder-width-padding-3);
   position: relative;
 }
-.mcmodder-intepolate-container {
+.mcmodder-interpolate-container {
   display: grid;
   grid-template-rows: 1fr;
   transition:
     grid-template-rows 0.3s ease,
     margin-top 0.3s ease;
 }
-.mcmodder-intepolate-container.collapsed {
+.mcmodder-interpolate-container.collapsed {
   grid-template-rows: 0fr;
   margin-top: 0;
 }
-.mcmodder-intepolate-container > * {
+.mcmodder-interpolate-container > * {
   transition:
     margin-top 0.3s ease,
     margin-bottom 0.3s ease,
@@ -2873,7 +2873,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   min-height: 0;
   overflow-y: clip;
 }
-.mcmodder-intepolate-container.collapsed > * {
+.mcmodder-interpolate-container.collapsed > * {
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 0;

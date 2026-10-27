@@ -41,7 +41,7 @@ interface Props extends InputProps<boolean> {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  id: Utils.randStr(8),
+  id: () => Utils.randStr(8),
   withLabel: false,
   withTooltip: undefined,
   titleRanges: undefined,
