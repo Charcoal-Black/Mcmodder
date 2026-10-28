@@ -1,27 +1,3 @@
-.mcmodder-editor-container .CodeMirror {
-  color: var(--mcmodder-color-text);
-  padding: 0.2em var(--mcmodder-width-padding-3);
-  background-color: transparent;
-  width: 100%;
-  height: 100%;
-}
-.mcmodder-editor-container .CodeMirror-scroll {
-  height: 100%;
-}
-.mcmodder-editor-container .CodeMirror span {
-  font-family: monospace;
-}
-.mcmodder-editor-container .CodeMirror-cursor {
-  border-color: var(--mcmodder-color-text);
-}
-.mcmodder-editor-container .CodeMirror-selected {
-  background-color: var(--mcmodder-color-accent-transparent1);
-}
-.mcmodder-editor-container .CodeMirror-lines {
-  line-height: 1.5em;
-  font-size: 14px;
-}
-
 .cm-s-mcmodder span.cm-keyword {
   color: var(--mcmodder-color-cm-keyword-universal);
 }

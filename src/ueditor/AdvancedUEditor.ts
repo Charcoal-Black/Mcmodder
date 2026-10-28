@@ -3,7 +3,6 @@ import { TemplateFrame } from "../TemplateFrame.ts";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
 import { UEditor as UEditor } from "./UEditor";
-import CodeMirror from "codemirror";
 // npm 版 codemirror 主入口不含任何 mode，必须显式引入，否则 `mode: "markdown"` / `"xml"`
 // 会回退到 null mode（编辑器里完全没有语法高亮）。
 // core / mode / 基础样式表都随产物一起打包，dev 与 build 行为一致，
@@ -21,6 +20,7 @@ import { createApp } from "vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import AutoLink from "../vue/components/AutoLink.vue";
 import TextComparator from "../vue/components/TextComparator.vue";
+import MainTextEditor from "../vue/components/MainTextEditor.vue";
 
 /** 挂载在选项栏上的复选框：容器 `<span>` 与其 Vue 组件实例，便于直接改显隐或读值 */
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
@@ -31,7 +31,7 @@ type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInpu
  *
  * # 为什么仍然不用 Vue 组件
  * 与基类同理：编辑器本体是百科的原生 iframe，其 UI 由百科创建、类名与全局对象高度耦合。
- * 只有「外挂面板」部分（自动链接、选项栏复选框、文本对比器）才用 Vue 挂载，
+ * 只有「外挂面板」部分（自动链接、选项栏复选框、文本对比器）与 Markdown/HTML 编辑器才用 Vue 挂载，
  * 它们是独立挂载的节点，不接管编辑器本身。
  *
  * # 初始化时序（重要，改动前务必读）
@@ -51,25 +51,29 @@ type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInpu
  */
 export class AdvancedUEditor extends UEditor {
   /** 百科原生的工具条容器（`.edit-tools`），增强工具插在它旁边 */
-  editToolsBar?: JQuery;
+  protected editToolsBar?: JQuery;
   /** 选项栏：装各种开关复选框 */
-  optionBar?: JQuery;
+  protected optionBar?: JQuery;
   /** 增强工具栏：装 `addTool` 添加的按钮 */
-  toolBar?: JQuery;
-  /** Markdown 编辑器的外层容器（`#mcmodder-mdeditor`） */
-  mdEditorOuterContainer?: JQuery;
-  /** Markdown 编辑器的挂载点（CodeMirror 实际渲染于此） */
-  mdEditorContainer?: JQuery;
+  protected toolBar?: JQuery;
+  /** Markdown 编辑器的组件实例 */
+  protected mdEditorApp?: InstanceType<typeof MainTextEditor>;
+  /** HTML 源代码编辑器的组件实例 */
+  protected htmlEditorApp?: InstanceType<typeof MainTextEditor>;
+  /** Markdown 编辑器的挂载容器 */
+  protected mdEditorContainer?: JQuery;
   /** Markdown 编辑器实例 */
-  mdEditor?: CodeMirror.Editor;
-  /** HTML 源代码编辑器的外层容器（`#mcmodder-htmleditor`） */
-  htmlEditorOuterContainer?: JQuery;
-  /** HTML 源代码编辑器的挂载点 */
-  htmlEditorContainer?: JQuery;
+  protected get mdEditor() {
+    return this.mdEditorApp?.editor();
+  }
+  /** HTML 源代码编辑器的挂载容器 */
+  protected htmlEditorContainer?: JQuery;
   /** HTML 源代码编辑器实例 */
-  htmlEditor?: CodeMirror.Editor;
+  protected get htmlEditor() {
+    return this.htmlEditorApp?.editor();
+  }
   /** HTML → Markdown 转换器（用于首次把已有正文灌进 md 编辑器） */
-  turndownSurvice?: TurndownService;
+  protected turndownSurvice?: TurndownService;
   /** 「Markdown 编辑器」开关 */
   protected mdEditorOption?: ContainerComponentPair;
   /** 「源代码编辑器」开关 */
@@ -85,25 +89,23 @@ export class AdvancedUEditor extends UEditor {
   /** 编辑器被锁定时为 `current - original`，否则与 `original` 同步 */
   protected changedTextLength: number;
   /** 编辑量统计栏 */
-  statsBar?: JQuery;
+  protected statsBar?: JQuery;
   /** 统计栏中显示当前字节数的节点 */
-  currentTextNode?: JQuery;
+  protected currentTextNode?: JQuery;
   /** 统计栏中显示字节变化量的节点 */
-  changedTextNode?: JQuery;
+  protected changedTextNode?: JQuery;
   /** 统计栏的「轻触刷新」按钮（正文过大时自动统计被关闭，靠它手动触发） */
-  refreshTextNode?: JQuery;
-  /** HTML 编辑器标题栏的「轻触刷新」按钮 */
-  refreshHtmlNode?: JQuery;
+  protected refreshTextNode?: JQuery;
   /** 是否为 Modrinth 日志编辑页（此类页面正文以 Markdown 存储，需强制开启 md 编辑器） */
   protected isModrinthVer: boolean;
   /** 超过该字节数就停止实时统计，改由用户手动刷新 */
   protected autoUpdateEditorStatsThreshold: number;
   /** 自动链接面板的挂载点 */
-  autoLinkFrame?: JQuery;
+  protected autoLinkFrame?: JQuery;
   /** 自动链接组件实例 */
-  autoLink?: InstanceType<typeof AutoLink>;
+  protected autoLink?: InstanceType<typeof AutoLink>;
   /** 模板面板（惰性初始化，见 {@link templateObserver}） */
-  template = new TemplateFrame(this);
+  protected template = new TemplateFrame(this);
   /**
    * 源码编辑器中是否有**尚未写回原生编辑器**的用户改动。
    *
@@ -234,46 +236,12 @@ export class AdvancedUEditor extends UEditor {
     this.toolBar = $(`<div class="mcmodder-tool-bar"></div>`).insertAfter(this.optionBar);
 
     // Markdown 转 HTML
-    this.mdEditorOuterContainer = $(`
-      <div id="mcmodder-mdeditor">
-        <div class="mcmodder-editor-header">
-          <div class="title">
-            <i class="fa fa-pencil"></i>
-            Markdown
-          </div>
-        </div>
-        <div class="mcmodder-editor-container">
-      </div>
-    `);
-    this.mdEditorOuterContainer.hide().insertBefore(this.$innerFrame);
-    this.mdEditorContainer = this.mdEditorOuterContainer.children().last();
+    this.mdEditorContainer = $("<div>").addClass("mcmodder-mdeditor-container");
+    this.mdEditorContainer.hide().insertBefore(this.$innerFrame);
 
     // 源代码编辑器
-    this.htmlEditorOuterContainer = $(`
-      <div id="mcmodder-htmleditor">
-        <div class="edui-default edui-editor-toolbarboxouter">
-          <div class="title">
-            <i class="fa fa-code"></i>
-            HTML
-            <span class="refresh-text badge-row" style="font-size: 14px;">
-              <span class="text-danger">
-                <i class="fa fa-rotate-left"></i>
-                轻触刷新
-              </span>
-            </span>
-          </div>
-        </div>
-        <div class="mcmodder-editor-container">
-      </div>
-    `);
-    this.htmlEditorOuterContainer.hide().insertBefore(this.$innerFrame);
-    this.htmlEditorContainer = this.htmlEditorOuterContainer.children().last();
-    this.refreshHtmlNode = this.htmlEditorOuterContainer
-      .find(".refresh-text")
-      .hide()
-      .click(() => {
-        this.manualTriggerHtmlUpdate();
-      });
+    this.htmlEditorContainer = $("<div>").addClass("mcmodder-htmleditor-container");
+    this.htmlEditorContainer.hide().insertBefore(this.$innerFrame);
 
     this.addTool("mcmodder-tool-md", "Markdown → HTML", () => this.performMarkdownIt());
 
@@ -455,27 +423,27 @@ export class AdvancedUEditor extends UEditor {
     if (!this.$innerFrame) return;
     super.widthAutoResize();
     const outerHeight = parseInt(this.$innerFrame.css("height"));
-    const innerHeight = outerHeight - 32;
-    this.mdEditorOuterContainer?.css("height", outerHeight + "px");
-    this.mdEditorContainer?.css("height", innerHeight + "px");
-    this.htmlEditorOuterContainer?.css("height", outerHeight + "px");
-    this.htmlEditorContainer?.css("height", innerHeight + "px");
+    // const innerHeight = outerHeight - 32;
+    this.mdEditorContainer?.css("height", outerHeight + "px");
+    // this.mdEditorContainer?.css("height", innerHeight + "px");
+    this.htmlEditorContainer?.css("height", outerHeight + "px");
+    // this.htmlEditorContainer?.css("height", innerHeight + "px");
   }
 
   /**
    * 计算正文高度：取基类结果与「已展开的源码编辑器实际高度」的最大值，
    * 避免源码编辑器把外层编辑区撑得比它矮。
    */
-  override autoCalculateHeight() {
-    let height = super.autoCalculateHeight();
-    if (this.mdEditorOption?.[1].getValue()) {
-      height = Math.max(height, this.mdEditorContainer?.height() ?? 0);
-    }
-    if (this.htmlEditorOption?.[1].getValue()) {
-      height = Math.max(height, this.htmlEditorContainer?.height() ?? 0);
-    }
-    return height;
-  }
+  // override autoCalculateHeight() {
+  //   let height = super.autoCalculateHeight();
+  //   if (this.mdEditorOption?.[1].getValue()) {
+  //     height = Math.max(height, this.mdEditorContainer?.height() ?? 0);
+  //   }
+  //   if (this.htmlEditorOption?.[1].getValue()) {
+  //     height = Math.max(height, this.htmlEditorContainer?.height() ?? 0);
+  //   }
+  //   return height;
+  // }
 
   /**
    * 调整编辑器高度：基类调整外层后，再让两个源码编辑器跟随。
@@ -485,8 +453,8 @@ export class AdvancedUEditor extends UEditor {
     if (!this.$innerFrame) return;
     super.resizeHeight(height);
     const finalHeight = this.$innerFrame?.css("height");
-    const mdContainer = this.mdEditorOuterContainer?.get(0) as HTMLElement;
-    const htmlContainer = this.htmlEditorOuterContainer?.get(0) as HTMLElement;
+    const mdContainer = this.mdEditorContainer?.get(0) as HTMLElement;
+    const htmlContainer = this.htmlEditorContainer?.get(0) as HTMLElement;
     const isVertical = this.verticalOption?.[1].getValue();
     if (isVertical) {
       mdContainer?.style?.removeProperty("height");
@@ -504,17 +472,9 @@ export class AdvancedUEditor extends UEditor {
    * 惰性创建的原因是 CodeMirror 初始化开销不小，且并非所有用户需要。
    */
   private async readyMarkdownEditor() {
-    if (
-      !this.$document ||
-      !this.head ||
-      !this.$outerFrame ||
-      !this.mdEditorContainer ||
-      !this.mdEditorOption
-    )
-      return;
+    if (!this.$document || !this.head || !this.$outerFrame || !this.mdEditorOption) return;
     const c = this.mdEditorOption![1].getValue();
     if (c) {
-      // await McmodderUtils.loadScript(editorDoc.head, null, "https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js", null, "mcmodder-script-markdownit");
       await Utils.loadScript(
         this.head,
         null,
@@ -522,56 +482,64 @@ export class AdvancedUEditor extends UEditor {
         null,
         "mcmodder-script-markdownit",
       );
-      // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirror, null, "mcmodder-script-codemirror");
-      // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.markdown, null, "mcmodder-script-codemirror-mod-markdown");
-      // await McmodderUtils.loadScript(document.head, null, McmodderValues.assets.js.codemirrorMod.htmlEmbedded, null, "mcmodder-script-codemirror-mod-htmlembedded");
 
-      if (!this.mdEditor) {
-        this.mdEditor = CodeMirror(this.mdEditorContainer.get(0), {
-          mode: "markdown",
-          theme: "mcmodder",
-        });
-        this.mdEditor.on(
+      if (!this.mdEditorApp && this.mdEditorContainer) {
+        this.mdEditorApp = createApp(MainTextEditor, {
+          id: "mcmodder-mdeditor",
+          icon: "fa-pencil",
+          title: "Markdown",
+          options: {
+            mode: "markdown",
+            theme: "mcmodder",
+          },
+          shouldWarn: () => this.currentTextLength >= this.autoUpdateEditorStatsThreshold,
+          onDisable: () => this.mdEditorOption?.[1].setCurrentValue(false),
+          onLoad: () => {
+            this.turndownSurvice = new TurndownService().use(gfm);
+            if (this.$body) {
+              const content = this.$body.clone();
+              content
+                .contents()
+                .filter((_, e) => e.tagName === "P")
+                .each((_, p) => {
+                  $(p)
+                    .contents()
+                    .filter((_, e) => e.nodeType == Node.TEXT_NODE)
+                    .each((_, e) => {
+                      const textNode = e as Node as Text;
+                      const text = textNode.data;
+                      const matchResult = text.match(/\[h[1-6]=.*?\]/);
+                      if (matchResult)
+                        matchResult.forEach((result) => {
+                          const index = text.indexOf(result);
+                          const mid = textNode.splitText(index);
+                          mid.splitText(result.length);
+                          const title = document.createElement(`h${text.charAt(2)}`);
+                          title.textContent = result.slice(4, -1);
+                          mid.replaceWith(title);
+                        });
+                    });
+                });
+              const converted = this.turndownSurvice.turndown(content.html());
+              this.mdEditor!.setValue(converted);
+            }
+          },
+        }).mount(this.mdEditorContainer!.get(0)) as InstanceType<typeof MainTextEditor>;
+        this.mdEditor!.on(
           "change",
           Utils.throttle(() => {
             this.heightAutoResize();
           }, 300),
         );
-        this.turndownSurvice = new TurndownService().use(gfm);
-        if (this.$body) {
-          const content = this.$body.clone();
-          content
-            .contents()
-            .filter((_, e) => e.tagName === "P")
-            .each((_, p) => {
-              $(p)
-                .contents()
-                .filter((_, e) => e.nodeType == Node.TEXT_NODE)
-                .each((_, e) => {
-                  const textNode = e as Node as Text;
-                  const text = textNode.data;
-                  const matchResult = text.match(/\[h[1-6]=.*?\]/);
-                  if (matchResult)
-                    matchResult.forEach((result) => {
-                      const index = text.indexOf(result);
-                      const mid = textNode.splitText(index);
-                      mid.splitText(result.length);
-                      const title = document.createElement(`h${text.charAt(2)}`);
-                      title.textContent = result.slice(4, -1);
-                      mid.replaceWith(title);
-                    });
-                });
-            });
-          const converted = this.turndownSurvice.turndown(content.html());
-          this.mdEditor.setValue(converted);
-        }
       }
 
       if (this.isModrinthVer) $("#mcmodder-tool-md").click();
-      $("#mcmodder-tool-md, #mcmodder-mdeditor").show();
+      $("#mcmodder-tool-md").show();
+      this.mdEditorContainer?.show();
       $(this.verticalOption![0]).show();
     } else {
-      $("#mcmodder-tool-md, #mcmodder-mdeditor").hide();
+      $("#mcmodder-tool-md").hide();
+      this.mdEditorContainer?.hide();
       $(this.verticalOption![0]).hide();
     }
     this.configs.setSettings("markdownIt", c);
@@ -588,15 +556,24 @@ export class AdvancedUEditor extends UEditor {
    * - 源码编辑器里有未写回的改动时，原生正文的变化只会被暂缓，绝不覆盖用户正在编辑的内容。
    */
   private async readyHtmlEditor() {
-    if (!this.htmlEditorContainer || !this.$body) return;
+    if (!this.$body) return;
     const c = this.htmlEditorOption?.[1].getValue();
     if (c) {
-      if (!this.htmlEditor) {
-        this.htmlEditor = CodeMirror(this.htmlEditorContainer.get(0), {
-          mode: "xml",
-          theme: "mcmodder",
-        });
-        this.htmlEditor.on(
+      if (!this.htmlEditorApp && this.htmlEditorContainer) {
+        this.htmlEditorApp = createApp(MainTextEditor, {
+          id: "mcmodder-htmleditor",
+          title: "HTML",
+          icon: "fa-code",
+          options: {
+            mode: "xml",
+            theme: "mcmodder",
+          },
+          onRefresh: () => this.manualTriggerHtmlUpdate(),
+          shouldWarn: () => this.currentTextLength >= this.autoUpdateEditorStatsThreshold,
+          onDisable: () => this.htmlEditorOption![1].setCurrentValue(false),
+          onLoad: () => this.doPullHtmlFromNative(),
+        }).mount(this.htmlEditorContainer.get(0)) as InstanceType<typeof MainTextEditor>;
+        this.htmlEditor!.on(
           "change",
           Utils.throttle(() => {
             this.heightAutoResize();
@@ -604,16 +581,15 @@ export class AdvancedUEditor extends UEditor {
         );
         // 记录用户改动：脚本自己写入的内容（origin === "setValue"）不算用户改动。
         // 这个监听器**不能**节流，否则被丢弃的那次改动会让「有未写回改动」的标记丢失。
-        this.htmlEditor.on("change", (_instance, change) => {
+        this.htmlEditor!.on("change", (_instance, change) => {
           if (change?.origin !== "setValue") this.htmlEditorDirty = true;
         });
         // 写回原生编辑器：尾沿防抖，保证用户停止输入后最后一次改动一定被写回
-        this.htmlEditor.on("change", this.pushHtmlToNative);
-        this.doPullHtmlFromNative();
+        this.htmlEditor!.on("change", this.pushHtmlToNative);
       }
-      $("#mcmodder-htmleditor").show();
+      this.htmlEditorContainer?.show();
     } else {
-      $("#mcmodder-htmleditor").hide();
+      this.htmlEditorContainer?.hide();
     }
     this.configs.setSettings("htmlEditor", c);
     this.onEditorStateChange();
@@ -678,7 +654,7 @@ export class AdvancedUEditor extends UEditor {
   performMarkdownIt() {
     // 预处理
     // this.mdEditor.find("p > br").remove();
-    if (!this.mdEditorOuterContainer || !this.mdEditor || !this.body || !this.$document) return;
+    if (!this.mdEditorApp || !this.body || !this.$document) return;
     const inlineCodeConverter = this.configs.getSettings("mdEditorInlineCodeConverter") ?? 0;
     const blockquoteConverter = this.configs.getSettings("mdEditorBlockquoteConverter") ?? 0;
 
@@ -741,7 +717,7 @@ export class AdvancedUEditor extends UEditor {
       };
     }
 
-    const htmlOutput = md.render(this.mdEditor.getValue());
+    const htmlOutput = md.render(this.mdEditor!.getValue());
     const content = this.$body?.html(htmlOutput);
     for (let i = 1; i <= 6; i++) {
       content?.find(`h${i}`).each((_, e) => {
@@ -1170,7 +1146,7 @@ export class AdvancedUEditor extends UEditor {
       this.pullHtmlFromNative();
     } else {
       this.refreshTextNode?.show();
-      this.refreshHtmlNode?.show();
+      this.htmlEditorApp!.requestRefresh();
     }
   }
 
@@ -1186,8 +1162,8 @@ export class AdvancedUEditor extends UEditor {
   private manualTriggerHtmlUpdate() {
     if (this.currentTextLength > this.autoUpdateEditorStatsThreshold) {
       this.doPullHtmlFromNative();
-      this.refreshHtmlNode?.hide();
     }
+    this.manualTriggerStatsUpdate();
   }
 
   /** 统计当前正文的字节数（`<pre>` 代码块内的内容不计入） */
@@ -1213,13 +1189,12 @@ export class AdvancedUEditor extends UEditor {
    *   都会因为「原生正文没变」而成为空操作——这才是真正切断「推 → 拉 → 再推」乒乓的地方。
    */
   private doPushHtmlToNative() {
-    if (!this.htmlEditor || !this.editor) return;
+    if (!this.htmlEditor || !this.editor || !this.htmlEditorApp?.available()) return;
     const value = this.htmlEditor.getValue();
     if (value !== this.syncedHtml) {
       this.editor.setContent(value);
       // 写回成功后才更新状态：万一 setContent 抛错，下次仍会重试
       this.syncedHtml = value;
-      this.refreshHtmlNode?.hide();
       // 原生正文的实际结果（已被 UEditor 规范化），供后续拉取比对
       this.lastNativeHtml = this.$body?.html() ?? "";
     }
@@ -1243,7 +1218,7 @@ export class AdvancedUEditor extends UEditor {
    * 3. 美化后的结果与源码编辑器现有内容相同 → 不调用 `setValue`（同上，光标会丢）。
    */
   private doPullHtmlFromNative() {
-    if (!this.htmlEditor) return;
+    if (!this.htmlEditor || !this.htmlEditorApp?.available()) return;
     const text = this.$body?.html() ?? "";
     if (text === this.lastNativeHtml) return; // 原生正文没变，别去动源码编辑器
     if (this.htmlEditorDirty) {
@@ -1270,8 +1245,8 @@ export class AdvancedUEditor extends UEditor {
   }
 
   /**
-   * 「我知道了」：覆写百科的 `uknowtoomuch` 命令，把选中文本包进
-   * `<span class="uknowtoomuch">` 存进正文（原本只弹提示、不留内容）。
+   * 「匿名吐槽」：覆写百科的 `uknowtoomuch` 命令，把选中文本包进
+   * `<span class="uknowtoomuch">` 存进正文，但不记录吐槽创建者的昵称和 UID。
    */
   anonymiseUknowtoomuch() {
     baidu.editor.commands.uknowtoomuch.execCommand = function () {
