@@ -46,6 +46,10 @@ interface CommentJumpParentSearch {
  */
 export class CommentJumpController {
   private hint?: CommentJumpHint;
+  /** 直接跳转的目标楼层（不依赖 URL hash） */
+  private floorTarget?: number;
+  /** 每次开始新跳转时递增，使上一次未完成的异步查找失效 */
+  private jumpToken = 0;
   private state:
     "idle" | "locating" | "loadingPage" | "loadingParentPage" | "loadingReply" | "done" | "failed" =
     "idle";
@@ -71,15 +75,45 @@ export class CommentJumpController {
    * 否则等待首屏短评加载后开始查找。返回是否存在跳转目标。
    */
   start() {
+    this.floorTarget = undefined;
     this.hint = CommentJumpController.parseJumpHint();
     if (!this.hint) return false;
     this.scheduleJumpCheck(1500);
     return true;
   }
 
+  /** 搜索指定楼层并直接跳转；会取消上一次尚未完成的跳转 */
+  startFloorJump(floor: number) {
+    this.jumpToken++;
+    this.clearTimers();
+    this.hideLoading();
+    this.hint = undefined;
+    this.floorTarget = floor;
+    this.state = "idle";
+    this.waitAttempts = 0;
+    this.requests = 0;
+    this.jumpParent = undefined;
+    this.repliesRequested = false;
+    this.scheduleJumpCheck(0);
+  }
+
+  private get hasTarget() {
+    return !!this.hint || this.floorTarget !== undefined;
+  }
+
   /** `CommentInit.processCommentFloor` 每次渲染一页短评后调用 */
   onCommentPageRendered() {
-    if (!this.hint) return;
+    if (!this.hasTarget || this.isJumpStopped()) return;
+    if (this.floorTarget !== undefined) {
+      const rendered = this.findRenderedTarget();
+      if (rendered) {
+        this.completeJump();
+        this.scrollToTarget(rendered);
+      } else if (this.state === "idle") {
+        this.scheduleJumpCheck(400);
+      }
+      return;
+    }
     if (
       this.state === "loadingParentPage" &&
       this.jumpParent &&
@@ -91,10 +125,17 @@ export class CommentJumpController {
     if (this.state === "idle") this.scheduleJumpCheck(400);
   }
 
-  /** 短评行渲染时调用；命中目标 CID 时完成滚动与高亮 */
+  /** 短评行渲染时调用；命中目标 CID / 楼层时完成滚动与高亮 */
   notifyCommentRendered(target: JQuery) {
+    if (this.isJumpStopped()) return;
+    if (this.floorTarget !== undefined) {
+      if (CommentJumpController.parseRenderedFloor(target) !== this.floorTarget) return;
+      this.completeJump();
+      this.scrollToTarget(target);
+      return;
+    }
     const commentId = String(target.find("input.comment-id").val() ?? "");
-    if (!this.hint || commentId !== this.hint.commentId || this.state === "done") return;
+    if (!this.hint || commentId !== this.hint.commentId) return;
     this.completeJump();
     this.scrollToTarget(target);
   }
@@ -117,12 +158,25 @@ export class CommentJumpController {
     return match ? Number(match[1]) : undefined;
   }
 
+  /** 从已渲染的顶层短评行读取楼层号；置顶评论与楼中楼不算 */
+  private static parseRenderedFloor(target: JQuery) {
+    if (!target.hasClass("comment-row-content")) return undefined;
+    const userinfo = target.closest(".comment-row").find(".comment-row-userinfo").first();
+    if (!userinfo.length || userinfo.find(".L1").length) return undefined;
+    const floor = parseInt(userinfo.text(), 10);
+    return Number.isInteger(floor) ? floor : undefined;
+  }
+
   private get jumpLimit() {
     return Math.max(1, this.configs.getSettings("commentJumpRequestLimit") ?? 12);
   }
 
-  private isJumpStopped() {
-    return this.state === "done" || this.state === "failed";
+  private isJumpStopped(token?: number) {
+    return (
+      this.state === "done" ||
+      this.state === "failed" ||
+      (token !== undefined && token !== this.jumpToken)
+    );
   }
 
   private ensureLoading() {
@@ -180,13 +234,14 @@ export class CommentJumpController {
   }
 
   private scheduleJumpCheck(delay: number) {
-    if (!this.hint || this.state !== "idle") return;
+    if (!this.hasTarget || this.state !== "idle") return;
     window.clearTimeout(this.timer);
     this.timer = window.setTimeout(() => void this.startJump(), delay);
   }
 
   private async startJump() {
-    if (!this.hint || this.state !== "idle") return;
+    if (!this.hasTarget || this.state !== "idle") return;
+    const token = ++this.jumpToken;
     const rendered = this.findRenderedTarget();
     if (rendered) {
       this.completeJump();
@@ -212,14 +267,20 @@ export class CommentJumpController {
 
     this.state = "locating";
     this.requests = 0;
-    this.updateLoading("正在定位短评…");
+    this.updateLoading(
+      this.floorTarget !== undefined ? `正在定位第 ${this.floorTarget} 楼…` : "正在定位短评…",
+    );
     try {
-      if (this.hint.replyIndex && this.hint.floor) {
-        await this.locateReplyTarget();
+      if (this.floorTarget !== undefined) {
+        await this.locateTopLevelFloor(token);
+      } else if (this.hint!.replyIndex && this.hint!.floor) {
+        await this.locateReplyTarget(token);
       } else {
-        await this.locateTopLevelTarget();
+        await this.locateTopLevelTarget(token);
       }
     } catch (error) {
+      // 旧跳转被新的跳转取代后，不再让它的错误影响新跳转
+      if (token !== this.jumpToken) return;
       if (error instanceof Error && error.message === "COMMENT_JUMP_ABORTED") return;
       if (error instanceof Error && error.message === "COMMENT_JUMP_REQUEST_LIMIT") {
         this.failJump(
@@ -232,8 +293,11 @@ export class CommentJumpController {
     }
   }
 
-  private async fetchCommentPage(page: number): Promise<CommentJumpPageData | undefined> {
-    if (this.isJumpStopped()) throw new Error("COMMENT_JUMP_ABORTED");
+  private async fetchCommentPage(
+    page: number,
+    token: number,
+  ): Promise<CommentJumpPageData | undefined> {
+    if (this.isJumpStopped(token)) throw new Error("COMMENT_JUMP_ABORTED");
     if (this.requests >= this.jumpLimit) throw new Error("COMMENT_JUMP_REQUEST_LIMIT");
     this.requests++;
     this.updateLoading(`正在定位短评（第 ${page} 页）…`);
@@ -257,8 +321,8 @@ export class CommentJumpController {
         }).toString(),
       },
       `定位短评：第 ${page} 页`,
-      true,
     );
+    if (this.isJumpStopped(token)) throw new Error("COMMENT_JUMP_ABORTED");
     if (resp.status !== 200 || !resp.responseText) return undefined;
     try {
       const json = JSON.parse(resp.responseText) as {
@@ -275,8 +339,9 @@ export class CommentJumpController {
   private async fetchReplyPage(
     parentCid: string,
     page: number,
+    token: number,
   ): Promise<CommentJumpPageData | undefined> {
-    if (this.isJumpStopped()) throw new Error("COMMENT_JUMP_ABORTED");
+    if (this.isJumpStopped(token)) throw new Error("COMMENT_JUMP_ABORTED");
     if (this.requests >= this.jumpLimit) throw new Error("COMMENT_JUMP_REQUEST_LIMIT");
     this.requests++;
     this.updateLoading(`正在定位回复（第 ${page} 页）…`);
@@ -294,8 +359,8 @@ export class CommentJumpController {
         }).toString(),
       },
       `定位短评回复：第 ${page} 页`,
-      true,
     );
+    if (this.isJumpStopped(token)) throw new Error("COMMENT_JUMP_ABORTED");
     if (resp.status !== 200 || !resp.responseText) return undefined;
     try {
       const json = JSON.parse(resp.responseText) as {
@@ -309,11 +374,11 @@ export class CommentJumpController {
     }
   }
 
-  private async locateTopLevelTarget() {
-    if (this.isJumpStopped()) return;
+  private async locateTopLevelTarget(token: number) {
+    if (this.isJumpStopped(token)) return;
     const hint = this.hint!;
-    const first = await this.fetchCommentPage(1);
-    if (this.isJumpStopped()) return;
+    const first = await this.fetchCommentPage(1, token);
+    if (this.isJumpStopped(token)) return;
     if (!first) {
       this.failJump("无法获取短评列表。");
       return;
@@ -328,7 +393,7 @@ export class CommentJumpController {
 
     const totalPage = Number(first.page?.total_page ?? 1);
     if (totalPage <= 1) {
-      this.failJump("未找到目标短评，可能已被删除或属于楼中楼回复。");
+      this.failJump("未找到目标短评，可能已被删除、已被置顶、或属于楼中楼回复。");
       return;
     }
 
@@ -353,8 +418,8 @@ export class CommentJumpController {
       if (mid < lo || mid > hi || visited.has(mid)) break;
       visited.add(mid);
 
-      const data = await this.fetchCommentPage(mid);
-      if (this.isJumpStopped()) return;
+      const data = await this.fetchCommentPage(mid, token);
+      if (this.isJumpStopped(token)) return;
       if (!data) {
         this.failJump("无法获取短评列表。");
         return;
@@ -363,7 +428,7 @@ export class CommentJumpController {
         (row) => CommentJumpController.parseFloor(row.floor) !== undefined,
       );
       if (rows.some((row) => String(row.id) === hint.commentId)) {
-        this.jumpToPage(mid);
+        this.jumpToPage(mid, token);
         return;
       }
       if (rows.length === 0) {
@@ -374,35 +439,59 @@ export class CommentJumpController {
         if (target > Math.max(...ids)) hi = mid - 1;
         else if (target < Math.min(...ids)) lo = mid + 1;
         else {
-          this.failJump("未找到目标短评，可能已被删除或属于楼中楼回复。");
+          this.failJump("未找到目标短评，可能已被删除、已被置顶、或属于楼中楼回复。");
           return;
         }
       }
       mid = Math.floor((lo + hi) / 2);
     }
-    this.failJump("未找到目标短评，可能已被删除或属于楼中楼回复。");
+    this.failJump("未找到目标短评，可能已被删除、已被置顶、或属于楼中楼回复。");
   }
 
-  private jumpToPage(page: number) {
-    if (this.isJumpStopped()) return;
+  private jumpToPage(page: number, token: number, targetName = "目标短评") {
+    if (this.isJumpStopped(token)) return;
     this.state = "loadingPage";
     if (Number(comment_nowpage) === page) {
-      this.startTimeout("目标短评未能显示。");
+      this.startTimeout(`${targetName}未能显示。`);
       return;
     }
     this.updateLoading(`正在加载第 ${page} 页…`);
     comment_nowpage = page;
     get_comment(comment_container, comment_type);
-    this.startTimeout("目标短评所在页加载超时。");
+    this.startTimeout(`${targetName}所在页加载超时。`);
   }
 
-  private async locateReplyTarget() {
-    if (this.isJumpStopped()) return;
-    const hint = this.hint!;
-    const search = await this.locateParentByFloor(hint.floor!);
-    if (this.isJumpStopped()) return;
+  /** 按楼层号定位顶层短评所在的页并翻页（复用楼中楼的楼层搜索） */
+  private async locateTopLevelFloor(token: number) {
+    if (this.isJumpStopped(token)) return;
+    const floor = this.floorTarget;
+    if (floor === undefined) return;
+    const search = await this.locateParentByFloor(floor, token);
+    if (this.isJumpStopped(token)) return;
     if (!search) {
-      this.failJump(`未找到第 ${hint.floor} 楼的父楼，可能已被删除。`);
+      this.failJump("无法获取短评列表。");
+      return;
+    }
+    if (!search.parent) {
+      this.failJump(`未找到第 ${floor} 楼，可能已被删除或置顶。`);
+      return;
+    }
+    if (Number(comment_nowpage) === search.parent.page) {
+      // 已经在目标页，等待站点把目标楼渲染出来
+      this.state = "loadingPage";
+      this.startTimeout(`第 ${floor} 楼未能显示。`);
+      return;
+    }
+    this.jumpToPage(search.parent.page, token, `第 ${floor} 楼`);
+  }
+
+  private async locateReplyTarget(token: number) {
+    if (this.isJumpStopped(token)) return;
+    const hint = this.hint!;
+    const search = await this.locateParentByFloor(hint.floor!, token);
+    if (this.isJumpStopped(token)) return;
+    if (!search) {
+      this.failJump(`未找到第 ${hint.floor} 楼的父楼，可能已被删除或置顶。`);
       return;
     }
 
@@ -412,11 +501,12 @@ export class CommentJumpController {
       hint.commentId,
       hint.replyIndex!,
       search,
+      token,
     );
-    if (this.isJumpStopped()) return;
+    if (this.isJumpStopped(token)) return;
     if (!match) {
       // 消息中心的链接也可能直接指向父楼；按顶层短评再查一次
-      await this.locateTopLevelTarget();
+      await this.locateTopLevelTarget(token);
       return;
     }
 
@@ -447,15 +537,21 @@ export class CommentJumpController {
     replyCid: string,
     replyIndex: number,
     search: CommentJumpParentSearch,
+    token: number,
   ): Promise<{ parent: CommentJumpTarget; replyPage: CommentJumpTarget } | undefined> {
     const tryParent = async (parent: CommentJumpTarget) => {
-      const replyPage = await this.locateReplyPage(String(parent.row.id), replyCid, replyIndex);
+      const replyPage = await this.locateReplyPage(
+        String(parent.row.id),
+        replyCid,
+        replyIndex,
+        token,
+      );
       return replyPage ? { parent, replyPage } : undefined;
     };
 
     if (search.parent) {
       const first = await tryParent(search.parent);
-      if (this.isJumpStopped()) return undefined;
+      if (this.isJumpStopped(token)) return undefined;
       if (first) return first;
     }
 
@@ -467,14 +563,14 @@ export class CommentJumpController {
       for (const page of pages) {
         if (page < 1 || page > search.totalPage || search.visited.has(page)) continue;
         search.visited.add(page);
-        const data = await this.fetchCommentPage(page);
-        if (this.isJumpStopped()) return undefined;
+        const data = await this.fetchCommentPage(page, token);
+        if (this.isJumpStopped(token)) return undefined;
         const hits = (data?.row ?? []).filter(
           (row) => CommentJumpController.parseFloor(row.floor) === floor,
         );
         for (const row of hits) {
           const match = await tryParent({ page, row });
-          if (this.isJumpStopped()) return undefined;
+          if (this.isJumpStopped(token)) return undefined;
           if (match) return match;
         }
       }
@@ -482,9 +578,12 @@ export class CommentJumpController {
     return undefined;
   }
 
-  private async locateParentByFloor(floor: number): Promise<CommentJumpParentSearch | undefined> {
-    const first = await this.fetchCommentPage(1);
-    if (this.isJumpStopped()) return undefined;
+  private async locateParentByFloor(
+    floor: number,
+    token: number,
+  ): Promise<CommentJumpParentSearch | undefined> {
+    const first = await this.fetchCommentPage(1, token);
+    if (this.isJumpStopped(token)) return undefined;
     if (!first) return undefined;
     const firstRows = first.row ?? [];
     const totalPage = Number(first.page?.total_page ?? 1);
@@ -523,8 +622,8 @@ export class CommentJumpController {
       if (mid < lo || mid > hi || visited.has(mid)) break;
       visited.add(mid);
 
-      const data = await this.fetchCommentPage(mid);
-      if (this.isJumpStopped()) return undefined;
+      const data = await this.fetchCommentPage(mid, token);
+      if (this.isJumpStopped(token)) return undefined;
       if (!data) return undefined;
       const rows = (data.row ?? []).filter(
         (row) => CommentJumpController.parseFloor(row.floor) !== undefined,
@@ -552,9 +651,10 @@ export class CommentJumpController {
     parentCid: string,
     replyCid: string,
     replyIndex: number,
+    token: number,
   ): Promise<CommentJumpTarget | undefined> {
-    const first = await this.fetchReplyPage(parentCid, 1);
-    if (this.isJumpStopped()) return undefined;
+    const first = await this.fetchReplyPage(parentCid, 1, token);
+    if (this.isJumpStopped(token)) return undefined;
     if (!first) return undefined;
     const firstRows = first.row ?? [];
     const firstHit = firstRows.find((row) => String(row.id) === replyCid);
@@ -574,8 +674,8 @@ export class CommentJumpController {
       if (mid < lo || mid > hi || visited.has(mid)) break;
       visited.add(mid);
 
-      const data = await this.fetchReplyPage(parentCid, mid);
-      if (this.isJumpStopped()) return undefined;
+      const data = await this.fetchReplyPage(parentCid, mid, token);
+      if (this.isJumpStopped(token)) return undefined;
       if (!data) return undefined;
       const rows = data.row ?? [];
       const hit = rows.find((row) => String(row.id) === replyCid);
@@ -592,8 +692,8 @@ export class CommentJumpController {
           for (const probe of [mid - 1, mid + 1]) {
             if (probe < 1 || probe > totalPage || visited.has(probe)) continue;
             visited.add(probe);
-            const probeData = await this.fetchReplyPage(parentCid, probe);
-            if (this.isJumpStopped()) return undefined;
+            const probeData = await this.fetchReplyPage(parentCid, probe, token);
+            if (this.isJumpStopped(token)) return undefined;
             const probeHit = (probeData?.row ?? []).find((row) => String(row.id) === replyCid);
             if (probeHit) return { page: probe, row: probeHit };
           }
@@ -621,7 +721,7 @@ export class CommentJumpController {
       .filter((_, element) => String($(element).val() ?? "") === parent.cid)
       .first();
     if (!$parentInput.length) {
-      this.failJump("父楼未能显示，可能已被删除或翻页位置已变化。");
+      this.failJump("父楼未能显示，可能已被删除、已被置顶，或翻页位置已变化。");
       return;
     }
     const $replyFloor = $parentInput.closest(".comment-row").find(".comment-reply-floor").first();
@@ -642,6 +742,7 @@ export class CommentJumpController {
   }
 
   private findRenderedTarget(): JQuery | undefined {
+    if (this.floorTarget !== undefined) return this.findRenderedFloor();
     const cid = this.hint?.commentId;
     if (!cid) return undefined;
     const $input = $(
@@ -649,6 +750,17 @@ export class CommentJumpController {
     ).filter((_, element) => String($(element).val() ?? "") === cid);
     if (!$input.length) return undefined;
     return $input.first().closest(".comment-row-content, .comment-reply-row");
+  }
+
+  private findRenderedFloor(): JQuery | undefined {
+    const floor = this.floorTarget;
+    if (floor === undefined) return undefined;
+    const $rows = $(".common-comment-block .comment-floor .comment-row");
+    for (let i = 0; i < $rows.length; i++) {
+      const content = $($rows[i]).find(".comment-row-content").first();
+      if (CommentJumpController.parseRenderedFloor(content) === floor) return content;
+    }
+    return undefined;
   }
 
   private scrollToTarget(target: JQuery) {

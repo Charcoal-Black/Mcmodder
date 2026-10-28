@@ -1170,10 +1170,20 @@ body:not(.view),
   right: 0.5em;
   top: 0.5em;
 }
-#mcmodder-gotopage {
-  width: 50px;
+.mcmodder-comment-goto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.mcmodder-comment-goto .form-control {
   text-align: center;
   display: inline;
+}
+#mcmodder-gotopage {
+  width: 50px;
+}
+#mcmodder-gotofloor {
+  width: 75px;
 }
 #mcmodder-version-menu {
   margin-top: var(--mcmodder-width-padding-1);
@@ -1870,7 +1880,8 @@ body .top-main .pulldown .arrow {
 .news_block .left .text #new_more:hover,
 .news_block .left .text #edit_more:hover,
 .news_block .left .text #recent_more:hover,
-.member-list li.member-row {
+.member-list li.member-row,
+.common-center .post-row .postname .tool {
   background-color: transparent;
 }
 .recent-buttons li a {

@@ -65,26 +65,45 @@ export class CommentInit extends Init {
   }
 
   private renderPagination() {
-    $("ul.pagination.common-pages > span").each((_, e) => {
+    $("ul.pagination.common-pages > span").each((_, _e) => {
       // 站点重渲染翻页条后需要重新注入，已注入过的跳过
-      if ($(e).find("#mcmodder-gotopage").length) return;
-      e.innerHTML +=
-        '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
-      $(e)
-        .find("#mcmodder-gotopage")
-        .val(e.textContent.replace("当前 ", "").split(" / ")[0])
-        .bind("change", (f) => {
-          const target = f.currentTarget as HTMLInputElement;
-          const value = parseInt(target.value);
-          if (
-            value < 1 ||
-            value > parseInt(target.textContent.replace("当前 ", "").split(" / ")[1])
-          ) {
-            return;
+      const e = $(_e);
+      if (e.hasClass("mcmodder-comment-goto")) return;
+      e.addClass("mcmodder-comment-goto");
+      const gotopage = $(`<input id="mcmodder-gotopage" class="form-control">`);
+      const gotofloor = $(`<input id="mcmodder-gotofloor" class="form-control">`);
+      e.append(`快速跳转至：第`, gotopage, `页 / 第`, gotofloor, `楼。`);
+      const [currentPage, maxPage] = e.text().replace("当前 ", "").split(" / ").map(Number);
+      gotopage.val(currentPage).change(() => {
+        const value = parseInt(gotopage.val().trim());
+        if (value < 1 || value > maxPage) {
+          Utils.commonMsg("请输入一个合法的数值...", false);
+          return;
+        }
+        comment_nowpage = value;
+        get_comment(comment_container, comment_type);
+      });
+      let currentFloor = 1;
+      $(".comment-floor")
+        .children()
+        .each((_, e) => {
+          const row = $(e);
+          const userinfo = row.find(".comment-row-userinfo");
+          if (userinfo.find(".L1").length) return; // 是置顶评论
+          const floor = parseInt(userinfo.text()); // xxx楼
+          if (Number.isInteger(floor)) {
+            currentFloor = Math.max(floor, currentFloor);
+            return false;
           }
-          comment_nowpage = value;
-          get_comment(comment_container, comment_type);
         });
+      gotofloor.val(currentFloor).change(() => {
+        const targetFloor = parseInt(gotofloor.val().trim(), 10);
+        if (!Number.isInteger(targetFloor) || targetFloor < 1) {
+          Utils.commonMsg("请输入一个合法的数值...", false);
+          return;
+        }
+        this.jump.startFloorJump(targetFloor);
+      });
     });
   }
 

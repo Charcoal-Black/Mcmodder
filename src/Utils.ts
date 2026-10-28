@@ -1254,10 +1254,13 @@ export class Utils {
     return Promise.all(srcList.map((src) => this.loadScript(loc, null, src, type, id)));
   }
 
-  /** 获取 0 点的毫秒时间戳，`num` 为相对天数偏移（正数向后，负数向前） */
+  /** 获取 UTC-8 时区下 0 点的毫秒时间戳，`num` 为相对天数偏移（正数向后，负数向前） */
   static getStartTime(d: number | Date, num = 1) {
-    if (typeof d === "number") d = new Date(d);
-    return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
+    const time = typeof d === "number" ? d : d.getTime();
+    // UTC-8 为固定偏移（无夏令时），先将时间平移到 UTC-8 的本地坐标再按整天取整
+    const offset = 8 * 60 * 60 * 1000;
+    const day = 24 * 60 * 60 * 1000;
+    return Math.floor((time + offset) / day) * day - offset + day * num;
   }
 
   /** 格式化为 `YYYY-M-D` 日期字符串 */

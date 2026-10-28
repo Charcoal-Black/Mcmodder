@@ -11,12 +11,9 @@ import { Init } from "./Init";
  * 消息中心的表态集成：子 tab 徽标与列表顶部合计行在任何消息中心页面都渲染；每条短评类消息显示该短评
  * 获得的自定义表态数量；「短评表态」与「全部」子页签额外注入自定义表态消息列表（克隆原生条目样式），
  * 并把本批未读记录回写为已读。
- *
- * 站点自身的列表渲染不被接管：`MutationObserver` 观察 `body` 做幂等增量注入。
  */
 export class MessageInit extends Init {
   private readonly attitude = AttitudeSystem.for(this.parent);
-  private readonly messageObserver = new MutationObserver(() => this.scheduleRefresh());
   private refreshTimer?: number;
   private inboxSignature = "";
   private inboxFetching = false;
@@ -37,12 +34,6 @@ export class MessageInit extends Init {
     }
 
     if (!this.attitude.enabled) return;
-    // 列表由站点 AJAX 渲染、切子 tab 时整块重绘：观察 body 而非列表本身，节点被替换后仍能接上
-    this.messageObserver.observe(document.body, { childList: true, subtree: true });
-    $("#message-unread").on("change", () => {
-      this.inboxSignature = "";
-      this.scheduleRefresh();
-    });
     this.scheduleRefresh();
 
     // 进消息中心即视为已看到提醒：页头红点归零

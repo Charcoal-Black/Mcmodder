@@ -69,6 +69,7 @@ html.mcmodder-attitude-twemoji emoji-picker {
 .common-comment-block .comment-tools ol.comment-attitude-result > li > a {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .common-comment-block .comment-tools ol.comment-attitude-result img {

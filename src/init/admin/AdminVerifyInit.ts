@@ -851,6 +851,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       let currentList: ValueOf<Required<typeof data>["license"]>;
       type License = ValueOf<(typeof currentList)["list"]>;
       content.row.find("p").each((_, p) => {
+        const isCurrent = $(p).parents("td").first().get(0) === content.currentCell.get(0);
         const contents = $(p).contents();
         let types: License["type"] = [];
         let isCustomType = false;
@@ -858,6 +859,7 @@ export class AdminVerifyInit extends AdminBaseInit {
         let link: License["link"] = "";
         let extras: License["text"] = "";
         if (contents.length === 1 && contents.attr("class") === "text-primary") {
+          if (!isCurrent) return;
           title = p.textContent;
           currentList = { title, list: {} };
           data.license![listIndex++] = currentList;
@@ -870,6 +872,7 @@ export class AdminVerifyInit extends AdminBaseInit {
               element.nodeType === Node.ELEMENT_NODE &&
               element.tagName === "B"
             ) {
+              if (!isCurrent) return;
               element.textContent
                 .split("/")
                 .map((type) => type.trim())
@@ -887,6 +890,7 @@ export class AdminVerifyInit extends AdminBaseInit {
             } else {
               const prev = element.previousSibling;
               if (
+                isCurrent &&
                 prev !== null &&
                 Utils.isTextNode(prev) &&
                 prev.data.endsWith("声明许可协议为: ")
@@ -905,23 +909,26 @@ export class AdminVerifyInit extends AdminBaseInit {
               const linkStartPos = text.data.indexOf(" 【");
               const linkEndPos = text.data.indexOf("】");
               if (linkStartPos >= 0 && linkEndPos > linkStartPos) {
-                link = text.data.slice(2, -1);
+                link = text.data.slice(linkStartPos + 2, linkEndPos);
                 const mid = text.splitText(2);
                 mid.splitText(link.length);
                 Utils.textToAnchor(mid);
               }
-              const lastText = text.data.slice(linkEndPos + 1);
-              if (lastText.startsWith(" (") && lastText.endsWith(")")) {
-                extras = lastText.slice(2, -1);
+              if (isCurrent) {
+                const lastText = text.data.slice(linkEndPos + 1);
+                if (lastText.startsWith(" (") && lastText.endsWith(")")) {
+                  extras = lastText.slice(2, -1);
+                }
               }
             }
           });
-          currentList.list[index++] = {
-            type: types,
-            name,
-            link,
-            text: extras,
-          };
+          if (isCurrent)
+            currentList.list[index++] = {
+              type: types,
+              name,
+              link,
+              text: extras,
+            };
         }
       });
     },
@@ -1132,7 +1139,8 @@ export class AdminVerifyInit extends AdminBaseInit {
   private static readonly checkResultClassName = {
     error: {
       text: "text-danger",
-      icon: "fa-window-close",
+      // 原生为 window-close，times-rectangle 外形相近，但是这两者都因未知原因而不会显示
+      icon: "fa-times-circle",
     },
     warning: {
       text: "text-warning",
