@@ -63,13 +63,13 @@ export class AdvancedUEditor extends UEditor {
   /** Markdown 编辑器的挂载容器 */
   protected mdEditorContainer?: JQuery;
   /** Markdown 编辑器实例 */
-  protected get mdEditor() {
+  get mdEditor() {
     return this.mdEditorApp?.editor();
   }
   /** HTML 源代码编辑器的挂载容器 */
   protected htmlEditorContainer?: JQuery;
   /** HTML 源代码编辑器实例 */
-  protected get htmlEditor() {
+  get htmlEditor() {
     return this.htmlEditorApp?.editor();
   }
   /** HTML → Markdown 转换器（用于首次把已有正文灌进 md 编辑器） */
