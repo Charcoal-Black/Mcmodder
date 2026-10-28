@@ -44,6 +44,7 @@ const userscriptMeta = {
   "run-at": "document-start",
   match: ["https://*.mcmod.cn/*"],
   exclude: [
+    "https://i.mcmod.cn/*",
     "https://api.mcmod.cn/*",
     "https://www.mcmod.cn/v2/*",
     "https://play.mcmod.cn/add/*",
