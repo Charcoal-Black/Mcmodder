@@ -5,16 +5,18 @@
         >由所有用户共享出来的表态贴纸，轻触即可预览并直接使用或收藏~</span
       >
       <span class="mcmodder-attitude-plaza-tools">
-        <select
-          v-if="onSortChange"
-          class="form-control mcmodder-attitude-plaza-sort"
-          :value="sort"
-          aria-label="排序方式"
-          @change="handleSortChange"
-        >
-          <option value="latest">最新共享</option>
-          <option value="favorites">收藏数</option>
-        </select>
+        <template v-if="onSortChange">
+          <span class="mcmodder-attitude-sort-title">排序方式: </span>
+          <DropdownMenuInput
+            title="排序方式"
+            :value="sort === 'latest' ? 0 : 1"
+            :range="{
+              0: '最新共享',
+              1: '最多收藏',
+            }"
+            :on-successful-change="handleSortChange"
+          />
+        </template>
         <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
       </span>
     </div>
@@ -44,7 +46,7 @@
         <div class="mcmodder-attitude-plaza-uploader-line">
           <a
             class="mcmodder-attitude-plaza-uploader-link"
-            :href="`https://center.mcmod.cn/${sticker.uid}/`"
+            :href="Utils.getCenterURL(sticker.uid)"
             target="_blank"
             title="前往上传者主页"
           >
@@ -59,10 +61,10 @@
           </a>
           <span v-if="sticker.is_mine">（我）</span>
         </div>
-        <div class="mcmodder-attitude-plaza-favorite-line">
-          <i class="fa fa-star" />
-          <span>收藏 {{ sticker.favorite_count ?? 0 }} 人</span>
-        </div>
+        <!-- <div v-if="sticker.favorite_count" class="mcmodder-attitude-plaza-favorite-line">
+          <i class="fa" :class="sticker.is_favorite ? 'fa-star' : 'fa-star-o'" />
+          {{ sticker.favorite_count }}
+        </div> -->
       </template>
     </AttitudeStickerBrowser>
 
@@ -81,6 +83,8 @@ import { useStickerSelectionGuard } from "../../composables/useStickerSelectionG
 import { getStickerUploader, type StickerUploaderProfile } from "../../../attitude/stickerUploader";
 import type { AttitudeStickerPlazaProps } from "../../../types/props";
 import type { AttitudeStickerPlazaEmitPayload, StickerRemovedReason } from "../../../types/emits";
+import { Utils } from "../../../Utils.ts";
+import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 
 const props = withDefaults(defineProps<AttitudeStickerPlazaProps>(), {
   sort: "latest",
@@ -128,9 +132,11 @@ function onBrowserRemoved(sticker: SupabaseAttitudeSticker, reason: StickerRemov
 }
 
 /** 排序下拉框：值即服务端 `p_sort` 的取值 */
-function handleSortChange(event: Event) {
-  const target = event.target;
-  if (!(target instanceof HTMLSelectElement)) return;
-  props.onSortChange?.(target.value as StickerPlazaSort);
+function handleSortChange(info: InputValidInfo<number>) {
+  if (info.isok) {
+    const value = info.final! as 0 | 1;
+    props.onSortChange?.((["latest", "favorites"] as const)[value]);
+    props.parent?.configRepository.setSettings("preferredStickerPlazaSort", value);
+  }
 }
 </script>

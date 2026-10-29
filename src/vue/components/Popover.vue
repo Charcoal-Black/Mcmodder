@@ -38,7 +38,7 @@ const props = withDefaults(
   },
 );
 
-const listRef = useTemplateRef("list");
+const listRef = useTemplateRef<HTMLElement>("list");
 const visibility = ref(false);
 /** 锚点元素的矩形缓存（`updatePos` 在聚焦、页面滚动与缩放时刷新） */
 const rectRef = shallowRef<DOMRect>();
@@ -231,6 +231,8 @@ function updatePos() {
 }
 
 defineExpose({
+  /** 弹出框的根节点（控制器据此判断事件是否发生在**本**弹出框内部） */
+  rootElement: listRef,
   /** 重新量一次锚点矩形（页面滚动 / 缩放时调用以跟随位置） */
   updatePos,
   /** 是否需要向上弹出（`false` 时向下） */

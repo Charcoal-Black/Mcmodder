@@ -776,7 +776,7 @@ export class Mcmodder {
       if (insertPos.length) {
         const myProfile = this.configRepository.getAllProfile() as Partial<Profile>;
         const avatar = myProfile.avatar
-          ? `<a href="//center.mcmod.cn/${this.currentUID}/" target="_blank">
+          ? `<a href="${Utils.getCenterURL(this.currentUID)}" target="_blank">
             <img alt="${myProfile.nickname}" src="${myProfile.avatar}">
           </a>`
           : $(".header-user-avatar").html();

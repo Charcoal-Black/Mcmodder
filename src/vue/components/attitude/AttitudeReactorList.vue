@@ -1,16 +1,26 @@
 <template>
   <div class="mcmodder-attitude-reactors">
     <div ref="scrollRef" class="mcmodder-attitude-reactors-scroll" @scroll.passive="onScroll">
-      <ReactorRow
-        v-for="reactor in reactors"
-        :key="reactor.uid"
-        :parent="parent"
-        :uid="reactor.uid"
-        :fallback-name="reactor.username"
-        :fallback-avatar="reactor.avatar"
-        :is-mine="reactor.uid === parent.currentUID"
-      />
-      <div v-if="loading" class="mcmodder-attitude-reactors-status">加载中…</div>
+      <template v-if="loading">
+        <ReactorRow
+          v-for="i in Utils.createRange(0, stickerCount)"
+          :key="i"
+          :parent="parent"
+          :uid="-1"
+        />
+      </template>
+      <template v-else>
+        <ReactorRow
+          v-for="reactor in reactors"
+          :key="reactor.uid"
+          :parent="parent"
+          :uid="reactor.uid"
+          :fallback-name="reactor.username"
+          :fallback-avatar="reactor.avatar"
+          :is-mine="reactor.uid === parent.currentUID"
+        />
+      </template>
+      <div v-if="loading"></div>
       <div v-else-if="error" class="mcmodder-attitude-reactors-status">
         <span>加载失败</span>
         <button type="button" class="mcmodder-attitude-reactors-retry" @click="retry">重试</button>
@@ -26,9 +36,11 @@
 import { nextTick, ref, watch } from "vue";
 import ReactorRow from "./ReactorRow.vue";
 import type { AttitudeReactorListProps } from "../../../types/props";
+import { Utils } from "../../../Utils.ts";
 
 const props = withDefaults(defineProps<AttitudeReactorListProps>(), {
   pageSize: 30,
+  stickerCount: 1,
 });
 const emit = defineEmits<{ heightChange: [] }>();
 
@@ -68,7 +80,7 @@ async function load(reset: boolean) {
       {
         limit: props.pageSize,
         offset,
-        onError: (message) => console.warn("[Mcmodder] 表态用户获取失败：", message),
+        onError: (message) => Utils.commonMsg(`表态者信息获取失败... (${message})`, false),
       },
     );
     if (currentGeneration !== generation) return;
@@ -86,7 +98,7 @@ async function load(reset: boolean) {
   } catch (err) {
     if (currentGeneration === generation) {
       error.value = true;
-      console.warn("[Mcmodder] 表态用户获取失败：", err);
+      Utils.commonMsg(`表态者信息获取失败... (${err})`, false);
     }
   } finally {
     if (currentGeneration === generation) loading.value = false;

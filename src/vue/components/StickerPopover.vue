@@ -31,6 +31,7 @@
           :parent="reactorOption.parent"
           :comment-id="reactorOption.commentId"
           :attitude-type="reactorOption.attitudeType"
+          :sticker-count="reactorOption.stickerCount"
           @height-change="onHeightChange"
         />
       </div>
@@ -49,9 +50,10 @@ import type { PopoverExpose, StickerViewerOption } from "../../types/props";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里，
  * 这里只管贴纸本身的内容与操作。
  */
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close } = usePopoverHost({
-  maxHeight: 480,
-});
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
+  usePopoverHost({
+    maxHeight: 480,
+  });
 
 const option = shallowRef<StickerViewerOption>();
 const sticker = computed(() => option.value?.sticker);
@@ -68,6 +70,7 @@ const reactorOption = computed(() => {
     parent: current.parent,
     commentId: current.commentId,
     attitudeType: current.attitudeType,
+    stickerCount: current.stickerCount,
   };
 });
 const reactorGeneration = ref(0);
@@ -149,5 +152,6 @@ defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({
   inputEvents: {},
   updatePos,
   close,
+  getPopoverElement,
 });
 </script>

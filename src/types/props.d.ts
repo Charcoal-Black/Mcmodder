@@ -200,6 +200,8 @@ export interface AttitudeReactorListProps {
   attitudeType: string;
   /** 每页条数，默认 30 */
   pageSize?: number;
+  /** 预填充的骨架行数量，默认 1 */
+  stickerCount?: number;
 }
 
 /** 表态结果条悬浮卡片的选项：展示某短评下某类型的表态者 */
@@ -216,6 +218,8 @@ export interface StickerViewerOption extends PopoverBaseOption {
   sticker: SupabaseAttitudeSticker;
   /** 短评上下文：提供时在贴纸卡片下方展示表态用户列表 */
   commentId?: string;
+  /** 贴纸数量上下文，供用户列表组件预渲染相应数量的骨架行 */
+  stickerCount?: number;
   attitudeType?: string;
 }
 
@@ -231,6 +235,8 @@ export interface PopoverExpose<
   updatePos: () => void | undefined;
   /** 关闭弹出框 */
   close: () => void;
+  /** 弹出框的根节点（尚未挂载时为 `undefined`），用于区分「本组件的」与「其它组件的」弹出框 */
+  getPopoverElement: () => HTMLElement | undefined;
 }
 
 /** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `InputListPopoverController` */

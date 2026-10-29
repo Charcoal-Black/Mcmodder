@@ -646,7 +646,9 @@ export class AttitudeSystem {
       .find("[data-mcmodder-sticker-id]")
       .each((_, icon) => {
         const $icon = $(icon);
+        const $count = $icon.next();
         const stickerId = Number($icon.attr("data-mcmodder-sticker-id"));
+        const stickerCount = Number($count.text());
         const sticker = stickers.get(buildStickerType(stickerId));
         if (sticker) {
           fillStickerIcon($icon, sticker);
@@ -666,7 +668,9 @@ export class AttitudeSystem {
               anchorElement: img,
               parent: this.parent,
               sticker,
-              ...(commentId && attitudeType ? { commentId, attitudeType } : {}),
+              ...(commentId && attitudeType && stickerCount
+                ? { commentId, attitudeType, stickerCount }
+                : {}),
             });
           }
         } else if (this.missingStickerIds.has(stickerId)) {
@@ -725,6 +729,7 @@ export class AttitudeSystem {
       commentId: target.commentId,
       active: this.countsCache.get(target.commentId)?.record.mine ?? [],
       target,
+      zIndex: 499, // 涉及到嵌套下拉菜单
     };
   }
 

@@ -269,11 +269,10 @@ export abstract class PopoverController<
     }
   }
 
-  /** 事件是否发生在某个弹出框内部 */
+  /** 事件是否发生在**本控制器**的弹出框内部（其它控制器的弹出框不算） */
   private inPopover(e: Event) {
-    return e
-      .composedPath()
-      .some((e) => e instanceof HTMLElement && e.classList.contains("mcmodder-popover"));
+    const element = this.app.getPopoverElement();
+    return element !== undefined && e.composedPath().includes(element);
   }
 
   /**

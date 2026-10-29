@@ -298,6 +298,7 @@ interface Settings {
   structureSelected: number;
   preferredDragPos: Record<string, number>;
   preferredGIFViewerRatioLock: boolean;
+  preferredStickerPlazaSort: 0 | 1;
 
   // 以下为旧版遗留
   templateList?: Template[];

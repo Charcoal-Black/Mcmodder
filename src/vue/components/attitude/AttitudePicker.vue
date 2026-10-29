@@ -130,9 +130,10 @@ import { usePopoverHost } from "../../composables/usePopoverHost.ts";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里；
  * 面板打开时顺带把页签指示器挪到当前页签上。
  */
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close } = usePopoverHost({
-  onOpen: () => updateIndicator(),
-});
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
+  usePopoverHost({
+    onOpen: () => updateIndicator(),
+  });
 
 const state = shallowRef<AttitudePickerState>();
 const configs = shallowRef<ConfigRepository>();
@@ -174,7 +175,11 @@ const quota = computed(() => system.value?.myStickers.value?.quota ?? null);
 /** 贴纸广场：服务端返回的原始列表（按当前排序方式，分页加载） */
 const plazaRows = shallowRef<SupabaseAttitudeSticker[]>();
 /** 贴纸广场排序方式：切换后清空已加载页，由 watch 重新拉取第一页 */
-const plazaSort = ref<StickerPlazaSort>("latest");
+const plazaSort = ref<StickerPlazaSort>(
+  (["latest", "favorites"] as const)[
+    state.value?.parent?.configRepository.getSettings("preferredStickerPlazaSort") ?? 0
+  ],
+);
 
 /**
  * 交给广场面板的列表：行上的「我收藏的」标记改由集合缓存派生。
@@ -580,5 +585,6 @@ defineExpose<PopoverExpose<AttitudePickerState, typeof inputEvents>>({
   inputEvents,
   updatePos,
   close,
+  getPopoverElement,
 });
 </script>
