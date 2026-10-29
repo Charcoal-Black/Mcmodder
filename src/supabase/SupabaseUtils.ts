@@ -1,16 +1,59 @@
-import {
-  createClient,
-  type FunctionInvokeOptions,
-  type SupabaseClient,
-} from "@supabase/supabase-js";
+import type { FunctionInvokeOptions, SupabaseClient } from "@supabase/supabase-js";
+import { monkeyWindow, unsafeWindow } from "$";
 import { watch, type ComputedRef } from "vue";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import type { ConfigRepository } from "../config/ConfigRepository";
 
+type SupabaseSdk = Pick<typeof import("@supabase/supabase-js"), "createClient">;
+
 export class SupabaseUtils {
   private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
+  private static readonly fallbackSources = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+  ];
+  private static preparing: Promise<void> | undefined;
+
+  /** @require 位于油猴沙箱，动态 script 位于页面；开发模式也可能处于不同 realm。 */
+  private static getSdk() {
+    for (const scope of [globalThis, monkeyWindow, unsafeWindow]) {
+      const sdk = (scope as { supabase?: SupabaseSdk } | undefined)?.supabase;
+      if (typeof sdk?.createClient === "function") return sdk;
+    }
+  }
+
+  /** 只在 @require 缺失时尝试备用源；全部失败也允许本地功能继续启动。 */
+  static async prepare() {
+    if (this.getSdk()) return;
+    const preparing = (this.preparing ??= this.loadFallback());
+    try {
+      await preparing;
+    } finally {
+      if (this.preparing === preparing) this.preparing = undefined;
+    }
+  }
+
+  private static async loadFallback() {
+    for (const src of this.fallbackSources) {
+      try {
+        await Utils.loadScript(
+          document.head ?? document.documentElement,
+          null,
+          src,
+          null,
+          undefined,
+          5000,
+        );
+        if (this.getSdk()) return;
+        throw new Error("脚本加载后未找到 Supabase SDK");
+      } catch (error) {
+        console.warn("Supabase 备用源加载失败：", src, error);
+      }
+    }
+    console.warn("Supabase 依赖不可用，本页云端功能已停用，本地功能继续运行。");
+  }
 
   private readonly configs: ConfigRepository;
   /** 云端客户端实例；随「启用云端服务」配置的开合而创建/释放 */
@@ -27,8 +70,11 @@ export class SupabaseUtils {
     // 初始化时若已开启云端服务，立刻创建客户端
     this.syncInstance();
 
-    // 配置变化时同步：开启后立即创建客户端，关闭后释放引用
-    watch(this.useSupabaseRef, () => this.syncInstance(true));
+    // 开启云端服务时按需补齐依赖；关闭时立即释放引用
+    watch(this.useSupabaseRef, async () => {
+      if (this.isEnabled()) await SupabaseUtils.prepare();
+      this.syncInstance(true);
+    });
   }
 
   /** 当前是否启用了云端服务（取响应式配置的即时快照） */
@@ -49,8 +95,13 @@ export class SupabaseUtils {
     }
     if (this.instance) return;
     if (this.createFailed && !retry) return;
+    const sdk = SupabaseUtils.getSdk();
+    if (!sdk) {
+      this.createFailed = true;
+      return;
+    }
     try {
-      this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
+      this.instance = sdk.createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
         auth: {
           persistSession: false,
         },
@@ -64,7 +115,7 @@ export class SupabaseUtils {
   }
 
   getClient() {
-    // `watch` 回调是异步触发的，配置刚变更时此处补一次同步，保证即时生效
+    // `watch` 回调是异步触发的，此处补一次同步，依赖就绪时保证配置即时生效
     this.syncInstance();
     return this.instance;
   }

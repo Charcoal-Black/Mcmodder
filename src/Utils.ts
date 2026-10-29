@@ -1216,6 +1216,7 @@ export class Utils {
    * @param src 外部脚本地址（与 `content` 二选一）。
    * @param type 脚本类型（默认 `"text/JavaScript"`）。
    * @param id 标签 id；若目标文档中已存在该 id 则直接 resolve。
+   * @param timeout 超时毫秒数；默认不限制，失败或超时会移除脚本标签。
    */
   static loadScript(
     loc: HTMLElement,
@@ -1223,6 +1224,7 @@ export class Utils {
     src?: string | null,
     type?: string | null,
     id?: string,
+    timeout = 0,
   ) {
     if (id && loc.ownerDocument.getElementById(id)) {
       return new Promise<void>((resolve) => {
@@ -1235,8 +1237,22 @@ export class Utils {
       if (id) script.id = id;
       if (src) script.src = src;
       if (content) script.innerHTML = content;
-      script.onload = () => resolve();
-      script.onerror = () => reject();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (error?: Error) => {
+        clearTimeout(timer);
+        script.onload = script.onerror = null;
+        if (error) {
+          script.remove();
+          reject(error);
+        } else {
+          resolve();
+        }
+      };
+      script.onload = () => finish();
+      script.onerror = () => finish(new Error(`脚本加载失败：${src ?? id ?? "内联脚本"}`));
+      if (timeout > 0) {
+        timer = setTimeout(() => finish(new Error(`脚本加载超时：${src}`)), timeout);
+      }
       loc.appendChild(script);
     });
   }
