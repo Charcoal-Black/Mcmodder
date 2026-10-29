@@ -107,6 +107,9 @@
   .checkbox label,
   .form-control,
 
+  /* 弹出框的显示与隐藏 */
+  .mcmodder-popover-anim,
+
   /* Vue 组件：个人中心设置目录树、校对时间轴节点 */
   a.mcmodder-menutree-link,
   .mcmodder-verify-timeline-node {

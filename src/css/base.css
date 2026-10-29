@@ -2732,28 +2732,45 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 #mcmodder-getitemlist-typeid-input {
   border-radius: 0;
 }
+/* 定位层：只负责位置。这里不能加 transform，否则 getBoundingClientRect
+   量到的是动画中的视觉盒，向上/向下与水平偏移都会跟着抖。 */
 .mcmodder-popover {
   position: absolute;
   margin-top: 4px;
   margin-bottom: 0;
-  background-color: var(--mcmodder-color-background);
-  backdrop-filter: blur(10px);
   z-index: 500;
-  box-shadow: 0px 2px 5px var(--mcmodder-color-box-shadow);
-  border-radius: calc(var(--mcmodder-width-radius) * 0.5);
-  /* 和下拉菜单的高度预测功能冲突了，依旧 TODO */
-  /* transition: opacity 0.2s ease-out 0s, transform 0.2s ease-in-out 0s; */
-  transform-origin: top;
-  /* transform: scale(1); */
 }
 .mcmodder-popover.expand-upward {
   margin-top: 0;
   margin-bottom: 4px;
-  transform-origin: bottom;
 }
-.mcmodder-input-list.faded {
+/* 动画层：背景、阴影、圆角都放在这里，让整块面板一起缩放。
+   它是根节点的子元素，transform 不会改变根节点的布局盒。 */
+.mcmodder-popover-anim {
+  display: flow-root; /* 包住 .mcmodder-popover-inner 的 margin，避免外边距合并 */
+  background-color: var(--mcmodder-color-background);
+  backdrop-filter: blur(10px);
+  box-shadow: 0px 2px 5px var(--mcmodder-color-box-shadow);
+  border-radius: calc(var(--mcmodder-width-radius) * 0.5);
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top center;
+  /* 时长与 Popover.vue 里的 ANIM_MS 保持一致 */
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mcmodder-popover.expand-upward .mcmodder-popover-anim {
+  transform-origin: bottom center;
+}
+.mcmodder-popover-anim.faded {
   opacity: 0;
-  /* transform: scale(0.98); */
+  /* 向下弹出时从锚点方向稍微上移，向上弹出时反过来 */
+  transform: translateY(-4px) scale(0.96);
+  pointer-events: none;
+}
+.mcmodder-popover.expand-upward .mcmodder-popover-anim.faded {
+  transform: translateY(4px) scale(0.96);
 }
 .mcmodder-popover-inner {
   margin: 2px;
