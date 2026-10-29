@@ -69,6 +69,7 @@ html.mcmodder-attitude-twemoji emoji-picker {
 .common-comment-block .comment-tools ol.comment-attitude-result > li > a {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .common-comment-block .comment-tools ol.comment-attitude-result img {
@@ -128,7 +129,7 @@ img.mcmodder-attitude-sticker-image {
 
 /* 我点过的类型：计数文字取主色；恶魔安格瑞额外取专属色 */
 .comment-tools ol.comment-attitude-result li.mcmodder-attitude-item > a.mcmodder-attitude-active {
-  color: var(--mcmodder-color-primary);
+  color: var(--mcmodder-color-primary-dark2);
 }
 
 .comment-tools
@@ -294,6 +295,7 @@ img.mcmodder-attitude-sticker-image {
   display: none;
 }
 
+.mcmodder-attitude-sort-title,
 .mcmodder-attitude-sticker-quota {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);
@@ -506,6 +508,17 @@ img.mcmodder-attitude-sticker-image {
   height: calc(100% - 46px);
 }
 
+.mcmodder-attitude-plaza-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.mcmodder-attitude-plaza-tools .mcmodder-dropdown-button {
+  width: 8em;
+}
+
 .mcmodder-attitude-plaza-uploader-line {
   display: flex;
   align-items: center;
@@ -548,6 +561,24 @@ img.mcmodder-attitude-sticker-image {
   height: 16px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.mcmodder-attitude-plaza-favorite-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 14px;
+  white-space: nowrap;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+.mcmodder-attitude-plaza-favorite-line .fa {
+  color: var(--mcmodder-color-accent);
 }
 
 .mcmodder-attitude-plaza-more {
@@ -674,4 +705,110 @@ img.mcmodder-attitude-sticker-image {
 
 .center-main.attitude li.mcmodder-attitude-stat .mcmodder-attitude-emoji {
   font-size: calc(1em * var(--mcmodder-attitude-scale));
+}
+
+/* ===== 表态结果条悬浮卡片：表态用户列表 ===== */
+.mcmodder-attitude-reactors-popover,
+.mcmodder-attitude-reactors {
+  width: 200px;
+}
+
+.mcmodder-attitude-reactors-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mcmodder-attitude-sticker-viewer-reactors .mcmodder-attitude-reactors-scroll {
+  max-height: 180px;
+}
+
+.mcmodder-attitude-sticker-viewer-reactors {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--mcmodder-color-background-dark1);
+}
+
+.mcmodder-attitude-reactor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 4px;
+  border-radius: 4px;
+  color: var(--mcmodder-color-text);
+  font-size: 13px;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+.mcmodder-attitude-reactor:hover {
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text);
+}
+
+.mcmodder-attitude-reactor-avatar,
+.mcmodder-attitude-reactor-avatar-placeholder {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.mcmodder-attitude-reactor-avatar {
+  object-fit: cover;
+}
+
+.mcmodder-attitude-reactor-avatar-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mcmodder-color-background-dark1);
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 12px;
+}
+
+.mcmodder-attitude-reactor-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcmodder-attitude-reactor-name.mcmodder-skeleton {
+  width: 8em;
+  height: 1em;
+}
+
+.mcmodder-attitude-reactor-me {
+  flex: none;
+  margin-left: auto;
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 11px;
+}
+
+.mcmodder-attitude-reactors-status {
+  padding: 6px 4px;
+  color: var(--mcmodder-color-text-dark2);
+  font-size: 12px;
+  text-align: center;
+}
+
+.mcmodder-attitude-reactors-retry {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mcmodder-color-primary);
+  font-size: 12px;
+  cursor: var(--mcmodder-cursor-hand);
+}
+
+/* 纯用户列表的锚点：让整条结果项成为唯一的悬停目标，避免子元素打断 pointerover / pointerout */
+.comment-tools
+  ol.comment-attitude-result
+  li.mcmodder-attitude-item
+  > a.mcmodder-attitude-reactors-anchor
+  > * {
+  pointer-events: none;
 }

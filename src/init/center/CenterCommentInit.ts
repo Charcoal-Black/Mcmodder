@@ -23,7 +23,7 @@ export class CenterCommentInit extends CenterBaseInit {
     this.fetching = true;
     try {
       const rows = await this.parent.supabaseUtils.fetchAttitudeUserCounts(uid, (error) =>
-        console.warn("[Mcmodder] 表态取得统计获取失败：", error),
+        Utils.commonMsg(`表态取得统计获取失败... (${error})`, false),
       );
       if (!rows) return;
       // 服务端按「各类别首次获得表态的时间序」返回行，这里保持该顺序追加展示

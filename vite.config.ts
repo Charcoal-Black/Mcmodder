@@ -44,6 +44,7 @@ const userscriptMeta = {
   "run-at": "document-start",
   match: ["https://*.mcmod.cn/*"],
   exclude: [
+    "https://i.mcmod.cn/*",
     "https://api.mcmod.cn/*",
     "https://www.mcmod.cn/v2/*",
     "https://play.mcmod.cn/add/*",
@@ -70,6 +71,8 @@ const userscriptMeta = {
     "raw.githubusercontent.com",
     "hub.gitmirror.com",
     "supabase.co",
+    "kjghwgrbawdtatyrrxin.supabase.co",
+    "mcmodder.114514256.xyz",
     "fastly.jsdelivr.net",
     "cdn.jsdelivr.net",
     "cdn.jsdelivr.net.cn",

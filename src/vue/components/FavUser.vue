@@ -25,7 +25,7 @@
           ]"
           :title="`${profile.nickname} · ${parent.utils.getProfileAbstract(profile, true, true)}`"
           target="_blank"
-          :href="`https://center.mcmod.cn/${uid}/`"
+          :href="Utils.getCenterURL(uid)"
           @click="onUserClick($event, uid)"
         >
           <div class="avatar">
@@ -42,6 +42,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, triggerRef } from "vue";
 import { Mcmodder } from "../../Mcmodder";
+import { Utils } from "../../Utils";
 
 interface Props {
   parent: Mcmodder;

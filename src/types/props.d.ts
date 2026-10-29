@@ -1,3 +1,5 @@
+import type { Mcmodder } from "../Mcmodder";
+
 export interface AutoLinkOptionProps<T extends AutoLinkBaseEntry> {
   parent: import("../Mcmodder").Mcmodder;
   entry: T;
@@ -168,12 +170,14 @@ export interface AttitudeStickerBrowserProps {
 
 export interface AttitudeStickerPlazaProps {
   parent?: import("../Mcmodder").Mcmodder;
-  /** 广场贴纸（按共享时间倒序） */
+  /** 广场贴纸（按 `sort` 指定的方式排序） */
   stickers?: SupabaseAttitudeSticker[];
   /** 广场总条数（用于「加载更多」） */
   total?: number;
   /** 正在加载下一页 */
   loading?: boolean;
+  /** 当前排序方式（缺省按最新共享） */
+  sort?: StickerPlazaSort;
   /** 已表态的类型（高亮用） */
   active?: string[];
   /** 点击贴纸发送表态；不传 = 只预览 */
@@ -186,12 +190,37 @@ export interface AttitudeStickerPlazaProps {
   onDelete?: (sticker: SupabaseAttitudeSticker) => Promise<boolean> | boolean;
   /** 加载下一页 */
   onLoadMore?: () => Promise<void> | void;
+  /** 切换排序方式；不传则不显示排序控件 */
+  onSortChange?: (sort: StickerPlazaSort) => void;
+}
+
+export interface AttitudeReactorListProps {
+  parent: Mcmodder;
+  commentId: string;
+  attitudeType: string;
+  /** 每页条数，默认 30 */
+  pageSize?: number;
+  /** 预填充的骨架行数量，默认 1 */
+  stickerCount?: number;
+}
+
+/** 表态结果条悬浮卡片的选项：展示某短评下某类型的表态者 */
+export interface AttitudeReactorsOption extends PopoverBaseOption {
+  type: "attitudeReactors";
+  parent: Mcmodder;
+  commentId: string;
+  attitudeType: string;
 }
 
 export interface StickerViewerOption extends PopoverBaseOption {
   type: "stickerViewer";
   parent: import("../Mcmodder").Mcmodder;
   sticker: SupabaseAttitudeSticker;
+  /** 短评上下文：提供时在贴纸卡片下方展示表态用户列表 */
+  commentId?: string;
+  /** 贴纸数量上下文，供用户列表组件预渲染相应数量的骨架行 */
+  stickerCount?: number;
+  attitudeType?: string;
 }
 
 export interface PopoverExpose<
@@ -206,6 +235,8 @@ export interface PopoverExpose<
   updatePos: () => void | undefined;
   /** 关闭弹出框 */
   close: () => void;
+  /** 弹出框的根节点（尚未挂载时为 `undefined`），用于区分「本组件的」与「其它组件的」弹出框 */
+  getPopoverElement: () => HTMLElement | undefined;
 }
 
 /** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `InputListPopoverController` */

@@ -561,8 +561,14 @@ export class Mcmodder {
   }
 
   updateNightMode() {
+    // 以配置为唯一事实来源，把 isNightMode 同步回来。
+    // 夜间模式自适应（跟随系统）会在 main() 中直接写配置而不经过 switchNightMode()，
+    // 跨标签页同步也会只改配置；若此处不刷新字段，依赖 isNightMode 的代码
+    // （UEditor iframe、部分图表回调）就会与页面实际的 dark 状态脱节。
+    const nightMode = !!this.configRepository.getSettings("nightMode");
+    this.isNightMode = nightMode;
     const icon = $("#mcmodder-night-switch i");
-    if (this.configRepository.getSettings("nightMode")) {
+    if (nightMode) {
       icon.removeClass("on");
       if ($("#item-cover-preview-img").first().attr("src") === Values.assets.mcmod.imagesNone) {
         $("#item-cover-preview-img").attr("src", Values.assets.nightMode.imagesNone);
@@ -617,12 +623,10 @@ export class Mcmodder {
   }
 
   switchNightMode() {
-    if (this.isNightMode) {
-      this.configRepository.setSettings("nightMode", false);
-    } else {
-      this.configRepository.setSettings("nightMode", true);
-    }
-    this.isNightMode = !this.isNightMode;
+    // 只写配置，由 updateNightMode() 依据配置同步 isNightMode 与页面状态；
+    // 这里显式再调一次，避免依赖 Vue watcher 的异步时机。
+    this.configRepository.setSettings("nightMode", !this.isNightMode);
+    this.updateNightMode();
   }
 
   copyright() {
@@ -772,7 +776,7 @@ export class Mcmodder {
       if (insertPos.length) {
         const myProfile = this.configRepository.getAllProfile() as Partial<Profile>;
         const avatar = myProfile.avatar
-          ? `<a href="//center.mcmod.cn/${this.currentUID}/" target="_blank">
+          ? `<a href="${Utils.getCenterURL(this.currentUID)}" target="_blank">
             <img alt="${myProfile.nickname}" src="${myProfile.avatar}">
           </a>`
           : $(".header-user-avatar").html();
@@ -857,7 +861,7 @@ export class Mcmodder {
       scheme.addEventListener("change", () => {
         this.configRepository.setSettings("nightMode", scheme.matches);
       });
-    } else this.isNightMode = this.configRepository.getSettings("nightMode") ?? false;
+    }
 
     this.updateNightMode();
     this.updatePageWidth();

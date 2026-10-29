@@ -4,7 +4,21 @@
       <span class="mcmodder-attitude-sticker-quota"
         >由所有用户共享出来的表态贴纸，轻触即可预览并直接使用或收藏~</span
       >
-      <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
+      <span class="mcmodder-attitude-plaza-tools">
+        <template v-if="onSortChange">
+          <span class="mcmodder-attitude-sort-title">排序方式: </span>
+          <DropdownMenuInput
+            title="排序方式"
+            :value="sort === 'latest' ? 0 : 1"
+            :range="{
+              0: '最新共享',
+              1: '最多收藏',
+            }"
+            :on-successful-change="handleSortChange"
+          />
+        </template>
+        <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
+      </span>
     </div>
 
     <p v-if="stickers !== undefined && stickers.length === 0" class="mcmodder-attitude-empty-hint">
@@ -32,7 +46,7 @@
         <div class="mcmodder-attitude-plaza-uploader-line">
           <a
             class="mcmodder-attitude-plaza-uploader-link"
-            :href="`https://center.mcmod.cn/${sticker.uid}/`"
+            :href="Utils.getCenterURL(sticker.uid)"
             target="_blank"
             title="前往上传者主页"
           >
@@ -47,6 +61,10 @@
           </a>
           <span v-if="sticker.is_mine">（我）</span>
         </div>
+        <!-- <div v-if="sticker.favorite_count" class="mcmodder-attitude-plaza-favorite-line">
+          <i class="fa" :class="sticker.is_favorite ? 'fa-star' : 'fa-star-o'" />
+          {{ sticker.favorite_count }}
+        </div> -->
       </template>
     </AttitudeStickerBrowser>
 
@@ -65,8 +83,12 @@ import { useStickerSelectionGuard } from "../../composables/useStickerSelectionG
 import { getStickerUploader, type StickerUploaderProfile } from "../../../attitude/stickerUploader";
 import type { AttitudeStickerPlazaProps } from "../../../types/props";
 import type { AttitudeStickerPlazaEmitPayload, StickerRemovedReason } from "../../../types/emits";
+import { Utils } from "../../../Utils.ts";
+import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 
-const props = defineProps<AttitudeStickerPlazaProps>();
+const props = withDefaults(defineProps<AttitudeStickerPlazaProps>(), {
+  sort: "latest",
+});
 const emit = defineEmits<AttitudeStickerPlazaEmitPayload>();
 
 const selected = shallowRef<SupabaseAttitudeSticker | null>(null);
@@ -107,5 +129,14 @@ useStickerSelectionGuard(selected, () => props.stickers);
 function onBrowserRemoved(sticker: SupabaseAttitudeSticker, reason: StickerRemovedReason) {
   if (reason === "unfavorited") return;
   emit("stickerRemoved", sticker);
+}
+
+/** 排序下拉框：值即服务端 `p_sort` 的取值 */
+function handleSortChange(info: InputValidInfo<number>) {
+  if (info.isok) {
+    const value = info.final! as 0 | 1;
+    props.onSortChange?.((["latest", "favorites"] as const)[value]);
+    props.parent?.configRepository.setSettings("preferredStickerPlazaSort", value);
+  }
 }
 </script>

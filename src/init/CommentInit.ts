@@ -3,6 +3,7 @@ import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import { Utils } from "../Utils";
 import Countdown from "../vue/components/Countdown.vue";
 import { TimerUtils } from "../widget/TimerUtils.ts";
+import { CommentJumpController } from "./CommentJump";
 import { Init } from "./Init";
 
 export class CommentInit extends Init {
@@ -10,8 +11,11 @@ export class CommentInit extends Init {
     return !!$(".common-comment-block.lazy").length;
   }
 
-  /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存 */
+  /** 自定义表态（恶魔安格瑞 + 全 emoji）：全站单例，与消息中心共用计数缓存；浏览公开，发送需认证 */
   private readonly attitude = AttitudeSystem.for(this.parent);
+
+  /** 短评跨页跳转：查找、翻页与 loading 都由它负责 */
+  private readonly jump = new CommentJumpController(this.parent, this.configs);
 
   private displayPublishTime(target: JQuery) {
     target.find(".comment-reply-row-time").each((_, node) => {
@@ -61,26 +65,45 @@ export class CommentInit extends Init {
   }
 
   private renderPagination() {
-    $("ul.pagination.common-pages > span").each((_, e) => {
+    $("ul.pagination.common-pages > span").each((_, _e) => {
       // 站点重渲染翻页条后需要重新注入，已注入过的跳过
-      if ($(e).find("#mcmodder-gotopage").length) return;
-      e.innerHTML +=
-        '快速跳转至：第&nbsp;<input id="mcmodder-gotopage" class="form-control">&nbsp;页。';
-      $(e)
-        .find("#mcmodder-gotopage")
-        .val(e.textContent.replace("当前 ", "").split(" / ")[0])
-        .bind("change", (f) => {
-          const target = f.currentTarget as HTMLInputElement;
-          const value = parseInt(target.value);
-          if (
-            value < 1 ||
-            value > parseInt(target.textContent.replace("当前 ", "").split(" / ")[1])
-          ) {
-            return;
+      const e = $(_e);
+      if (e.hasClass("mcmodder-comment-goto")) return;
+      e.addClass("mcmodder-comment-goto");
+      const gotopage = $(`<input id="mcmodder-gotopage" class="form-control">`);
+      const gotofloor = $(`<input id="mcmodder-gotofloor" class="form-control">`);
+      e.append(`快速跳转至：第`, gotopage, `页 / 第`, gotofloor, `楼。`);
+      const [currentPage, maxPage] = e.text().replace("当前 ", "").split(" / ").map(Number);
+      gotopage.val(currentPage).change(() => {
+        const value = parseInt(gotopage.val().trim());
+        if (value < 1 || value > maxPage) {
+          Utils.commonMsg("请输入一个合法的数值...", false);
+          return;
+        }
+        comment_nowpage = value;
+        get_comment(comment_container, comment_type);
+      });
+      let currentFloor = 1;
+      $(".comment-floor")
+        .children()
+        .each((_, e) => {
+          const row = $(e);
+          const userinfo = row.find(".comment-row-userinfo");
+          if (userinfo.find(".L1").length) return; // 是置顶评论
+          const floor = parseInt(userinfo.text()); // xxx楼
+          if (Number.isInteger(floor)) {
+            currentFloor = Math.max(floor, currentFloor);
+            return false;
           }
-          comment_nowpage = value;
-          get_comment(comment_container, comment_type);
         });
+      gotofloor.val(currentFloor).change(() => {
+        const targetFloor = parseInt(gotofloor.val().trim(), 10);
+        if (!Number.isInteger(targetFloor) || targetFloor < 1) {
+          Utils.commonMsg("请输入一个合法的数值...", false);
+          return;
+        }
+        this.jump.startFloorJump(targetFloor);
+      });
     });
   }
 
@@ -188,11 +211,13 @@ export class CommentInit extends Init {
       // 移动端图标优化
       this.replaceMobileClientIcon(target);
     });
+
+    this.jump.onCommentPageRendered();
   }
 
   private processCommentReplyFloor(commentFloor: JQuery) {
     void this.attitude.processCommentRows(commentFloor);
-    if (!this.configs.getSettings("replyLink")) return;
+    const autoLink = this.configs.getSettings("replyLink");
     $("div.comment-reply-row", commentFloor).each((_, _e) => {
       const e = $(_e);
       if (e.attr(CommentInit.REPLY_PROCESSED_ATTR)) return;
@@ -200,6 +225,7 @@ export class CommentInit extends Init {
       const uid = Number(e.find("a.poped").attr("data-uid"));
       if (this.configs.getSettingsAsNumberList("userBlacklist")?.includes(uid)) e.remove();
       this.setReplyLink(e);
+      if (!autoLink) return;
       const replyContent = e.find("div.comment-reply-row-text-content.common-text.font14").first();
       const rawContent = replyContent.html().replaceAll("<br>", " ");
       let newContent = "";
@@ -275,13 +301,7 @@ export class CommentInit extends Init {
   }
 
   private setReplyLink(target: JQuery) {
-    if (target.find("input.comment-id").val() === this.parent.href.split("comment-")[1]) {
-      setTimeout(() => {
-        target.get(0).scrollIntoView({ behavior: "smooth", block: "center" });
-        target.addClass("mcmodder-mark-gold");
-        setTimeout(() => target.removeClass("mcmodder-mark-gold"), 2e3);
-      }, 8e2);
-    }
+    this.jump.notifyCommentRendered(target);
     if (this.configs.getSettings("lieqi")) {
       this.lieqi(target);
     }
@@ -295,7 +315,7 @@ export class CommentInit extends Init {
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {
       this.unlockComment();
     }
-    if (this.parent.href.includes("#comment-")) {
+    if (this.jump.start()) {
       $(".common-comment-block.lazy").get(0)?.scrollIntoView({
         behavior: "smooth",
         block: "center",

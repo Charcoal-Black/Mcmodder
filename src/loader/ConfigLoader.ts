@@ -620,6 +620,15 @@ export const settings = [
             range: [0, null],
           },
           {
+            id: "commentJumpRequestLimit",
+            title: "短评跳转查找请求上限",
+            description:
+              "通过 #comment-<id> 链接跨页跳转短评时，二分查找目标页最多发出的请求数。超过上限仍未定位则停止查找。",
+            type: "number",
+            value: 12,
+            range: [1, null],
+          },
+          {
             id: "userBlacklist",
             title: "用户黑名单",
             description:
@@ -682,6 +691,7 @@ export const settings = [
             description:
               "是否启用 Mcmodder 云端服务与功能。相关服务由 Supabase 驱动。若禁用此项，所有依赖云端服务的功能都不会运作。",
             type: "checkbox",
+            value: true,
           },
           {
             id: "fetchCustomSplashes",
@@ -740,8 +750,9 @@ export const settings = [
             id: "customAttitude",
             title: "自定义表态",
             description:
-              "[需要用户认证] 启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。",
+              "启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。浏览短评表态无需认证；发送表态、消息中心与个人统计仍需完成用户认证。",
             type: "checkbox",
+            value: true,
             visible: (ctx) => ctx.configs.getSettings("useSupabase"),
           },
           {

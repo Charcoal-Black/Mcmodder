@@ -1446,7 +1446,7 @@ body .edui-default .edui-toolbar .edui-for-mcmodderupload.mcmodder-edui-uploadin
     grid-template-columns: repeat(4, 1fr);
   }
 }
-@media (max-width: 500px) {
+@media (max-width: 600px) {
   .center-total ul {
     grid-template-columns: repeat(2, 1fr);
   }

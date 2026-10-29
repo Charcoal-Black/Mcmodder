@@ -296,7 +296,7 @@ export class Utils {
     return node.nodeType === Node.TEXT_NODE;
   }
 
-  /** 生成 `[l, r]` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
+  /** 生成 `[l, r)` 内步长为 `step` 的整数序列（`l`/`r` 须为整数，`step` 为正整数） */
   static createRange(l: number, r: number, step = 1) {
     if (!Number.isInteger(l) || !Number.isInteger(r)) {
       throw new Error("端点必须是整数。");
@@ -567,14 +567,15 @@ export class Utils {
     return v.slice(5, pos);
   }
 
-  /** 触发浏览器下载，保存文本内容为文件 */
-  static saveFile(fileName: string, content: string) {
-    const blob = new Blob([content]);
+  /** 触发浏览器下载，保存文本内容或 Blob 为文件 */
+  static saveFile(fileName: string, content: string | Blob) {
+    const blob = content instanceof Blob ? content : new Blob([content]);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = fileName;
     link.click();
-    URL.revokeObjectURL(link.href);
+    // 立刻 revoke 会让部分浏览器拿不到内容，等一拍再释放
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
   }
 
   /** 延迟 `ms` 毫秒的异步等待 */
@@ -1269,10 +1270,13 @@ export class Utils {
     return Promise.all(srcList.map((src) => this.loadScript(loc, null, src, type, id)));
   }
 
-  /** 获取 0 点的毫秒时间戳，`num` 为相对天数偏移（正数向后，负数向前） */
+  /** 获取 UTC-8 时区下 0 点的毫秒时间戳，`num` 为相对天数偏移（正数向后，负数向前） */
   static getStartTime(d: number | Date, num = 1) {
-    if (typeof d === "number") d = new Date(d);
-    return new Date(d.setHours(0, 0, 0, 0)).getTime() + 24 * 60 * 60 * 1000 * num;
+    const time = typeof d === "number" ? d : d.getTime();
+    // UTC-8 为固定偏移（无夏令时），先将时间平移到 UTC-8 的本地坐标再按整天取整
+    const offset = 8 * 60 * 60 * 1000;
+    const day = 24 * 60 * 60 * 1000;
+    return Math.floor((time + offset) / day) * day - offset + day * num;
   }
 
   /** 格式化为 `YYYY-M-D` 日期字符串 */
@@ -1422,10 +1426,14 @@ export class Utils {
    *
    * @param config 请求配置
    * @param message 本次请求附带的提示消息
+   * @param silent 为 true 时不在请求监控中弹出提示（仍进入限速队列），用于脚本内部的批量查找
+   * @param log 为 false 时不写请求日志；含认证 key 等敏感数据的内部请求应关闭
    */
   createRequest<R extends GmResponseType = "text">(
     config: GmXmlhttpRequestOption<R, unknown>,
     message?: string,
+    silent = false,
+    log = true,
   ): Promise<GmResponseEvent<R, unknown>> {
     const lastRequestTime = this.updateRequestTime(),
       now = Date.now();
@@ -1459,7 +1467,7 @@ export class Utils {
                   if (err) {
                     console.warn("Failed to set `yxd_token!`");
                   } else {
-                    this.createRequest(config, message).then((resp) => resolve(resp));
+                    this.createRequest(config, message, silent, log).then((resp) => resolve(resp));
                   }
                 },
               );
@@ -1468,14 +1476,16 @@ export class Utils {
             resolve(resp);
           }
         };
-        const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
-        if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
-        let content = `A${lastRequestTime}:${config.url}`;
-        if (config.data) content += `(${config.data})`;
-        logs.push(content);
-        GM_setValue("mcmodderLogger", logs.join(";"));
+        if (log) {
+          const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
+          if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
+          let content = `A${lastRequestTime}:${config.url}`;
+          if (config.data) content += `(${config.data})`;
+          logs.push(content);
+          GM_setValue("mcmodderLogger", logs.join(";"));
+        }
         // 调试与监控：在所有可见的标签页上提示本次发包（须置于限速等待之后，否则排队中的请求会提前亮起）
-        this.parent.requestToastBroadcaster.send(config.method, config.url, message);
+        if (!silent) this.parent.requestToastBroadcaster.send(config.method, config.url, message);
         // console.debug("Send Async request: ", config);
         GM_xmlhttpRequest(config);
       }, lastRequestTime - now);

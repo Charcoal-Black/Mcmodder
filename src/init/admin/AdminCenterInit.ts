@@ -1,3 +1,4 @@
+import { Utils } from "../../Utils";
 import { AdminBaseInit } from "./AdminBaseInit";
 
 export class AdminCenterInit extends AdminBaseInit {
@@ -6,8 +7,8 @@ export class AdminCenterInit extends AdminBaseInit {
   }
   override run() {
     $("td:first-child()").each((_, c) => {
-      const n = c.textContent;
-      c.innerHTML = `<a href="https://center.mcmod.cn/${n}" target="_blank">${n}</a>`;
+      const n = Number(c.textContent);
+      c.innerHTML = `<a href="${Utils.getCenterURL(n)}" target="_blank">${n}</a>`;
     });
   }
 }

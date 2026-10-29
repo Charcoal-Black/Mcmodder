@@ -249,6 +249,7 @@ interface Settings {
   missileAlert: boolean;
   missileAlertHeight: number;
   commentExpandHeight: number;
+  commentJumpRequestLimit: number;
   userBlacklist: string;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;
@@ -296,6 +297,8 @@ interface Settings {
   preferredAutolinkStyle: 1 | 2;
   structureSelected: number;
   preferredDragPos: Record<string, number>;
+  preferredGIFViewerRatioLock: boolean;
+  preferredStickerPlazaSort: 0 | 1;
 
   // 以下为旧版遗留
   templateList?: Template[];
@@ -976,7 +979,10 @@ type AttitudeStickerListProps = import("./props").AttitudeStickerListProps;
 
 type StickerViewerOption = import("./props").StickerViewerOption;
 
-type PopoverOption = InputListOption | AttitudePickerState | StickerViewerOption;
+type AttitudeReactorsOption = import("./props").AttitudeReactorsOption;
+
+type PopoverOption =
+  InputListOption | AttitudePickerState | StickerViewerOption | AttitudeReactorsOption;
 
 interface McmodItemEditorInnerData {
   /**
@@ -1673,6 +1679,65 @@ interface RecentlyVisited {
   time: number;
 }
 
+/**
+ * 动态纹理可以使纹理随着时间的变化而自动变化。在实际运行过程中，动态纹理的每帧都在重复上传到同一个纹理的位置，
+ * 使得渲染时纹理产生变化。
+ *
+ * @see https://zh.minecraft.wiki/w/%E7%BA%B9%E7%90%86#%E5%8A%A8%E6%80%81%E7%BA%B9%E7%90%86
+ */
+interface AnimatedTexture {
+  /**
+   * （大于 0）帧纹理的高度，以像素为单位。如果指定高度的同时不指定宽度，则帧纹理的宽度为整个纹理的宽度。
+   * 如果宽度和高度都不指定，则帧纹理的大小为正方形，边长为高度和宽度的较小值。
+   * 如果指定的高度大于纹理的高度，则这个纹理会被作为静态纹理渲染。
+   * 设置为 -1 则与不设置此值无差别。
+   *
+   * @warning 此值很少被设置和使用，脚本目前忽略该值，若使用时遇到非预期现象，请报告。
+   */
+  height?: number;
+
+  /**
+   * （大于 0）帧纹理的宽度，以像素为单位。如果指定宽度的同时不指定高度，则帧纹理的高度为整个纹理的高度。
+   * 如果宽度和高度都不指定，则帧纹理的大小为正方形，边长为高度和宽度的较小值。
+   * 如果指定的宽度大于纹理的宽度，则这个纹理会被作为静态纹理渲染。
+   * 设置为 -1 则与不设置此值无差别。
+   *
+   * @warning 此值很少被设置和使用，脚本目前忽略该值，若使用时遇到非预期现象，请报告。
+   */
+  width?: number;
+
+  /**
+   * 一个帧列表，列表内的帧按照顺序依次播放，当播放到最后一帧完毕时从头开始继续播放。
+   * 如果此列表不存在或为空，则按照帧纹理的顺序作为播放顺序。
+   */
+  frames?: (
+    | {
+        /**
+         * （不小于 0）指定这一帧显示帧纹理的编号。如果帧纹理的编号小于0或大于帧纹理数量，则这一帧不会被播放。
+         */
+        index: number;
+
+        /**
+         * （大于 0）这一帧的持续时间，覆盖整型 {@link frametime} 的值。如果此值不大于 0，则这一帧不会被播放。
+         */
+        time?: number;
+      }
+    | number
+  )[];
+
+  /**
+   * （大于 0）设置每一帧渲染持续多少游戏刻。
+   * @default 1
+   */
+  frametime?: number;
+
+  /**
+   * 表示是否在帧之间进行插值渲染。如果为 true，游戏将根据当前渲染帧的时间混合前后两帧的纹理进行渲染。
+   * @default false
+   */
+  interpolate?: boolean;
+}
+
 type EditorAlertHTMLModifier = (e: HTMLElement) => void;
 type EditorAlertForm = () => JQuery;
 
@@ -1964,6 +2029,16 @@ interface SupabaseAttitudeUserCountRow {
   total: number;
 }
 
+/** RPC `mcmodder_attitude_reactors` 的一行：某短评下某类型的表态者 + 同条件下的总人数 */
+interface SupabaseAttitudeReactorRow {
+  uid: number;
+  username?: string;
+  avatar?: string;
+  created_at: string;
+  /** 同条件下的总人数（服务端 `count(*) over ()`） */
+  total: number;
+}
+
 /** RPC `mcmodder_attitude_sticker_quota` 的一行：今日贴纸额度（东八区自然日） */
 interface SupabaseAttitudeStickerQuotaRow {
   used_today: number;
@@ -2012,12 +2087,26 @@ interface SupabaseAttitudeSticker {
   is_mine?: boolean;
   /** 是否我收藏的（“我的贴纸”集合行 / 广场行） */
   is_favorite?: boolean;
+  /** 收藏人数（广场行；其他来源可能缺省） */
+  favorite_count?: number;
 }
 
-/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 分页总数 */
+/** 贴纸广场的排序方式：latest = 最新共享，favorites = 收藏人数最多 */
+type StickerPlazaSort = "latest" | "favorites";
+
+/** RPC `mcmodder_attitude_sticker_plaza` 的一行：广场贴纸 + 收藏人数 + 分页总数 */
 interface SupabaseAttitudeStickerPlazaRow extends SupabaseAttitudeSticker {
+  /** 该贴纸被多少用户收藏（服务端聚合 `sticker_likes`） */
+  favorite_count: number;
   /** 与当前过滤条件对应的总条数（服务端 `count(*) over ()`） */
   total: number;
+}
+
+/** RPC `mcmodder_attitude_sticker_favorite` 的一行：操作后的收藏状态与收藏人数 */
+interface SupabaseAttitudeStickerFavoriteRow {
+  id: number;
+  is_favorite: boolean;
+  favorite_count: number;
 }
 
 /** 贴纸上传额度（东八区自然日） */

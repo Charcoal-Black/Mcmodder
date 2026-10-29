@@ -89,9 +89,10 @@
         :disabled="favoritePending"
         @click="onFavoriteClick"
       >
-        <template v-if="isMine(selected)"><i class="fa fa-star" /> 取消收藏</template>
-        <template v-else-if="selected.is_favorite"><i class="fa fa-star" /> 已收藏</template>
-        <template v-else><i class="fa fa-star-o" /> 收藏</template>
+        <template v-if="selected.is_favorite"
+          ><i class="fa fa-star" /> {{ favouriteButtonText(selected) }}</template
+        >
+        <template v-else><i class="fa fa-star-o" /> {{ favouriteButtonText(selected) }}</template>
       </button>
       <button
         v-if="onDelete && isMine(selected)"
@@ -143,6 +144,11 @@ function isMine(sticker: SupabaseAttitudeSticker) {
 /** 自己上传的贴纸已在贴纸库里，只能取消收藏；他人贴纸则可收藏 / 取消收藏 */
 function showFavorite(sticker: SupabaseAttitudeSticker) {
   return isMine(sticker) ? !!sticker.is_favorite : true;
+}
+
+function favouriteButtonText(sticker: SupabaseAttitudeSticker) {
+  const { is_favorite, favorite_count } = sticker;
+  return `${is_favorite ? "已收藏" : "收藏"}${favorite_count ? " " + favorite_count.toLocaleString() : ""}`;
 }
 
 /** 共享 / 取消共享自己上传的贴纸；下架后它不再属于广场 */

@@ -1,7 +1,10 @@
 <template>
   <div class="mcmodder-attitude-sticker-panel mcmodder-attitude-my-stickers">
     <div class="mcmodder-attitude-sticker-bar">
-      <label v-if="onUpload" class="mcmodder-attitude-sticker-upload btn btn-light">
+      <label
+        v-if="onUpload && authenticated"
+        class="mcmodder-attitude-sticker-upload btn btn-light"
+      >
         <input type="file" :accept="accept" :disabled="uploading" @change="onFileChange" />
         <span>{{ uploading ? "上传中…" : "上传图片" }}</span>
       </label>
@@ -9,7 +12,11 @@
     </div>
 
     <p v-if="!loading && stickers!.length === 0" class="mcmodder-attitude-empty-hint">
-      还没有上传或收藏过表态贴纸，上传一张吧~
+      {{
+        authenticated
+          ? "还没有上传或收藏过表态贴纸，上传一张吧~"
+          : "完成云端认证后，即可上传与收藏表态贴纸。"
+      }}
     </p>
     <AttitudeStickerBrowser
       v-else
@@ -68,6 +75,8 @@ const emit = defineEmits<AttitudeStickerListEmitPayload>();
 const loading = computed(() => {
   return props.parent === undefined || props.stickers === undefined;
 });
+/** 上传、收藏与重命名都写云端，未认证时只展示空状态 */
+const authenticated = computed(() => !!props.parent?.attitudeSystem.getAuthKey());
 
 const accept = Values.attitude.sticker.uploadAccept;
 const uploading = ref(false);
