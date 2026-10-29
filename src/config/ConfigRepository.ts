@@ -28,7 +28,7 @@ import { Utils } from "../Utils";
  * # 写入约定
  * `set`/`setAll` 始终先写 GM Storage 做持久化；若目标键是缓存键，再同步本地 `shallowRef`：
  * - `set` 是**就地修改** `ref.value` 的某个字段 —— shallowRef 不跟踪深层字段，因此随后必须
- *   `triggerRefByItem` 手动触发，派生的 computed 才会重算；
+ *   `triggerRefByItem` 手动触发，派生的 computed 才会重算；缓存值缺失时用完整对象初始化；
  * - `setAll` 是整体替换 `ref.value` —— shallowRef 自身会触发，无需手动 trigger。
  *
  * # 注意事项
@@ -220,8 +220,8 @@ export class ConfigRepository {
   /**
    * 写入某个存储键下的一个字段。
    *
-   * 始终先写 GM Storage 持久化；若目标是缓存键，再就地更新本地 `ref.value` 并 `triggerRef`
-   * 通知响应式消费者重算。
+   * 始终先写 GM Storage 持久化；若目标是缓存键，缓存值缺失时用完整对象初始化，否则就地更新
+   * 本地 `ref.value` 并 `triggerRef` 通知响应式消费者重算。
    *
    * @param item 存储键名。类型上被约束为 `AppStorage` 中值为对象（Record）的键。
    * @param key 字段名。
@@ -235,9 +235,13 @@ export class ConfigRepository {
     obj[key] = value;
     GM_setValue(item, JSON.stringify(obj));
     if (this.parent.storageBuffer.isCacheable(item)) {
-      (this.getStorageRef(item).value as Required<AppStorage>[T])[key] =
-        value as Required<AppStorage>[T][K];
-      this.triggerRefByItem(item);
+      const ref = this.getStorageRef(item);
+      if (ref.value === undefined) {
+        ref.value = obj;
+      } else {
+        (ref.value as Required<AppStorage>[T])[key] = value as Required<AppStorage>[T][K];
+        this.triggerRefByItem(item);
+      }
     }
   }
 
