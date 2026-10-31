@@ -164,15 +164,15 @@ interface Settings {
   themeColor1: string;
   themeColor2: string;
   autoCheckUpdate: boolean;
+  useSupabase_v2: boolean;
   updateChannel: 0 | 1;
-  useSupabase: boolean;
   fetchCustomSplashes: boolean;
   customSplashRate: number;
   supabaseSplash: boolean;
   anonymiseSplashContributor: boolean;
   supabaseByteChart: boolean;
   showUserBadge: boolean;
-  customAttitude: boolean;
+  customAttitude_v2: boolean;
   attitudeTwemoji: boolean;
   moveAds: boolean;
   customFont: 0 | 1 | 2 | 3;
@@ -306,6 +306,8 @@ interface Settings {
   useNotoSans?: boolean;
   almanacsList?: Almanacs[];
   jsonDatabase?: string[];
+  useSupabase?: boolean;
+  customAttitude?: boolean;
 }
 
 interface OnlineSettings {

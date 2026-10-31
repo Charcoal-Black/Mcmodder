@@ -103,7 +103,7 @@ export class CenterInit extends Init {
         isReady: () => $(".center-main.lv").length > 0 && $(".lv-title").length > 0,
       });
     }
-    if (this.configs.getSettings("customAttitude")) {
+    if (this.configs.getSettings("customAttitude_v2")) {
       this.watchPage({
         selector: "#center-page-comment",
         init: () => void new CenterCommentInit(this).run(),

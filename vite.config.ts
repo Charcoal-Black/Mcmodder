@@ -36,7 +36,7 @@ const devPrivateNetworkAccess: Plugin = {
 const userscriptMeta = {
   name: "Mcmodder-MC百科辅助工具",
   author: "Charcoal-Black",
-  version: "2.4",
+  version: "2.4.1",
   description: "Mcmodder",
   license: "AGPL-3.0",
   icon: "https://www.mcmod.cn/static/public/images/favicon.ico",

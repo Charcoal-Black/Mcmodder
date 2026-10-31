@@ -60,9 +60,9 @@ export class AttitudeSystem {
     this.configs = parent.configRepository;
   }
 
-  /** 功能是否可用：配置开启且云端客户端存在（`useSupabase` 关闭时整套静默停用） */
+  /** 功能是否可用：配置开启且云端客户端存在（`useSupabase_v2` 关闭时整套静默停用） */
   get enabled() {
-    return !!this.configs.getSettings("customAttitude") && this.parent.supabaseUtils.hasClient();
+    return !!this.configs.getSettings("customAttitude_v2") && this.parent.supabaseUtils.hasClient();
   }
 
   /** 当前账号的云端认证 key；未认证时为空字符串 */
@@ -338,21 +338,24 @@ export class AttitudeSystem {
    */
   async uploadSticker(file: File): Promise<string | undefined> {
     if (!this.enabled) {
-      Utils.commonMsg("自定义表态未启用，无法上传表态贴纸。", false);
+      Utils.commonMsg("自定义表态尚未启用...", false);
       return undefined;
     }
     const authKey = this.getAuthKey();
     if (!authKey) {
-      Utils.commonMsg("尚未完成云端认证，请先到“个人中心 - 设置”完成认证，再上传表态贴纸。", false);
+      Utils.commonMsg(
+        "尚未完成云端认证，请先到“个人中心 - 设置”完成认证，再上传表态贴纸...",
+        false,
+      );
       return undefined;
     }
     if (!file.type.startsWith("image/")) {
-      Utils.commonMsg("请选择图片文件作为表态贴纸。", false);
+      Utils.commonMsg("请选择图片文件作为表态贴纸...", false);
       return undefined;
     }
     if (file.size > Values.attitude.sticker.maxUploadBytes) {
-      const mb = Values.attitude.sticker.maxUploadBytes / 1024 / 1024;
-      Utils.commonMsg(`图片体积不能超过 ${mb}MB。`, false);
+      const maxUploadBytes = Values.attitude.sticker.maxUploadBytes;
+      Utils.commonMsg(`图片体积不能超过 ${Utils.getFormattedSize(maxUploadBytes)}...`, false);
       return undefined;
     }
 

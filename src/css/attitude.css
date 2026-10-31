@@ -111,10 +111,19 @@ img.mcmodder-attitude-sticker-image {
   ul
   li.mcmodder-attitude-native-item
   > a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  margin: auto;
   line-height: 1;
-  color: inherit;
   cursor: var(--mcmodder-cursor-hand);
+}
+
+.comment-row .comment-tools li i.mcmodder-attitude-svg {
+  margin-right: 0;
+}
+
+.comment-row .comment-tools li.mcmodder-attitude-native-item {
+  display: inline-flex;
 }
 
 :is(.comment-row, .comment-reply-row)
@@ -123,7 +132,7 @@ img.mcmodder-attitude-sticker-image {
   .comment-attitude-list-hover
   ul
   li.mcmodder-attitude-native-item
-  > a.mcmodder-attitude-active {
+  > a.mcmodder-attitude-active:not(.comment-row .comment-tools li a) {
   color: var(--mcmodder-color-attitude-devil-angry);
 }
 
@@ -679,6 +688,7 @@ img.mcmodder-attitude-sticker-image {
 
 .mcmodder-attitude-badge {
   display: inline-flex;
+  align-items: center;
   padding: 2px 6px;
   border: 1px solid var(--mcmodder-color-background-dark2);
   border-radius: 4px;
@@ -716,7 +726,6 @@ img.mcmodder-attitude-sticker-image {
 .mcmodder-attitude-reactors-scroll {
   max-height: 240px;
   overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .mcmodder-attitude-sticker-viewer-reactors .mcmodder-attitude-reactors-scroll {
