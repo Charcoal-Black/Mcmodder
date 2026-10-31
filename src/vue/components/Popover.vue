@@ -3,20 +3,19 @@
     v-show="!classHidden"
     ref="list"
     class="mcmodder-popover"
-    :class="{
-      'expand-upward': expandUpward,
-      faded: classFaded,
-    }"
+    :class="{ 'expand-upward': expandUpward }"
     :style="[cssPos, { zIndex: props.zIndex }]"
   >
-    <div class="mcmodder-popover-inner" :style="heightCss">
-      <slot />
+    <div class="mcmodder-popover-anim" :class="{ faded: classFaded }">
+      <div class="mcmodder-popover-inner" :style="heightCss">
+        <slot />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { Values } from "../../Values";
 import { Utils } from "../../Utils";
 
@@ -39,7 +38,7 @@ const props = withDefaults(
   },
 );
 
-const listRef = useTemplateRef("list");
+const listRef = useTemplateRef<HTMLElement>("list");
 const visibility = ref(false);
 /** 锚点元素的矩形缓存（`updatePos` 在聚焦、页面滚动与缩放时刷新） */
 const rectRef = shallowRef<DOMRect>();
@@ -47,10 +46,14 @@ const rectRef = shallowRef<DOMRect>();
 const listHeight = ref(0);
 /** 列表自身宽度（水平方向上把弹出框 constraint 在视口内时使用） */
 const listWidth = ref(0);
-/** 淡出中（`selectable` 由真变假时置 true） */
-const classFaded = ref(false);
-/** 完全隐藏（`v-show` 开关；淡出 200ms 结束后才置 true） */
+/** 淡出中（`selectable` 由真变假时置 true）；初始为 true，保证首次显示从透明态淡入 */
+const classFaded = ref(true);
+/** 完全隐藏（`v-show` 开关；淡出结束后才置 true） */
 const classHidden = ref(true);
+/** 与 `.mcmodder-popover-anim` 的过渡时长保持一致 */
+const ANIM_MS = 160;
+/** 淡出结束后真正隐藏的定时器（重开时取消） */
+let hideTimer: number | undefined;
 
 /**
  * 是否需要向上弹出：下方放不下而上方放得下时向上；两侧都放得下但上方更宽裕时也向上
@@ -159,11 +162,6 @@ const heightCss = computed(() => {
 
 function onPopoverVisibilityChange(state: boolean) {
   visibility.value = state;
-  if (state) {
-    nextTick(() => {
-      updatePos();
-    });
-  }
 }
 
 function onPopoverHeightChange() {
@@ -175,26 +173,45 @@ function onPopoverHeightChange() {
   });
 }
 
+/**
+ * 显隐动画。
+ *
+ * 定位依赖的是根节点的布局盒，而动画层（`.mcmodder-popover-anim`）的 transform
+ * 不会影响根节点的布局盒，因此动画期间 `updatePos` 量到的仍是最终尺寸。
+ *
+ * 显示时必须先让 faded 起始态完成一次布局，再移除 faded：`display: none -> block`
+ * 与 opacity 变化若发生在同一帧，CSS transition 不会触发。
+ */
 watch(
   () => visibility.value,
-  (newValue, oldValue) => {
-    if (newValue && !oldValue) {
+  (newValue) => {
+    window.clearTimeout(hideTimer);
+
+    if (newValue) {
       classHidden.value = false;
-      // setTimeout(() => {
-      //   classFaded.value = false;
-      // }, 0);
-      classFaded.value = false;
-    } else if (oldValue && !newValue) {
       classFaded.value = true;
-      // setTimeout(() => {
-      //   if (!visibility.value) {
-      //     classHidden.value = true;
-      //   }
-      // }, 200);
-      classHidden.value = true;
+      nextTick(() => {
+        updatePos();
+        // 没有锚点时 updatePos 会提前返回，这里显式强制一次布局
+        void listRef.value?.offsetHeight;
+        if (visibility.value) {
+          classFaded.value = false;
+        }
+      });
+    } else {
+      classFaded.value = true;
+      hideTimer = window.setTimeout(() => {
+        if (!visibility.value) {
+          classHidden.value = true;
+        }
+      }, ANIM_MS);
     }
   },
 );
+
+onBeforeUnmount(() => {
+  window.clearTimeout(hideTimer);
+});
 
 /** 刷新锚点矩形缓存（聚焦时、以及页面滚动 / 缩放时由控制器调用） */
 function updatePos() {
@@ -214,6 +231,8 @@ function updatePos() {
 }
 
 defineExpose({
+  /** 弹出框的根节点（控制器据此判断事件是否发生在**本**弹出框内部） */
+  rootElement: listRef,
   /** 重新量一次锚点矩形（页面滚动 / 缩放时调用以跟随位置） */
   updatePos,
   /** 是否需要向上弹出（`false` 时向下） */

@@ -36,7 +36,7 @@ const devPrivateNetworkAccess: Plugin = {
 const userscriptMeta = {
   name: "Mcmodder-MC百科辅助工具",
   author: "Charcoal-Black",
-  version: "2.4",
+  version: "2.4.1",
   description: "Mcmodder",
   license: "AGPL-3.0",
   icon: "https://www.mcmod.cn/static/public/images/favicon.ico",
@@ -44,6 +44,7 @@ const userscriptMeta = {
   "run-at": "document-start",
   match: ["https://*.mcmod.cn/*"],
   exclude: [
+    "https://i.mcmod.cn/*",
     "https://api.mcmod.cn/*",
     "https://www.mcmod.cn/v2/*",
     "https://play.mcmod.cn/add/*",
@@ -70,13 +71,15 @@ const userscriptMeta = {
     "raw.githubusercontent.com",
     "hub.gitmirror.com",
     "supabase.co",
+    "kjghwgrbawdtatyrrxin.supabase.co",
+    "mcmodder.114514256.xyz",
     "fastly.jsdelivr.net",
     "cdn.jsdelivr.net",
     "cdn.jsdelivr.net.cn",
   ],
   require: [
     "https://registry.npmmirror.com/turndown/7.2.4/files/dist/turndown.js",
-    "https://cdn.jsdmirror.com/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
     "https://registry.npmmirror.com/three/0.160.0/files/build/three.min.js",
     "https://registry.npmmirror.com/opentype.js/1.3.4/files/dist/opentype.min.js",
   ],

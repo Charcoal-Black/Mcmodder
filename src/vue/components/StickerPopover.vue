@@ -21,9 +21,19 @@
           :disabled="likePending"
           @click="onFavoriteClick"
         >
-          <template v-if="liked"><i class="fa fa-star" /> 已收藏</template>
+          <template v-if="liked"><i class="fa fa-star" /> 取消收藏</template>
           <template v-else><i class="fa fa-star-o" /> 收藏</template>
         </button>
+      </div>
+      <div v-if="reactorOption" class="mcmodder-attitude-sticker-viewer-reactors">
+        <AttitudeReactorList
+          :key="`${reactorOption.commentId}:${reactorOption.attitudeType}:${reactorGeneration}`"
+          :parent="reactorOption.parent"
+          :comment-id="reactorOption.commentId"
+          :attitude-type="reactorOption.attitudeType"
+          :sticker-count="reactorOption.stickerCount"
+          @height-change="onHeightChange"
+        />
       </div>
     </div>
   </Popover>
@@ -32,6 +42,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
 import Popover from "./Popover.vue";
+import AttitudeReactorList from "./attitude/AttitudeReactorList.vue";
 import { usePopoverHost } from "../composables/usePopoverHost.ts";
 import type { PopoverExpose, StickerViewerOption } from "../../types/props";
 
@@ -39,7 +50,10 @@ import type { PopoverExpose, StickerViewerOption } from "../../types/props";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里，
  * 这里只管贴纸本身的内容与操作。
  */
-const { visible, popoverProps, applyOption, updatePos, close } = usePopoverHost();
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
+  usePopoverHost({
+    maxHeight: 480,
+  });
 
 const option = shallowRef<StickerViewerOption>();
 const sticker = computed(() => option.value?.sticker);
@@ -48,15 +62,47 @@ const likePending = ref(false);
 /** 这张贴纸是否已在「我的贴纸库」里；开窗时取值，之后跟着 `AttitudeSystem` 的集合缓存走 */
 const liked = ref(false);
 const isMine = computed(() => sticker.value?.uid === option.value?.parent.currentUID);
+/** 结果条里的贴纸卡片才带短评上下文；贴纸库 / 消息中心里的预览没有 */
+const reactorOption = computed(() => {
+  const current = option.value;
+  if (!current?.commentId || !current.attitudeType) return undefined;
+  return {
+    parent: current.parent,
+    commentId: current.commentId,
+    attitudeType: current.attitudeType,
+    stickerCount: current.stickerCount,
+  };
+});
+const reactorGeneration = ref(0);
+/** 「我的贴纸」集合正在补拉：避免连续悬停不同贴纸时重复发起同一请求 */
+let favoriteStateLoading = false;
 
 function setOption(newOption: StickerViewerOption) {
-  if (newOption.sticker !== option.value?.sticker) {
+  if (newOption.sticker.image_url !== option.value?.sticker.image_url) {
     imagePending.value = true;
   }
   option.value = newOption;
+  reactorGeneration.value += 1;
   applyOption(newOption);
   liked.value = isLiked(newOption);
+  ensureFavoriteState(newOption);
   visible.value = true;
+}
+
+/**
+ * 收藏状态依赖「我的贴纸」集合；用户没打开过贴纸页签时集合尚未加载，此时补拉一次。
+ * 结果到达后由下面的 watch 更新按钮文案；未认证 / 请求失败时保持「收藏」。
+ */
+function ensureFavoriteState(target: StickerViewerOption) {
+  const system = target.parent.attitudeSystem;
+  if (system.myStickers.value || favoriteStateLoading) return;
+  favoriteStateLoading = true;
+  void system
+    .listMyStickers()
+    .catch(() => undefined)
+    .finally(() => {
+      favoriteStateLoading = false;
+    });
 }
 
 function isLiked(target: StickerViewerOption) {
@@ -67,8 +113,8 @@ function isLiked(target: StickerViewerOption) {
 /**
  * 「我的贴纸库」集合变化时重算：面板里收藏 / 取消收藏后，这个开着的小窗不必重开才更新按钮文案。
  *
- * 集合本身不在时（从未打开过贴纸页签）读不出结果，此时仍以本窗的操作结果为准 —— 缓存没变化，
- * 也就不会触发这里。
+ * 集合尚未加载时由 `ensureFavoriteState` 补拉一次；未认证或请求失败时读不出结果，
+ * 此时仍以本窗最近一次操作的结果为准。
  */
 watch(
   () => option.value?.parent.attitudeSystem.myStickers.value,
@@ -90,11 +136,15 @@ async function onFavoriteClick() {
       nextFavorite,
     );
     if (ok && option.value?.sticker.id === current.sticker.id) {
-      liked.value = nextFavorite;
+      liked.value = ok.is_favorite;
     }
   } finally {
     likePending.value = false;
   }
+}
+
+function onHeightChange() {
+  popoverRef.value?.onPopoverHeightChange();
 }
 
 defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({
@@ -102,5 +152,6 @@ defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({
   inputEvents: {},
   updatePos,
   close,
+  getPopoverElement,
 });
 </script>

@@ -92,12 +92,14 @@
         :stickers="plazaStickers"
         :total="plazaTotal"
         :loading="plazaLoading"
+        :sort="plazaSort"
         :active="active"
         :on-pick="onPick"
         :on-favorite="onFavoritePlaza"
         :on-share="onShare"
         :on-delete="deleteAttitudeSticker"
         :on-load-more="onLoadMorePlaza"
+        :on-sort-change="onPlazaSortChange"
         @sticker-removed="onPlazaStickerRemoved"
       />
     </div>
@@ -128,9 +130,10 @@ import { usePopoverHost } from "../../composables/usePopoverHost.ts";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里；
  * 面板打开时顺带把页签指示器挪到当前页签上。
  */
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close } = usePopoverHost({
-  onOpen: () => updateIndicator(),
-});
+const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
+  usePopoverHost({
+    onOpen: () => updateIndicator(),
+  });
 
 const state = shallowRef<AttitudePickerState>();
 const configs = shallowRef<ConfigRepository>();
@@ -162,10 +165,21 @@ const recents = computed(() => {
  * 直接由 `AttitudeSystem` 的集合缓存派生，不再另存一份快照：任何写操作（面板内的上传、重命名、
  * 共享、收藏、删除，以及贴纸小窗里的快捷收藏）都已就地同步进那份缓存，这里自然跟着变。
  */
-const stickers = computed(() => system.value?.myStickers.value?.stickers);
+const stickers = computed(() => {
+  const cached = system.value?.myStickers.value?.stickers;
+  if (cached !== undefined) return cached;
+  // 未认证时没有「我的贴纸」可读：按空列表展示，避免停留在骨架屏；认证后仍走正常加载
+  return system.value?.getAuthKey() ? undefined : [];
+});
 const quota = computed(() => system.value?.myStickers.value?.quota ?? null);
-/** 贴纸广场：服务端返回的原始列表（按共享时间倒序，分页加载） */
+/** 贴纸广场：服务端返回的原始列表（按当前排序方式，分页加载） */
 const plazaRows = shallowRef<SupabaseAttitudeSticker[]>();
+/** 贴纸广场排序方式：切换后清空已加载页，由 watch 重新拉取第一页 */
+const plazaSort = ref<StickerPlazaSort>(
+  (["latest", "favorites"] as const)[
+    state.value?.parent?.configRepository.getSettings("preferredStickerPlazaSort") ?? 0
+  ],
+);
 
 /**
  * 交给广场面板的列表：行上的「我收藏的」标记改由集合缓存派生。
@@ -220,6 +234,20 @@ function onPlazaStickerRemoved(sticker: SupabaseAttitudeSticker) {
   void loadPlaza(true);
 }
 
+/**
+ * 切换广场排序：清空已加载的页，由下面的 watch 重新拉取第一页。
+ *
+ * 列表已经是 `undefined`（首屏请求中）时 watch 不会再次触发，这里直接补一次；请求在飞时
+ * `loadPlaza` 会把它排进队列。旧排序的响应由 `loadPlaza` 里的 sort 比对丢弃。
+ */
+function onPlazaSortChange(next: StickerPlazaSort) {
+  if (next === plazaSort.value) return;
+  plazaSort.value = next;
+  plazaTotal.value = 0;
+  if (plazaRows.value === undefined) void loadPlaza(true);
+  else plazaRows.value = undefined;
+}
+
 /** 拉取贴纸广场一页；`reset` 为真时从第一页重新开始 */
 async function loadPlaza(reset = false) {
   const instance = system.value;
@@ -231,14 +259,17 @@ async function loadPlaza(reset = false) {
   }
   plazaLoadingGuard = true;
   plazaLoading.value = true;
+  const sort = plazaSort.value;
   try {
     const offset = reset ? 0 : (plazaRows.value?.length ?? 0);
     const rows = await instance.listPlazaStickers(
       offset,
       Values.attitude.sticker.plazaPageSize,
+      sort,
       (error) => console.warn("[Mcmodder] 贴纸广场获取失败：", error),
     );
-    if (!rows) return;
+    // 请求期间切换了排序：这份结果属于旧排序，丢弃；新排序的请求已排进队列
+    if (!rows || sort !== plazaSort.value) return;
     plazaTotal.value = rows[0]?.total ?? 0;
     plazaRows.value = reset || plazaRows.value === undefined ? rows : [...plazaRows.value, ...rows];
   } finally {
@@ -469,15 +500,15 @@ async function deleteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
 /** 在广场里收藏 / 取消收藏 */
 async function onFavoritePlaza(sticker: SupabaseAttitudeSticker) {
   const favorite = !sticker.is_favorite;
-  const ok = await system.value!.favoriteSticker(sticker.id, favorite);
-  if (!ok) return false;
-  // 收藏标记已由 `favoriteSticker` 写进集合缓存、进而派生出新的行；这里补的是集合缓存尚未
-  // 加载过（本次会话没打开过贴纸页签）的场合，那时尚无依据，只能就地回填一次
-  if (!system.value?.myStickers.value) {
-    plazaRows.value = plazaRows.value?.map((item) =>
-      item.id === sticker.id ? { ...item, is_favorite: favorite } : item,
-    );
-  }
+  const result = await system.value!.favoriteSticker(sticker.id, favorite);
+  if (!result) return false;
+  // 收藏标记与人数以服务端返回为准就地回填；集合缓存已加载时 `plazaStickers` 会再用它派生一次
+  // `is_favorite`，两者一致。详情区的收藏人数由 `useStickerSelectionGuard` 跟随新行更新。
+  plazaRows.value = plazaRows.value?.map((item) =>
+    item.id === sticker.id
+      ? { ...item, is_favorite: result.is_favorite, favorite_count: result.favorite_count }
+      : item,
+  );
   return true;
 }
 
@@ -554,5 +585,6 @@ defineExpose<PopoverExpose<AttitudePickerState, typeof inputEvents>>({
   inputEvents,
   updatePos,
   close,
+  getPopoverElement,
 });
 </script>

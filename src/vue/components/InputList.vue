@@ -245,10 +245,11 @@ const listRef = useTemplateRef("listRef");
  *
  * 候选列表的「是否显示」就是 `selectable`（由匹配结果决定），故把它作为弹出框的显示状态传进去。
  */
-const { popoverRef, popoverProps, applyOption, updatePos, close } = usePopoverHost({
-  visible: selectable,
-  maxHeight: 300,
-});
+const { popoverRef, popoverProps, applyOption, updatePos, close, getPopoverElement } =
+  usePopoverHost({
+    visible: selectable,
+    maxHeight: 300,
+  });
 
 // 候选数量变化后重新量一次列表高度（向上弹出时需要它来定位）
 watch(
@@ -687,5 +688,6 @@ defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({
   inputEvents,
   updatePos,
   close,
+  getPopoverElement,
 });
 </script>

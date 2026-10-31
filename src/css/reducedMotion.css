@@ -88,8 +88,8 @@
   .mcmodder-contextmenu,
   .mcmodder-collapsible-header:after,
   .mcmodder-dropdown-container:after,
-  .mcmodder-intepolate-container,
-  .mcmodder-intepolate-container > *,
+  .mcmodder-interpolate-container,
+  .mcmodder-interpolate-container > *,
 
   /* 页签滑动光标与悬停下划线的位移过渡（光标的 JS 位移动画不在此列） */
   .mcmodder-swiper-cursor,
@@ -106,6 +106,9 @@
   .checkbox label:before,
   .checkbox label,
   .form-control,
+
+  /* 弹出框的显示与隐藏 */
+  .mcmodder-popover-anim,
 
   /* Vue 组件：个人中心设置目录树、校对时间轴节点 */
   a.mcmodder-menutree-link,

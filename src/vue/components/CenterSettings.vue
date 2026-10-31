@@ -14,7 +14,7 @@
   </div>
 
   <p
-    class="center-setting-search-empty text-muted mcmodder-intepolate-container"
+    class="center-setting-search-empty text-muted mcmodder-interpolate-container"
     :class="{ collapsed: !(isSearching && !hasVisibleSetting) }"
   >
     <span>没有找到与“{{ searchText.trim() }}”相关的配置项...</span>
@@ -25,7 +25,7 @@
       <div
         v-for="category in settings"
         :key="category.id"
-        class="center-block-category-container mcmodder-intepolate-container"
+        class="center-block-category-container mcmodder-interpolate-container"
         :class="{ collapsed: !hasVisibleSettingInCategory(category) }"
         :data-category="category.id"
       >
@@ -34,7 +34,7 @@
           <div
             v-for="section in category.sections"
             :key="section.id"
-            class="center-block-section-container center-content mcmodder-intepolate-container"
+            class="center-block-section-container center-content mcmodder-interpolate-container"
             :class="{ collapsed: !hasVisibleSettingInSection(section) }"
             :data-section="section.id"
           >
@@ -42,7 +42,7 @@
               <div class="center-block-section-label" v-text="section.label" />
               <template v-for="key in section.settings" :key="key.id">
                 <div
-                  class="center-block-setting-container mcmodder-intepolate-container"
+                  class="center-block-setting-container mcmodder-interpolate-container"
                   :class="{ collapsed: !isSettingVisible(key.id) }"
                 >
                   <ConfigInteractor
@@ -70,17 +70,17 @@
                         "
                       />
                     </template>
-                    <template v-else-if="key.id === 'useSupabase'" #afterInput>
+                    <template v-else-if="key.id === 'useSupabase_v2'" #afterInput>
                       <span
-                        v-show="configs.getSettingsRef('useSupabase').value"
+                        v-show="configs.getSettingsRef('useSupabase_v2').value"
                         class="center-block-settings-authbinder"
                       >
                         <SupabaseAuthBinder :parent="parent" />
                       </span>
                     </template>
-                    <template v-if="key.id === 'useSupabase'" #afterItem>
+                    <template v-if="key.id === 'useSupabase_v2'" #afterItem>
                       <div
-                        v-show="configs.getSettingsRef('useSupabase').value"
+                        v-show="configs.getSettingsRef('useSupabase_v2').value"
                         class="center-block-settings-configloader"
                       >
                         <SupabaseConfigLoader :parent="parent" />
@@ -100,7 +100,7 @@
           <li
             v-for="category in settings"
             :key="category.id"
-            class="mcmodder-intepolate-container"
+            class="mcmodder-interpolate-container"
             :class="{ collapsed: !hasVisibleSettingInCategory(category) }"
           >
             <div>
@@ -115,7 +115,7 @@
                 <li
                   v-for="section in category.sections"
                   :key="section.id"
-                  class="mcmodder-intepolate-container"
+                  class="mcmodder-interpolate-container"
                   :class="{ collapsed: !hasVisibleSettingInSection(section) }"
                 >
                   <a
@@ -459,8 +459,8 @@ const attitudeStickers = ref<SupabaseAttitudeSticker[]>([]);
 const attitudeStickerQuota = ref<SupabaseAttitudeStickerQuota | null>(null);
 const attitudeStickersLoading = ref(false);
 
-const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude");
-const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase");
+const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude_v2");
+const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase_v2");
 /** 表态与云端开关都打开且已认证时才可用 */
 const attitudeStickersEnabled = computed(
   () =>
@@ -510,9 +510,10 @@ async function shareAttitudeSticker(sticker: SupabaseAttitudeSticker) {
 }
 
 async function unfavoriteAttitudeSticker(sticker: SupabaseAttitudeSticker) {
-  const ok = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
-  if (ok) await refreshAttitudeStickers(true);
-  return ok;
+  const result = await props.parent.attitudeSystem.favoriteSticker(sticker.id, false);
+  if (!result) return false;
+  await refreshAttitudeStickers(true);
+  return true;
 }
 
 async function deleteAttitudeSticker(sticker: SupabaseAttitudeSticker) {

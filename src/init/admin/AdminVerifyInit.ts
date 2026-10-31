@@ -16,6 +16,8 @@ import { ClassEditRules } from "../../editrule/ClassEditRules.ts";
 import { ItemEditRules } from "../../editrule/ItemEditRules.ts";
 import { TabEditRules } from "../../editrule/TabEditRules.ts";
 import VerifyTimeline from "../../vue/components/VerifyTimeline.vue";
+import GIFViewer from "../../vue/components/GIFViewer.vue";
+import { GIFUtils } from "../../gif/GIFUtils.ts";
 
 type ParsedOpinion = [number, number, number, number];
 
@@ -48,6 +50,14 @@ export class AdminVerifyInit extends AdminBaseInit {
   private textComparator?: App;
   /** 挂载在审核窗内、仅创建一个实例的审核足迹时间线组件（`VerifyTimeline`） */
   private timeline?: App;
+  /** 提交的编辑中，小图标查看组件 */
+  private smallIconViewer?: App;
+  /** 提交的编辑中，大图标查看组件 */
+  private largeIconViewer?: App;
+  /** 当前的内容中，小图标查看组件 */
+  private prevSmallIconViewer?: App;
+  /** 当前的内容中，大图标查看组件 */
+  private prevLargeIconViewer?: App;
   /** 正文对比组件的挂载点，每次加载待审项后被重新插回审核按钮之前 */
   private comparatorContainer?: HTMLElement;
   /** 时间线组件的挂载点，每次加载待审项后被重新插回审核按钮之后 */
@@ -123,6 +133,14 @@ export class AdminVerifyInit extends AdminBaseInit {
       this.textComparator = undefined;
       this.timeline?.unmount();
       this.timeline = undefined;
+      this.smallIconViewer?.unmount();
+      this.smallIconViewer = undefined;
+      this.largeIconViewer?.unmount();
+      this.largeIconViewer = undefined;
+      this.prevSmallIconViewer?.unmount();
+      this.prevSmallIconViewer = undefined;
+      this.prevLargeIconViewer?.unmount();
+      this.prevLargeIconViewer = undefined;
     }
     if (this.enableSplit && !this.frameMounted) {
       const connectedFrame = document.getElementById("connect-frame");
@@ -431,6 +449,7 @@ export class AdminVerifyInit extends AdminBaseInit {
         configs: this.configs,
         configKey: "verifyReasons",
       },
+      zIndex: 999, // swal2 = 1000, sidebar = 500, .model = 999（但是已经被脚本的 #verify-window 覆写成 998）
     });
   }
 
@@ -468,7 +487,7 @@ export class AdminVerifyInit extends AdminBaseInit {
   private iconModifier(content: VerifyContent) {
     content.row.find("img").each((_, _img) => {
       const img = _img as HTMLImageElement;
-      img.classList.add("mcmodder-compare-icon");
+      img.classList.add("mcmodder-compare-icon", "mcmodder-iconbg");
       const work = () => {
         const size = img.width;
         switch (size) {
@@ -580,7 +599,46 @@ export class AdminVerifyInit extends AdminBaseInit {
         return;
       }
       this.iconModifier(content);
-      data[key] = content.current.find("img").attr("src");
+
+      const img = content.current.find("img");
+      const prevImg = content.previous.find("img");
+      const src = img.attr("src");
+      data[key] = src;
+
+      const viewerContainer = $("<div>").addClass("mcmodder-gifviewer-frame").insertAfter(img);
+      const blob = Utils.base642Blob(src);
+      GIFUtils.isGIFBlob(blob).then((isGIF) => {
+        if (!isGIF) return;
+        let viewer;
+        if (key === "icon-32x-data") {
+          viewer = this.smallIconViewer = createApp(GIFViewer, { parent: this.parent });
+        } else if (key === "icon-128x-data") {
+          viewer = this.largeIconViewer = createApp(GIFViewer, { parent: this.parent });
+        }
+        (viewer?.mount(viewerContainer.get(0)) as InstanceType<typeof GIFViewer> | undefined)?.set(
+          blob,
+        );
+      });
+
+      if (prevImg.length > 0) {
+        const src = prevImg.attr("src");
+        const blob = Utils.base642Blob(src);
+        GIFUtils.isGIFBlob(blob).then((isGIF) => {
+          if (!isGIF) return;
+          const prevViewerContainer = $("<div>")
+            .addClass("mcmodder-gifviewer-frame")
+            .insertAfter(prevImg);
+          let viewer;
+          if (key === "icon-32x-data") {
+            viewer = this.prevSmallIconViewer ??= createApp(GIFViewer, { parent: this.parent });
+          } else if (key === "icon-128x-data") {
+            viewer = this.prevLargeIconViewer ??= createApp(GIFViewer, { parent: this.parent });
+          }
+          (
+            viewer?.mount(prevViewerContainer.get(0)) as InstanceType<typeof GIFViewer> | undefined
+          )?.set(blob);
+        });
+      }
     };
   }
 
@@ -793,6 +851,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       let currentList: ValueOf<Required<typeof data>["license"]>;
       type License = ValueOf<(typeof currentList)["list"]>;
       content.row.find("p").each((_, p) => {
+        const isCurrent = $(p).parents("td").first().get(0) === content.currentCell.get(0);
         const contents = $(p).contents();
         let types: License["type"] = [];
         let isCustomType = false;
@@ -800,6 +859,7 @@ export class AdminVerifyInit extends AdminBaseInit {
         let link: License["link"] = "";
         let extras: License["text"] = "";
         if (contents.length === 1 && contents.attr("class") === "text-primary") {
+          if (!isCurrent) return;
           title = p.textContent;
           currentList = { title, list: {} };
           data.license![listIndex++] = currentList;
@@ -812,6 +872,7 @@ export class AdminVerifyInit extends AdminBaseInit {
               element.nodeType === Node.ELEMENT_NODE &&
               element.tagName === "B"
             ) {
+              if (!isCurrent) return;
               element.textContent
                 .split("/")
                 .map((type) => type.trim())
@@ -829,6 +890,7 @@ export class AdminVerifyInit extends AdminBaseInit {
             } else {
               const prev = element.previousSibling;
               if (
+                isCurrent &&
                 prev !== null &&
                 Utils.isTextNode(prev) &&
                 prev.data.endsWith("声明许可协议为: ")
@@ -847,23 +909,26 @@ export class AdminVerifyInit extends AdminBaseInit {
               const linkStartPos = text.data.indexOf(" 【");
               const linkEndPos = text.data.indexOf("】");
               if (linkStartPos >= 0 && linkEndPos > linkStartPos) {
-                link = text.data.slice(2, -1);
+                link = text.data.slice(linkStartPos + 2, linkEndPos);
                 const mid = text.splitText(2);
                 mid.splitText(link.length);
                 Utils.textToAnchor(mid);
               }
-              const lastText = text.data.slice(linkEndPos + 1);
-              if (lastText.startsWith(" (") && lastText.endsWith(")")) {
-                extras = lastText.slice(2, -1);
+              if (isCurrent) {
+                const lastText = text.data.slice(linkEndPos + 1);
+                if (lastText.startsWith(" (") && lastText.endsWith(")")) {
+                  extras = lastText.slice(2, -1);
+                }
               }
             }
           });
-          currentList.list[index++] = {
-            type: types,
-            name,
-            link,
-            text: extras,
-          };
+          if (isCurrent)
+            currentList.list[index++] = {
+              type: types,
+              name,
+              link,
+              text: extras,
+            };
         }
       });
     },
@@ -1074,7 +1139,8 @@ export class AdminVerifyInit extends AdminBaseInit {
   private static readonly checkResultClassName = {
     error: {
       text: "text-danger",
-      icon: "fa-window-close",
+      // 原生为 window-close，times-rectangle 外形相近，但是这两者都因未知原因而不会显示
+      icon: "fa-times-circle",
     },
     warning: {
       text: "text-warning",

@@ -382,7 +382,7 @@ function submitEdit() {
   Utils.commonMsg("此功能尚未完工，敬请期待~");
 }
 
-function fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState> {
+function fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState<null>> {
   return new Promise((resolve) =>
     swal
       .fire({

@@ -1,3 +1,4 @@
+import { Utils } from "../Utils";
 import { Values } from "../Values";
 import { buildAttitudeIcon } from "./attitudeIcon";
 
@@ -80,7 +81,7 @@ export function buildAttitudeMessageItem($template: JQuery, item: SupabaseAttitu
     .toggleClass("mcmodder-attitude-unread", !item.is_read)
     .attr("data-mcmodder-attitude-message", String(item.id));
 
-  const profileUrl = `//center.mcmod.cn/${item.from_uid}/`;
+  const profileUrl = Utils.getCenterURL(item.from_uid);
   $item.find(".avatar a").attr("href", profileUrl);
   $item.find(".avatar img").attr({
     src: item.from_avatar || DEFAULT_AVATAR,

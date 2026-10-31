@@ -95,5 +95,18 @@ export function usePopoverHost(options: UsePopoverHostOptions = {}) {
     visible.value = false;
   }
 
-  return { popoverRef, visible, popoverProps, applyOption, updatePos, close };
+  /** 弹出框的根节点（尚未挂载时为 `undefined`）：控制器据此区分「自己的」与「别的」弹出框 */
+  function getPopoverElement() {
+    return popoverRef.value?.rootElement ?? undefined;
+  }
+
+  return {
+    popoverRef,
+    visible,
+    popoverProps,
+    applyOption,
+    updatePos,
+    close,
+    getPopoverElement,
+  };
 }

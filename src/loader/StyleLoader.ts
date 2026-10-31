@@ -469,6 +469,12 @@ export class StyleLoader {
         "verifyframe-error": "#f55",
         "verifyframe-warning": "#da6",
         "verifyframe-info": "#aaa",
+        "version-alpha-1": "#f99",
+        "version-alpha-2": "#8558",
+        "version-beta-1": "#99f",
+        "version-beta-2": "#5588",
+        "version-release-1": "#8c8",
+        "version-release-2": "#5858",
         uknowtoomuch: "#444",
         "uknowtoomuch-hover": "#ddd",
         "attitude-up": "#09f",
@@ -551,7 +557,7 @@ export class StyleLoader {
     // if (configs.get("mcmodderUI")) {
     style += css.mcmodderUI;
     // }
-    if (configs.getSettings("customAttitude")) {
+    if (configs.getSettings("customAttitude_v2")) {
       style += css.attitude;
     }
     if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {

@@ -9,13 +9,14 @@ import {
 } from "./attitudeIcon";
 import { StickerViewerPopoverController } from "../widget/popover/StickerViewerPopoverController.ts";
 import { AttitudePickerPopoverController } from "../widget/popover/AttitudePickerPopoverController.ts";
+import { AttitudeReactorsPopoverController } from "../widget/popover/AttitudeReactorsPopoverController.ts";
 import type { ConfigRepository } from "../config/ConfigRepository.ts";
 import { computed, shallowRef } from "vue";
 
 /**
  * 自定义表态系统：纯 DOM 编排 + 云端读写。读操作走 PostgREST RPC（`mcmodder_attitude_*` 函数，
- * 不占 Edge Function 调用额度；计数为 TTL 缓存 + 去抖合并请求），写操作走 `attitude-put` 并以
- * 服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
+ * 不占 Edge Function 调用额度；计数为 TTL 缓存 + 去抖合并请求），公开可读、无需认证；写操作走
+ * `attitude-put` 并以服务端返回的计数就地刷新；同一短评可按类型并存多种表态。
  *
  * 全站单例：短评页与消息中心共用同一份缓存与去抖通道，经 {@link AttitudeSystem.for} 获取。
  */
@@ -59,9 +60,9 @@ export class AttitudeSystem {
     this.configs = parent.configRepository;
   }
 
-  /** 功能是否可用：配置开启且云端客户端存在（`useSupabase` 关闭时整套静默停用） */
+  /** 功能是否可用：配置开启且云端客户端存在（`useSupabase_v2` 关闭时整套静默停用） */
   get enabled() {
-    return !!this.configs.getSettings("customAttitude") && this.parent.supabaseUtils.hasClient();
+    return !!this.configs.getSettings("customAttitude_v2") && this.parent.supabaseUtils.hasClient();
   }
 
   /** 当前账号的云端认证 key；未认证时为空字符串 */
@@ -97,9 +98,8 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.at < Values.attitude.unreadCacheTtl) {
       return { unread: cached.unread, total: cached.total };
     }
-    // 后台提醒用：失败只记录日志，不弹模态框
     const resp = await this.parent.supabaseUtils.fetchAttitudeInboxStats(authKey, (error) =>
-      console.warn("[Mcmodder] 表态消息统计获取失败：", error),
+      Utils.commonMsg(`表态消息统计获取失败... (${error})`, false),
     );
     if (!resp) return cached && { unread: cached.unread, total: cached.total };
     const stats = { unread: resp.unread ?? 0, total: resp.total ?? 0 };
@@ -124,7 +124,7 @@ export class AttitudeSystem {
 
     const sinceId = this.configs.get("attitudeCache", "lastSeenId") ?? 0;
     const resp = await this.parent.supabaseUtils.checkNewAttitudes(authKey, sinceId, (error) =>
-      console.warn("[Mcmodder] 表态提醒检查失败：", error),
+      Utils.commonMsg(`表态提醒检查失败... (${error})`, false),
     );
     if (!resp) return checkedAt ? cachedCount : undefined;
 
@@ -193,7 +193,7 @@ export class AttitudeSystem {
     this.configs.set("attitudeCache", "unreadAt", Date.now());
   }
 
-  /** 读取若干短评的表态计数：命中 `countsCacheTtl` 的直接返回，其余合并进一个去抖窗口（{@link fetchCounts}） */
+  /** 读取若干短评的表态计数：公开读，未认证时 `mine` 全为 false；命中 `countsCacheTtl` 的直接返回，其余合并进一个去抖窗口（{@link fetchCounts}） */
   async requestCounts(commentIds: string[]): Promise<Map<string, AttitudeRecord>> {
     const result = new Map<string, AttitudeRecord>();
     if (!this.enabled || commentIds.length === 0) return result;
@@ -246,8 +246,10 @@ export class AttitudeSystem {
     for (let i = 0; i < commentIds.length; i += Values.attitude.maxCountsPerRequest) {
       const chunk = commentIds.slice(i, i + Values.attitude.maxCountsPerRequest);
       // 后台批量读：失败只记录日志，不弹模态框
-      const resp = await this.parent.supabaseUtils.fetchAttitudeCounts(chunk, authKey, (error) =>
-        console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
+      const resp = await this.parent.supabaseUtils.fetchAttitudeCounts(
+        chunk,
+        authKey || undefined,
+        (error) => console.warn("[Mcmodder] 自定义表态计数获取失败：", error),
       );
       if (!resp) continue;
       // 服务端返回行集合，行序即「各类别首次表态的时间序」：按行序还原成展示用的对象
@@ -285,8 +287,7 @@ export class AttitudeSystem {
     if (!force && cached && Date.now() - cached.time < Values.attitude.sticker.listCacheTtl) {
       return { stickers: cached.stickers, quota: cached.quota };
     }
-    // 面板打开时的预取：失败只记录日志，不弹模态框
-    const onError = (error: string) => console.warn("[Mcmodder] 表态贴纸列表获取失败：", error);
+    const onError = (error: string) => Utils.commonMsg(`表态贴纸列表获取失败... (${error})`, false);
     const [stickers, quota] = await Promise.all([
       this.parent.supabaseUtils.fetchAttitudeStickerCollection(authKey, onError),
       this.parent.supabaseUtils.fetchAttitudeStickerQuota(authKey, onError),
@@ -337,21 +338,24 @@ export class AttitudeSystem {
    */
   async uploadSticker(file: File): Promise<string | undefined> {
     if (!this.enabled) {
-      Utils.commonMsg("自定义表态未启用，无法上传表态贴纸。", false);
+      Utils.commonMsg("自定义表态尚未启用...", false);
       return undefined;
     }
     const authKey = this.getAuthKey();
     if (!authKey) {
-      Utils.commonMsg("尚未完成云端认证，请先到“个人中心 - 设置”完成认证，再上传表态贴纸。", false);
+      Utils.commonMsg(
+        "尚未完成云端认证，请先到“个人中心 - 设置”完成认证，再上传表态贴纸...",
+        false,
+      );
       return undefined;
     }
     if (!file.type.startsWith("image/")) {
-      Utils.commonMsg("请选择图片文件作为表态贴纸。", false);
+      Utils.commonMsg("请选择图片文件作为表态贴纸...", false);
       return undefined;
     }
     if (file.size > Values.attitude.sticker.maxUploadBytes) {
-      const mb = Values.attitude.sticker.maxUploadBytes / 1024 / 1024;
-      Utils.commonMsg(`图片体积不能超过 ${mb}MB。`, false);
+      const maxUploadBytes = Values.attitude.sticker.maxUploadBytes;
+      Utils.commonMsg(`图片体积不能超过 ${Utils.getFormattedSize(maxUploadBytes)}...`, false);
       return undefined;
     }
 
@@ -380,16 +384,23 @@ export class AttitudeSystem {
    * 读取贴纸广场的一页。
    *
    * 广场是公开读：即使尚未完成云端认证也能浏览；`auth_key` 仅用于标注我上传/我收藏的贴纸。
+   * `sort` 交给服务端排序（最新共享 / 收藏人数最多），分页偏移量按同一排序计算。
    * 失败时返回 undefined（`onError` 缺省会弹提示，面板里应传入后台回调）。
    *
    * 读到的行一并进解析缓存（贴纸不可变）：在广场里收藏时才有整行可补进「我的贴纸库」。
    */
-  async listPlazaStickers(offset: number, limit: number, onError?: (error: string) => void) {
+  async listPlazaStickers(
+    offset: number,
+    limit: number,
+    sort: StickerPlazaSort = "latest",
+    onError?: (error: string) => void,
+  ) {
     if (!this.enabled) return undefined;
     const rows = await this.parent.supabaseUtils.fetchAttitudeStickerPlaza(
       this.getAuthKey() || undefined,
       limit,
       offset,
+      sort,
       onError,
     );
     if (rows) {
@@ -424,6 +435,7 @@ export class AttitudeSystem {
    * 收藏 / 取消收藏他人上传的贴纸。
    *
    * 收藏集合会影响「我的贴纸」列表：取得到整行时就地同步本地缓存，否则让缓存失效，下次打开时重新拉取。
+   * 返回服务端确认后的收藏状态与收藏人数（调用方据此更新广场详情）；失败返回 `false`。
    */
   async favoriteSticker(id: number, favorite: boolean) {
     if (!this.enabled) {
@@ -441,6 +453,11 @@ export class AttitudeSystem {
       favorite,
     });
     if (!row) return false;
+    // 收藏人数以服务端返回为准：先写进解析缓存，收藏进「我的贴纸」时整行会带上最新人数
+    this.patchSticker(id, {
+      is_favorite: row.is_favorite,
+      favorite_count: row.favorite_count,
+    });
     const cached = this.myStickers.value;
     const sticker = this.stickerCache.get(buildStickerType(id));
     if (!favorite) {
@@ -459,7 +476,7 @@ export class AttitudeSystem {
       this.myStickers.value = undefined;
     }
     Utils.commonMsg(favorite ? "已收藏贴纸~" : "已取消收藏~");
-    return true;
+    return row;
   }
 
   /**
@@ -533,14 +550,14 @@ export class AttitudeSystem {
         url?: string;
       };
       if (result.state !== "SUCCESS" || !result.url) {
-        Utils.commonMsg(`图片上传失败：${result.state || "未知错误"}`, false);
+        Utils.commonMsg(`贴纸图片上传失败... (${result.state || "未知错误"})`, false);
         return undefined;
       }
       return result.url;
     } catch (error) {
       // 图床异常响应（登录失效会返回 HTML 报错页）会走到这里，原始错误留在控制台
       console.warn("[Mcmodder] 表态贴纸上传失败：", error);
-      Utils.commonMsg("图片上传失败，请稍后再试。", false);
+      Utils.commonMsg(`贴纸图片上传失败... (${error})`, false);
       return undefined;
     }
   }
@@ -599,7 +616,7 @@ export class AttitudeSystem {
       if (ids.length === 0) continue;
       // 后台批量解析：失败只记录日志，不弹模态框
       const resp = await this.parent.supabaseUtils.resolveAttitudeStickers(ids, (error) =>
-        console.warn("[Mcmodder] 表态贴纸解析失败：", error),
+        Utils.commonMsg(`表态贴纸解析失败... (${error})`, false),
       );
       if (!resp) continue;
       const unanswered = new Set(ids);
@@ -632,17 +649,31 @@ export class AttitudeSystem {
       .find("[data-mcmodder-sticker-id]")
       .each((_, icon) => {
         const $icon = $(icon);
+        const $count = $icon.next();
         const stickerId = Number($icon.attr("data-mcmodder-sticker-id"));
+        const stickerCount = Number($count.text());
         const sticker = stickers.get(buildStickerType(stickerId));
         if (sticker) {
           fillStickerIcon($icon, sticker);
           const img = icon.firstElementChild as HTMLElement | null;
           if (img !== null) {
+            const commentId = String(
+              $icon.closest(".comment-tools").children("input.comment-id").first().val() ?? "",
+            );
+            const attitudeType =
+              $icon
+                .closest("li.mcmodder-attitude-item")
+                .children("a")
+                .first()
+                .attr("data-mcmodder-attitude") ?? "";
             StickerViewerPopoverController.instance.add(img, {
               type: "stickerViewer",
               anchorElement: img,
               parent: this.parent,
               sticker,
+              ...(commentId && attitudeType && stickerCount
+                ? { commentId, attitudeType, stickerCount }
+                : {}),
             });
           }
         } else if (this.missingStickerIds.has(stickerId)) {
@@ -701,6 +732,7 @@ export class AttitudeSystem {
       commentId: target.commentId,
       active: this.countsCache.get(target.commentId)?.record.mine ?? [],
       target,
+      zIndex: 499, // 涉及到嵌套下拉菜单
     };
   }
 
@@ -714,11 +746,7 @@ export class AttitudeSystem {
     );
   }
 
-  /**
-   * 给一批新插入的短评（顶层短评与楼中楼回复）注入自定义表态入口，并统一刷新这批短评的计数。
-   *
-   * 仅处理站点渲染了原生表态候选列表（`.comment-attitude-list`，即「已登录 + 非作者」）的条目。
-   */
+  /** 给一批新插入的短评（顶层短评与楼中楼回复）注入自定义表态入口，并统一刷新这批短评的计数 */
   async processCommentRows($context: JQuery) {
     if (!this.enabled) return;
     const rows: { $row: JQuery; target: AttitudeTarget }[] = [];
@@ -726,7 +754,7 @@ export class AttitudeSystem {
       const $row = $(row);
       if ($row.attr("data-mcmodder-attitude-row")) return;
       const $tools = $row.find(".comment-tools").first();
-      if (!$tools.find(".comment-attitude-list").length) return;
+      if (!$tools.length) return;
       const target = this.resolveTarget($row);
       if (!target) return;
       $row.attr("data-mcmodder-attitude-row", target.commentId);
@@ -785,7 +813,7 @@ export class AttitudeSystem {
     );
   }
 
-  /** 从短评节点解析写入所需的上下文；无法解析（未登录 / 自己的短评 / 缺 author 信息）时返回 undefined */
+  /** 从短评节点解析上下文；浏览不要求登录 / 认证，发送时由 {@link write} 校验认证 */
   resolveTarget($row: JQuery): AttitudeTarget | undefined {
     // `.get()` 只给出 `Element`，短评节点实际是 `<div>`，按已知宿主结构收窄
     const row = $row.get(0) as HTMLElement | undefined;
@@ -798,7 +826,7 @@ export class AttitudeSystem {
       .find(".comment-row-username a.poped, .comment-reply-row-username a.poped")
       .first();
     const toUid = Number($author.attr("data-uid"));
-    if (!toUid || toUid === this.parent.currentUID) return undefined;
+    if (!toUid) return undefined;
 
     return {
       commentId,
@@ -819,6 +847,7 @@ export class AttitudeSystem {
     const $result = $row.find(".comment-tools > ol.comment-attitude-result").first();
     if (!$result.length) return;
 
+    const commentId = String($row.find(".comment-tools > input.comment-id").first().val() ?? "");
     $result.children("li.mcmodder-attitude-item").remove();
     const mine = new Set(record.mine);
     // 顺序即服务端键序（各类别首次表态时间序）
@@ -830,6 +859,7 @@ export class AttitudeSystem {
             attitudeType,
             record.counts[attitudeType] ?? 0,
             mine.has(attitudeType),
+            commentId,
           ),
         );
       });
@@ -842,25 +872,42 @@ export class AttitudeSystem {
     void this.hydrateStickers($result);
   }
 
-  private buildResultItem(attitudeType: string, count: number, active: boolean) {
+  private buildResultItem(attitudeType: string, count: number, active: boolean, commentId: string) {
     const isDevilAngry = attitudeType === Values.attitude.devilAngry.type;
-    return $('<li class="mcmodder-attitude-item"></li>').append(
-      $("<a>")
-        .attr({
-          href: "javascript:void(0);",
-          "data-mcmodder-attitude": attitudeType,
-          title: isDevilAngry ? Values.attitude.devilAngry.title : attitudeType,
-          class: [
-            "mcmodder-attitude-value",
-            isDevilAngry ? "mcmodder-attitude-devil-angry" : "",
-            active ? "mcmodder-attitude-active" : "",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        })
-        .append(buildAttitudeIcon(attitudeType))
-        .append($("<span></span>").text(String(count))),
-    );
+    const hasReactors = !!commentId && parseStickerId(attitudeType) === undefined;
+    const $anchor = $("<a>")
+      .attr({
+        href: "javascript:void(0);",
+        "data-mcmodder-attitude": attitudeType,
+        title: isDevilAngry ? Values.attitude.devilAngry.title : attitudeType,
+        class: [
+          "mcmodder-attitude-value",
+          isDevilAngry ? "mcmodder-attitude-devil-angry" : "",
+          active ? "mcmodder-attitude-active" : "",
+          hasReactors ? "mcmodder-attitude-reactors-anchor" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      })
+      .append(buildAttitudeIcon(attitudeType))
+      .append($("<span></span>").text(String(count)));
+
+    // 贴纸的悬浮卡片由 `hydrateStickers` 注册（卡片里同时展示贴纸与表态用户）；
+    // emoji / 恶魔安格瑞没有贴纸卡片，这里挂纯表态用户列表。
+    if (hasReactors) {
+      const anchor = $anchor.get(0) as HTMLElement | undefined;
+      if (anchor) {
+        AttitudeReactorsPopoverController.instance.add(anchor, {
+          type: "attitudeReactors",
+          anchorElement: anchor,
+          parent: this.parent,
+          commentId,
+          attitudeType,
+        });
+      }
+    }
+
+    return $('<li class="mcmodder-attitude-item"></li>').append($anchor);
   }
 
   /**
@@ -881,7 +928,7 @@ export class AttitudeSystem {
     const commentId = target.commentId;
     const job = (this.writeQueues.get(commentId) ?? Promise.resolve())
       .then(() => this.sendWrite(target, attitudeType, authKey))
-      .catch((error) => console.warn("[Mcmodder] 自定义表态写入失败：", error));
+      .catch((error) => Utils.commonMsg(`表态失败... (${error})`));
     this.writeQueues.set(commentId, job);
     return job.then((attitudeRecord) => {
       // 排空后清理，避免 Map 无限增长

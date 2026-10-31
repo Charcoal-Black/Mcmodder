@@ -115,7 +115,7 @@ export function addUploadFileButton(ueditor: UEditor) {
         )
         .sort((a, b) => b.mtime - a.mtime);
     } catch (error) {
-      console.warn("[Mcmodder] 附件列表获取失败：", error);
+      Utils.commonMsg(`附件列表获取失败... (${error})`);
       return null;
     }
   }
@@ -153,7 +153,7 @@ export function addUploadFileButton(ueditor: UEditor) {
         const bytes = await downloadBytes(item.url);
         if (bytes.length === file.size && signature(bytes) === want) return item.url;
       } catch (error) {
-        console.warn("[Mcmodder] 附件内容比对失败：", error);
+        Utils.commonMsg(`附件内容比对失败... (${error})`);
       }
     }
     return "";
@@ -162,7 +162,7 @@ export function addUploadFileButton(ueditor: UEditor) {
   /** 上传单个文件并把链接插入正文；成功与否都只在这里提示一次 */
   async function upload(file: File) {
     if (file.size > Values.ueditorFileMaxSize) {
-      Utils.commonMsg("文件超过站点上限，仍尝试上传。", false, "警告");
+      Utils.commonMsg("这个文件太大了，适当压缩一下吧~", false);
     }
     if (!knownUrls) await snapshot();
     let link: string | undefined;
@@ -200,7 +200,7 @@ export function addUploadFileButton(ueditor: UEditor) {
           result?.state || raw.slice(0, 300) || "(空响应)",
         );
         if (result?.state === NOT_LOGGED_IN_STATE) {
-          Utils.commonMsg("文件上传失败，请先登录。", false);
+          Utils.commonMsg("请先登录~", false);
           return;
         }
         link = await recoverUploadedUrl(file);
@@ -208,14 +208,14 @@ export function addUploadFileButton(ueditor: UEditor) {
     } catch (error) {
       // 请求异常（网络中断、被限速队列丢弃等）会走到这里，原始错误留在控制台
       console.warn("[Mcmodder] 文件上传失败：", error);
-      Utils.commonMsg("文件上传失败，请稍后再试。", false);
+      Utils.commonMsg(`文件上传失败... (${error})`, false);
       return;
     }
     if (!link) {
-      Utils.commonMsg("文件上传失败，请稍后再试。", false);
+      Utils.commonMsg("文件上传失败，请稍后再试...", false);
       return;
     }
-    if (rejected) Utils.commonMsg("文件上传成功。");
+    if (rejected) Utils.commonMsg("文件已上传~");
     editor.execCommand(
       "insertHtml",
       `<a href="${Utils.escapeHTML(link)}" target="_blank">${Utils.escapeHTML(link)}</a>&nbsp;`,

@@ -3,6 +3,7 @@
 import "./devCheck";
 import { GM_getValue, GM_addValueChangeListener } from "$";
 import { Mcmodder } from "./Mcmodder";
+import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import bbsCss from "./css/bbs.css?raw";
 
 (() => {
@@ -15,7 +16,7 @@ import bbsCss from "./css/bbs.css?raw";
 
     if (isHomePage) {
       const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
-      const useSupabase = settings.useSupabase !== false;
+      const useSupabase = settings.useSupabase_v2 !== false;
       const fetchCustom = settings.fetchCustomSplashes !== false;
       const rate = typeof settings.customSplashRate === "number" ? settings.customSplashRate : 50;
 
@@ -266,7 +267,18 @@ import bbsCss from "./css/bbs.css?raw";
       splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
       setTimeout(() => splashStyle.remove(), 300);
     } else {
-      new Mcmodder();
+      void (async () => {
+        let useSupabase = true;
+        try {
+          useSupabase =
+            JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase_v2 !== false;
+        } catch (_e) {}
+        if (useSupabase) await SupabaseUtils.prepare();
+        new Mcmodder();
+      })().catch((error) => {
+        console.error("Mcmodder 启动失败：", error);
+        clearScreenCover();
+      });
     }
   };
   const tryInit = () => {

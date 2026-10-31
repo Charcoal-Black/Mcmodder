@@ -1,16 +1,87 @@
-import {
-  createClient,
-  type FunctionInvokeOptions,
-  type SupabaseClient,
-} from "@supabase/supabase-js";
+import type { FunctionInvokeOptions, SupabaseClient } from "@supabase/supabase-js";
+import { monkeyWindow, unsafeWindow } from "$";
 import { watch, type ComputedRef } from "vue";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import type { ConfigRepository } from "../config/ConfigRepository";
 
+type SupabaseSdk = Pick<typeof import("@supabase/supabase-js"), "createClient">;
+
+/** 把 fetch 的 `HeadersInit` 转成 `GM_xmlhttpRequest` 需要的普通对象 */
+function normalizeRequestHeaders(headers?: HeadersInit): Record<string, string> {
+  const result: Record<string, string> = {};
+  new Headers(headers).forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+}
+
+/** 把 `GM_xmlhttpRequest` 的原始响应头文本解析成 `Headers` */
+function parseResponseHeaders(raw?: string): Headers {
+  const headers = new Headers();
+  if (!raw) return headers;
+  raw
+    .trim()
+    .split(/[\r\n]+/)
+    .forEach((line) => {
+      const index = line.indexOf(":");
+      if (index <= 0) return;
+      headers.append(line.slice(0, index).trim(), line.slice(index + 1).trim());
+    });
+  return headers;
+}
+
 export class SupabaseUtils {
-  private static readonly supabaseUrl = "https://kjghwgrbawdtatyrrxin.supabase.co";
+  /**
+   * 云端入口：Supabase 直连域名在部分网络会被阻断，统一走 Cloudflare Worker 反代。
+   * Worker 源码见 `supabase/proxy`，只转发 `/rest/v1`、`/functions/v1`、`/auth/v1`、`/storage/v1`。
+   */
+  private static readonly supabaseUrl = "https://mcmodder.114514256.xyz";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
+  private static readonly fallbackSources = [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+  ];
+  private static preparing: Promise<void> | undefined;
+
+  /** @require 位于油猴沙箱，动态 script 位于页面；开发模式也可能处于不同 realm。 */
+  private static getSdk() {
+    for (const scope of [globalThis, monkeyWindow, unsafeWindow]) {
+      const sdk = (scope as { supabase?: SupabaseSdk } | undefined)?.supabase;
+      if (typeof sdk?.createClient === "function") return sdk;
+    }
+  }
+
+  /** 只在 @require 缺失时尝试备用源；全部失败也允许本地功能继续启动。 */
+  static async prepare() {
+    if (this.getSdk()) return;
+    const preparing = (this.preparing ??= this.loadFallback());
+    try {
+      await preparing;
+    } finally {
+      if (this.preparing === preparing) this.preparing = undefined;
+    }
+  }
+
+  private static async loadFallback() {
+    for (const src of this.fallbackSources) {
+      try {
+        await Utils.loadScript(
+          document.head ?? document.documentElement,
+          null,
+          src,
+          null,
+          undefined,
+          5000,
+        );
+        if (this.getSdk()) return;
+        throw new Error("脚本加载后未找到 Supabase SDK");
+      } catch (error) {
+        console.warn("Supabase 备用源加载失败：", src, error);
+      }
+    }
+    console.warn("Supabase 依赖不可用，本页云端功能已停用，本地功能继续运行。");
+  }
 
   private readonly configs: ConfigRepository;
   /** 云端客户端实例；随「启用云端服务」配置的开合而创建/释放 */
@@ -20,16 +91,86 @@ export class SupabaseUtils {
   /** 上一次创建客户端是否失败；失败后不反复重试，除非配置再次变化 */
   private createFailed = false;
 
-  constructor(parent: Mcmodder) {
+  constructor(private readonly parent: Mcmodder) {
     this.configs = parent.configRepository;
-    this.useSupabaseRef = this.configs.getSettingsRef("useSupabase");
+    this.useSupabaseRef = this.configs.getSettingsRef("useSupabase_v2");
 
     // 初始化时若已开启云端服务，立刻创建客户端
     this.syncInstance();
 
-    // 配置变化时同步：开启后立即创建客户端，关闭后释放引用
-    watch(this.useSupabaseRef, () => this.syncInstance(true));
+    // 开启云端服务时按需补齐依赖；关闭时立即释放引用
+    watch(this.useSupabaseRef, async () => {
+      if (this.isEnabled()) await SupabaseUtils.prepare();
+      this.syncInstance(true);
+    });
   }
+
+  /**
+   * supabase-js 的 `fetch` 适配器：改用 `GM_xmlhttpRequest` 发包，绕过浏览器 CORS 预检。
+   *
+   * 浏览器直连 Supabase 时会先发 `OPTIONS` 预检；部分网络环境下该预检被拦截（控制台显示
+   * `CORS Failed`），而 GM 请求不受同源策略约束。REST 与 Edge Function 都复用这一个入口。
+   *
+   * 本项目对 Supabase 只发送 JSON 字符串 / URLSearchParams，故不实现二进制请求体；
+   * 请求超时由 `createRequest` 的 `timeout` 与这里的兜底竞速共同保证，避免 GM 失败时永久挂起。
+   */
+  private readonly gmFetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const request = input instanceof Request ? input : undefined;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const method = (init?.method ?? request?.method ?? "GET").toUpperCase();
+    const headers = normalizeRequestHeaders(init?.headers ?? request?.headers);
+    let rawBody: BodyInit | ReadableStream<Uint8Array> | null | undefined = init?.body;
+    if (rawBody == null && request?.body) rawBody = await request.clone().text();
+    let data: string | undefined;
+    if (typeof rawBody === "string") data = rawBody;
+    else if (rawBody instanceof URLSearchParams) data = rawBody.toString();
+    else if (rawBody != null) throw new Error("Supabase 请求体类型不受支持");
+
+    const signal = init?.signal ?? request?.signal;
+    if (signal?.aborted) throw new DOMException("请求已取消", "AbortError");
+
+    let timer: number | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error("Supabase 请求超时")), 15_000);
+    });
+    try {
+      const resp = await Promise.race([
+        this.parent.utils.createRequest(
+          {
+            url,
+            method,
+            headers,
+            data,
+            anonymous: true,
+            timeout: 15_000,
+          },
+          "云端请求",
+          true,
+          false,
+        ),
+        timeoutPromise,
+      ]);
+      if (!resp.status) throw new Error(resp.statusText || "Supabase 请求失败");
+      const body =
+        method === "HEAD" || resp.status === 204 || resp.status === 205 || resp.status === 304
+          ? null
+          : resp.responseText;
+      return new Response(body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: parseResponseHeaders(resp.responseHeaders),
+      });
+    } catch (error) {
+      // `createRequest` 的 onerror 不会 resolve，这里统一在超时/网络失败时留下可见日志
+      console.warn("[Mcmodder] Supabase 请求失败：", url, error);
+      throw error;
+    } finally {
+      if (timer !== undefined) window.clearTimeout(timer);
+    }
+  };
 
   /** 当前是否启用了云端服务（取响应式配置的即时快照） */
   private isEnabled() {
@@ -49,10 +190,18 @@ export class SupabaseUtils {
     }
     if (this.instance) return;
     if (this.createFailed && !retry) return;
+    const sdk = SupabaseUtils.getSdk();
+    if (!sdk) {
+      this.createFailed = true;
+      return;
+    }
     try {
-      this.instance = createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
+      this.instance = sdk.createClient(SupabaseUtils.supabaseUrl, SupabaseUtils.supabaseKey, {
         auth: {
           persistSession: false,
+        },
+        global: {
+          fetch: this.gmFetch,
         },
       });
       this.createFailed = false;
@@ -64,7 +213,7 @@ export class SupabaseUtils {
   }
 
   getClient() {
-    // `watch` 回调是异步触发的，配置刚变更时此处补一次同步，保证即时生效
+    // `watch` 回调是异步触发的，此处补一次同步，依赖就绪时保证配置即时生效
     this.syncInstance();
     return this.instance;
   }
@@ -155,7 +304,7 @@ export class SupabaseUtils {
   ) {
     return await this.rpc<SupabaseAttitudeCountRow>(
       "mcmodder_attitude_counts",
-      { p_comment_ids: commentIds, p_auth_key: authKey ?? null },
+      { p_comment_ids: commentIds, p_auth_key: authKey || null },
       onErrorCallback,
     );
   }
@@ -166,6 +315,29 @@ export class SupabaseUtils {
       "mcmodder_attitude_user_counts",
       { p_uid: uid },
       onErrorCallback,
+    );
+  }
+
+  /**
+   * 读取某短评下某类型的表态者（RPC `mcmodder_attitude_reactors`，公开读）。
+   *
+   * 行序为表态先后（`id` 升序）；`total` 为同条件下的总人数，用于分页。
+   */
+  async fetchAttitudeReactors(
+    commentId: string,
+    attitudeType: string,
+    options: { limit?: number; offset?: number; onError?: (error: string) => void } = {},
+  ) {
+    const { limit, offset, onError } = options;
+    return await this.rpc<SupabaseAttitudeReactorRow>(
+      "mcmodder_attitude_reactors",
+      {
+        p_comment_id: commentId,
+        p_attitude_type: attitudeType,
+        p_limit: limit ?? 30,
+        p_offset: offset ?? 0,
+      },
+      onError,
     );
   }
 
@@ -216,16 +388,18 @@ export class SupabaseUtils {
    * 读取贴纸广场的一页（RPC `mcmodder_attitude_sticker_plaza`，公开读）。
    *
    * `authKey` 只用于标注「我上传的 / 我收藏的」；未认证时传 `undefined`，列表照常返回。
+   * `sort` 决定服务端排序：最新共享或收藏人数最多。
    */
   async fetchAttitudeStickerPlaza(
     authKey: string | undefined,
     limit: number,
     offset: number,
+    sort: StickerPlazaSort,
     onError?: (error: string) => void,
   ) {
     return await this.rpc<SupabaseAttitudeStickerPlazaRow>(
       "mcmodder_attitude_sticker_plaza",
-      { p_auth_key: authKey ?? null, p_limit: limit, p_offset: offset },
+      { p_auth_key: authKey ?? null, p_limit: limit, p_offset: offset, p_sort: sort },
       onError,
     );
   }
@@ -241,7 +415,7 @@ export class SupabaseUtils {
 
   /** 收藏 / 取消收藏他人上传的贴纸（RPC `mcmodder_attitude_sticker_favorite`，幂等） */
   async favoriteAttitudeSticker(payload: { authKey: string; id: number; favorite: boolean }) {
-    const rows = await this.rpc<{ id: number; is_favorite: boolean }>(
+    const rows = await this.rpc<SupabaseAttitudeStickerFavoriteRow>(
       "mcmodder_attitude_sticker_favorite",
       { p_auth_key: payload.authKey, p_id: payload.id, p_favorite: payload.favorite },
     );
