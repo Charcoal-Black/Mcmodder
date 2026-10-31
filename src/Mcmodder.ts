@@ -698,7 +698,7 @@ export class Mcmodder {
 
     // 后台抓取并更新云端自定义标语列表缓存
     if (
-      this.configRepository.getSettings("useSupabase") &&
+      this.configRepository.getSettings("useSupabase_v2") &&
       this.configRepository.getSettings("fetchCustomSplashes")
     ) {
       this.supabaseUtils

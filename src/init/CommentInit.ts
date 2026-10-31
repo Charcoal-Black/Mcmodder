@@ -21,7 +21,7 @@ export class CommentInit extends Init {
     target.find(".comment-reply-row-time").each((_, node) => {
       // 同一楼可能被重复处理（见 PROCESSED_ATTR），倒计时只挂一次
       if (node.querySelector(`.${CommentInit.PUBLISH_TIME_CLASS}`)) return;
-      const published = Date.parse(node.textContent);
+      const published = CommentInit.parsePublishTime(node.textContent);
       const container = $(`<span class="${CommentInit.PUBLISH_TIME_CLASS}"></span>`)
         .appendTo(node)
         .get(0);
@@ -113,6 +113,14 @@ export class CommentInit extends Init {
   private static readonly REPLY_PROCESSED_ATTR = "data-mcmodder-comment-reply-processed";
   /** 发布时间倒计时容器的标记类 */
   private static readonly PUBLISH_TIME_CLASS = "mcmodder-comment-publish-time";
+
+  /** 站点发布时间不带时区，固定按 UTC+8 解析，避免脚本在其它时区运行时倒计时整体偏移 */
+  private static parsePublishTime(text: string | null) {
+    const match = text?.matchAll(/\d+/g);
+    if (!match) return Date.parse(text ?? "");
+    const [year, month, day, hour, minute, second] = match;
+    return Date.UTC(+year, +month - 1, +day, +hour, +minute, +second) - 8 * 60 * 60 * 1000;
+  }
 
   private readonly commentObserver = new MutationObserver((mutationList) => {
     // 防广告误触发：站点的广告楼层始终单独插入，遇到即跳过整批
@@ -329,7 +337,7 @@ export class CommentInit extends Init {
       });
 
     // 自定义表态：绑定工具条事件，并刷新页面上已有的短评
-    if (this.configs.getSettings("customAttitude")) {
+    if (this.configs.getSettings("customAttitude_v2")) {
       this.attitude.bindEvents();
       this.attitude.processCommentRows($(document.body));
     }

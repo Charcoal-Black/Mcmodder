@@ -557,7 +557,7 @@ export class StyleLoader {
     // if (configs.get("mcmodderUI")) {
     style += css.mcmodderUI;
     // }
-    if (configs.getSettings("customAttitude")) {
+    if (configs.getSettings("customAttitude_v2")) {
       style += css.attitude;
     }
     if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {

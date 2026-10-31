@@ -13,7 +13,7 @@ export class CenterCommentInit extends CenterBaseInit {
 
   async run() {
     if (this.fetching) return;
-    if (!this.configs.getSettings("customAttitude")) return;
+    if (!this.configs.getSettings("customAttitude_v2")) return;
     if (!this.parent.supabaseUtils.hasClient()) return;
     const uid = this.center.getPageUID();
     if (!(uid > 0)) return;

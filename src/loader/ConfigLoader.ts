@@ -686,7 +686,7 @@ export const settings = [
         label: "云端服务",
         settings: [
           {
-            id: "useSupabase",
+            id: "useSupabase_v2",
             title: "启用云端服务",
             description:
               "是否启用 Mcmodder 云端服务与功能。相关服务由 Supabase 驱动。若禁用此项，所有依赖云端服务的功能都不会运作。",
@@ -698,7 +698,7 @@ export const settings = [
             title: "抓取云端闪烁标语",
             description: "是否抓取与显示用户投稿并审核通过的 Supabase 云端闪烁标语。",
             type: "checkbox",
-            visible: (ctx) => ctx.configs.getSettings("useSupabase"),
+            visible: (ctx) => ctx.configs.getSettings("useSupabase_v2"),
           },
           {
             id: "customSplashRate",
@@ -708,7 +708,7 @@ export const settings = [
             value: 50,
             range: [0, 100],
             visible: (ctx) =>
-              ctx.configs.getSettings("useSupabase") &&
+              ctx.configs.getSettings("useSupabase_v2") &&
               ctx.configs.getSettings("fetchCustomSplashes"),
           },
           {
@@ -717,7 +717,7 @@ export const settings = [
             description:
               "[需要用户认证] 启用后，脚本会将主页记录的闪烁标语自动上传到云端的闪烁标语库，同时记录标语贡献者。",
             type: "checkbox",
-            visible: (ctx) => ctx.configs.getSettings("useSupabase"),
+            visible: (ctx) => ctx.configs.getSettings("useSupabase_v2"),
           },
           {
             id: "anonymiseSplashContributor",
@@ -726,7 +726,8 @@ export const settings = [
               "(WIP) [需要用户认证] 启用后，您所提交的闪烁标语的贡献信息将对其他用户隐藏。",
             type: "checkbox",
             visible: (ctx) =>
-              ctx.configs.getSettings("useSupabase") && ctx.configs.getSettings("supabaseSplash"),
+              ctx.configs.getSettings("useSupabase_v2") &&
+              ctx.configs.getSettings("supabaseSplash"),
             syncWithSupabase: true,
           },
           {
@@ -735,7 +736,7 @@ export const settings = [
             description: "启用后，脚本会从云端读取贡献榜数据，用于显示个人主页的字数活跃图表。",
             type: "checkbox",
             visible: (ctx) =>
-              ctx.configs.getSettings("useSupabase") && ctx.configs.getSettings("byteChart"),
+              ctx.configs.getSettings("useSupabase_v2") && ctx.configs.getSettings("byteChart"),
           },
           {
             id: "showUserBadge",
@@ -743,17 +744,17 @@ export const settings = [
             description:
               "(WIP) [需要用户认证] 启用后，您将能够在短评区/留言板中看到其他同样正在使用 Mcmodder 且启用了此选项的用户！同时，您对于其他用户也是如此。",
             type: "checkbox",
-            visible: (ctx) => ctx.configs.getSettings("useSupabase"),
+            visible: (ctx) => ctx.configs.getSettings("useSupabase_v2"),
             syncWithSupabase: true,
           },
           {
-            id: "customAttitude",
+            id: "customAttitude_v2",
             title: "自定义表态",
             description:
-              "启用短评自定义表态（恶魔安格瑞与全 emoji）、消息中心表态消息与个人中心表态统计。浏览短评表态无需认证；发送表态、消息中心与个人统计仍需完成用户认证。",
+              "启用自定义表态系统。可以浏览短评所获得的表态，完成用户认证后，还可进行发送表态、接收表态提醒、个人获得表态统计，以及贴纸的上传和使用等操作。",
             type: "checkbox",
             value: true,
-            visible: (ctx) => ctx.configs.getSettings("useSupabase"),
+            visible: (ctx) => ctx.configs.getSettings("useSupabase_v2"),
           },
           {
             id: "attitudeTwemoji",
@@ -761,7 +762,8 @@ export const settings = [
             description: "用 Mozilla Twemoji 字体渲染自定义表态 emoji，保证跨平台一致外观。",
             type: "checkbox",
             visible: (ctx) =>
-              ctx.configs.getSettings("useSupabase") && ctx.configs.getSettings("customAttitude"),
+              ctx.configs.getSettings("useSupabase_v2") &&
+              ctx.configs.getSettings("customAttitude_v2"),
           },
         ],
       },

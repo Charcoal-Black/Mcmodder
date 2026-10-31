@@ -93,7 +93,7 @@ export class SupabaseUtils {
 
   constructor(private readonly parent: Mcmodder) {
     this.configs = parent.configRepository;
-    this.useSupabaseRef = this.configs.getSettingsRef("useSupabase");
+    this.useSupabaseRef = this.configs.getSettingsRef("useSupabase_v2");
 
     // 初始化时若已开启云端服务，立刻创建客户端
     this.syncInstance();

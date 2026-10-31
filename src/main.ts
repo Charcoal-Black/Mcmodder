@@ -16,7 +16,7 @@ import bbsCss from "./css/bbs.css?raw";
 
     if (isHomePage) {
       const settings = JSON.parse(GM_getValue("mcmodderSettings") || "{}");
-      const useSupabase = settings.useSupabase !== false;
+      const useSupabase = settings.useSupabase_v2 !== false;
       const fetchCustom = settings.fetchCustomSplashes !== false;
       const rate = typeof settings.customSplashRate === "number" ? settings.customSplashRate : 50;
 
@@ -270,7 +270,8 @@ import bbsCss from "./css/bbs.css?raw";
       void (async () => {
         let useSupabase = true;
         try {
-          useSupabase = JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase !== false;
+          useSupabase =
+            JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase_v2 !== false;
         } catch (_e) {}
         if (useSupabase) await SupabaseUtils.prepare();
         new Mcmodder();

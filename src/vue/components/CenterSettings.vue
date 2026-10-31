@@ -70,17 +70,17 @@
                         "
                       />
                     </template>
-                    <template v-else-if="key.id === 'useSupabase'" #afterInput>
+                    <template v-else-if="key.id === 'useSupabase_v2'" #afterInput>
                       <span
-                        v-show="configs.getSettingsRef('useSupabase').value"
+                        v-show="configs.getSettingsRef('useSupabase_v2').value"
                         class="center-block-settings-authbinder"
                       >
                         <SupabaseAuthBinder :parent="parent" />
                       </span>
                     </template>
-                    <template v-if="key.id === 'useSupabase'" #afterItem>
+                    <template v-if="key.id === 'useSupabase_v2'" #afterItem>
                       <div
-                        v-show="configs.getSettingsRef('useSupabase').value"
+                        v-show="configs.getSettingsRef('useSupabase_v2').value"
                         class="center-block-settings-configloader"
                       >
                         <SupabaseConfigLoader :parent="parent" />
@@ -459,8 +459,8 @@ const attitudeStickers = ref<SupabaseAttitudeSticker[]>([]);
 const attitudeStickerQuota = ref<SupabaseAttitudeStickerQuota | null>(null);
 const attitudeStickersLoading = ref(false);
 
-const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude");
-const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase");
+const customAttitudeEnabled = configs.value.getSettingsRef("customAttitude_v2");
+const useSupabaseEnabled = configs.value.getSettingsRef("useSupabase_v2");
 /** 表态与云端开关都打开且已认证时才可用 */
 const attitudeStickersEnabled = computed(
   () =>
