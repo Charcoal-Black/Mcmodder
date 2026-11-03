@@ -100,6 +100,11 @@ export function usePopoverHost(options: UsePopoverHostOptions = {}) {
     return popoverRef.value?.rootElement ?? undefined;
   }
 
+  /** 当前弹出框的锚点元素：控制器据此追踪弹出框之间的嵌套关系 */
+  function getAnchorElement() {
+    return popoverProps.anchorElement;
+  }
+
   return {
     popoverRef,
     visible,
@@ -108,5 +113,6 @@ export function usePopoverHost(options: UsePopoverHostOptions = {}) {
     updatePos,
     close,
     getPopoverElement,
+    getAnchorElement,
   };
 }

@@ -19,10 +19,18 @@ import AttitudeReactorList from "./AttitudeReactorList.vue";
 import { usePopoverHost } from "../../composables/usePopoverHost";
 import type { AttitudeReactorsOption, PopoverExpose } from "../../../types/props";
 
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
-  usePopoverHost({
-    maxHeight: 320,
-  });
+const {
+  popoverRef,
+  visible,
+  popoverProps,
+  applyOption,
+  updatePos,
+  close,
+  getPopoverElement,
+  getAnchorElement,
+} = usePopoverHost({
+  maxHeight: 320,
+});
 const option = shallowRef<AttitudeReactorsOption>();
 const openGeneration = ref(0);
 
@@ -43,5 +51,6 @@ defineExpose<PopoverExpose<AttitudeReactorsOption, Record<string, never>>>({
   updatePos,
   close,
   getPopoverElement,
+  getAnchorElement,
 });
 </script>

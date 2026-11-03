@@ -50,10 +50,18 @@ import type { PopoverExpose, StickerViewerOption } from "../../types/props";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里，
  * 这里只管贴纸本身的内容与操作。
  */
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
-  usePopoverHost({
-    maxHeight: 480,
-  });
+const {
+  popoverRef,
+  visible,
+  popoverProps,
+  applyOption,
+  updatePos,
+  close,
+  getPopoverElement,
+  getAnchorElement,
+} = usePopoverHost({
+  maxHeight: 480,
+});
 
 const option = shallowRef<StickerViewerOption>();
 const sticker = computed(() => option.value?.sticker);
@@ -153,5 +161,6 @@ defineExpose<PopoverExpose<StickerViewerOption, Record<string, never>>>({
   updatePos,
   close,
   getPopoverElement,
+  getAnchorElement,
 });
 </script>

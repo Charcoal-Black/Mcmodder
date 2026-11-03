@@ -130,10 +130,18 @@ import { usePopoverHost } from "../../composables/usePopoverHost.ts";
  * 弹出框宿主的接线：显隐、定位、`updatePos` / `close` 都在 `usePopoverHost` 里；
  * 面板打开时顺带把页签指示器挪到当前页签上。
  */
-const { popoverRef, visible, popoverProps, applyOption, updatePos, close, getPopoverElement } =
-  usePopoverHost({
-    onOpen: () => updateIndicator(),
-  });
+const {
+  popoverRef,
+  visible,
+  popoverProps,
+  applyOption,
+  updatePos,
+  close,
+  getPopoverElement,
+  getAnchorElement,
+} = usePopoverHost({
+  onOpen: () => updateIndicator(),
+});
 
 const state = shallowRef<AttitudePickerState>();
 const configs = shallowRef<ConfigRepository>();
@@ -586,5 +594,6 @@ defineExpose<PopoverExpose<AttitudePickerState, typeof inputEvents>>({
   updatePos,
   close,
   getPopoverElement,
+  getAnchorElement,
 });
 </script>

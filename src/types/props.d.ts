@@ -223,10 +223,18 @@ export interface StickerViewerOption extends PopoverBaseOption {
   attitudeType?: string;
 }
 
+/** 弹出框控制器的跨实例查询接口：定位弹出框根节点、追溯其锚点 */
+export interface PopoverElementAccessor {
+  /** 弹出框的根节点（尚未挂载时为 `undefined`），用于区分「本组件的」与「其它组件的」弹出框 */
+  getPopoverElement: () => HTMLElement | undefined;
+  /** 当前弹出框的锚点元素（选项未指定时为 `undefined`），用于追踪弹出框之间的嵌套关系 */
+  getAnchorElement: () => HTMLElement | undefined;
+}
+
 export interface PopoverExpose<
   TOption extends PopoverOption,
   TInputEvents extends Record<string, (e: Event) => void>,
-> {
+> extends PopoverElementAccessor {
   /** 切换当前服务的输入元素与选项（由 `InputListPopoverController` 在聚焦时调用） */
   setOption: (option: TOption) => void;
   /** 转发给输入框的事件表（控制器据此在 `window` 上挂监听，也可被宿主直接调用） */
@@ -235,8 +243,6 @@ export interface PopoverExpose<
   updatePos: () => void | undefined;
   /** 关闭弹出框 */
   close: () => void;
-  /** 弹出框的根节点（尚未挂载时为 `undefined`），用于区分「本组件的」与「其它组件的」弹出框 */
-  getPopoverElement: () => HTMLElement | undefined;
 }
 
 /** 带候选列表的文本输入：props 同时充当 `InputListOption`，直接交给 `InputListPopoverController` */
