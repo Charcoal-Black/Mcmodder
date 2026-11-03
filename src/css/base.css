@@ -2625,6 +2625,14 @@ body .top-main .info .more-info .top_content a:hover,
 .jsonframe-oredict {
   margin-right: 0.25em;
 }
+html .qlayout-card {
+  background-color: var(--mcmodder-color-background);
+  border-color: var(--mcmodder-color-background-dark2);
+}
+html .qlayout-card-header {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-bottom-color: var(--mcmodder-color-background-dark2);
+}
 html.dark .mcmodder-table-pointerover-tr > td:not(.mcmodder-table-pointerover-td) {
   backdrop-filter: brightness(125%);
 }

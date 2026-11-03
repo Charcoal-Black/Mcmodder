@@ -20,6 +20,8 @@ export class GeneralEditInit extends Init {
     const leftText = $(".left .text").get(0);
     leftText.innerHTML = leftText.innerHTML
       .replace("Alt + X", Utils.keyToHTML(this.configs.getSettings("keybindFastLink")!))
+      .replace("Alt + Q", Utils.keyToHTML({ altKey: true, key: "Q" }))
+      .replace("Alt + W", Utils.keyToHTML({ altKey: true, key: "W" }))
       .replace("Alt + Z", Utils.keyToHTML({ altKey: true, key: "Z" }))
       .replace("Ctrl + Enter", Utils.keyToHTML(this.configs.getSettings("keybindFastSubmit")!));
 
