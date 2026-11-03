@@ -521,11 +521,7 @@ export class AdvancedUEditor extends UEditor {
                     });
                 });
               const converted = this.turndownSurvice.turndown(content.html());
-              // `onLoad` 在当前编辑器字节数未超限时是同步回调的，此时 `this.mdEditor`
-              // 拿不到 CodeMirror 编辑器实例，因此用 `setTimeout` 转成异步
-              setTimeout(() => {
-                this.mdEditor!.setValue(converted);
-              }, 0);
+              this.mdEditor!.setValue(converted);
             }
           },
         }).mount(this.mdEditorContainer!.get(0)) as InstanceType<typeof MainTextEditor>;
