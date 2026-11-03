@@ -3,7 +3,6 @@
 import "./devCheck";
 import { GM_getValue, GM_addValueChangeListener } from "$";
 import { Mcmodder } from "./Mcmodder";
-import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import bbsCss from "./css/bbs.css?raw";
 
 (() => {
@@ -235,10 +234,16 @@ import bbsCss from "./css/bbs.css?raw";
     }
     clearScreenCover();
   };
+  let screenCoverCleared = false;
   const clearScreenCover = () => {
+    if (screenCoverCleared) return;
+    screenCoverCleared = true;
     splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
     setTimeout(() => splashStyle.remove(), 300);
   };
+  // 兜底：任何启动阶段卡住（第三方 CDN、jQuery 未就绪、初始化异常）都不能让页面一直黑屏。
+  // 遮罩只负责首屏防闪烁，超时后先放行页面；后续初始化完成时会再走一次幂等的 clearScreenCover。
+  setTimeout(() => clearScreenCover(), 3000);
   const init = () => {
     if (window.location.hostname === "bbs.mcmod.cn") {
       initBbsDarkMode();
@@ -264,20 +269,16 @@ import bbsCss from "./css/bbs.css?raw";
           <br><a target="_blank" href="https://www1.mcmod.cn/login/">登录 (备用网址)</a>
         `;
       }
-      splashStyle.textContent = `body { animation: mcmodder-fadein .3s ease forwards; } @keyframes mcmodder-fadein { from { opacity: 0; } to { opacity: 1; } }`;
-      setTimeout(() => splashStyle.remove(), 300);
+      clearScreenCover();
     } else {
-      void (async () => {
-        let useSupabase = true;
-        try {
-          useSupabase = JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase !== false;
-        } catch (_e) {}
-        if (useSupabase) await SupabaseUtils.prepare();
+      // 云端 SDK 的加载放在 Mcmodder 内部异步补齐：启动本身绝不能被第三方 CDN 卡住，
+      // 否则 Supabase 的 @require/备用源不可达时，防闪烁遮罩会一直挡住页面（表现为整页黑屏）。
+      try {
         new Mcmodder();
-      })().catch((error) => {
+      } catch (error) {
         console.error("Mcmodder 启动失败：", error);
         clearScreenCover();
-      });
+      }
     }
   };
   const tryInit = () => {

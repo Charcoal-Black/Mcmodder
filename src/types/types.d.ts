@@ -164,6 +164,7 @@ interface Settings {
   themeColor1: string;
   themeColor2: string;
   autoCheckUpdate: boolean;
+  updateChannel: 0 | 1;
   useSupabase: boolean;
   fetchCustomSplashes: boolean;
   customSplashRate: number;
