@@ -1540,6 +1540,22 @@ div#mcmodder-text-result {
   display: inline-block;
   margin-right: 1em;
 }
+#mcmodder-cover-gaussian-blur,
+#mcmodder-cover-gaussian-apply,
+#mcmodder-cover-gaussian-radius-container {
+  margin: 0 0 5px 5px;
+}
+#mcmodder-cover-gaussian-radius-container,
+#mcmodder-cover-gaussian-radius {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  text-wrap: nowrap;
+  gap: var(--mcmodder-width-padding-3);
+}
+#mcmodder-cover-gaussian-radius .form-control {
+  width: 5em;
+}
 #mcmodder-crash-protector {
   margin-left: 10px;
 }

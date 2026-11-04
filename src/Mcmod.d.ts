@@ -18,6 +18,7 @@ declare global {
     disableSelection(): JQuery;
     tooltip(option?: any): JQuery;
     webuiPopover(option?: any): JQuery;
+    cropper(...option: any[]): JQuery;
   }
 
   /* Swal */

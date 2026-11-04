@@ -300,6 +300,7 @@ interface Settings {
   preferredDragPos: Record<string, number>;
   preferredGIFViewerRatioLock: boolean;
   preferredStickerPlazaSort: 0 | 1;
+  coverGaussianBlurRadiusPercent: number;
 
   // 以下为旧版遗留
   templateList?: Template[];
