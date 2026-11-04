@@ -61,6 +61,7 @@ const {
   getAnchorElement,
 } = usePopoverHost({
   maxHeight: 480,
+  align: "center",
 });
 
 const option = shallowRef<StickerViewerOption>();

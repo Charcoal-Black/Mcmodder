@@ -18,10 +18,38 @@ const DEFAULT_Z_INDEX = 500;
 export interface PopoverProps {
   /** 定位锚点（以此元素的矩形计算位置与宽度） */
   anchorElement: HTMLElement | undefined;
-  /** z-index */
+  /** {@link PopoverBaseOption.zIndex} */
   zIndex: number;
   /** 最大高度限制（`null` = 不限） */
   maxHeight: number | null;
+
+  /**
+   * 弹出框的优先展开方向。
+   *
+   * - `down`: 优先**向下展开**。下方空间不够时才向上展开。
+   * - `up-down`: 优先向上方和下方中空间更大的方向展开。
+   * - `right`: 优先**向右展开**。右侧空间不够时才向左展开。
+   * - `left-right`: 优先向左方和右方中空间更大的方向展开。
+   *
+   * @default "up-down"
+   */
+  direction?: "down" | "up-down" | "right" | "left-right";
+
+  /**
+   * 弹出框在与展开方向垂直的方向上，相对于锚点元素的对齐方式。
+   *
+   * - `start`:
+   *   + 若 {@link direction} 为 `"down" | "up-down"`，则弹出框的**左边缘**将尽可能与锚点元素的**左边缘**对齐。
+   *   + 若 {@link direction} 为 `"right" | "left-right"`，则弹出框的**上边缘**将尽可能与锚点元素的**上边缘**对齐。
+   * - `center`:
+   *   + 若 {@link direction} 为 `"down" | "up-down"`，则弹出框将尽可能沿**同一条竖直轴线**与锚点对齐。
+   *   + 若 {@link direction} 为 `"right" | "left-right"`，则弹出框将尽可能沿**同一条水平轴线**与锚点对齐。
+   *
+   * 水平/竖直空间不足时，弹出框位置仍然会进行相应的微调。
+   *
+   * @default "start"
+   */
+  align?: "start" | "center";
 }
 
 /** `usePopoverHost` 的可选参数 */
@@ -37,6 +65,10 @@ export interface UsePopoverHostOptions {
   onOpen?: () => void;
   /** 最大高度限制（`null` = 不限） */
   maxHeight?: number | null;
+  /** {@link PopoverBaseOption.direction} */
+  direction?: Required<PopoverProps>["direction"];
+  /** {@link PopoverBaseOption.align} */
+  align?: Required<PopoverProps>["align"];
 }
 
 /**
@@ -64,6 +96,8 @@ export function usePopoverHost(options: UsePopoverHostOptions = {}) {
     anchorElement: undefined,
     zIndex: DEFAULT_Z_INDEX,
     maxHeight: options.maxHeight ?? null,
+    direction: options.direction ?? "up-down",
+    align: options.align ?? "start",
   });
 
   // 显隐同步：显示状态一变就通知 `Popover`（它据此播放淡入淡出），打开时再量一次高度

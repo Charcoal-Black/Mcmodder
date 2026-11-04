@@ -2752,6 +2752,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   margin-top: 0;
   margin-bottom: 4px;
 }
+/* 水平展开时与锚点的间距由 JS 计算（left 已包含 ANCHOR_GAP），这里去掉竖直外边距 */
+.mcmodder-popover.expand-left,
+.mcmodder-popover.expand-right {
+  margin-top: 0;
+  margin-bottom: 0;
+}
 /* 动画层：背景、阴影、圆角都放在这里，让整块面板一起缩放。
    它是根节点的子元素，transform 不会改变根节点的布局盒。 */
 .mcmodder-popover-anim {
@@ -2771,6 +2777,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-popover.expand-upward .mcmodder-popover-anim {
   transform-origin: bottom center;
 }
+.mcmodder-popover.expand-right .mcmodder-popover-anim {
+  transform-origin: left center;
+}
+.mcmodder-popover.expand-left .mcmodder-popover-anim {
+  transform-origin: right center;
+}
 .mcmodder-popover-anim.faded {
   opacity: 0;
   /* 向下弹出时从锚点方向稍微上移，向上弹出时反过来 */
@@ -2779,6 +2791,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 }
 .mcmodder-popover.expand-upward .mcmodder-popover-anim.faded {
   transform: translateY(4px) scale(0.96);
+}
+.mcmodder-popover.expand-right .mcmodder-popover-anim.faded {
+  transform: translateX(-4px) scale(0.96);
+}
+.mcmodder-popover.expand-left .mcmodder-popover-anim.faded {
+  transform: translateX(4px) scale(0.96);
 }
 .mcmodder-popover-inner {
   margin: 2px;
