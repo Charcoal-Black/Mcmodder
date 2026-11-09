@@ -21,6 +21,8 @@ import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import AutoLink from "../vue/components/AutoLink.vue";
 import TextComparator from "../vue/components/TextComparator.vue";
 import MainTextEditor from "../vue/components/MainTextEditor.vue";
+import { ContentPreview } from "../preview/ContentPreview.ts";
+import { contentBeautify } from "../preview/ContentBeautify.ts";
 
 /** 挂载在选项栏上的复选框：容器 `<span>` 与其 Vue 组件实例，便于直接改显隐或读值 */
 type ContainerComponentPair = [HTMLSpanElement, InstanceType<typeof CheckboxInput>];
@@ -72,6 +74,8 @@ export class AdvancedUEditor extends UEditor {
   get htmlEditor() {
     return this.htmlEditorApp?.editor();
   }
+  /** 实时预览窗口容器 */
+  protected previewContainer?: JQuery;
   /** HTML → Markdown 转换器（用于首次把已有正文灌进 md 编辑器） */
   protected turndownSurvice?: TurndownService;
   /** 「Markdown 编辑器」开关 */
@@ -82,6 +86,8 @@ export class AdvancedUEditor extends UEditor {
   protected verticalOption?: ContainerComponentPair;
   /** 「实用工具」开关 */
   protected toolkitOption?: ContainerComponentPair;
+  /** 「正文预览」开关 */
+  protected previewOption?: ContainerComponentPair;
   /** 打开页面时正文的字节数（编辑量的基准） */
   protected originalTextLength: number;
   /** 当前正文的字节数 */
@@ -130,6 +136,13 @@ export class AdvancedUEditor extends UEditor {
   private readonly pushHtmlToNative = Utils.debounce(() => this.doPushHtmlToNative(), 300);
   /** 从原生编辑器拉取：尾沿防抖，避免连续 contentchange 时反复美化整篇正文 */
   private readonly pullHtmlFromNative = Utils.debounce(() => this.doPullHtmlFromNative(), 300);
+  /**
+   * 实时预览刷新：尾沿防抖。
+   *
+   * 预览生成（正文的字符串转换 + `sanitizeHtml` + `contentBeautify` 的整篇 jQuery 处理）
+   * 开销不小，连续输入时每次都跑会明显卡顿，因此只在用户停手后渲染一次。
+   */
+  private readonly updatePreview = Utils.debounce(() => this.doUpdatePreview(), 300);
   /**
    * 字节数统计：节流（最多每 300ms 一次），避免连续 contentchange 时反复遍历整篇正文。
    *
@@ -242,6 +255,14 @@ export class AdvancedUEditor extends UEditor {
     // 源代码编辑器
     this.htmlEditorContainer = $("<div>").addClass("mcmodder-htmleditor-container");
     this.htmlEditorContainer.hide().insertBefore(this.$innerFrame);
+
+    // 实时预览窗口
+    this.previewContainer = $(`
+      <div class="mcmodder-preview-container">
+        <div class="mcmodder-preview-inner" />
+      </div>
+    `);
+    this.previewContainer.hide().insertAfter(this.$innerFrame);
 
     this.addTool("mcmodder-tool-md", "Markdown → HTML", () => this.performMarkdownIt());
 
@@ -364,6 +385,10 @@ export class AdvancedUEditor extends UEditor {
       this.readyToolkit(),
     );
 
+    this.previewOption = this.addOption("实时预览", "mcmodder-option-preview", () =>
+      this.readyPreview(),
+    );
+
     if (this.configs.getSettings("markdownIt") || this.isModrinthVer) {
       this.mdEditorOption![1].setCurrentValue(true); // Modrinth 日志以 Md 格式保存，自动添加日志时总是开启
     }
@@ -384,6 +409,9 @@ export class AdvancedUEditor extends UEditor {
     if (this.configs.getSettings("editorToolkit")) {
       this.toolkitOption![1].setCurrentValue(true);
     }
+
+    // 在加载完成时立即更新一次“纵向排列”选项的显隐状态
+    this.onEditorStateChange();
 
     // 匿名吐槽
     if (this.configs.getSettings("anonymousUknowtoomuch")) this.anonymiseUknowtoomuch();
@@ -417,17 +445,15 @@ export class AdvancedUEditor extends UEditor {
 
   /**
    * 宽度自适应：在基类撑满 `#edui1` 的基础上，让两个源码编辑器与外层编辑区等高同宽。
-   * 容器高度固定为外层高度减 32px（标题栏高度）。
+   * 容器高度固定为外层高度。
    */
   override widthAutoResize() {
     if (!this.$innerFrame) return;
     super.widthAutoResize();
     const outerHeight = parseInt(this.$innerFrame.css("height"));
-    // const innerHeight = outerHeight - 32;
     this.mdEditorContainer?.css("height", outerHeight + "px");
-    // this.mdEditorContainer?.css("height", innerHeight + "px");
     this.htmlEditorContainer?.css("height", outerHeight + "px");
-    // this.htmlEditorContainer?.css("height", innerHeight + "px");
+    this.previewContainer?.css("height", outerHeight + "px");
   }
 
   /**
@@ -455,13 +481,16 @@ export class AdvancedUEditor extends UEditor {
     const finalHeight = this.$innerFrame?.css("height");
     const mdContainer = this.mdEditorContainer?.get(0) as HTMLElement;
     const htmlContainer = this.htmlEditorContainer?.get(0) as HTMLElement;
+    const previewContainer = this.previewContainer?.get(0) as HTMLElement;
     const isVertical = this.verticalOption?.[1].getValue();
     if (isVertical) {
       mdContainer?.style?.removeProperty("height");
       htmlContainer?.style?.removeProperty("height");
+      previewContainer?.style?.removeProperty("height");
     } else {
       mdContainer?.style?.setProperty("height", finalHeight, "important");
       htmlContainer?.style?.setProperty("height", finalHeight, "important");
+      previewContainer?.style?.setProperty("height", finalHeight, "important");
     }
   }
 
@@ -635,6 +664,38 @@ export class AdvancedUEditor extends UEditor {
       $("#mcmodder-tool-brfix, #mcmodder-tool-linkfix, #mcmodder-tool-spacing").hide();
     }
     this.configs.setSettings("editorToolkit", c);
+  }
+
+  /**
+   * 「实时预览」开关：打开时立即渲染一次，之后由 {@link updatePreview} 防抖跟随正文变化；
+   * 关闭时只隐藏窗口，保留已渲染的内容（再次打开时立刻重渲染，避免看到过期内容）。
+   */
+  private readyPreview() {
+    const c = this.previewOption?.[1].getValue();
+    if (c) {
+      this.previewContainer?.show();
+      this.doUpdatePreview();
+    } else {
+      this.previewContainer?.hide();
+    }
+  }
+
+  /**
+   * 重新渲染预览窗（{@link updatePreview} 防抖后的实际执行体）。
+   *
+   * 开关未开启时直接返回：防抖期间用户可能已经把预览关掉了，
+   * 此时没必要再做一次昂贵的整篇渲染。
+   */
+  private doUpdatePreview() {
+    if (!this.previewOption?.[1].getValue()) return;
+    const inner = this.previewContainer?.children();
+    if (!inner?.length) return;
+    inner.empty();
+    const commonText = $("<div>")
+      .addClass("text-area common-text font14")
+      .html(ContentPreview.generate(this.$body?.html() ?? ""))
+      .appendTo(inner);
+    contentBeautify(commonText);
   }
 
   /**
@@ -1130,9 +1191,9 @@ export class AdvancedUEditor extends UEditor {
 
   /**
    * 内容变化后的统一处理：重算高度（仅非全屏时，全屏下改高度会抖），
-   * 并在正文未超过阈值时**节流**地重算字节数、**防抖**地同步 HTML 源码。
+   * 并在正文未超过阈值时**节流**地重算字节数、**防抖**地同步 HTML 源码与实时预览。
    *
-   * 超过 {@link autoUpdateEditorStatsThreshold} 时停止自动统计（逐字重算 + 美化 HTML 开销太大），
+   * 超过 {@link autoUpdateEditorStatsThreshold} 时停止自动统计（逐字重算 + 美化 HTML + 渲染预览开销太大），
    * 改为显示「轻触刷新」按钮交由用户手动触发。
    *
    * @warning 这里**不能**写成 `Utils.throttle(fn, 300)()` —— 那样每次调用都会新建一个节流器，
@@ -1144,9 +1205,11 @@ export class AdvancedUEditor extends UEditor {
       this.throttledCalculateBytes();
       // 源码同步走防抖：整篇正文的美化开销大，且必须保证「最后一次」一定被同步
       this.pullHtmlFromNative();
+      // 预览同理：整篇正文的转换与美化比源码同步更重，只在用户停手后渲染一次
+      this.updatePreview();
     } else {
       this.refreshTextNode?.show();
-      this.htmlEditorApp!.requestRefresh();
+      this.htmlEditorApp?.requestRefresh();
     }
   }
 
@@ -1154,6 +1217,8 @@ export class AdvancedUEditor extends UEditor {
   private manualTriggerStatsUpdate() {
     if (this.currentTextLength > this.autoUpdateEditorStatsThreshold) {
       this.calculateBytes();
+      // 正文过大时预览也停止自动跟随，借这次手动刷新一并重渲染
+      this.doUpdatePreview();
       this.refreshTextNode?.hide();
     }
   }

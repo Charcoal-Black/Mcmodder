@@ -19,6 +19,8 @@ declare global {
     tooltip(option?: any): JQuery;
     webuiPopover(option?: any): JQuery;
     cropper(...option: any[]): JQuery;
+    lazyload(...option: any[]): JQuery;
+    viewer(...option: any[]): JQuery;
   }
 
   /* Swal */
@@ -100,7 +102,13 @@ declare global {
   var strEventUrl: any;
   var comment_container: any;
   var strTableSlotFocus: string;
+  var SyntaxHighlighter: any;
   var getEditorData: (isTest: boolean) => any;
+  var common_imgview: (obj: JQuery) => void;
+  var getCustomSetting: (key: string) => string;
+  var setCustomSetting: (key: string, value: string) => void;
+  var uknowtoomuch: () => void;
+  var sprintf: (str: string, ...param: any[]) => string;
 }
 
 export {};

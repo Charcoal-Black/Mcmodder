@@ -2474,7 +2474,8 @@ body .top-main .info .more-info .top_content a:hover,
   margin-right: var(--mcmodder-width-padding-3);
 }
 .mcmodder-mdeditor-container,
-.mcmodder-htmleditor-container {
+.mcmodder-htmleditor-container,
+.mcmodder-preview-container {
   overflow: auto clip;
   border: 1px solid var(--mcmodder-color-primary);
   border-radius: var(--mcmodder-width-radius);
@@ -2489,6 +2490,11 @@ body .top-main .info .more-info .top_content a:hover,
 #mcmodder-htmleditor .title {
   padding: 0.2em var(--mcmodder-width-padding-2);
   color: var(--mcmodder-color-primary-dark2);
+}
+.mcmodder-preview-inner {
+  padding: var(--mcmodder-width-padding-3);
+  height: 100%;
+  overflow: auto;
 }
 #mcmodder-json-upload {
   font-size: 14px;
