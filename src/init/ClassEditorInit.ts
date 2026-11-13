@@ -54,7 +54,7 @@ export class ClassEditorInit extends Init {
       }
       e.find(".checkbox").each((_, _f) => {
         const f = $(_f);
-        const version = f.find("label").text();
+        const version = f.find("label").text().trim();
         if (!Utils.validateVersionForLoaderID(version, loaderID)) {
           if (loaderID != "2") {
             f.show();
