@@ -46,7 +46,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
         .then((resp) => {
           if (!resp.responseXML) return;
           const doc = $(resp.responseXML);
-          const t = Date.parse(
+          const t = Utils.parseUTC8Time(
             doc.find(".history-list-frame li:first-child() .time").text()?.split(" (")[0],
           );
           const lt = this.configs.get("latestEditTime", sid);

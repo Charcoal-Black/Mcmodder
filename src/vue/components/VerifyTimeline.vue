@@ -14,6 +14,7 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watchEffect, type Ref, type ShallowRef } from "vue";
+import { Utils } from "../../Utils";
 
 interface Props {
   lastRefundElement: ShallowRef<JQuery>;
@@ -39,7 +40,7 @@ const lastRefund = computed(() => {
     throw new Error("`timeList` is null");
   }
   const time = timeList[0];
-  return Date.parse(time);
+  return Utils.parseUTC8Time(time);
 });
 
 const timeNodes = shallowRef<TimeNode[]>([]);

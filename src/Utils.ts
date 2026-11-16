@@ -1515,6 +1515,14 @@ export class Utils {
     return new Date(year, month - 1, day, hour, minute, second).getTime();
   }
 
+  /** 站点显示的时间不带时区，固定按 UTC+8 解析，避免脚本在其它时区运行时倒计时整体偏移 */
+  static parseUTC8Time(text: string | null) {
+    const match = text?.matchAll(/\d+/g);
+    if (!match) return Date.parse(text ?? "");
+    const [year, month, day, hour, minute, second] = match;
+    return Date.UTC(+year, +month - 1, +day, +hour, +minute, +second) - 8 * 60 * 60 * 1000;
+  }
+
   /** 清除正文中的百科格式化占位符（如 `[h1=]`） */
   static clearContextFormatter(e: string) {
     e = " " + e;

@@ -774,11 +774,17 @@ interface Profile {
   editNum: number;
   /** 平均字节数，只计正文有字节数增加的编辑 */
   editAvg: number;
-  /** 编辑员区域的模组 ID 列表，以单个逗号 `,` 分隔 */
+  /** 编辑员区域的模组 ID 列表与授予时刻 */
+  editors?: { id: number; grantedAt: number }[];
+  /** 编辑员区域的模组 ID 列表，以单个逗号 `,` 分隔 @deprecated 请使用 {@link editors} */
   editorModList?: string;
-  /** 管理员区域的模组 ID 列表，以单个逗号 `,` 分隔 */
+  /** 管理员区域的模组 ID 列表与授予时刻 */
+  managers?: { id: number; grantedAt: number }[];
+  /** 管理员区域的模组 ID 列表，以单个逗号 `,` 分隔 @deprecated 请使用 {@link managers} */
   adminModList?: string;
-  /** 开发者区域的模组 ID 列表，以单个逗号 `,` 分隔 */
+  /** 开发者区域的模组 ID 列表与授予时刻 */
+  developers?: { id: number; grantedAt: number }[];
+  /** 开发者区域的模组 ID 列表，以单个逗号 `,` 分隔 @deprecated 请使用 {@link developers} */
   devModList?: string;
   /** 权限等级 */
   permission: import("../config/ConfigUtils").Permission;
