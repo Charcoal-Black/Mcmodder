@@ -273,12 +273,18 @@ import bbsCss from "./css/bbs.css?raw";
     } else {
       // 云端 SDK 的加载放在 Mcmodder 内部异步补齐：启动本身绝不能被第三方 CDN 卡住，
       // 否则 Supabase 的 @require/备用源不可达时，防闪烁遮罩会一直挡住页面（表现为整页黑屏）。
-      try {
+      void (async () => {
+        let useSupabase = true;
+        try {
+          useSupabase =
+            JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase_v2 !== false;
+        } catch (_e) {}
+        if (useSupabase) await SupabaseUtils.prepare();
         new Mcmodder();
-      } catch (error) {
+      })().catch((error) => {
         console.error("Mcmodder 启动失败：", error);
         clearScreenCover();
-      }
+      });
     }
   };
   const tryInit = () => {
