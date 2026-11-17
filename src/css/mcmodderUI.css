@@ -1111,6 +1111,10 @@ body .edui-default .edui-editor-toolbarboxinner {
 .edit-tools > span {
   padding: 0.2em var(--mcmodder-width-padding-3);
 }
+.edit-tools span.autosave {
+  float: right;
+  position: inherit;
+}
 .class-item-type li {
   margin: 0;
   width: 100%;
