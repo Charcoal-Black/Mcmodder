@@ -781,13 +781,12 @@ export const settings = [
           {
             id: "updateChannel",
             title: "更新检查通道",
-            description:
-              "官网通道从 MCMODDER 官网读取 GitHub Release 的最新版本与更新日志；官网不可用时自动回退到社群发布帖。",
+            description: "选择脚本通过何种方式来自动检查更新。",
             type: "dropdownMenu",
             value: 0,
             range: {
-              0: "官网优先（推荐）",
-              1: "仅社群",
+              0: "GitHub 优先 (CF Worker 反代，推荐)",
+              1: "仅社群发布贴",
             },
           },
         ],

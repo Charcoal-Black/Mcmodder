@@ -566,10 +566,12 @@ export class AdvancedUEditor extends UEditor {
       $("#mcmodder-tool-md").show();
       this.mdEditorContainer?.show();
       $(this.verticalOption![0]).show();
+      this.heightAutoResize();
     } else {
       $("#mcmodder-tool-md").hide();
       this.mdEditorContainer?.hide();
       $(this.verticalOption![0]).hide();
+      this.heightAutoResize();
     }
     this.configs.setSettings("markdownIt", c);
     this.onEditorStateChange();
@@ -617,8 +619,10 @@ export class AdvancedUEditor extends UEditor {
         this.htmlEditor!.on("change", this.pushHtmlToNative);
       }
       this.htmlEditorContainer?.show();
+      this.heightAutoResize();
     } else {
       this.htmlEditorContainer?.hide();
+      this.heightAutoResize();
     }
     this.configs.setSettings("htmlEditor", c);
     this.onEditorStateChange();
@@ -632,8 +636,10 @@ export class AdvancedUEditor extends UEditor {
     const html = this.htmlEditorOption?.[1].getValue();
     if (md || html) {
       $(this.verticalOption![0]).show();
+      this.heightAutoResize();
     } else {
       $(this.verticalOption![0]).hide();
+      this.heightAutoResize();
     }
     window.dispatchEvent(new Event("resize"));
     this.updateEditorStats();
@@ -675,8 +681,10 @@ export class AdvancedUEditor extends UEditor {
     if (c) {
       this.previewContainer?.show();
       this.doUpdatePreview();
+      this.heightAutoResize();
     } else {
       this.previewContainer?.hide();
+      this.heightAutoResize();
     }
   }
 

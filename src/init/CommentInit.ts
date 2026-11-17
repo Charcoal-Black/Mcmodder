@@ -114,14 +114,6 @@ export class CommentInit extends Init {
   /** 发布时间倒计时容器的标记类 */
   private static readonly PUBLISH_TIME_CLASS = "mcmodder-comment-publish-time";
 
-  /** 站点发布时间不带时区，固定按 UTC+8 解析，避免脚本在其它时区运行时倒计时整体偏移 */
-  private static parsePublishTime(text: string | null) {
-    const match = text?.matchAll(/\d+/g);
-    if (!match) return Date.parse(text ?? "");
-    const [year, month, day, hour, minute, second] = match;
-    return Date.UTC(+year, +month - 1, +day, +hour, +minute, +second) - 8 * 60 * 60 * 1000;
-  }
-
   private readonly commentObserver = new MutationObserver((mutationList) => {
     // 防广告误触发：站点的广告楼层始终单独插入，遇到即跳过整批
     if (mutationList.some((mutation) => CommentInit.isAdFloor(mutation))) return;
