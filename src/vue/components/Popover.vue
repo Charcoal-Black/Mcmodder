@@ -3,7 +3,11 @@
     v-show="!classHidden"
     ref="list"
     class="mcmodder-popover"
-    :class="{ 'expand-upward': expandUpward }"
+    :class="{
+      'expand-upward': placement === 'top',
+      'expand-left': placement === 'left',
+      'expand-right': placement === 'right',
+    }"
     :style="[cssPos, { zIndex: props.zIndex }]"
   >
     <div class="mcmodder-popover-anim" :class="{ faded: classFaded }">
@@ -18,33 +22,23 @@
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { Values } from "../../Values";
 import { Utils } from "../../Utils";
+import type { PopoverProps } from "../composables/usePopoverHost";
 
-const props = withDefaults(
-  defineProps<{
-    /** 定位锚点；缺省为输入元素本身（下拉菜单会把它指向那个可见的按钮） */
-    anchorElement?: HTMLElement;
-    /** 最大高度限制；缺省或 null 为无限制 */
-    maxHeight?: number | null;
-    /**
-     * 决定弹出框样式中的 z-index 值，在诸如需要区分是否会被 swal 弹出框（z-index=1000）
-     * 覆盖的场景下很有用 @default 500
-     * */
-    zIndex?: number;
-  }>(),
-  {
-    anchorElement: undefined,
-    maxHeight: null,
-    zIndex: 500,
-  },
-);
+const props = withDefaults(defineProps<PopoverProps>(), {
+  anchorElement: undefined,
+  maxHeight: null,
+  zIndex: 500,
+  direction: "up-down",
+  align: "start",
+});
 
 const listRef = useTemplateRef<HTMLElement>("list");
 const visibility = ref(false);
 /** 锚点元素的矩形缓存（`updatePos` 在聚焦、页面滚动与缩放时刷新） */
 const rectRef = shallowRef<DOMRect>();
-/** 列表自身高度（向上弹出时用来算 top，也是 `expandUpward` 的判断依据） */
+/** 列表自身高度（向上/向下展开与垂直居中对齐的判断依据） */
 const listHeight = ref(0);
-/** 列表自身宽度（水平方向上把弹出框 constraint 在视口内时使用） */
+/** 列表自身宽度（向左/向右展开、水平居中对齐与视口约束的判断依据） */
 const listWidth = ref(0);
 /** 淡出中（`selectable` 由真变假时置 true）；初始为 true，保证首次显示从透明态淡入 */
 const classFaded = ref(true);
@@ -55,26 +49,77 @@ const ANIM_MS = 160;
 /** 淡出结束后真正隐藏的定时器（重开时取消） */
 let hideTimer: number | undefined;
 
+/** 与锚点之间的间距（px）；与 `.mcmodder-popover` 垂直方向的 margin 保持一致 */
+const ANCHOR_GAP = 4;
+/** 弹出框与视口边缘至少保持的距离（px） */
+const VIEWPORT_MARGIN = 16;
+
+/** 弹出框相对锚点的展开方向 */
+type PopoverPlacement = "top" | "bottom" | "left" | "right";
+
+/** `direction` 为 `"right" | "left-right"` 时沿水平方向展开，其余情况沿竖直方向展开 */
+const isHorizontalDirection = computed(
+  () => props.direction === "right" || props.direction === "left-right",
+);
+
 /**
- * 是否需要向上弹出：下方放不下而上方放得下时向上；两侧都放得下但上方更宽裕时也向上
- * （上方的可用空间扣除了吸顶导航高度，避免列表被页头遮住）。
+ * 根据 `direction` 与两侧可用空间决定展开方向。
+ *
+ * - `up-down` 保持原有行为：下方放不下而上方放得下时向上；两侧都放得下但上方更宽裕时也向上；
+ * - `down` 只有下方放不下时才向上；
+ * - `left-right` 选择左右两侧中空间更大的一侧；
+ * - `right` 只有右侧放不下时才向左。
+ *
+ * 上方的可用空间扣除了吸顶导航高度，避免列表被页头遮住。
  */
-const expandUpward = computed(() => {
+const placement = computed<PopoverPlacement>(() => {
   const rect = rectRef.value;
   if (!rect) {
-    return false;
+    return "bottom";
   }
+
+  if (isHorizontalDirection.value) {
+    const leftSpace = rect.left;
+    const rightSpace = innerWidth - rect.right;
+    if (props.direction === "right") {
+      if (rightSpace >= listWidth.value) {
+        return "right";
+      }
+      return leftSpace > rightSpace ? "left" : "right";
+    }
+    return leftSpace > rightSpace ? "left" : "right";
+  }
+
   const topSpace = rect.top - Values.headerContainerHeight;
   const bottomSpace = innerHeight - rect.bottom;
-  if (bottomSpace < listHeight.value && topSpace >= listHeight.value) {
-    return true;
-  } else if (bottomSpace >= listHeight.value && topSpace > bottomSpace) {
-    return true;
+  if (props.direction === "down") {
+    if (bottomSpace >= listHeight.value) {
+      return "bottom";
+    }
+    return topSpace > bottomSpace ? "top" : "bottom";
   }
-  return false;
+
+  // up-down：保持重构前的判断顺序，避免默认行为发生变化
+  if (bottomSpace < listHeight.value && topSpace >= listHeight.value) {
+    return "top";
+  }
+  if (bottomSpace >= listHeight.value && topSpace > bottomSpace) {
+    return "top";
+  }
+  return "bottom";
 });
 
-/** 列表的定位与尺寸样式（相对锚点：向下为锚点下方，向上为锚点上方且减去自身高度） */
+/** 把数值限制在 `[min, max]` 内；当区间无效（弹出框比视口还大）时优先保证左/上边界 */
+function clampToViewport(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(value, max));
+}
+
+/**
+ * 列表的定位样式。
+ *
+ * 以锚点矩形为基准：`direction` 决定主展开方向，`align` 决定交叉轴上的对齐方式；
+ * 任一方向放不下时都会把弹出框平移回视口内，避免超出页面或遮挡页面边缘。
+ */
 const cssPos = computed(() => {
   if (!props.anchorElement) {
     return {
@@ -84,58 +129,71 @@ const cssPos = computed(() => {
     };
   }
 
-  const { x: absPosX, y: absPosY } = props.anchorElement
-    ? Utils.getAbsolutePos(props.anchorElement)
-    : { x: 0, y: 0 };
+  const { x: anchorDocLeft, y: anchorDocTop } = Utils.getAbsolutePos(props.anchorElement);
 
   if (rectRef.value === undefined) {
     updatePos();
   }
 
   const rect = rectRef.value!;
-  const anchorWidth = rect.width;
-
-  // 水平方向：默认与锚点左对齐向右展开；若右边界超出视口，则先尝试右对齐锚点右端，
-  // 让弹出框尽量覆盖锚点所在的水平范围、不遮挡锚点；仍放不下时再整体平移至视口内。
-  const margin = 16;
+  const anchorDocRight = anchorDocLeft + rect.width;
+  const anchorDocBottom = anchorDocTop + rect.height;
   const popoverWidth =
     listWidth.value || (listRef.value ? listRef.value.getBoundingClientRect().width : 0);
-  const viewportLeft = window.scrollX + margin;
-  const viewportRight = window.scrollX + innerWidth - margin;
+  const viewportLeft = window.scrollX + VIEWPORT_MARGIN;
+  const viewportRight = window.scrollX + innerWidth - VIEWPORT_MARGIN;
+  const viewportTop = window.scrollY + Math.max(Values.headerContainerHeight, VIEWPORT_MARGIN);
+  const viewportBottom = window.scrollY + innerHeight - VIEWPORT_MARGIN;
+  const maxWidth = Math.max(0, innerWidth - VIEWPORT_MARGIN * 2) + "px";
 
-  let left = absPosX;
-  if (popoverWidth > 0) {
-    if (left + popoverWidth > viewportRight) {
-      const anchorRightDoc = absPosX + anchorWidth;
-      const candidate = anchorRightDoc - popoverWidth;
-      if (candidate >= viewportLeft && candidate + popoverWidth <= viewportRight) {
-        left = candidate;
-      } else {
-        left = viewportRight - popoverWidth;
-      }
-    }
-    if (left < viewportLeft) {
-      left = viewportLeft;
-    }
+  if (placement.value === "left" || placement.value === "right") {
+    // 水平展开：`align` 控制与锚点在竖直方向上的对齐（start = 上边缘，center = 水平轴线）
+    const left =
+      placement.value === "right"
+        ? anchorDocRight + ANCHOR_GAP
+        : anchorDocLeft - popoverWidth - ANCHOR_GAP;
+    const clampedLeft = clampToViewport(left, viewportLeft, viewportRight - popoverWidth);
+
+    const top =
+      props.align === "center" ? anchorDocTop + (rect.height - listHeight.value) / 2 : anchorDocTop;
+    const clampedTop = clampToViewport(top, viewportTop, viewportBottom - listHeight.value);
+
+    return {
+      left: clampedLeft + "px",
+      top: clampedTop + "px",
+      "max-width": maxWidth,
+    };
   }
 
-  const maxWidth = Math.max(0, innerWidth - margin * 2) + "px";
+  // 竖直展开：`align` 控制与锚点在水平方向上的对齐（start = 左边缘，center = 竖直轴线）
+  let left =
+    props.align === "center" ? anchorDocLeft + (rect.width - popoverWidth) / 2 : anchorDocLeft;
+  if (popoverWidth > 0) {
+    // start 对齐时若右侧放不下，先尝试右对齐锚点右端，尽量覆盖锚点所在的水平范围；
+    // 仍放不下则交给下面的视口钳制处理。
+    if (props.align === "start" && left + popoverWidth > viewportRight) {
+      const candidate = anchorDocRight - popoverWidth;
+      if (candidate >= viewportLeft) {
+        left = candidate;
+      }
+    }
+    left = clampToViewport(left, viewportLeft, viewportRight - popoverWidth);
+  }
 
-  if (expandUpward.value) {
-    const bottom = innerHeight - absPosY;
+  if (placement.value === "top") {
+    const bottom = innerHeight - anchorDocTop;
     return {
       left: left + "px",
       bottom: bottom + "px",
       "max-width": maxWidth,
     };
-  } else {
-    const top = absPosY + rect.height;
-    return {
-      left: left + "px",
-      top: top + "px",
-      "max-width": maxWidth,
-    };
   }
+
+  return {
+    left: left + "px",
+    top: anchorDocBottom + "px",
+    "max-width": maxWidth,
+  };
 });
 
 const heightCss = computed(() => {
@@ -150,9 +208,11 @@ const heightCss = computed(() => {
   const rect = rectRef.value;
   const maxHeight =
     rect !== undefined
-      ? expandUpward.value
-        ? rect.top - Values.headerContainerHeight - 16
-        : innerHeight - rect.bottom - 16
+      ? isHorizontalDirection.value
+        ? innerHeight - Math.max(Values.headerContainerHeight, VIEWPORT_MARGIN) - VIEWPORT_MARGIN
+        : placement.value === "top"
+          ? rect.top - Values.headerContainerHeight - VIEWPORT_MARGIN
+          : innerHeight - rect.bottom - VIEWPORT_MARGIN
       : props.maxHeight;
 
   return {
@@ -235,11 +295,9 @@ defineExpose({
   rootElement: listRef,
   /** 重新量一次锚点矩形（页面滚动 / 缩放时调用以跟随位置） */
   updatePos,
-  /** 是否需要向上弹出（`false` 时向下） */
-  expandUpward,
   /** 更新弹出框的显示状态 */
   onPopoverVisibilityChange,
-  /** 更新弹出框的高度 */
+  /** 重新测量弹出框尺寸（高度参与方向判断，宽度参与水平定位） */
   onPopoverHeightChange,
   /** 供子组件确定容器大小 */
   rectRef,

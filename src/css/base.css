@@ -1540,6 +1540,22 @@ div#mcmodder-text-result {
   display: inline-block;
   margin-right: 1em;
 }
+#mcmodder-cover-gaussian-blur,
+#mcmodder-cover-gaussian-apply,
+#mcmodder-cover-gaussian-radius-container {
+  margin: 0 0 5px 5px;
+}
+#mcmodder-cover-gaussian-radius-container,
+#mcmodder-cover-gaussian-radius {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  text-wrap: nowrap;
+  gap: var(--mcmodder-width-padding-3);
+}
+#mcmodder-cover-gaussian-radius .form-control {
+  width: 5em;
+}
 #mcmodder-crash-protector {
   margin-left: 10px;
 }
@@ -2458,7 +2474,8 @@ body .top-main .info .more-info .top_content a:hover,
   margin-right: var(--mcmodder-width-padding-3);
 }
 .mcmodder-mdeditor-container,
-.mcmodder-htmleditor-container {
+.mcmodder-htmleditor-container,
+.mcmodder-preview-container {
   overflow: auto clip;
   border: 1px solid var(--mcmodder-color-primary);
   border-radius: var(--mcmodder-width-radius);
@@ -2473,6 +2490,11 @@ body .top-main .info .more-info .top_content a:hover,
 #mcmodder-htmleditor .title {
   padding: 0.2em var(--mcmodder-width-padding-2);
   color: var(--mcmodder-color-primary-dark2);
+}
+.mcmodder-preview-inner {
+  padding: var(--mcmodder-width-padding-3);
+  height: 100%;
+  overflow: auto;
 }
 #mcmodder-json-upload {
   font-size: 14px;
@@ -2625,6 +2647,14 @@ body .top-main .info .more-info .top_content a:hover,
 .jsonframe-oredict {
   margin-right: 0.25em;
 }
+html .qlayout-card {
+  background-color: var(--mcmodder-color-background);
+  border-color: var(--mcmodder-color-background-dark2);
+}
+html .qlayout-card-header {
+  background-color: var(--mcmodder-color-background-dark1);
+  border-bottom-color: var(--mcmodder-color-background-dark2);
+}
 html.dark .mcmodder-table-pointerover-tr > td:not(.mcmodder-table-pointerover-td) {
   backdrop-filter: brightness(125%);
 }
@@ -2744,6 +2774,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   margin-top: 0;
   margin-bottom: 4px;
 }
+/* 水平展开时与锚点的间距由 JS 计算（left 已包含 ANCHOR_GAP），这里去掉竖直外边距 */
+.mcmodder-popover.expand-left,
+.mcmodder-popover.expand-right {
+  margin-top: 0;
+  margin-bottom: 0;
+}
 /* 动画层：背景、阴影、圆角都放在这里，让整块面板一起缩放。
    它是根节点的子元素，transform 不会改变根节点的布局盒。 */
 .mcmodder-popover-anim {
@@ -2763,6 +2799,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-popover.expand-upward .mcmodder-popover-anim {
   transform-origin: bottom center;
 }
+.mcmodder-popover.expand-right .mcmodder-popover-anim {
+  transform-origin: left center;
+}
+.mcmodder-popover.expand-left .mcmodder-popover-anim {
+  transform-origin: right center;
+}
 .mcmodder-popover-anim.faded {
   opacity: 0;
   /* 向下弹出时从锚点方向稍微上移，向上弹出时反过来 */
@@ -2771,6 +2813,12 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 }
 .mcmodder-popover.expand-upward .mcmodder-popover-anim.faded {
   transform: translateY(4px) scale(0.96);
+}
+.mcmodder-popover.expand-right .mcmodder-popover-anim.faded {
+  transform: translateX(-4px) scale(0.96);
+}
+.mcmodder-popover.expand-left .mcmodder-popover-anim.faded {
+  transform: translateX(4px) scale(0.96);
 }
 .mcmodder-popover-inner {
   margin: 2px;

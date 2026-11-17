@@ -28,8 +28,8 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
       "autoCheckVerify",
       this.parent.currentUID,
     );
-    const adminModList: string[] = this.configs.getProfile("adminModList")?.split(",") || [];
-    if (adminModList.length === 0) {
+    const managers = this.configs.getProfile("managers") ?? [];
+    if (managers.length === 0) {
       Utils.commonMsg(
         "脚本尚未记录您的管理模组区域，可能是由于您已经是全域审核员，或是从未访问过自己的个人主页，请访问一次后重试~",
         false,
@@ -43,7 +43,10 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
       Utils.setButtonLoadingState(button);
     }
 
-    const total = await this.work(adminModList, inVerifyPage);
+    const total = await this.work(
+      managers.map((manager) => manager.id),
+      inVerifyPage,
+    );
 
     if (total === 0) {
       if (!inVerifyPage) {
@@ -70,14 +73,14 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
   /**
    * 逐个查询管理模组区的待审数并汇总。
    *
-   * @param adminModList 自己管理的模组 id 列表。
+   * @param managers 自己管理的模组 id 列表。
    * @param inVerifyPage 当前是否就在审核页面上 —— 只有在页面上时才需要标记下拉菜单。
    * @returns 待审总数；请求返回状态异常时返回 `-1`（以区别于「真的是 0 个」）。
    */
-  private async work(adminModList: string[], inVerifyPage: boolean) {
+  private async work(managers: number[], inVerifyPage: boolean) {
     let total = 0;
 
-    const optionMap = new Map<string, number>();
+    const optionMap = new Map<number, number>();
     if (inVerifyPage) {
       const menuOptions = $("#class-version-list").children();
       menuOptions.each((index, node) => {
@@ -94,12 +97,12 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
           console.error("`id` is null");
           return true;
         }
-        optionMap.set(id, Number(index));
+        optionMap.set(Number(id), Number(index));
       });
     }
 
     let menuElements = $();
-    for (const id of adminModList) {
+    for (const id of managers) {
       const resp = await this.parent.utils.createRequest(
         {
           url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
@@ -107,7 +110,7 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
           },
-          data: $.param({ data: JSON.stringify({ classID: id }) }),
+          data: $.param({ data: JSON.stringify({ classID: id.toString() }) }),
         },
         "查询待审项数量",
       );

@@ -524,14 +524,57 @@ export class ConfigRepository {
    * @param uid 用户 UID，默认当前用户。
    */
   getProfile<P extends keyof Profile>(key: P, uid = this.parent.currentUID) {
-    return this.getRecord<Profile, "userProfile", P>("userProfile", key, uid);
+    const field = this.getRecord<Profile, "userProfile", P>("userProfile", key, uid);
+    if (key === "editors")
+      return (
+        field ??
+        (this.getRecord<Profile, "userProfile", "editorModList">(
+          "userProfile",
+          "editorModList",
+          uid,
+        )
+          ?.split(",")
+          .map((sid) => ({ id: Number(sid), grantedAt: 0 })) as Profile[P])
+      );
+    if (key === "managers")
+      return (
+        field ??
+        (this.getRecord<Profile, "userProfile", "adminModList">("userProfile", "adminModList", uid)
+          ?.split(",")
+          .map((sid) => ({ id: Number(sid), grantedAt: 0 })) as Profile[P])
+      );
+    if (key === "developers")
+      return (
+        field ??
+        (this.getRecord<Profile, "userProfile", "devModList">("userProfile", "devModList", uid)
+          ?.split(",")
+          .map((sid) => ({ id: Number(sid), grantedAt: 0 })) as Profile[P])
+      );
+    return field;
   }
   /** 读取当前（或指定）用户的完整资料对象。
    *
    * @param uid 用户 UID，默认当前用户。
    */
   getAllProfile(uid = this.parent.currentUID) {
-    return this.getAllRecord<Profile, "userProfile">("userProfile", uid);
+    const legacy = this.getAllRecord<Profile, "userProfile">("userProfile", uid);
+    const editors = legacy.editorModList
+      ?.split(",")
+      .map((sid) => ({ id: Number(sid), grantedAt: 0 }));
+    const managers = legacy.adminModList
+      ?.split(",")
+      .map((sid) => ({ id: Number(sid), grantedAt: 0 }));
+    const developers = legacy.devModList
+      ?.split(",")
+      .map((sid) => ({ id: Number(sid), grantedAt: 0 }));
+    const profile = {
+      ...legacy,
+      editors,
+      managers,
+      developers,
+    };
+    Utils.deleteEmptyProperties(profile);
+    return profile;
   }
   /**
    * 写入当前（或指定）用户资料中的一个字段。

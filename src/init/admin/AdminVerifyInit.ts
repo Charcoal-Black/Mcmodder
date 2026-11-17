@@ -1232,7 +1232,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     if (lastSubmissionText === null) {
       throw new Error("`lastSubmissionText` is null");
     }
-    this.lastSubmission.value = Date.parse(lastSubmissionText[0]);
+    this.lastSubmission.value = Utils.parseUTC8Time(lastSubmissionText[0]);
     this.assistantSuggestionElement.value = this.verifyFrame!.find(".assistant-sug");
 
     if (this.timeline === undefined) {

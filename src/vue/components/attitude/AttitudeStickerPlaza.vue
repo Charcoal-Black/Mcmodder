@@ -17,7 +17,7 @@
             :on-successful-change="handleSortChange"
           />
         </template>
-        <span v-if="total" class="mcmodder-attitude-sticker-quota">共 {{ total }} 张</span>
+        <span v-if="total" class="mcmodder-attitude-sticker-count">共 {{ total }} 张</span>
       </span>
     </div>
 

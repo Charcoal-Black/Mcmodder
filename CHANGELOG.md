@@ -1,6 +1,30 @@
 # CHANGELOG
 
-# CHANGELOG
+## [2.4.2] - 2026-11-17
+
+### 新增内容
+
+- 新增对百科近期新增的自动排版工具的夜间模式支持。
+
+- 新增模组封面高斯模糊工具 [[#127](https://github.com/Charcoal-Black/Mcmodder/issues/127)]。
+
+- 新增正文实时预览功能。
+
+- 将自定义表态详情弹出框的锚点对齐方式更改为居中。
+
+### Bug 修复
+
+- 切换编辑器的启用状态时，编辑器高度未及时更新，导致编辑器内容可能溢出编辑器窗口。
+
+- 源代码编辑器与 Markdown 编辑器无法正常初始化 [[#126](https://github.com/Charcoal-Black/Mcmodder/issues/126)]。
+
+- 嵌套弹出框的失焦逻辑处理不当。
+
+- 解析站点所显示的时间时，总是以本机时区为准，导致本机时区非 UTC+8 时部分逻辑混乱。
+
+- 在模组编辑页中，支持 MC 版本的检测受到百科近期新增的前置检测影响，而将正确的版本误标记为不合法 [[#129](https://github.com/Charcoal-Black/Mcmodder/issues/129)]。
+
+- 编辑页宽度过窄时，自动保存计时器的显示位置与其他按钮重叠，导致一些按钮无法点击 [[#130](https://github.com/Charcoal-Black/Mcmodder/issues/130)]。
 
 ## [2.4.1] - 2026-10-31
 
@@ -59,8 +83,6 @@
 - 修复空配置缓存写入异常，导致初次加载脚本时报错 [[#125](https://github.com/Charcoal-Black/Mcmodder/issues/125)]。
 
 - 为 Supabase 新增备用源与失败降级 [[#125](https://github.com/Charcoal-Black/Mcmodder/issues/125)]。
-
-### 新增内容
 
 ## [2.4] - 2026-10-21
 

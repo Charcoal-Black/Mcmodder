@@ -93,7 +93,7 @@ export class CenterHomeInit extends CenterBaseInit {
       avatar: $(".user-icon-img img").attr("src"),
       nickname: metadata[0],
       username: metadata[1],
-      regTime: Date.parse(stats.eq(6).children().eq(1).text()),
+      regTime: Utils.parseUTC8Time(stats.eq(6).children().eq(1).text()),
       lv: Number($(".user-name .user-lv").text().slice(3)),
       userGroup: stats.eq(0).children().eq(1).text(),
       editByte: Number(
@@ -111,26 +111,29 @@ export class CenterHomeInit extends CenterBaseInit {
     // 记录模组区域
     $(".admin-list").each((_, _c) => {
       const c = $(_c);
-      const s: number[] = [];
-      let l: "editorModList" | "adminModList" | "devModList";
+      const s: { id: number; grantedAt: number }[] = [];
+      let l: "editors" | "managers" | "developers";
       const t = c.find(".title").text();
-      if (t.startsWith("编辑员")) l = "editorModList";
-      else if (t.startsWith("管理员")) l = "adminModList";
-      else if (t.startsWith("开发者")) l = "devModList";
+      if (t.startsWith("编辑员")) l = "editors";
+      else if (t.startsWith("管理员")) l = "managers";
+      else if (t.startsWith("开发者")) l = "developers";
       else throw new Error("未能匹配模组区域标题...");
       c.find("li a").each((_, d) => {
-        s.push(Number((d as HTMLAnchorElement).href.split("/class/")[1].split(".html")[0]));
+        const a = $(d);
+        s.push({
+          id: Number(a.attr("href").split("/class/")[1].split(".html")[0]),
+          grantedAt: Utils.parseUTC8Time(a.next().attr("title")),
+        });
       });
-      const str = s.join(",");
-      profile[l] = str;
+      profile[l] = s;
     });
 
     // 计算权限等级
     let permission: Permission;
     if (Values.adminIDList.includes(this.parent.currentUID)) permission = "admin";
-    else if (profile.adminModList) permission = "manager";
-    else if (profile.devModList) permission = "developer";
-    else if (profile.editorModList) permission = "editor";
+    else if (profile.managers?.length) permission = "manager";
+    else if (profile.developers?.length) permission = "developer";
+    else if (profile.editors?.length) permission = "editor";
     else if (["禁止发言", "禁止编辑", "禁止访问"].includes(profile.userGroup))
       permission = "banned";
     else permission = "none";

@@ -305,9 +305,14 @@ img.mcmodder-attitude-sticker-image {
 }
 
 .mcmodder-attitude-sort-title,
-.mcmodder-attitude-sticker-quota {
+.mcmodder-attitude-sticker-quota,
+.mcmodder-attitude-sticker-count {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);
+}
+
+.mcmodder-attitude-sticker-count {
+  margin-left: auto;
 }
 
 .mcmodder-attitude-sticker-content {
@@ -521,7 +526,7 @@ img.mcmodder-attitude-sticker-image {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  width: 100%;
 }
 
 .mcmodder-attitude-plaza-tools .mcmodder-dropdown-button {

@@ -1,5 +1,5 @@
 import { Utils } from "../../Utils.ts";
-import type { PopoverExpose } from "../../types/props";
+import type { PopoverElementAccessor, PopoverExpose } from "../../types/props";
 
 /**
  * 弹出框（以 `Popover` 作为 DOM 根组件的组件）的控制器**基类**。
@@ -79,6 +79,11 @@ export abstract class PopoverController<
    * 否则多个弹出框会抢同一个触发点。
    */
   private static readonly registeredTypes = new WeakMap<HTMLElement, PopoverOption["type"]>();
+  /**
+   * 所有已创建的弹出框组件（用于在 {@link inPopover} 中追溯弹出框之间的嵌套关系：
+   * 点击落在别的弹出框里时，要顺着它绑定的锚点逐层找回本弹出框）。
+   */
+  private static readonly apps = new Set<PopoverElementAccessor>();
 
   /** 统一的中止信号：`abort()` 一次即摘掉本控制器注册的所有 `window` 监听 */
   private readonly ac = new AbortController();
@@ -121,6 +126,7 @@ export abstract class PopoverController<
     this.app = config.component;
     this.type = config.type;
     this.trigger = config.trigger;
+    PopoverController.apps.add(this.app);
     this.installListeners();
   }
 
@@ -269,10 +275,73 @@ export abstract class PopoverController<
     }
   }
 
-  /** 事件是否发生在**本控制器**的弹出框内部（其它控制器的弹出框不算） */
+  /**
+   * 事件是否发生在**本控制器**的弹出框内部。
+   *
+   * 除了直接命中本弹出框，还接受「经由锚点嵌套」的情形：事件发生在别的弹出框里，
+   * 而那个弹出框的锚点又落在本弹出框内，同样算作在本弹出框内
+   * （锚点还可能落在第三个弹出框里，因此沿「弹出框 → 其锚点」逐层向外追溯，
+   * 直到某个元素不属于任何弹出框为止）。
+   */
   private inPopover(e: Event) {
-    const element = this.app.getPopoverElement();
-    return element !== undefined && e.composedPath().includes(element);
+    const ownElement = this.app.getPopoverElement();
+    if (ownElement === undefined) {
+      return false;
+    }
+
+    /** 已追溯过的弹出框，防止锚点互相引用造成死循环 */
+    const visited = new Set<HTMLElement>();
+    // 第一层从事件路径定位（影子 DOM 里 contains 不可靠），之后沿锚点在 DOM 树上追溯
+    let popover = PopoverController.findPopoverInPath(e.composedPath());
+    while (popover !== undefined) {
+      const element = popover.getPopoverElement();
+      if (element === ownElement) {
+        return true;
+      }
+      if (element === undefined || visited.has(element)) {
+        return false;
+      }
+      visited.add(element);
+      const anchor = popover.getAnchorElement();
+      popover = anchor === undefined ? undefined : PopoverController.findPopoverContaining(anchor);
+    }
+    return false;
+  }
+
+  /** 找出事件路径中包含的**最内层**弹出框（`undefined` 表示事件不在任何弹出框内） */
+  private static findPopoverInPath(path: EventTarget[]): PopoverElementAccessor | undefined {
+    let closest: PopoverElementAccessor | undefined;
+    let closestIndex = Infinity;
+    for (const app of PopoverController.apps) {
+      const element = app.getPopoverElement();
+      if (element === undefined) {
+        continue;
+      }
+      const index = path.indexOf(element);
+      if (index !== -1 && index < closestIndex) {
+        closest = app;
+        closestIndex = index;
+      }
+    }
+    return closest;
+  }
+
+  /** 找出 DOM 中包含指定节点的**最内层**弹出框（`undefined` 表示不在任何弹出框内） */
+  private static findPopoverContaining(node: Node): PopoverElementAccessor | undefined {
+    let closest: PopoverElementAccessor | undefined;
+    let closestElement: HTMLElement | undefined;
+    for (const app of PopoverController.apps) {
+      const element = app.getPopoverElement();
+      if (element === undefined || !element.contains(node)) {
+        continue;
+      }
+      // 弹出框之间可以嵌套（外层弹出框里打开了内层弹出框），取包含层级最深的那个
+      if (closestElement === undefined || closestElement.contains(element)) {
+        closest = app;
+        closestElement = element;
+      }
+    }
+    return closest;
   }
 
   /**

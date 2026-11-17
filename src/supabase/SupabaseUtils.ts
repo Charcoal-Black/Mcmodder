@@ -39,7 +39,8 @@ export class SupabaseUtils {
   private static readonly supabaseUrl = "https://mcmodder.114514256.xyz";
   private static readonly supabaseKey = "sb_publishable_yQ4SlDDDQ8OE8tgbnLrkNw_deH9GSjd";
   private static readonly fallbackSources = [
-    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+    "https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
     "https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
   ];
   private static preparing: Promise<void> | undefined;
@@ -98,11 +99,25 @@ export class SupabaseUtils {
     // 初始化时若已开启云端服务，立刻创建客户端
     this.syncInstance();
 
+    // `@require` 缺失时在后台补齐 SDK：不阻塞页面启动，就绪后补建客户端并刷新页头未读数。
+    if (this.isEnabled() && !SupabaseUtils.getSdk()) {
+      void this.ensureCloudReady();
+    }
+
     // 开启云端服务时按需补齐依赖；关闭时立即释放引用
-    watch(this.useSupabaseRef, async () => {
-      if (this.isEnabled()) await SupabaseUtils.prepare();
-      this.syncInstance(true);
+    watch(this.useSupabaseRef, () => {
+      if (this.isEnabled()) void this.ensureCloudReady();
+      else this.syncInstance(true);
     });
+  }
+
+  /** 后台等待 SDK 可用后补建客户端；启动阶段已渲染的云端数据（页头未读数）再刷新一次 */
+  private async ensureCloudReady() {
+    await SupabaseUtils.prepare();
+    this.syncInstance(true);
+    if (this.instance && document.querySelector(".mcmodder-rednum")) {
+      void this.parent.refreshBellNotify().catch(() => {});
+    }
   }
 
   /**

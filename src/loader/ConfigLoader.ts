@@ -778,6 +778,17 @@ export const settings = [
             type: "checkbox",
             value: true,
           },
+          {
+            id: "updateChannel",
+            title: "更新检查通道",
+            description: "选择脚本通过何种方式来自动检查更新。",
+            type: "dropdownMenu",
+            value: 0,
+            range: {
+              0: "GitHub 优先 (CF Worker 反代，推荐)",
+              1: "仅社群发布贴",
+            },
+          },
         ],
       },
     ],
