@@ -48,6 +48,11 @@ export function contentBeautify(content: JQuery) {
       });
   });
 
+  // 表格添加外层容器与可滑动特性
+  $(".common-text table").each(function () {
+    $(this).addClass("table table-bordered text-nowrap").wrap('<div class="table-scroll"></div>');
+  });
+
   // 图片查看
   common_imgview(content);
 
