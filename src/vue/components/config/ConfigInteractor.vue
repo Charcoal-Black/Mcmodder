@@ -61,6 +61,20 @@
         :value="value as Key"
         :on-successful-change="onConfigSuccessfulChange"
       />
+      <BackgroundPoolInput
+        v-else-if="type === 'backgroundPool'"
+        :id="id"
+        :title="title"
+        :value="value as number"
+        :on-successful-change="onConfigSuccessfulChange"
+      />
+      <RadioGroupInput
+        v-else-if="type === 'radioGroup'"
+        :title="title"
+        :value="value as number"
+        :on-successful-change="onConfigSuccessfulChange"
+        :range="valueSet!"
+      />
       <slot name="afterInput" />
     </div>
     <!-- 设置项描述内含 <del>/<code>/<a> 等排版标签，无法用纯文本渲染；内容来自 ConfigLoader 自身的静态配置，已过 sanitizeHTML -->
@@ -92,6 +106,8 @@ import SliderInput from "../input/SliderInput.vue";
 import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 import DropdownTextInput from "../input/DropdownTextInput.vue";
 import KeybindInput from "../input/KeybindInput.vue";
+import BackgroundPoolInput from "../input/BackgroundPoolInput.vue";
+import RadioGroupInput from "../input/RadioGroupInput.vue";
 import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
 import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 import type { ConfigMatchRanges } from "../../../types/props";
@@ -152,6 +168,13 @@ const opt = computed(() => {
     }
     case "keybind":
       return {};
+    case "backgroundPool":
+      return {};
+    case "radioGroup": {
+      const valueSet = { ...data.range } as InputValueSet;
+      valueSet[data.value as number] += " (默认)";
+      return { valueSet };
+    }
   }
   throw new Error("这 InputType 有力气");
 });

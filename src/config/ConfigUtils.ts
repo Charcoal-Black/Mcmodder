@@ -13,6 +13,8 @@ export class ConfigUtils {
     keybind: {},
     dropdownMenu: 0,
     dropdownTextMenu: "",
+    backgroundPool: 0,
+    radioGroup: 0,
   } as const satisfies Record<InputType, unknown>;
 
   private readonly configs: ConfigRepository;

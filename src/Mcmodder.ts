@@ -1,4 +1,5 @@
 import { GM_getValue, GM_openInTab, GM_setValue } from "$";
+import { BackgroundPool } from "./background/BackgroundPool";
 import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils";
 import { ConfigUtils } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
@@ -761,9 +762,13 @@ export class Mcmodder {
     ).addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
-    if (this.configRepository.getSettings("defaultBackground") != "none") {
+    // 本地图池有图时无条件覆盖：消息中心等页面自带 body 背景，
+    // 原先「只改 background-image 为 none 的 body」的过滤会漏掉它们。
+    const hasLocalBackground =
+      BackgroundPool.getImages("day").length > 0 || BackgroundPool.getImages("night").length > 0;
+    if (hasLocalBackground || this.configRepository.getSettings("defaultBackground") != "none") {
       $("body")
-        .filter((_, c) => $(c).css("background-image") === "none")
+        .filter((_, c) => hasLocalBackground || $(c).css("background-image") === "none")
         .css({
           background: "var(--mcmodder-image-background)",
           "background-size": "cover",
