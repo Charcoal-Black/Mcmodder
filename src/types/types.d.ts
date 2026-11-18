@@ -207,6 +207,8 @@ interface Settings {
    * 3=洗牌轮完重洗、4=每天固定
    */
   backgroundPoolRotateMode: 0 | 1 | 2 | 3 | 4;
+  /** 是否覆盖页面自带的背景（默认否：只替换原本没有背景的页面） */
+  backgroundOverrideExisting: boolean;
   backgroundAlpha: number;
   textShadowAlpha: number;
   radiusRatio: number;
@@ -257,6 +259,8 @@ interface Settings {
   uploadFileButton: boolean;
   ignoreEmptyLine: boolean;
   replyLink: boolean;
+  /** 是否启用短评跨页定位（关闭后 #comment-xxx 链接与楼层输入框都不工作） */
+  commentJumpEnabled: boolean;
   missileAlert: boolean;
   missileAlertHeight: number;
   commentExpandHeight: number;

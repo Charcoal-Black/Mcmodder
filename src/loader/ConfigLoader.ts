@@ -77,6 +77,14 @@ export const settings = [
               4: "每天固定",
             },
           },
+          {
+            id: "backgroundOverrideExisting",
+            title: "覆盖页面自带背景",
+            description:
+              "开启后，即使页面自己设置了背景（如消息中心、个人主页），也会被上面的背景替换。关闭（默认）时只替换原本没有背景的页面，保留站点与其他脚本设置的背景。",
+            type: "checkbox",
+            value: false,
+          },
         ],
       },
       {
@@ -626,6 +634,14 @@ export const settings = [
             description:
               "轻触短评楼中楼里出现的链接来快捷访问。该功能可能无法正确识别后文紧随其他文字的链接。",
             type: "checkbox",
+          },
+          {
+            id: "commentJumpEnabled",
+            title: "启用定位短评",
+            description:
+              "开启后可通过 <code>#comment-&lt;id&gt;</code> 链接跨页定位短评，也可在分页条输入楼层号直接跳转；关闭后这两项均不生效。",
+            type: "checkbox",
+            value: true,
           },
           {
             id: "missileAlert",
