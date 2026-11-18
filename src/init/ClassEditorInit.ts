@@ -184,7 +184,19 @@ export class ClassEditorInit extends Init {
         }
       }, 500);
     });
-    $("#cover-update-button, #cover-cancel-button, #cover-reset-button").click(() => {
+    // 百科对更新按钮的处理委托在 document 上（CommonCover），而目标级直绑处理器先于
+    // 委托级触发：此处若同步 resetCropper()（cropper("destroy")），站点随后执行的
+    // getCroppedCanvas() 拿到 null，其 toDataURL 直接抛 TypeError，封面无法更新
+    //（原生没有这条绑定故无此问题，2026-11-18 真机报告）。
+    // 因此推迟到本轮事件派发结束后再清理，且仅当站点成功收尾（更新按钮被其隐藏）时
+    // 执行——失败路径（如裁剪结果超 3MB）保留裁剪现场供重试。
+    $("#cover-update-button").click(() => {
+      setTimeout(() => {
+        if (coverUpdateButton.css("display") === "none") this.resetCropper();
+      }, 0);
+    });
+    // 取消/重置按钮上站点不读裁剪结果（取消只收 UI，重置站点未绑定），同步清理无竞态
+    $("#cover-cancel-button, #cover-reset-button").click(() => {
       this.resetCropper();
     });
   }
