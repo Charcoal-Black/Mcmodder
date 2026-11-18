@@ -53,7 +53,10 @@ function nextRandom(pool, slot = "day") {
 
 /** 模式 1：完全随机（加权，不避重） */
 function nextPureRandom(pool) {
-  return weightedPick(pool, pool.map((_, i) => i));
+  return weightedPick(
+    pool,
+    pool.map((_, i) => i),
+  );
 }
 
 /** 模式 2：顺序 */
@@ -70,7 +73,10 @@ function nextShuffle(pool, slot = "day") {
   const usedIds = new Set(JSON.parse(GM_getValue(key, "[]")).filter((id) => validIds.has(id)));
   const remaining = pool.flatMap((r, i) => (r.id !== undefined && !usedIds.has(r.id) ? [i] : []));
   if (remaining.length === 0) {
-    const index = weightedPick(pool, pool.map((_, i) => i));
+    const index = weightedPick(
+      pool,
+      pool.map((_, i) => i),
+    );
     const picked = pool[index].id;
     GM_setValue(key, JSON.stringify([picked]));
     return index;
@@ -150,7 +156,10 @@ check("完全随机：权重 10 的图占比明显更高", () => {
   for (let i = 0; i < N; i += 1) counts[nextPureRandom(pool)] += 1;
   const ratio = counts[0] / N;
   // 理论值 10/15 ≈ 0.667，允许 ±0.05
-  assert.ok(ratio > 0.6 && ratio < 0.73, `高权重占比 ${(ratio * 100).toFixed(1)}%，偏离理论值 66.7%`);
+  assert.ok(
+    ratio > 0.6 && ratio < 0.73,
+    `高权重占比 ${(ratio * 100).toFixed(1)}%，偏离理论值 66.7%`,
+  );
 });
 
 // ── 模式 2：顺序 ──
