@@ -73,16 +73,18 @@ function nextShuffle(pool, slot = "day") {
   const usedIds = new Set(JSON.parse(GM_getValue(key, "[]")).filter((id) => validIds.has(id)));
   const remaining = pool.flatMap((r, i) => (r.id !== undefined && !usedIds.has(r.id) ? [i] : []));
   if (remaining.length === 0) {
-    const index = weightedPick(
-      pool,
-      pool.map((_, i) => i),
-    );
+    const lastId = readNumber(`lastId_${slot}`, -1);
+    const candidates = pool.flatMap((r, i) => (r.id === lastId ? [] : [i]));
+    const index = weightedPick(pool, candidates.length > 0 ? candidates : pool.map((_, i) => i));
     const picked = pool[index].id;
+    GM_setValue(`lastId_${slot}`, picked);
     GM_setValue(key, JSON.stringify([picked]));
     return index;
   }
   const index = weightedPick(pool, remaining);
-  usedIds.add(pool[index].id);
+  const picked = pool[index].id;
+  usedIds.add(picked);
+  GM_setValue(`lastId_${slot}`, picked);
   GM_setValue(key, JSON.stringify([...usedIds]));
   return index;
 }

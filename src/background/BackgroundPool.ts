@@ -156,17 +156,25 @@ export class BackgroundPool {
       row.id !== undefined && !usedIds.has(row.id) ? [index] : [],
     );
     if (remaining.length === 0) {
-      // 一轮用完：开新的一轮。本轮先抽一张，其余全部进入「待抽」（即 usedIds 只放这一张）
+      // 一轮用完：开新的一轮。本轮先抽一张，其余全部进入「待抽」（即 usedIds 只放这一张）。
+      // 同时避开上一轮最后一张，否则跨轮会看到连续两次同一张。
+      const lastId = BackgroundPool.readNumber(`mcmodderBackgroundLastId_${slot}`, -1);
+      const candidates = pool.flatMap((row, index) => (row.id === lastId ? [] : [index]));
       const index = BackgroundPool.weightedPick(
         pool,
-        pool.map((_, i) => i),
+        candidates.length > 0 ? candidates : pool.map((_, i) => i),
       );
       const picked = pool[index].id;
+      if (picked !== undefined) GM_setValue(`mcmodderBackgroundLastId_${slot}`, picked);
       GM_setValue(key, JSON.stringify(picked === undefined ? [] : [picked]));
       return index;
     }
     const index = BackgroundPool.weightedPick(pool, remaining);
-    usedIds.add(pool[index].id!);
+    const picked = pool[index].id;
+    if (picked !== undefined) {
+      usedIds.add(picked);
+      GM_setValue(`mcmodderBackgroundLastId_${slot}`, picked);
+    }
     GM_setValue(key, JSON.stringify([...usedIds]));
     return index;
   }
