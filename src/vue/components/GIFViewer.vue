@@ -8,18 +8,17 @@
     :load-error="loadError"
     :frames="frames"
     :subtexts="frameTimes.map((time) => `${time}ms`)"
-    :edited-blob="editedBlob"
     :allow-control="!playing"
     :allow-apply="!!editedBlob"
-    @on-move="moveFrame"
-    @on-insert="insertBlankFrame"
-    @on-delete-frames="deleteFrames"
-    @on-delete-all="deleteGif"
-    @on-apply-modify="onApplyModify"
-    @on-image-import-selected="onImageImportSelected"
-    @on-image-replace-selected="onImageReplaceSelected"
-    @on-frame-keydown="onFrameKeydown"
-    @on-frame-pointerdown="onFramePointerdown"
+    @move="moveFrame"
+    @insert="insertBlankFrame"
+    @delete-frames="deleteFrames"
+    @delete-all="deleteGif"
+    @apply-modify="onApplyModify"
+    @image-import-selected="onImageImportSelected"
+    @image-replace-selected="onImageReplaceSelected"
+    @frame-keydown="onFrameKeydown"
+    @frame-pointerdown="onFramePointerdown"
   >
     <template #info>
       <p>
@@ -1054,21 +1053,14 @@ async function onImageSliceSelected(ev: Event) {
   }
 }
 
-async function onImageImportSelected(ev: Event) {
+async function onImageImportSelected(files: File[], insertAt: number) {
   const { width, height } = gifSize;
-  if (width === 0 || height === 0 || !editable.value || currentIndex.value === undefined) return;
-  const input = ev.currentTarget as HTMLInputElement;
-  const files = Array.from(input.files ?? []);
+  if (width === 0 || height === 0 || !editable.value) return;
   const images = files.filter((file) => file.type.startsWith("image/"));
-  // 不清空的话，连续选同一个文件不会再触发 change
-  input.value = "";
   if (images.length === 0) {
     Utils.commonMsg("需要选择至少一张图片哦...", false);
     return;
   }
-
-  // 读取图片是异步的，先记住要插的位置，以免得期间用户又点了别的帧时，帧插入位置错误
-  const insertAt = currentIndex.value + 1;
 
   try {
     const rgbas = await Promise.all(
@@ -1086,13 +1078,10 @@ async function onImageImportSelected(ev: Event) {
   }
 }
 
-async function onImageReplaceSelected(ev: Event) {
+async function onImageReplaceSelected(files: File[]) {
   const { width, height } = gifSize;
   if (width === 0 || height === 0 || !editable.value) return;
-  const input = ev.currentTarget as HTMLInputElement;
-  const images = Array.from(input.files ?? []).filter((file) => file.type.startsWith("image/"));
-  // 不清空的话，连续选同一个文件不会再触发 change
-  input.value = "";
+  const images = files.filter((file) => file.type.startsWith("image/"));
   if (images.length === 0) {
     Utils.commonMsg("需要选择至少一张图片哦...", false);
     return;
@@ -1371,180 +1360,15 @@ defineExpose({
 </script>
 
 <style lang="css">
-.mcmodder-gifviewer-empty {
-  padding: 8px 12px;
-  border-radius: var(--mcmodder-width-radius);
-  background-color: var(--mcmodder-color-background-transparent);
-  box-shadow: 0 3px 5px var(--mcmodder-color-box-shadow);
-  color: var(--mcmodder-color-text-dark2);
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .mcmodder-gifviewer-createnew {
   display: flex;
   flex-direction: row;
   gap: var(--mcmodder-width-padding-3);
 }
 
-.mcmodder-gifviewer-grid {
-  display: grid;
-  grid-template-rows: 2;
-  gap: var(--mcmodder-width-padding-3);
-}
-
-.mcmodder-gifviewer-imageframes {
-  display: flex;
-  flex-direction: row;
-  gap: var(--mcmodder-width-padding-3);
-  overflow-x: auto;
-  padding: 6px 0;
-}
-
-.mcmodder-gifviewer-imageframe {
-  display: flex;
-  position: relative;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px 25px;
-  gap: 4px;
-  background-color: var(--mcmodder-color-background-transparent);
-  border-radius: var(--mcmodder-width-radius);
-  box-shadow: 0 3px 5px var(--mcmodder-color-box-shadow);
-  cursor: var(--mcmodder-cursor-hand);
-  border: 2px solid var(--mcmodder-color-background);
-  box-sizing: border-box;
-  transform: translateY(0);
-  transition:
-    background-color 0.3s ease,
-    transform 0.3s ease;
-}
-
-.mcmodder-gifviewer-imageframe:focus {
-  outline: none;
-}
-
-.mcmodder-gifviewer-imageframe:hover {
-  background-color: var(--mcmodder-color-accent-background);
-  transform: translateY(-3px);
-}
-
-.mcmodder-gifviewer-imageframe.current {
-  border: 2px solid var(--mcmodder-color-primary);
-  background-color: var(--mcmodder-color-primary-background);
-}
-
-.mcmodder-gifviewer-imageframe.selected {
-  border: 2px solid var(--mcmodder-color-primary);
-}
-
-.mcmodder-gifviewer-imageframe-gutter {
-  position: absolute;
-  top: 0;
-  left: 0.15em;
-  line-height: 1em;
-  color: var(--mcmodder-color-text-dark3);
-}
-
-.mcmodder-gifviewer-imageframe.current .mcmodder-gifviewer-imageframe-gutter {
-  color: var(--mcmodder-color-primary-dark1);
-}
-
-.mcmodder-gifviewer-imagecontainer {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-}
-
-.mcmodder-gifviewer-imagecontainer img {
-  image-rendering: pixelated;
-  width: 100%;
-  height: 100%;
-  margin: auto;
-  object-fit: contain;
-}
-
-.mcmodder-gifviewer-imagetime {
-  font-size: 14px;
-  font-style: italic;
-  color: var(--mcmodder-color-text-dark2);
-  text-wrap: nowrap;
-}
-
-.mcmodder-gifviewer-preview {
-  min-height: 80px;
-  display: flex;
-  background-color: var(--mcmodder-color-background-transparent);
-  box-shadow: 0 3px 5px var(--mcmodder-color-box-shadow);
-  border-radius: var(--mcmodder-width-radius);
-  position: relative;
-}
-
-.mcmodder-gifviewer-preview-imgcontainer {
-  margin: 30px auto;
-  line-height: 0;
-}
-
-.editable .mcmodder-gifviewer-preview-imgcontainer {
-  margin-bottom: 50px;
-}
-
-.mcmodder-gifviewer-preview-controls {
-  position: absolute;
-  right: 0.3em;
-  bottom: 0;
-  padding: 0.3em 0;
-  display: flex;
-  gap: 0.3em;
-  width: calc(100% - 0.6em);
-  overflow-x: auto;
-  text-wrap: nowrap;
-}
-
-.mcmodder-gifviewer-preview-controls > :first-child {
-  margin-left: auto;
-}
-
-.mcmodder-gifviewer-preview-imgcontainer img {
-  image-rendering: pixelated;
-  margin: 0;
-}
-
-.mcmodder-gifviewer-preview-info {
-  position: absolute;
-  left: 0.3em;
-  max-width: 40%;
-  max-height: calc(100% - 35px);
-  overflow: auto;
-  direction: rtl;
-}
-
-.mcmodder-gifviewer-preview-info p {
-  font-size: inherit !important;
-  line-height: inherit !important;
-  color: var(--mcmodder-color-text-dark2) !important;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  text-wrap: nowrap;
-  direction: ltr;
-}
-
-.mcmodder-gifviewer-preview-info .form-control {
-  display: inline-block;
-  width: 4em;
-}
-
-.common-center .right .tab-content ul.tab-ul .mcmodder-gifviewer-preview-info .checkbox {
+.common-center .right .tab-content ul.tab-ul .mcmodder-imagelist-preview-info .checkbox {
   margin-right: 0;
   margin-left: 8px;
-}
-
-.mcmodder-gifviewer-preview-info label {
-  margin-bottom: 0;
 }
 
 .mcmodder-gifviewer-preview-editloop,

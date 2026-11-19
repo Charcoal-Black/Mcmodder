@@ -1,6 +1,6 @@
 <template>
   <div class="center-setting-block">
-    <div class="setting-item">
+    <div class="setting-item" :class="type !== 'backgroundPool' ? 'flex' : ''">
       <span v-if="type !== 'checkbox'">
         <MatchedText :text="titleText" :ranges="matchedRanges?.title" />
       </span>
@@ -194,6 +194,11 @@ function onConfigSuccessfulChange(resp: InputValidInfo<typeof value.value>) {
 const description = computed(() => {
   const option = configOption.value;
   if (option.type === "dropdownMenu") {
+    return configOption.value.description;
+  }
+  if (option.type === "backgroundPool") {
+    // 此类型内容遵循非常规逻辑，具体图片数据存储在 GM Storage 的其他键中，Settings 本体只存图片数量，
+    // 图片本身无法用纯文本直接完整描述，且目前所有背景图配置项均默认为无预设背景，因此同样不描述默认值
     return configOption.value.description;
   }
   let list = [];

@@ -1,5 +1,15 @@
+import { BackgroundRepository } from "../background/BackgroundRepository";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
+
+/**
+ * 本地背景图池的限制说明。
+ *
+ * 数值直接取自 {@link BackgroundRepository}，避免文案和实际限制脱节。
+ */
+const backgroundPoolLimitText =
+  `单张原图不超过 ${Utils.getFormattedSize(BackgroundRepository.MAX_FILE_BYTES)}` +
+  `（保存前会自动压缩，压缩后仍过大的会被跳过），最多 ${BackgroundRepository.MAX_COUNT.toLocaleString()} 张。`;
 
 export const settings = [
   {
@@ -49,16 +59,14 @@ export const settings = [
           {
             id: "backgroundPoolDay",
             title: "白天本地背景",
-            description:
-              "从本机选择一张或多张图片作为白天背景。添加后每次打开页面会从中挑一张，优先于上面填写的 URL。单张不超过 8MB，最多 50 张。",
+            description: `从本机选择一张或多张图片作为白天背景。此配置将优先于在“默认背景”与“默认夜间背景”配置项中填写的 URL。${backgroundPoolLimitText}`,
             type: "backgroundPool",
             value: 0,
           },
           {
             id: "backgroundPoolNight",
             title: "夜间本地背景",
-            description:
-              "从本机选择一张或多张图片作为夜间背景，与白天分开设置。夜间模式下优先使用这里的图片。单张不超过 8MB，最多 50 张。",
+            description: `从本机选择一张或多张图片作为夜间背景，此配置将优先于在“默认背景”与“默认夜间背景”配置项中填写的 URL，且夜间模式下将优先使用这里的图片。${backgroundPoolLimitText}`,
             type: "backgroundPool",
             value: 0,
           },

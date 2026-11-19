@@ -182,7 +182,7 @@ body > .content,
   );
   border-radius: 0.0625em;
 }
-.setting-item {
+.setting-item.flex {
   display: flex;
   align-items: center;
   gap: var(--mcmodder-width-padding-3);
