@@ -1,259 +1,164 @@
 <template>
-  <div class="mcmodder-gifviewer-container" :class="editable ? 'editable' : ''">
-    <div v-if="!loadError" class="mcmodder-gifviewer-grid">
-      <div class="mcmodder-gifviewer-preview">
-        <div class="mcmodder-gifviewer-preview-info">
-          <p>
-            文件体积:
-            <abbr
-              :class="fileSize > Values.iconFileMaxSize ? 'text-danger' : ''"
-              :title="fileSize.toLocaleString() + ' 字节'"
-              >{{ Utils.getFormattedSize(fileSize) }}</abbr
-            >
-          </p>
-          <p>
-            尺寸:
-            <span v-if="!editingSize" v-text="gifSize.width.toLocaleString()" />
-            <input
-              v-else
-              ref="gifSizeWidthInputRef"
-              v-model.number="newWidth"
-              class="form-control"
-              @beforeinput="onSizeBeforeInput"
-              @input="updateSizeInput('width')"
-            />
-            ×
-            <span v-if="!editingSize" v-text="gifSize.height.toLocaleString()" />
-            <input
-              v-else
-              ref="gifSizeHeightInputRef"
-              v-model.number="newHeight"
-              class="form-control"
-              @beforeinput="onSizeBeforeInput"
-              @input="updateSizeInput('height')"
-            />
-            <template v-if="editable">
-              <a
-                v-if="!editingSize"
-                class="mcmodder-gifviewer-preview-editsize"
-                title="修改尺寸"
-                @click="onModifySize"
-                ><i class="fa fa-pencil"
-              /></a>
-              <template v-else>
-                <CheckboxInput
-                  ref="gifSizeLockRatioInputRef"
-                  title="锁定宽高比"
-                  :value="
-                    props.parent.configRepository.getSettings('preferredGIFViewerRatioLock') ??
-                    false
-                  "
-                  :with-label="true"
-                  :on-successful-change="onToggleRatioLock"
-                />
-                <a
-                  class="mcmodder-gifviewer-preview-editsize"
-                  title="确认修改"
-                  @click="resize(true)"
-                  ><i class="fa fa-check"
-                /></a>
-                <a
-                  class="mcmodder-gifviewer-preview-editsize"
-                  title="放弃修改"
-                  @click="onDiscardSizeEdit"
-                  ><i class="fa fa-close"
-                /></a>
-              </template>
-            </template>
-          </p>
-          <p>
-            循环次数:
-            {{
-              hasLoopExtension ? (loopCount === 0 ? "∞" : loopCount?.toLocaleString()) : "不循环"
-            }}
-            <a
-              v-if="editable"
-              class="mcmodder-gifviewer-preview-editloop"
-              title="编辑循环次数"
-              @click="onModifyLoopCount"
-              ><i class="fa fa-pencil"
-            /></a>
-          </p>
-          <p v-if="editable">
-            <abbr
-              v-if="paletteLossy || sizeLossy || opaqueLossy"
-              class="text-warning"
-              :title="
-                [
-                  ...(paletteLossy
-                    ? [
-                        '- 这个动图的某些帧拥有的颜色超过了 256 种，受 GIF 格式自身限制，这些帧被迫有损压缩... 但是其他帧并没有受到影响~',
-                      ]
-                    : []),
-                  ...(sizeLossy ? ['- 这个动图在缩放时丢失了一些细节...'] : []),
-                  ...(opaqueLossy
-                    ? [
-                        '- 渐变插值时，相邻两帧同一坐标位置的像素透明度发生了变化，GIF 格式无法储存半透明的像素，故插值帧中这些像素均被处理为完全透明了...',
-                      ]
-                    : []),
-                ].join('\n')
-              "
-              ><i class="mcmodder-gifviewer-preview-quality fa fa-warning" />出现有损量化</abbr
-            >
-            <abbr v-else class="text-success" title="这个动图在编辑前后没有任何像素发生改变，完美！"
-              ><i class="mcmodder-gifviewer-preview-quality fa fa-check" />完全无损</abbr
-            >
-          </p>
-          <p>
-            #<span class="mcmodder-gifviewer-preview-gutter">{{ currentIndex }}</span> /
-            {{ frames.length - 1 }}
-          </p>
-        </div>
-        <div class="mcmodder-gifviewer-preview-imgcontainer mcmodder-iconbg">
-          <img v-if="previewFrame" :src="previewFrame" alt="预览" />
-        </div>
-        <div class="mcmodder-gifviewer-preview-controls">
-          <button
-            class="btn btn-sm"
-            :class="playing ? 'btn-danger' : 'btn-success'"
-            :disabled="frames.length === 0"
-            @click="togglePlay"
-          >
-            {{ playing ? "暂停" : "播放" }}
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm"
-            :disabled="currentIndex <= 0 || playing"
-            @click="onMoveBackward(currentIndex)"
-          >
-            前移
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm"
-            :disabled="currentIndex >= frames.length - 1 || playing"
-            @click="onMoveForward(currentIndex)"
-          >
-            后移
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm"
-            :disabled="playing"
-            @click="onInsertBefore(currentIndex)"
-          >
-            向前插入新空白帧
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm"
-            :disabled="playing"
-            @click="onInsertAfter(currentIndex)"
-          >
-            向后插入新空白帧
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm btn-dark"
-            :disabled="frames.length === 0 || playing"
-            @click="onModifyFrametime"
-          >
-            修改帧时长
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm"
-            title="将此帧转换为过渡帧。选中帧将被拆分成若干个向下一帧线性渐变的帧，每帧持续 50ms。"
-            :disabled="frames.length < 2 || playing"
-            @click="onInterpolate(getEditTargets())"
-          >
-            设为过渡帧
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm btn-dark"
-            :disabled="frames.length === 0 || playing"
-            title="在当前帧后面插入图片帧"
-            @click="onImportImage"
-          >
-            插入图片帧...
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm btn-dark"
-            :disabled="frames.length === 0 || playing"
-            title="用图片替换选中的帧"
-            @click="onReplaceImage"
-          >
-            使用图片替换...
-          </button>
-          <button v-if="editable" class="btn btn-sm" @click="onImportMcmeta">导入 MCMETA...</button>
-          <button
-            v-if="editable"
-            class="btn btn-sm btn-danger"
-            :disabled="frames.length === 0 || playing"
-            title="删除选中的帧（全选时删除整个动图）"
-            @click="onDeleteFrame"
-          >
-            删除选中帧
-          </button>
-          <button
-            v-if="editable"
-            class="btn btn-sm btn-success"
-            :disabled="!editedBlob"
-            @click="onApplyModify"
-          >
-            应用更改
-          </button>
-          <button class="btn btn-sm btn-dark" @click="onDownloadGif">导出 GIF</button>
-        </div>
-        <input
-          ref="imageImportInputRef"
-          type="file"
-          multiple
-          accept="image/*"
-          class="hidden"
-          @change="onImageImportSelected"
-        />
-        <input
-          ref="imageReplaceInputRef"
-          type="file"
-          multiple
-          accept="image/*"
-          class="hidden"
-          @change="onImageReplaceSelected"
-        />
-        <input
-          ref="mcmetaImportInputRef"
-          type="file"
-          accept=".mcmeta"
-          class="hidden"
-          @change="onMcmetaImportSelected"
-        />
-      </div>
-      <div ref="imageFramesRef" class="mcmodder-gifviewer-imageframes">
-        <button
-          v-for="(frame, index) in frames"
-          :key="index"
-          :data-index="index"
-          class="mcmodder-gifviewer-imageframe"
-          :class="{
-            current: index === currentIndex,
-            selected: selected.has(index),
-          }"
-          @pointerdown="onFramePointerdown(index, $event)"
-          @keydown="onFrameKeydown($event)"
+  <ImageList
+    v-if="!headless"
+    ref="imageListRef"
+    unit="个"
+    item="帧"
+    :editable="editable"
+    :load-error="loadError"
+    :frames="frames"
+    :subtexts="frameTimes.map((time) => `${time}ms`)"
+    :edited-blob="editedBlob"
+    :allow-control="!playing"
+    :allow-apply="!!editedBlob"
+    @on-move="moveFrame"
+    @on-insert="insertBlankFrame"
+    @on-delete-frames="deleteFrames"
+    @on-delete-all="deleteGif"
+    @on-apply-modify="onApplyModify"
+    @on-image-import-selected="onImageImportSelected"
+    @on-image-replace-selected="onImageReplaceSelected"
+    @on-frame-keydown="onFrameKeydown"
+    @on-frame-pointerdown="onFramePointerdown"
+  >
+    <template #info>
+      <p>
+        文件体积:
+        <abbr
+          :class="fileSize > Values.iconFileMaxSize ? 'text-danger' : ''"
+          :title="fileSize.toLocaleString() + ' 字节'"
+          >{{ Utils.getFormattedSize(fileSize) }}</abbr
         >
-          <span class="mcmodder-gifviewer-imageframe-gutter">{{ index }}</span>
-          <div class="mcmodder-gifviewer-imagecontainer mcmodder-iconbg">
-            <img :src="frame" :alt="`第 ${index + 1} 帧`" />
-          </div>
-          <span class="mcmodder-gifviewer-imagetime">{{ frameTimes[index] }}ms</span>
-        </button>
-      </div>
-    </div>
-    <div v-else class="mcmodder-gifviewer-empty">
+      </p>
+      <p>
+        尺寸:
+        <span v-if="!editingSize" v-text="gifSize.width.toLocaleString()" />
+        <input
+          v-else
+          ref="gifSizeWidthInputRef"
+          v-model.number="newWidth"
+          class="form-control"
+          @beforeinput="onSizeBeforeInput"
+          @input="updateSizeInput('width')"
+        />
+        ×
+        <span v-if="!editingSize" v-text="gifSize.height.toLocaleString()" />
+        <input
+          v-else
+          ref="gifSizeHeightInputRef"
+          v-model.number="newHeight"
+          class="form-control"
+          @beforeinput="onSizeBeforeInput"
+          @input="updateSizeInput('height')"
+        />
+        <template v-if="editable">
+          <a
+            v-if="!editingSize"
+            class="mcmodder-gifviewer-preview-editsize"
+            title="修改尺寸"
+            @click="onModifySize"
+            ><i class="fa fa-pencil"
+          /></a>
+          <template v-else>
+            <CheckboxInput
+              ref="gifSizeLockRatioInputRef"
+              title="锁定宽高比"
+              :value="
+                props.parent.configRepository.getSettings('preferredGIFViewerRatioLock') ?? false
+              "
+              :with-label="true"
+              :on-successful-change="onToggleRatioLock"
+            />
+            <a class="mcmodder-gifviewer-preview-editsize" title="确认修改" @click="resize(true)"
+              ><i class="fa fa-check"
+            /></a>
+            <a
+              class="mcmodder-gifviewer-preview-editsize"
+              title="放弃修改"
+              @click="onDiscardSizeEdit"
+              ><i class="fa fa-close"
+            /></a>
+          </template>
+        </template>
+      </p>
+      <p>
+        循环次数:
+        {{ hasLoopExtension ? (loopCount === 0 ? "∞" : loopCount?.toLocaleString()) : "不循环" }}
+        <a
+          v-if="editable"
+          class="mcmodder-gifviewer-preview-editloop"
+          title="编辑循环次数"
+          @click="onModifyLoopCount"
+          ><i class="fa fa-pencil"
+        /></a>
+      </p>
+      <p v-if="editable">
+        <abbr
+          v-if="paletteLossy || sizeLossy || opaqueLossy"
+          class="text-warning"
+          :title="
+            [
+              ...(paletteLossy
+                ? [
+                    '- 这个动图的某些帧拥有的颜色超过了 256 种，受 GIF 格式自身限制，这些帧被迫有损压缩... 但是其他帧并没有受到影响~',
+                  ]
+                : []),
+              ...(sizeLossy ? ['- 这个动图在缩放时丢失了一些细节...'] : []),
+              ...(opaqueLossy
+                ? [
+                    '- 渐变插值时，相邻两帧同一坐标位置的像素透明度发生了变化，GIF 格式无法储存半透明的像素，故插值帧中这些像素均被处理为完全透明了...',
+                  ]
+                : []),
+            ].join('\n')
+          "
+          ><i class="mcmodder-gifviewer-preview-quality fa fa-warning" />出现有损量化</abbr
+        >
+        <abbr v-else class="text-success" title="这个动图在编辑前后没有任何像素发生改变，完美！"
+          ><i class="mcmodder-gifviewer-preview-quality fa fa-check" />完全无损</abbr
+        >
+      </p>
+      <p>
+        #<span class="mcmodder-gifviewer-preview-gutter">{{ currentIndex }}</span> /
+        {{ frames.length - 1 }}
+      </p>
+    </template>
+    <template #control>
+      <button
+        class="btn btn-sm"
+        :class="playing ? 'btn-danger' : 'btn-success'"
+        :disabled="frames.length === 0"
+        @click="togglePlay"
+      >
+        {{ playing ? "暂停" : "播放" }}
+      </button>
+      <button
+        v-if="editable"
+        class="btn btn-sm btn-dark"
+        :disabled="frames.length === 0 || playing"
+        @click="onModifyFrametime"
+      >
+        修改帧时长
+      </button>
+      <button
+        v-if="editable"
+        class="btn btn-sm"
+        title="将此帧转换为过渡帧。选中帧将被拆分成若干个向下一帧线性渐变的帧，每帧持续 50ms。"
+        :disabled="frames.length < 2 || playing"
+        @click="onInterpolate()"
+      >
+        设为过渡帧
+      </button>
+      <button v-if="editable" class="btn btn-sm" @click="onImportMcmeta">导入 MCMETA...</button>
+      <button class="btn btn-sm btn-dark" @click="onDownloadGif">导出 GIF</button>
+      <input
+        ref="mcmetaImportInputRef"
+        type="file"
+        accept=".mcmeta"
+        class="hidden"
+        @change="onMcmetaImportSelected"
+      />
+    </template>
+    <template #empty>
       {{ loadError }}
       <template v-if="editable">
         <div class="mcmodder-gifviewer-createnew">
@@ -270,21 +175,23 @@
           @change="onImageSliceSelected"
         />
       </template>
-    </div>
-  </div>
+    </template>
+  </ImageList>
 </template>
 
 <script setup lang="ts">
 import { Utils } from "../../Utils";
-import { computed, onBeforeUnmount, ref, shallowRef, triggerRef, useTemplateRef, watch } from "vue";
+import { computed, onBeforeUnmount, ref, shallowRef, triggerRef, useTemplateRef } from "vue";
 import { createGIFPlayer } from "../../gif/GIFPlayer";
 import { GIFUtils, type GIFFrameSource, type GIFResizeResult } from "../../gif/GIFUtils";
 import { Values } from "../../Values";
 import CheckboxInput from "./input/CheckboxInput.vue";
 import type { Mcmodder } from "../../Mcmodder.ts";
+import ImageList from "./ImageList.vue";
 
 interface Props {
   parent: Mcmodder;
+  headless?: boolean;
   editable?: boolean;
   validate?: (ctx: { width: number; height: number }) => boolean;
 }
@@ -341,10 +248,6 @@ const paletteLossy = ref(false);
 const sizeLossy = ref(false);
 /** 渐变插值时，遇到相邻帧同像素透明状态发生变化时的提示 */
 const opaqueLossy = ref(false);
-const currentIndex = ref(0);
-const selected = ref(new Set<number>());
-const previousSelected = ref(0);
-const previousSelectedWithShiftKey = ref(0);
 const loading = ref(false);
 const playing = ref(false);
 /** 用户是否正在修改图像尺寸 */
@@ -370,10 +273,9 @@ const editedBlob = shallowRef<Blob | null>(null);
 
 const fileSize = computed(() => editedBlob.value?.size ?? gifSource.value?.size ?? 0);
 
-const imageFramesRef = useTemplateRef("imageFramesRef");
+const imageListRef = useTemplateRef("imageListRef");
+
 const imageSliceRef = useTemplateRef<HTMLInputElement>("imageSliceInputRef");
-const imageImportRef = useTemplateRef<HTMLInputElement>("imageImportInputRef");
-const imageReplaceRef = useTemplateRef<HTMLInputElement>("imageReplaceInputRef");
 const mcmetaImportRef = useTemplateRef<HTMLInputElement>("mcmetaImportInputRef");
 const gifSizeLockRatioInputRef = useTemplateRef("gifSizeLockRatioInputRef");
 
@@ -395,7 +297,14 @@ let interpolating = false;
 /** 解析并应用 MCMETA 时忽略重复点击 */
 let applyingMcmeta = false;
 
-const previewFrame = computed(() => frames.value[currentIndex.value] ?? null);
+const currentIndex = computed<number | undefined, number>({
+  get: () => imageListRef.value?.currentIndex,
+  set: (newValue) => {
+    if (imageListRef.value !== null) {
+      imageListRef.value.currentIndex = newValue;
+    }
+  },
+});
 
 async function set(source: Blob) {
   gifSource.value = source;
@@ -423,15 +332,16 @@ async function set(source: Blob) {
     hasLoopExtension.value = parsed.hasLoopExtension;
     loopEdited.value = false;
     editedBlob.value = null;
-    currentIndex.value = 0;
-    previousSelected.value = 0;
-    previousSelectedWithShiftKey.value = 0;
+
     // 帧数变了，播放器要按新的时长重算时间轴
     player?.dispose();
     player = createGIFPlayer({
       frameTimes: parsed.frameTimes,
       onFrameChange: (index) => {
-        currentIndex.value = index;
+        const list = imageListRef.value;
+        if (list !== null) {
+          list.currentIndex = index;
+        }
       },
     });
     playing.value = false;
@@ -472,10 +382,7 @@ function clearGif(message: string) {
   loopCount.value = null;
   hasLoopExtension.value = false;
   loopEdited.value = false;
-  currentIndex.value = 0;
-  selected.value = new Set();
-  previousSelected.value = 0;
-  previousSelectedWithShiftKey.value = 0;
+  imageListRef.value?.resetSelection();
   editingSize.value = false;
   gifSizeRatio.value = 1;
   player?.dispose();
@@ -483,17 +390,6 @@ function clearGif(message: string) {
   playing.value = false;
   loadError.value = message;
 }
-
-watch(
-  () => currentIndex.value,
-  (newValue) => {
-    const target = $(imageFramesRef.value!).find(`[data-index=${newValue}]`).get(0);
-    target?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  },
-);
 
 onBeforeUnmount(() => {
   player?.dispose();
@@ -577,17 +473,17 @@ async function createFromFrames(
   hasLoopExtension.value = true;
   loopEdited.value = false;
   editedBlob.value = GIFUtils.toBlob(result.bytes);
-  currentIndex.value = 0;
-  selected.value = new Set();
-  previousSelected.value = 0;
-  previousSelectedWithShiftKey.value = 0;
+  imageListRef.value?.resetSelection();
   editingSize.value = false;
   gifSizeRatio.value = 1;
   playing.value = false;
   player = createGIFPlayer({
     frameTimes: times,
     onFrameChange: (index) => {
-      currentIndex.value = index;
+      const list = imageListRef.value;
+      if (list !== null) {
+        list.currentIndex = index;
+      }
     },
   });
 
@@ -639,74 +535,23 @@ function togglePlay() {
   playing.value = player.playing.value;
 }
 
-function onFramePointerdown(index: number, ev?: PointerEvent) {
-  currentIndex.value = index;
-  if (ev?.shiftKey) {
-    for (
-      let i = previousSelected.value;
-      i !== previousSelectedWithShiftKey.value;
-      i += Math.sign(previousSelectedWithShiftKey.value - previousSelected.value)
-    ) {
-      selected.value.delete(i);
-    }
-    selected.value.delete(previousSelectedWithShiftKey.value);
-    for (
-      let i = previousSelected.value;
-      i !== index;
-      i += Math.sign(index - previousSelected.value)
-    ) {
-      selected.value.add(i);
-    }
-    selected.value.add(index);
-    previousSelectedWithShiftKey.value = index;
-  } else if (Utils.isMac() ? ev?.metaKey : ev?.ctrlKey) {
-    if (selected.value.has(index)) {
-      selected.value.delete(index);
-    } else {
-      selected.value.add(index);
-    }
-  } else {
-    selected.value.clear();
-    previousSelected.value = index;
-    previousSelectedWithShiftKey.value = index;
-  }
-  // 点选某帧时把播放位置同步过去（顺带暂停，方便细看）
-  player?.seek(index);
-  player?.pause();
-  playing.value = false;
-}
-
 function onFrameKeydown(ev: KeyboardEvent) {
   if (ev.key === " ") {
     ev.preventDefault();
     togglePlay();
     return;
   }
-  let switched = false;
-  let index = currentIndex.value;
-  if (ev.key === "ArrowLeft" || (ev.key === "Tab" && ev.shiftKey)) {
-    ev.preventDefault();
-    index--;
-    switched = true;
-  } else if (ev.key === "ArrowRight" || (ev.key === "Tab" && !ev.shiftKey)) {
-    ev.preventDefault();
-    index++;
-    switched = true;
-  } else if (Utils.isKeyMatch(Utils.getXplatCtrlCombinationKey({ keyCode: 65 }), ev)) {
-    ev.preventDefault();
-    selected.value.clear();
-    for (let i = 0; i < frames.value.length; i++) {
-      selected.value.add(i);
-    }
-  }
-  if (index >= frames.value.length) {
-    index = 0;
-  } else if (index < 0) {
-    index = frames.value.length - 1;
-  }
-  if (switched) {
-    onFramePointerdown(index);
-  }
+}
+
+function onFramePointerdown(index: number) {
+  // 点选某帧时把播放位置同步过去（顺带暂停，方便细看）
+  player?.seek(index);
+  player?.pause();
+  playing.value = false;
+}
+
+function getEditTargets() {
+  return imageListRef.value?.getEditTargets() ?? [];
 }
 
 function onModifyFrametime() {
@@ -714,7 +559,7 @@ function onModifyFrametime() {
   if (playing.value) {
     togglePlay();
   }
-  const targets = getEditTargets();
+  const targets = getEditTargets()!;
   const current = frameTimes.value[targets[0]];
   const isCommon = targets.every((index) => frameTimes.value[index] === current);
   swal.fire({
@@ -755,7 +600,7 @@ async function onInterpolate(targets = getEditTargets()) {
   if (playing.value) {
     togglePlay();
   }
-  const filtered = targets.filter((index) => {
+  const filtered = (targets ?? []).filter((index) => {
     const time = frameTimes.value[index];
     return time >= 100 && time % 50 === 0;
   });
@@ -793,9 +638,11 @@ async function onInterpolate(targets = getEditTargets()) {
         0,
         ...plan.tween.frames.map<GIFFrameSource>((rgba) => ({ type: "rgba", rgba })),
       );
-      shiftIndexedState(plan.index + 1, plan.count);
+      imageListRef.value?.shiftIndexedState(plan.index + 1, plan.count);
       // 光标落在被过渡的帧后面时跟着后移，仍然停在原来那一帧上
-      if (currentIndex.value > plan.index) currentIndex.value += plan.count;
+      if (currentIndex.value !== undefined && currentIndex.value > plan.index) {
+        currentIndex.value += plan.count;
+      }
     }
 
     triggerRef(frames);
@@ -809,7 +656,9 @@ async function onInterpolate(targets = getEditTargets()) {
     }
     player?.pause();
     playing.value = false;
-    player?.seek(currentIndex.value);
+    if (currentIndex.value !== undefined) {
+      player?.seek(currentIndex.value);
+    }
     applyEditsToGif();
   } catch (error) {
     Utils.commonMsg(`生成过渡帧失败... (${error})`, false);
@@ -1057,46 +906,6 @@ function applyEditsToGif() {
 }
 
 /**
- * 删除选中的帧；选中的是全部帧时，就相当于把整个动图删掉。
- *
- * 全删之后没有必要硬留一帧空壳，直接回到空白页，用户想继续的话可以重新新建。
- */
-function onDeleteFrame() {
-  if (!editable.value || frames.value.length === 0) return;
-  const targets = getEditTargets();
-  const total = frames.value.length;
-  if (targets.length >= total) {
-    swal.fire({
-      type: "warning",
-      title: "警告",
-      text: `您选中了全部 ${total.toLocaleString()} 帧，继续将删除整个动图，此操作不可逆，确定要继续吗？`,
-      showCancelButton: true,
-      confirmButtonText: "删除",
-      cancelButtonText: "取消",
-      confirmButtonColor: "var(--mcmodder-color-danger)",
-      preConfirm: () => {
-        deleteGif();
-        return true;
-      },
-    });
-    return;
-  }
-  swal.fire({
-    type: "warning",
-    title: "警告",
-    text: `您正在尝试删除 ${targets.length.toLocaleString()} 个帧，此操作不可逆，确定要继续吗？`,
-    showCancelButton: true,
-    confirmButtonText: "删除",
-    cancelButtonText: "取消",
-    confirmButtonColor: "var(--mcmodder-color-danger)",
-    preConfirm: () => {
-      deleteFrames(targets);
-      return true;
-    },
-  });
-}
-
-/**
  * 把整个动图删掉，回到空白页。
  *
  * 只是清空编辑器，不会回填物品图标——图标仍然由「应用更改」负责，
@@ -1136,11 +945,8 @@ function deleteFrames(targets: number[]) {
   triggerRef(frames);
   triggerRef(frameTimes);
   // 选中的帧已经删掉了，清空选中；光标落到原来第一个被删的位置（不够就取最后一帧）
-  selected.value = new Set();
   const nextIndex = Math.min(doomed[0], frames.value.length - 1);
-  currentIndex.value = nextIndex;
-  previousSelected.value = nextIndex;
-  previousSelectedWithShiftKey.value = nextIndex;
+  imageListRef.value?.setSelection(nextIndex);
   player?.pause();
   playing.value = false;
   player?.seek(nextIndex);
@@ -1170,22 +976,6 @@ function onDownloadGif() {
   }
 }
 
-function onMoveBackward(index: number) {
-  moveFrame(index, -1);
-}
-
-function onMoveForward(index: number) {
-  moveFrame(index, 1);
-}
-
-function onInsertBefore(index: number) {
-  void insertBlankFrame(index);
-}
-
-function onInsertAfter(index: number) {
-  void insertBlankFrame(index + 1);
-}
-
 /**
  * 把第 `index` 帧与相邻帧对调。
  *
@@ -1202,7 +992,7 @@ function moveFrame(index: number, offset: -1 | 1) {
     frameTimes.value[index],
   ];
   [frameSources[index], frameSources[target]] = [frameSources[target], frameSources[index]];
-  swapIndexedState(index, target);
+  imageListRef.value?.swapIndexedState(index, target);
   triggerRef(frames);
   triggerRef(frameTimes);
 
@@ -1227,18 +1017,6 @@ async function insertBlankFrame(index: number) {
   const rgba = new Uint8ClampedArray(new ArrayBuffer(width * height * 4));
   const url = await createInsertedUrl(rgba, width, height);
   insertFrames(index, [{ source: { type: "rgba", rgba }, url }]);
-}
-
-/** 打开文件选择框，选中的图片会插到当前帧后面 */
-function onImportImage() {
-  if (frames.value.length === 0) return;
-  imageImportRef.value?.click();
-}
-
-/** 打开文件选择框，选中的图片会替换当前选中的帧 */
-function onReplaceImage() {
-  if (frames.value.length === 0) return;
-  imageReplaceRef.value?.click();
 }
 
 /** 打开 MCMETA 导入框 */
@@ -1278,7 +1056,7 @@ async function onImageSliceSelected(ev: Event) {
 
 async function onImageImportSelected(ev: Event) {
   const { width, height } = gifSize;
-  if (width === 0 || height === 0 || !editable.value) return;
+  if (width === 0 || height === 0 || !editable.value || currentIndex.value === undefined) return;
   const input = ev.currentTarget as HTMLInputElement;
   const files = Array.from(input.files ?? []);
   const images = files.filter((file) => file.type.startsWith("image/"));
@@ -1418,9 +1196,7 @@ async function onMcmetaImportSelected(ev: Event) {
     triggerRef(frames);
     triggerRef(frameTimes);
     // 整套播放顺序都换了，选中状态和光标没有保留的意义
-    selected.value = new Set();
-    previousSelected.value = 0;
-    previousSelectedWithShiftKey.value = 0;
+    imageListRef.value?.resetSelection();
     currentIndex.value = 0;
     player?.pause();
     playing.value = false;
@@ -1539,11 +1315,6 @@ function replaceFrames(replacements: FrameReplacement[]) {
   applyEditsToGif();
 }
 
-/** 要修改的帧：有多选就用多选，否则只改当前帧 */
-function getEditTargets(): number[] {
-  return selected.value.size > 0 ? Array.from(selected.value) : [currentIndex.value];
-}
-
 /**
  * 从第 `index` 位开始连续插入若干帧。
  *
@@ -1559,7 +1330,7 @@ function insertFrames(index: number, insertions: FrameInsertion[]) {
   frameTimes.value.splice(index, 0, ...insertions.map(() => duration));
   frameSources.splice(index, 0, ...insertions.map((insertion) => insertion.source));
   // 选中集合和多选锚点都按序号记，插在它们前面时要整体后移
-  shiftIndexedState(index, insertions.length);
+  imageListRef.value?.shiftIndexedState(index, insertions.length);
 
   triggerRef(frames);
   triggerRef(frameTimes);
@@ -1586,36 +1357,6 @@ async function createInsertedUrl(
 function releaseInsertedUrls() {
   for (const url of insertedUrls) URL.revokeObjectURL(url);
   insertedUrls.clear();
-}
-
-/** 插入帧后，按序号记的选中集合与多选锚点整体后移 */
-function shiftIndexedState(index: number, delta: number) {
-  const shifted = new Set<number>();
-  for (const value of selected.value) {
-    shifted.add(value >= index ? value + delta : value);
-  }
-  selected.value = shifted;
-  if (previousSelected.value >= index) previousSelected.value += delta;
-  if (previousSelectedWithShiftKey.value >= index) previousSelectedWithShiftKey.value += delta;
-}
-
-/** 选中集合、多选锚点都是按序号记的，帧一换位它们也要跟着换 */
-function swapIndexedState(index: number, target: number) {
-  const selectedIndex = selected.value.has(index);
-  const selectedTarget = selected.value.has(target);
-  if (selectedIndex !== selectedTarget) {
-    if (selectedIndex) {
-      selected.value.delete(index);
-      selected.value.add(target);
-    } else {
-      selected.value.delete(target);
-      selected.value.add(index);
-    }
-  }
-  const swapValue = (value: number) =>
-    value === index ? target : value === target ? index : value;
-  previousSelected.value = swapValue(previousSelected.value);
-  previousSelectedWithShiftKey.value = swapValue(previousSelectedWithShiftKey.value);
 }
 
 function get() {
