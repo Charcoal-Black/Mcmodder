@@ -1295,3 +1295,18 @@ html.dark .ntc_l {
   border-color: var(--mcmodder-color-alert-warning-3);
   color: var(--mcmodder-color-alert-warning-1);
 }
+
+html.dark .sweet-alert {
+  background-color: var(--mcmodder-color-background);
+}
+html.dark .sweet-alert h2 {
+  color: var(--mcmodder-color-text-dark1);
+}
+html.dark .sweet-alert p {
+  color: var(--mcmodder-color-text-dark2);
+}
+html.dark .sweet-alert .sa-icon.sa-success::before,
+html.dark .sweet-alert .sa-icon.sa-success::after,
+html.dark .sweet-alert .sa-icon.sa-success .sa-fix {
+  background-color: var(--mcmodder-color-background);
+}
