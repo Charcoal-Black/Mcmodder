@@ -280,7 +280,7 @@ export class ItemEditorInit extends Init {
     const params = new URLSearchParams(window.location.search);
     if (params.has("i")) {
       const interactID = params.get("i");
-      const data = this.parent.utils.getInteract(interactID) as string;
+      const data = this.parent.configRepository.getInteract(interactID) as string;
       if (data) {
         jsonUploader.val(data).change();
       }

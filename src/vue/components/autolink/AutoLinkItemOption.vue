@@ -36,7 +36,7 @@ const item = entry.data;
 const fullName = Utils.getItemFullName(item.name, item.englishName);
 
 const classID = item.classID;
-let classFullName = parent.utils.getClassNameByClassID(classID);
+let classFullName = parent.configRepository.getClassNameByClassID(classID);
 let { className, classEname, classAbbr } = Utils.parseClassFullName(classFullName);
 
 if (!classFullName) {
@@ -49,14 +49,14 @@ if (!classFullName) {
 const dataId = item.id;
 const dataTextFull = fullName;
 const dataTextHalf = item.name;
-const matchedType = parent.utils.getItemTypeData(item.classID, item.itemType);
+const matchedType = parent.configRepository.getItemTypeData(item.classID, item.itemType);
 const typename = matchedType?.text ? matchedType.text + " - " : "";
 const dataOriginalTitle = `${typename}ID:${item.id} ${fullName} - ${classFullName}`;
 
 const itemImgSrc = item.smallIcon || Utils.getImageURLByItemID(item.id);
 const itemImgErrorSrc = Values.assets.mcmod.emptyItemIcon32x;
 
-const itemTypeHTML = parent.utils.getItemTypeHTML(matchedType).get(0).outerHTML;
+const itemTypeHTML = parent.configRepository.getItemTypeHTML(matchedType).get(0).outerHTML;
 /** 图标 HTML 源自宿主 itemTypeList，绑定 `v-html` 前统一过一遍 sanitizeHTML */
 const safeItemTypeHTML = useSanitizedHTML(() => itemTypeHTML);
 const itemAbbr = classAbbr || classEname || className;

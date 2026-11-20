@@ -35,7 +35,7 @@ function toAbsoluteUrl(url: string) {
  * 在编辑器工具栏里注入「上传文件」按钮：点选本地文件后用站点 UEditor 的隐藏 `uploadfile` 接口上传，
  * 再把返回的链接以超链接形式插入正文。
  *
- * 请求体与编辑器自带的上传插件一致（`upfile` 字段 + 站点 cookie，经 {@link Utils.createRequest} 发出），
+ * 请求体与编辑器自带的上传插件一致（`upfile` 字段 + 站点 cookie，经 {@link import("../WebFetchUtils").WebFetchUtils.createRequest} 发出），
  * 因此服务端把附件与图床图片一视同仁地存放；站点只给工具栏配了「多图上传」，
  * 附件接口虽有却没有入口，故由脚本补一个按钮。
  *
@@ -100,7 +100,7 @@ export function addUploadFileButton(ueditor: UEditor) {
   /** 列出服务端已有的附件（按修改时间倒序）；接口异常返回 null，调用方据此放弃差分 */
   async function listFiles() {
     try {
-      const resp = await ueditor.parent.utils.createRequest(
+      const resp = await ueditor.parent.web.createRequest(
         { url: `${origin}${Values.ueditorActionUrl}${LIST_FILE_ACTION}`, method: "GET" },
         "列出附件",
       );
@@ -131,7 +131,7 @@ export function addUploadFileButton(ueditor: UEditor) {
 
   /** 整份取回附件内容用于比对 */
   async function downloadBytes(url: string) {
-    const resp = await ueditor.parent.utils.createRequest(
+    const resp = await ueditor.parent.web.createRequest(
       { url, method: "GET", responseType: "arraybuffer" },
       "比对附件内容",
     );
@@ -170,7 +170,7 @@ export function addUploadFileButton(ueditor: UEditor) {
     try {
       const form = new FormData();
       form.append("upfile", file, file.name);
-      const resp = await ueditor.parent.utils.createRequest(
+      const resp = await ueditor.parent.web.createRequest(
         {
           url: `${origin}${Values.ueditorActionUrl}${UPLOAD_FILE_ACTION}`,
           method: "POST",

@@ -13,7 +13,7 @@ import { McmodderConsole } from "../widget/logger/Console";
  * 这里用一个「生产者-消费者」式的循环来消化队列：
  * - **并发上限** `maxConcurrent`：同时在飞的请求不超过这个数；
  * - **最小间隔** `minInterval`：每个请求派发前至少等待这么久（真正的全局限速还叠在
- *   `Utils.createRequest` 里一层）；
+ *   `Mcmodder.web.createRequest`（`WebFetchUtils`）里一层）；
  * - **暂停** `pause()` / `resume()`：只影响「还没派发出去」的请求，在飞的不打断；
  * - **断点续传**：`execution`（执行现场）每隔 {@link BACKUP_FREQUENCY} 个请求就落盘一次备份，
  *   下次运行发现备份存在就直接从断点接着跑。
@@ -32,7 +32,7 @@ export abstract class RequestQueue {
   /** 每派发多少个请求做一次现场备份（静态队列按 `progress` 计，动态队列按成功数计） */
   static BACKUP_FREQUENCY = 50;
 
-  /** 组合根，队列用它去拿 `utils.createRequest` 等共享服务 */
+  /** 组合根，队列用它去拿 `web.createRequest` 等共享服务 */
   parent: Mcmodder;
   /** 本队列的标识，同时决定备份的存储键（`${id}_backup`） */
   id: string;
@@ -166,9 +166,9 @@ export abstract class RequestQueue {
     };
     const promise = new Promise<GmResponseEvent<"text", any>>((resolve) => {
       this.pausing().then(() => {
-        // 真正的限速靠这里的 setTimeout 加上 Utils.createRequest 内部的全局间隔
+        // 真正的限速靠这里的 setTimeout 加上 Mcmodder.web.createRequest 内部的全局间隔
         setTimeout(() => {
-          resolve(this.parent.utils.createRequest(request.config));
+          resolve(this.parent.web.createRequest(request.config));
         }, interval);
       });
     })

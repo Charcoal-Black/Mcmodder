@@ -54,7 +54,7 @@ async function fetchStickerUploader(
   uid: number,
 ): Promise<StickerUploaderProfile> {
   try {
-    const resp = await parent.utils.createRequest(
+    const resp = await parent.web.createRequest(
       {
         url: "https://www.mcmod.cn/object/UserCard/",
         method: "POST",

@@ -55,7 +55,7 @@ export class VersionEditInit extends Init {
       const fileid = param.get("fileid");
       let resp, data;
       if (source === 1) {
-        resp = await this.parent.utils.createRequest(
+        resp = await this.parent.web.createRequest(
           {
             url: `https://www.curseforge.com/api/v1/mods/${id}/files/${fileid}/change-log`,
             method: "GET",
@@ -64,7 +64,7 @@ export class VersionEditInit extends Init {
         );
         data = JSON.parse(resp.responseText).changelogBody;
       } else if (source === 2) {
-        resp = await this.parent.utils.createRequest(
+        resp = await this.parent.web.createRequest(
           {
             url: `https://api.modrinth.com/v2/version/${fileid}`,
             method: "GET",

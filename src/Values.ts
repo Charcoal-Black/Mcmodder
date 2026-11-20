@@ -263,7 +263,7 @@ export class Values {
    * 读到的值领先得比这还多，就认定它已不可信，直接丢弃并以当前时间重新起算，而不是照着它继续排期。
    *
    * @warning 该阈值必须**严格大于** {@link MAX_REQUEST_COUNT} 对应的队列上限，否则恢复逻辑会先把
-   *   所有超限情形吃掉，令 `Utils.updateRequestTime` 的排队上限形同虚设。
+   *   所有超限情形吃掉，令 `WebFetchUtils.updateRequestTime` 的排队上限形同虚设。
    *   2 表示「领先超过两倍上限」才判定为脏数据，与上限之间留有充足间隔。
    */
   static readonly REQUEST_SCHEDULE_MAX_DRIFT_FACTOR = Values.MAX_REQUEST_COUNT * 2;

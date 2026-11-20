@@ -184,7 +184,7 @@ const columnOptions = {
   itemType: [
     "类型",
     (type, item) => {
-      return props.parent.utils.getItemTypeHTML(item.classID, type).prop("outerHTML");
+      return props.parent.configRepository.getItemTypeHTML(item.classID, type).prop("outerHTML");
     },
   ],
   smallIcon: ["小", TableUtils.DISPLAYRULE_IMAGE_BASE64],
@@ -565,8 +565,8 @@ async function getImageBlobByItemList(itemList: ItemList, width: 32 | 128, maxCo
 async function inferItemList(itemList: ItemList, config: ItemJsonFrameConfig) {
   let check = async (id: number) => {
     const data = config.getall
-      ? await props.parent.utils.getDetailedItemByID(id)
-      : await props.parent.utils.getItemByID(id);
+      ? await props.parent.web.getDetailedItemByID(id)
+      : await props.parent.web.getItemByID(id);
     if (!data) {
       logger.value!.log(`${id} 已失效`);
       return false;
@@ -634,7 +634,7 @@ async function getItemListFromPage(
   let jumpList = [],
     generalList = [],
     repeatedData;
-  let resp = await props.parent.utils.createRequest(
+  let resp = await props.parent.web.createRequest(
     {
       url: url,
       method: "GET",
@@ -700,7 +700,7 @@ async function getItemListFromPage(
     s = c.attr("data-loop");
     if (s) {
       generalList.push(item.id);
-      resp = await props.parent.utils.createRequest(
+      resp = await props.parent.web.createRequest(
         {
           url: Utils.getItemURL(item.id),
           method: "GET",
@@ -782,7 +782,7 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
   } */
 
   // 获取分支情况
-  const resp = await props.parent.utils.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: `${props.parent.hostname}/item/list/${classID}-${typeID}.html`,
       method: "GET",
@@ -822,7 +822,7 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
 async function performClassSearch(classID: number, typeID: number) {
   // STEP 0: 前置数据收集
   logger.value!.log(`打开模组页 ${classID}`);
-  const resp = await props.parent.utils.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: Utils.getClassURL(classID),
       method: "GET",
@@ -898,7 +898,7 @@ async function performClassSearch(classID: number, typeID: number) {
 async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplication>) {
   ctx.empty();
   ctx.showLoading();
-  let resp = await props.parent.utils.createRequest(
+  let resp = await props.parent.web.createRequest(
     {
       url: url,
       method: "GET",
@@ -1009,7 +1009,7 @@ async function preManualSubmitRow(index: number) {
 
 function manualSubmitRow(url: string, index: number) {
   const data = convertToImportableFormat(jsonFrame.value!.table!.getData(index));
-  const interactID = props.parent.utils.setInteract(JSON.stringify(data));
+  const interactID = props.parent.configRepository.setInteract(JSON.stringify(data));
   GM_openInTab(`${url}?i=${interactID}`);
 }
 
@@ -1030,7 +1030,7 @@ async function getJSONByPage(page: number, table: TableContext<ItemJsonFrameAppl
 
 async function downloadAndImportFile(url: string) {
   // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
-  let resp = await props.parent.utils.createRequest({ url: url }, "下载JSON");
+  let resp = await props.parent.web.createRequest({ url: url }, "下载JSON");
   let headers = resp.responseHeaders;
   if (!headers.includes("content-type: application/octet-stream")) {
     Utils.commonMsg("下载失败...", false);

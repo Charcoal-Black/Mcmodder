@@ -532,7 +532,7 @@ export class AttitudeSystem {
     form.append("upfile", file, file.name);
     form.append("type", "ajax");
     try {
-      const resp = await this.parent.utils.createRequest(
+      const resp = await this.parent.web.createRequest(
         {
           url: Values.attitude.sticker.uploadUrl,
           method: "POST",

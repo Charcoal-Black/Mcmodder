@@ -1784,7 +1784,7 @@ type ModalOption<T> = T["option"];
 /**
  * 跨标签页请求提示记录。
  *
- * 每次 {@link Utils.createRequest} 真正派发请求时写一条，用于让**所有可见的标签页**各自显示一条
+ * 每次 {@link import("../WebFetchUtils").WebFetchUtils.createRequest} 真正派发请求时写一条，用于让**所有可见的标签页**各自显示一条
  * iziToast 气泡（请求方法 + URL），便于调试与监控。
  *
  * - `id` —— 随机标识，接收端据此本地去重（同一 `id` 只弹一次）；

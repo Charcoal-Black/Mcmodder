@@ -1140,7 +1140,7 @@ export class AdvancedUEditor extends UEditor {
       .children()
       .first()
       .attr("href");
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: url,
         method: "GET",
@@ -1357,7 +1357,7 @@ export class AdvancedUEditor extends UEditor {
    */
   fastSubmitOverride(e: JQueryKeyEventObject) {
     bindFastSubmit(e);
-    if (this.parent.utils.isKeyMatchConfig("keybindFastLink", e)) {
+    if (this.parent.configRepository.isKeyMatchConfig("keybindFastLink", e)) {
       e.preventDefault();
       this.showAutoLinkList();
     }

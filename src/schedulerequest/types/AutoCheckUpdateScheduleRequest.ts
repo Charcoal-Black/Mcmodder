@@ -61,7 +61,7 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
     const timer = setTimeout(() => rejectTimeout(new Error("官网更新检查超时")), OFFICIAL_TIMEOUT);
     try {
       const resp = await Promise.race([
-        this.parent.utils.createRequest(
+        this.parent.web.createRequest(
           {
             url: OFFICIAL_UPDATE_URL,
             method: "GET",
@@ -108,7 +108,7 @@ export class AutoCheckUpdateScheduleRequest extends ScheduleRequestType {
    * 版本号从发布帖里切 `Mcmodder v… --` 得到。
    */
   private async checkCommunity(list: ScheduleRequestUtils) {
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: "https://bbs.mcmod.cn/forum.php?mod=viewthread&tid=20483",
         method: "GET",

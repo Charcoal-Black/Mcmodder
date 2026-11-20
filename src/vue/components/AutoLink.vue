@@ -404,7 +404,7 @@ async function performLocalSearch() {
 
 /** 联机搜索：POST `/object/UEAutolink/`，解析返回的 HTML 列表为条目数组；后端报错时提示并返回空 */
 async function performOnlineSearch() {
-  let resp = await parent.value.utils.createRequest(
+  let resp = await parent.value.web.createRequest(
     {
       url: `${parent.value.hostname}/object/UEAutolink/`,
       method: "POST",
@@ -471,7 +471,7 @@ function parseOnlineSearchItemResult(
     className = className.slice(0, splitIndexOf);
   }
 
-  const classID = Number(parent.value.utils.getClassIDByClassName(classTextFull));
+  const classID = Number(parent.value.configRepository.getClassIDByClassName(classTextFull));
   const typeName = link.title.split(" - ")[0];
   let typeID = 0;
   const matchedTypeList = parent.value.itemTypeList?.filter(

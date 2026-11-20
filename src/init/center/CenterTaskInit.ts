@@ -81,7 +81,7 @@ export class CenterTaskInit extends CenterBaseInit {
     }).mount($(".progress-container").get(0)) as InstanceType<typeof ProgressBar>;
     do {
       endTime = Math.min(now, Utils.getStartTime(startTime, 29));
-      resp = await this.utils.createRequest(
+      resp = await this.web.createRequest(
         {
           url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1`,
           method: "GET",
@@ -98,7 +98,7 @@ export class CenterTaskInit extends CenterBaseInit {
       });
       if (maxPage)
         for (let i = 2; i <= maxPage; i++) {
-          resp = await this.utils.createRequest(
+          resp = await this.web.createRequest(
             {
               url: `${this.parent.hostname}/verify.html?starttime=${startTime / 1e3}&endtime=${endTime / 1e3}&order=createtime&selfonly=1&page=${i}`,
               method: "GET",

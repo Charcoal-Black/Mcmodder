@@ -41,7 +41,7 @@ export class GeneralEditInit extends Init {
     }
 
     if (
-      !this.parent.utils.isKeyMatchConfig("keybindFastSubmit", {
+      !this.parent.configRepository.isKeyMatchConfig("keybindFastSubmit", {
         ctrlKey: true,
         key: "Enter",
         keyCode: 13,
@@ -49,7 +49,7 @@ export class GeneralEditInit extends Init {
     )
       bindFastSubmit = (e: MouseEvent) => {
         // @Override
-        if (this.parent.utils.isKeyMatchConfig("keybindFastSubmit", e)) {
+        if (this.parent.configRepository.isKeyMatchConfig("keybindFastSubmit", e)) {
           e.preventDefault();
           $("#edit-submit-button").click();
           if (this.configs.getSettings("fastSubmitFix")) e.stopPropagation(); // Bug修复：快速提交时编辑框意外换行

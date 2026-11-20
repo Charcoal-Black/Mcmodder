@@ -1,15 +1,5 @@
-import {
-  GM_cookie,
-  GM_getValue,
-  GM_setValue,
-  GM_xmlhttpRequest,
-  type GmResponseEvent,
-  type GmResponseType,
-  type GmXmlhttpRequestOption,
-} from "$";
+import { GM_cookie } from "$";
 import { AnimationFrameScheduler } from "./AnimationFrameScheduler";
-import { ConfigRepository } from "./config/ConfigRepository";
-import { Mcmodder } from "./Mcmodder";
 import { Values } from "./Values";
 
 export interface ThemeColorSet {
@@ -18,19 +8,12 @@ export interface ThemeColorSet {
 }
 
 /**
- * 全局工具类：承载无状态的静态工具函数，以及依赖 `Mcmodder` 实例上下文的辅助方法。
- * 静态方法多为纯函数或宿主 DOM 操作；实例方法通过 `parent`/`configs` 访问全局上下文与配置。
+ * 全局工具类：只承载不依赖 `Mcmodder` 上下文的静态工具函数。
+ *
+ * 需要读写配置/持久化状态的逻辑放在 `ConfigRepository`，需要组合根、请求日志与限速的逻辑放在
+ * `WebFetchUtils`（`Mcmodder.web`）。本类没有实例，也不应再被实例化。
  */
 export class Utils {
-  private readonly parent: Mcmodder;
-  readonly configs: ConfigRepository;
-
-  /** @param parent 全局上下文 `Mcmodder` 实例 */
-  constructor(parent: Mcmodder) {
-    this.parent = parent;
-    this.configs = new ConfigRepository(parent);
-  }
-
   private static m_isMac: boolean | undefined;
   /** 判断当前是否为 macOS（结果缓存，避免重复读取 UA） */
   static isMac() {
@@ -200,14 +183,6 @@ export class Utils {
     showTaskTip(imageUrl, title, text, achieveTime, progress, rewardExp);
   }
 
-  /** 从配置中读取主/副主题色，返回 `{ tc1, tc2 }` */
-  static getThemeColors = (configs: ConfigRepository): ThemeColorSet => {
-    return {
-      tc1: configs.getSettings("themeColor1")!,
-      tc2: configs.getSettings("themeColor2")!,
-    };
-  };
-
   /** 将 `value` 限制在 `[min, max]` 区间内 */
   static clamp(value: number, min = 0, max = 1) {
     if (value < min) return min;
@@ -313,12 +288,11 @@ export class Utils {
   /**
    * 生成用户资料摘要（用户组/等级/编辑数与字节数/登录到期状态），以 ` · ` 连接，可返回纯文本或 HTML。
    *
-   * @param target 用户 UID 或已取到的 `Profile` 对象；传 UID 时内部通过 `configs.getAllProfile` 查询。
+   * @param profile 已取到的 `Profile` 对象。
    * @param showLv 是否在摘要中追加等级（`Lv.X`）。
    * @param plainText 为 true 时返回纯文本；为 false 时返回 HTML（登录到期状态会渲染为带样式的提示）。
    */
-  getProfileAbstract(target: number | Profile, showLv = false, plainText = false) {
-    const profile = typeof target === "number" ? this.configs.getAllProfile(target) : target;
+  static getProfileAbstract(profile: Profile, showLv = false, plainText = false) {
     if (!Object.keys(profile).length) {
       const text = "用户信息获取失败...";
       return plainText ? text : `<span class="text-danger">${text}</span>`;
@@ -353,21 +327,6 @@ export class Utils {
   /** 当前用户组是否可以进入文件管理后台 */
   static hasModfileDLAccess(permission: Permission) {
     return permission === "developer" || permission === "manager" || permission === "admin";
-  }
-
-  /** 按 id 取出交互数据并立即清除该条目；id 为空时返回 undefined */
-  getInteract(id: string | null) {
-    if (id === null || id === undefined) return undefined;
-    const result = this.configs.get("mcmodderInteracts", id);
-    this.configs.set("mcmodderInteracts", id, null);
-    return result;
-  }
-
-  /** 将交互数据写入一个随机 id 的条目，并返回该 id */
-  setInteract(value: unknown) {
-    const id = Utils.randStr(8);
-    this.configs.set("mcmodderInteracts", id, value);
-    return id;
   }
 
   /** 播放提示音（默认升级音效） */
@@ -1008,15 +967,6 @@ export class Utils {
     return true;
   }
 
-  /** 判断按键 `b` 是否与配置中名为 `a` 的快捷键匹配 */
-  isKeyMatchConfig(a: KeysOfType<Settings, Key>, b: Key) {
-    const config = this.configs.getSettings(a);
-    if (config === undefined) {
-      return false;
-    }
-    return Utils.isKeyMatch(config, b);
-  }
-
   /** 生成指定长度的随机字符串（字母数字+下划线） */
   static randStr(l = 32) {
     const t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
@@ -1384,114 +1334,6 @@ export class Utils {
     return res.prop("outerHTML");
   };
 
-  /**
-   * 计算并记录本次请求的调度时间戳（按 `minimumRequestInterval` 限速；队列过长时返回 null）
-   *
-   * @returns 排定的发包时刻；返回 null 表示队列已超出上限，本次请求**不应**被发出，
-   *   调用方必须据此放弃派发（见 {@link createRequest}）。
-   */
-  updateRequestTime() {
-    const minimumRequestInterval = Math.max(
-      this.configs.getSettings("minimumRequestInterval")!,
-      500,
-    );
-    const now = Date.now();
-    let lastRequestTime = this.configs.getSettings("lastRequestTime") || now;
-    // 持久化的游标可能因旧版本数据、云端同步覆盖等而异常领先当前时间；此时照着它排期会把
-    // 整条发包队列堵死，故直接丢弃、以当前时间重新起算
-    if (lastRequestTime > now + minimumRequestInterval * Values.REQUEST_SCHEDULE_MAX_DRIFT_FACTOR) {
-      console.warn("已排定时刻异常领先当前时间，发包排期将重新起算。");
-      lastRequestTime = now;
-    }
-    if (lastRequestTime > now + minimumRequestInterval * Values.MAX_REQUEST_COUNT) {
-      console.warn("已入队的请求数量超限，新的请求被忽略。");
-      return null;
-    }
-    if (now > lastRequestTime) lastRequestTime = now;
-    this.configs.setSettings("lastRequestTime", lastRequestTime + minimumRequestInterval);
-    return lastRequestTime;
-  }
-
-  /**
-   * 发送限速请求的全局入口：
-   * 按 `updateRequestTime` 排定延迟后发出，记录日志；遇到 `yxd_token` 校验响应时写入 cookie 并自动重发。
-   *
-   * 允许同时传入一个附加信息。若启用网络请求监控，则会在所有可见的标签页上提示本次发包的同时显示此信息。
-   * 原则上所有网络请求都应当有附加信息，便于在监控中理解请求目的。
-   *
-   * @warning 队列超出 {@link Values.MAX_REQUEST_COUNT} 上限时，本请求直接以失败告终、**不会发包**
-   *   （此前是把旧的队满哨兵值 `-1` 交给 `setTimeout`，负延迟被当作 0 处理，反而使限速彻底失效）。
-   *   对本就无法降级重试的调用方而言失败与「不关心结果」无异；但计划任务与队列必须让失败
-   *   可见地冒泡，否则会留下一条已排期、实则永远不会落地的待办。
-   *
-   * @param config 请求配置
-   * @param message 本次请求附带的提示消息
-   * @param silent 为 true 时不在请求监控中弹出提示（仍进入限速队列），用于脚本内部的批量查找
-   * @param log 为 false 时不写请求日志；含认证 key 等敏感数据的内部请求应关闭
-   */
-  createRequest<R extends GmResponseType = "text">(
-    config: GmXmlhttpRequestOption<R, unknown>,
-    message?: string,
-    silent = false,
-    log = true,
-  ): Promise<GmResponseEvent<R, unknown>> {
-    const lastRequestTime = this.updateRequestTime(),
-      now = Date.now();
-    if (lastRequestTime === null) {
-      const errorMsg = "排队的请求已超出上限，本次请求被丢弃。";
-      Utils.commonMsg(errorMsg + "（详见控制台）", false);
-      return Promise.reject(new Error(errorMsg));
-    }
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        config.onload = (resp) => {
-          // 二进制响应（`responseType: "arraybuffer"` 等）下 responseText 未必是字符串，不能直接 trim
-          const str = typeof resp.responseText === "string" ? resp.responseText.trim() : "";
-          if (str.startsWith("<script>") && str.endsWith("</script>")) {
-            const yxdTokenList = str.match(/'yxd_token=[0-9a-f]+'/);
-            if (yxdTokenList) {
-              const url = new URL(resp.finalUrl);
-              const hostname = url.hostname;
-              const pathname = url.pathname;
-              const index = pathname.lastIndexOf("/");
-              const path = "/" + pathname.slice(1, index);
-              const yxdToken = yxdTokenList[0].slice(11, -1);
-              GM_cookie.set(
-                {
-                  name: "yxd_token",
-                  value: yxdToken,
-                  domain: hostname,
-                  path: path,
-                },
-                (err) => {
-                  if (err) {
-                    console.warn("Failed to set `yxd_token!`");
-                  } else {
-                    this.createRequest(config, message, silent, log).then((resp) => resolve(resp));
-                  }
-                },
-              );
-            }
-          } else {
-            resolve(resp);
-          }
-        };
-        if (log) {
-          const logs = GM_getValue("mcmodderLogger")?.split(";") || [];
-          if (logs.length >= Values.MAX_REQUEST_COUNT / 10) logs.shift();
-          let content = `A${lastRequestTime}:${config.url}`;
-          if (config.data) content += `(${config.data})`;
-          logs.push(content);
-          GM_setValue("mcmodderLogger", logs.join(";"));
-        }
-        // 调试与监控：在所有可见的标签页上提示本次发包（须置于限速等待之后，否则排队中的请求会提前亮起）
-        if (!silent) this.parent.requestToastBroadcaster.send(config.method, config.url, message);
-        // console.debug("Send Async request: ", config);
-        GM_xmlhttpRequest(config);
-      }, lastRequestTime - now);
-    });
-  }
-
   /** 将字符串中的 `\uXXXX` 转义序列还原为对应字符 */
   static unicode2Character(s: string) {
     let chineseStr = "";
@@ -1605,56 +1447,6 @@ export class Utils {
     });
   }
 
-  /** 同时更新「名称→ID」与「ID→名称」两个映射表 */
-  updateClassNameIDMap(className: string, classID: string) {
-    const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
-    const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
-    classNameIDMap[className] = classID;
-    idClassNameMap[classID] = className;
-    this.configs.setAll("classNameIDMap", classNameIDMap);
-    this.configs.setAll("idClassNameMap", idClassNameMap);
-  }
-
-  /** 由模组 ID 查询其名称 */
-  getClassNameByClassID(classID: string | number) {
-    const idClassNameMap = this.configs.getAll("idClassNameMap") ?? {};
-    return idClassNameMap[classID.toString()];
-  }
-
-  /** 由模组名称查询其 ID */
-  getClassIDByClassName(className: string) {
-    const classNameIDMap = this.configs.getAll("classNameIDMap") ?? {};
-    return classNameIDMap[className];
-  }
-
-  /** 按模组 ID 与物品类型 ID/文本查找对应的物品类型数据 */
-  getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
-    const matchedTypeList = this.parent.itemTypeList?.filter(
-      (entry) =>
-        (entry.classID === classID || entry.classID === 0) &&
-        ((entry.typeID || 1) === (itemType || 1) || entry.text === itemType),
-    );
-    return matchedTypeList?.length ? matchedTypeList[0] : undefined;
-  }
-
-  /** 生成物品类型的图标 HTML（按 `classID`+`itemType` 查找，或直接传入 `ItemType`） */
-  getItemTypeHTML(
-    ...args:
-      [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]
-  ) {
-    let itemType;
-    if (args.length === 1) {
-      itemType = args[0];
-    } else {
-      itemType = this.getItemTypeData(args[0], args[1]);
-    }
-    if (!itemType) return $(`<i class="fa fa-question-circle-o text-danger"></i>`);
-    const iconFont = $(`<span class="iconfont icon">`).css("color", itemType.color);
-    if (itemType.classID === 0) iconFont.html(itemType.icon);
-    else iconFont.html(`<i class="fa ${itemType.icon}"></i>`);
-    return iconFont;
-  }
-
   /** 刷新页面上所有 `data-toggle="tooltip"` 元素的 tooltip */
   static updateAllTooltip() {
     return $().tooltip
@@ -1663,44 +1455,6 @@ export class Utils {
           // delay: { show: 200 }
         })
       : null;
-  }
-
-  /** 按 ID 抓取物品资料页并解析为 `Item`，失败返回 undefined */
-  async getItemByID(id: string | number) {
-    id = Number(id);
-    const resp = await this.createRequest(
-      {
-        url: `${this.parent.hostname}/item/${id}.html`,
-        method: "GET",
-        redirect: "manual",
-        anonymous: true,
-      },
-      "获取物品基础信息",
-    );
-    if (resp.status > 300 || !resp.responseXML) {
-      return;
-    }
-    const doc = $(resp.responseXML);
-    return Utils.parseItemDocument(doc);
-  }
-
-  /** 按 ID 抓取物品编辑页并解析为 `Item`，未登录或失败返回 undefined */
-  async getDetailedItemByID(id: string | number) {
-    if (!this.parent.currentUID) return;
-    id = Number(id);
-    const resp = await this.createRequest(
-      {
-        url: `${this.parent.hostname}/item/edit/${id}/`,
-        method: "GET",
-        redirect: "manual",
-      },
-      "获取物品详细信息",
-    );
-    if (resp.status > 300 || !resp.responseXML) {
-      return;
-    }
-    const doc = $(resp.responseXML);
-    return Utils.parseItemEditorDocument(doc);
   }
 
   /** 从物品资料页 DOM 中解析物品信息为 `Item` */

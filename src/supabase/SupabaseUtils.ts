@@ -153,7 +153,7 @@ export class SupabaseUtils {
     });
     try {
       const resp = await Promise.race([
-        this.parent.utils.createRequest(
+        this.parent.web.createRequest(
           {
             url,
             method,
