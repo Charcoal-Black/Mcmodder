@@ -1,21 +1,5 @@
 import { GM_getValue, GM_setValue } from "$";
-
-/**
- * @warning 此处的实现与 `Utils.getFormattedSize` 完全一样，
- * 这里照抄一遍只是为了避免循环依赖，以后需要重构
- */
-function getFormattedSize(size: number | string) {
-  size = Number(size) || 0;
-  const f = (e: number) =>
-    Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(e);
-  if (size < 1024) return f(size) + " B";
-  else if (size < 1048576) return f(size / 1024) + " KiB";
-  else if (size < 1073741824) return f(size / 1048576) + " MiB";
-  else return f(size / 1073741824) + " GiB";
-}
+import { Utils } from "../Utils";
 
 /** 一条本地背景图记录 */
 export interface BackgroundImageRow {
@@ -122,13 +106,13 @@ export class BackgroundRepository {
     // 压缩前先挡掉过大的文件：原图体积和压缩后的结果没有必然关系，别拿它当存储上限
     if (file.size > BackgroundRepository.MAX_FILE_BYTES) {
       throw new Error(
-        `原图有 ${getFormattedSize(file.size)}，超过 ${getFormattedSize(BackgroundRepository.MAX_FILE_BYTES)} 上限...`,
+        `原图有 ${Utils.getFormattedSize(file.size)}，超过 ${Utils.getFormattedSize(BackgroundRepository.MAX_FILE_BYTES)} 上限...`,
       );
     }
     const dataUrl = await BackgroundRepository.compress(file, slot);
     if (dataUrl.length > BackgroundRepository.MAX_BYTES) {
       throw new Error(
-        `压缩后仍有 ${getFormattedSize(dataUrl.length)}，超过 ${getFormattedSize(BackgroundRepository.MAX_BYTES)} 上限...`,
+        `压缩后仍有 ${Utils.getFormattedSize(dataUrl.length)}，超过 ${Utils.getFormattedSize(BackgroundRepository.MAX_BYTES)} 上限...`,
       );
     }
     // 压缩是异步的，期间别的标签页可能已经改过库，落盘前重新读一次
@@ -139,8 +123,7 @@ export class BackgroundRepository {
       );
     }
     const existing = data[slot].sort((a, b) => a.order - b.order);
-    const insertAt =
-      index === undefined ? existing.length : Math.max(0, Math.min(existing.length, index));
+    const insertAt = index === undefined ? existing.length : Utils.clamp(index, 0, existing.length);
     const nextId =
       [...data.day, ...data.night].reduce((max, row) => Math.max(max, row.id ?? 0), 0) + 1;
     const row: BackgroundImageRow = {
@@ -168,7 +151,7 @@ export class BackgroundRepository {
    * （名字没有变化时不写库，但仍返回记录）。
    */
   rename(id: number, name: string): BackgroundImageRow | null {
-    const trimmed = name.trim();
+    const trimmed = Utils.regulateFileName(name.trim());
     if (trimmed.length === 0) return null;
     const data = this.readAll();
     for (const slot of ["day", "night"] as const) {
@@ -196,7 +179,7 @@ export class BackgroundRepository {
   setWeight(ids: number | number[], weight: number): void {
     const targets = new Set(Array.isArray(ids) ? ids : [ids]);
     const data = this.readAll();
-    const clamped = Math.max(1, Math.min(10, Math.round(weight)));
+    const clamped = Utils.clamp(Math.round(weight), 1, 10);
     let changed = false;
     for (const slot of ["day", "night"] as const) {
       for (const row of data[slot]) {
@@ -222,7 +205,7 @@ export class BackgroundRepository {
     const rows = data[slot].sort((a, b) => a.order - b.order);
     const from = rows.findIndex((row) => row.id === id);
     if (from < 0) return;
-    const clamped = Math.max(0, Math.min(rows.length - 1, targetIndex));
+    const clamped = Utils.clamp(targetIndex, 0, rows.length - 1);
     if (from === clamped) return;
     const [moved] = rows.splice(from, 1);
     rows.splice(clamped, 0, moved);
