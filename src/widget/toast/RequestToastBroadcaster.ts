@@ -4,7 +4,7 @@ import { Utils } from "../../Utils";
 import { Values } from "../../Values";
 
 /**
- * 跨标签页请求提示广播器：让 `Utils.createRequest` 的每一次发包，都在**所有可见的标签页**
+ * 跨标签页请求提示广播器：让 `Mcmodder.web.createRequest`（`WebFetchUtils`）的每一次发包，都在**所有可见的标签页**
  * 上弹一条 iziToast 气泡（请求方法 + URL），便于调试与监控。
  *
  * # 与 {@link import("../../modal/ModalBroadcaster").ModalBroadcaster} 的区别

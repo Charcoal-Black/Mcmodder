@@ -184,7 +184,12 @@ export class ClassEditorInit extends Init {
         }
       }, 500);
     });
-    $("#cover-update-button, #cover-cancel-button, #cover-reset-button").click(() => {
+    $("#cover-update-button").click(() => {
+      setTimeout(() => {
+        if (coverUpdateButton.css("display") === "none") this.resetCropper();
+      }, 0);
+    });
+    $("#cover-cancel-button, #cover-reset-button").click(() => {
       this.resetCropper();
     });
   }

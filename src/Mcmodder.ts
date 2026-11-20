@@ -29,6 +29,7 @@ import { createApp } from "vue";
 import FavUser from "./vue/components/FavUser.vue";
 import ProfileSelector from "./vue/components/ProfileSelector.vue";
 import { ConfigRepository } from "./config/ConfigRepository.ts";
+import { WebFetchUtils } from "./WebFetchUtils.ts";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement;
@@ -37,7 +38,7 @@ interface ScreenAttachedFrameData {
 }
 
 export class Mcmodder {
-  utils: Utils;
+  web: WebFetchUtils;
   configRepository: ConfigRepository;
   currentUID: number;
   currentUsername: string;
@@ -102,13 +103,16 @@ export class Mcmodder {
     this.modalBroadcaster = new ModalBroadcaster(this);
     this.requestToastBroadcaster = new RequestToastBroadcaster(this);
 
-    this.utils = new Utils(this);
-    this.configRepository = this.utils.configs;
+    this.configRepository = new ConfigRepository(this);
+    this.web = new WebFetchUtils(this, this.configRepository);
 
     this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new ConfigUtils(this);
-    this.styleColors = Utils.getThemeColors(this.configRepository);
+    this.styleColors = {
+      tc1: this.configRepository.getSettings("themeColor1")!,
+      tc2: this.configRepository.getSettings("themeColor2")!,
+    };
 
     this.advutils = new AdvancementUtils(this);
     AdvancementLoader.run(this.advutils);
@@ -216,7 +220,7 @@ export class Mcmodder {
         previewFrame.attr("data-status", "pending");
         this.linkPendingSet.add(sourceUrl);
         await Utils.sleep(750);
-        const resp = await this.utils.createRequest(
+        const resp = await this.web.createRequest(
           {
             url: target.href,
             method: "GET",
@@ -996,7 +1000,7 @@ export class Mcmodder {
     )
       setInterval(
         () => {
-          this.utils
+          this.web
             .createRequest(
               {
                 url: `${this.hostname}/frame/CommonHeader/`,

@@ -34,6 +34,10 @@ import { Utils } from "../Utils";
  * # 注意事项
  * - 响应式读取（`getStorageRef`/`get*Ref`/`get*WritableRef`）只对已注册的缓存键有效，否则抛错。
  * - `delete` 目前只删 GM 中的数据，不同步缓存 ref，见该方法说明。
+ *
+ * # 与 `Utils` 的分工
+ * 需要 `Mcmodder` 上下文（当前用户、模组列表）或 GM Storage 的辅助方法（`*Profile`/`*Class`、
+ * 名称映射、交互数据、物品类型查找等）都收敛在本类；`Utils` 只保留不依赖上下文的静态纯函数。
  */
 export class ConfigRepository {
   private readonly parent: Mcmodder;
@@ -650,5 +654,79 @@ export class ConfigRepository {
    */
   deleteAllClass(classID: number) {
     this.deleteAllRecord("classData", classID);
+  }
+
+  /** 按 id 取出交互数据并立即清除该条目；id 为空时返回 undefined */
+  getInteract(id: string | null) {
+    if (id === null || id === undefined) return undefined;
+    const result = this.get("mcmodderInteracts", id);
+    this.set("mcmodderInteracts", id, null);
+    return result;
+  }
+
+  /** 将交互数据写入一个随机 id 的条目，并返回该 id */
+  setInteract(value: unknown) {
+    const id = Utils.randStr(8);
+    this.set("mcmodderInteracts", id, value);
+    return id;
+  }
+
+  /** 同时更新「名称→ID」与「ID→名称」两个映射表 */
+  updateClassNameIDMap(className: string, classID: string) {
+    const classNameIDMap = this.getAll("classNameIDMap") ?? {};
+    const idClassNameMap = this.getAll("idClassNameMap") ?? {};
+    classNameIDMap[className] = classID;
+    idClassNameMap[classID] = className;
+    this.setAll("classNameIDMap", classNameIDMap);
+    this.setAll("idClassNameMap", idClassNameMap);
+  }
+
+  /** 由模组 ID 查询其名称 */
+  getClassNameByClassID(classID: string | number) {
+    const idClassNameMap = this.getAll("idClassNameMap") ?? {};
+    return idClassNameMap[classID.toString()];
+  }
+
+  /** 由模组名称查询其 ID */
+  getClassIDByClassName(className: string) {
+    const classNameIDMap = this.getAll("classNameIDMap") ?? {};
+    return classNameIDMap[className];
+  }
+
+  /** 判断按键 `b` 是否与配置中名为 `a` 的快捷键匹配 */
+  isKeyMatchConfig(a: KeysOfType<Settings, Key>, b: Key) {
+    const config = this.getSettings(a);
+    if (config === undefined) {
+      return false;
+    }
+    return Utils.isKeyMatch(config, b);
+  }
+
+  /** 按模组 ID 与物品类型 ID/文本查找对应的物品类型数据 */
+  getItemTypeData(classID: number | undefined, itemType: number | string | undefined) {
+    const matchedTypeList = this.parent.itemTypeList?.filter(
+      (entry) =>
+        (entry.classID === classID || entry.classID === 0) &&
+        ((entry.typeID || 1) === (itemType || 1) || entry.text === itemType),
+    );
+    return matchedTypeList?.length ? matchedTypeList[0] : undefined;
+  }
+
+  /** 生成物品类型的图标 HTML（按 `classID`+`itemType` 查找，或直接传入 `ItemType`） */
+  getItemTypeHTML(
+    ...args:
+      [classID: number | undefined, itemType: number | undefined] | [itemType: ItemType | undefined]
+  ) {
+    let itemType;
+    if (args.length === 1) {
+      itemType = args[0];
+    } else {
+      itemType = this.getItemTypeData(args[0], args[1]);
+    }
+    if (!itemType) return $(`<i class="fa fa-question-circle-o text-danger"></i>`);
+    const iconFont = $(`<span class="iconfont icon">`).css("color", itemType.color);
+    if (itemType.classID === 0) iconFont.html(itemType.icon);
+    else iconFont.html(`<i class="fa ${itemType.icon}"></i>`);
+    return iconFont;
   }
 }

@@ -122,7 +122,7 @@ export class RankInit extends Init {
       if (!(startTime && endTime)) return;
       const getRankData = (t: number) => {
         if (this.configs.get("rankData", (t - 24 * 60 * 60).toString())) return; // 一天误差
-        this.parent.utils
+        this.parent.web
           .createRequest(
             {
               url: `${this.parent.hostname}/rank.html?starttime=${t}&endtime=${t}`,

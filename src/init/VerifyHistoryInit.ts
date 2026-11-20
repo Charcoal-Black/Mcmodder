@@ -17,7 +17,7 @@ export class VerifyHistoryInit extends Init {
         return;
       }
       const getHistoryPage = (id: number) => {
-        this.parent.utils
+        this.parent.web
           .createRequest(
             {
               url: `${this.parent.hostname}/verify.html?${param}&page=${id}`,

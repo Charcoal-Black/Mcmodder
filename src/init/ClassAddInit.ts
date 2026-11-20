@@ -16,7 +16,7 @@ export class ClassAddInit extends Init {
 
   private async runCrashProtector() {
     $("#mcmodder-crash-protector").html("[刷新中...]");
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: `${this.parent.hostname}/class/add/`,
         method: "GET",

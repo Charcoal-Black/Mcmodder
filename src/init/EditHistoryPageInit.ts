@@ -10,7 +10,7 @@ export class EditHistoryPageInit extends Init {
     return this.parent.href.includes("/history.html") || this.parent.href.includes("/history/");
   }
   private getHistoryPage(id: number, maxPage: number) {
-    this.parent.utils
+    this.parent.web
       .createRequest(
         {
           url: `${this.parent.hostname}/history.html?starttime=${this.startTime}&endtime=${this.endTime}&page=${id}`,

@@ -284,16 +284,16 @@ export class AdminVerifyInit extends AdminBaseInit {
           if (this.parent.isMobileClient) {
             return;
           }
-          if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
+          if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyCheck", e)) {
             e.stopPropagation();
             this.checkButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyPass", e)) {
             e.stopPropagation();
             this.passButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyRefund", e)) {
             e.stopPropagation();
             this.refundButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyReason", e)) {
             e.preventDefault();
             this.reasonInput?.focus();
           }
@@ -1060,7 +1060,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       content.row.children().each((i, e) => {
         if (i === 0) return;
         const text = e.textContent;
-        const type = this.parent.utils.getItemTypeData(this.verifyClassID, text);
+        const type = this.parent.configRepository.getItemTypeData(this.verifyClassID, text);
         if (type === undefined) {
           data.category = { 0: "-1" };
           return;
@@ -1345,7 +1345,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     ) {
       return;
     }
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
         method: "POST",

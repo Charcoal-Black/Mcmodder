@@ -35,7 +35,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
     if (!preSubmitList.length) return;
     for (const i in preSubmitList) {
       const e = preSubmitList[i]!;
-      let resp = await this.parent.utils.createRequest(
+      let resp = await this.parent.web.createRequest(
         {
           url: e.url,
           method: "GET",
@@ -47,7 +47,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       if (doc.find(".edit-user-alert.locked").length) continue;
       f = false;
       e.config.data = `data=${encodeURIComponent(JSON.stringify(e.rawData))}`;
-      resp = await this.parent.utils.createRequest(e.config, "提交预编辑项");
+      resp = await this.parent.web.createRequest(e.config, "提交预编辑项");
       console.log(resp);
       if (resp.status != 200) {
         Utils.commonMsg(`${resp.status} ${resp.statusText}`, false);

@@ -103,7 +103,7 @@ export class AutoCheckVerifyScheduleRequest extends ScheduleRequestType {
 
     let menuElements = $();
     for (const id of managers) {
-      const resp = await this.parent.utils.createRequest(
+      const resp = await this.parent.web.createRequest(
         {
           url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
           method: "POST",
