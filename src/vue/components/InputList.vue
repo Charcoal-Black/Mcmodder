@@ -183,7 +183,15 @@ const onInitSuggestion = shallowRef<InputListOnInitSuggestion>();
 /** 实际生效的候选保存回调；为 `undefined` 时不提供「新增 / 删除候选」的操作 */
 const onModifySuggestion = shallowRef<InputListOnModifySuggestion>();
 
-let closeLock = false;
+/**
+ * 是否已被**显式关闭**（控制器收起 / 点击外部）。
+ *
+ * 与 `selectable` 分工：`selectable` 是「按当前输入本应显示」的计算结果，
+ * `dismissed` 记录「刚刚被关掉了」这一意图。两者分开后，关闭期间的重算
+ * （补全后派发的 `input`、重新聚焦等）不会把列表立刻弹回来，
+ * 也不需要用一个 100ms 的计时器去猜「是不是刚关掉」。
+ */
+const dismissed = ref(false);
 
 /**
  * 由 `InputListPopoverController` 在输入元素获得焦点时调用：切换「当前服务对象」并重建候选读写回调。
@@ -193,6 +201,8 @@ let closeLock = false;
  *               （交互元素与输入元素是同一个时，控制器会把两者一并传进来）。
  */
 function setOption(option: InputListProps) {
+  // 换了（或重新打开了）服务对象：解除上一次的显式关闭
+  dismissed.value = false;
   inputRef.value = option.inputNode;
   alwaysShowAllSuggestions.value = option.alwaysShowAllSuggestions ?? false;
   defaultSelectionProvider.value = option.defaultSelectionProvider ?? (() => 0);
@@ -250,13 +260,19 @@ const {
   popoverProps,
   applyOption,
   updatePos,
-  close,
+  close: hidePopover,
   getPopoverElement,
   getAnchorElement,
 } = usePopoverHost({
   visible: selectable,
   maxHeight: 300,
 });
+
+/** 收起列表：显式记下「已关闭」，避免后续重算又把它弹回来 */
+function close() {
+  dismissed.value = true;
+  hidePopover();
+}
 
 // 候选数量变化后重新量一次列表高度（向上弹出时需要它来定位）
 watch(
@@ -269,18 +285,6 @@ watch(
       popoverRef.value?.onPopoverHeightChange();
       triggerRef(popoverRef);
     });
-  },
-);
-
-// 显隐动画：显示时先取消隐藏、下一帧再取消淡出；隐藏时先淡出、200ms 后才真正隐藏
-// （显隐本身由 `usePopoverHost` 同步给 `Popover`，这里只管「隐藏后短暂别再弹回来」的锁）
-watch(
-  () => selectable.value,
-  () => {
-    closeLock = true;
-    setTimeout(() => {
-      closeLock = false;
-    }, 100);
   },
 );
 
@@ -310,10 +314,13 @@ watchEffect(() => {
   void suggestedList.value;
   void hideBeforeInput.value;
   void selectionValue.value;
+  void dismissed.value;
 
   selected.value = 0;
 
-  if (closeLock && !selectable.value) {
+  // 被显式关闭后，重算一律不改变「不显示」的状态；下次 `setOption` 才解除
+  if (dismissed.value) {
+    selectable.value = false;
     return;
   }
 

@@ -368,16 +368,33 @@ export abstract class PopoverController<
     if (option.closeWhenClickAgain && this.activeTarget === target) {
       return false;
     }
+    // 从别的锚点切过来：先通知旧锚点「已收起」，再让新锚点接管
+    if (this.activeTarget !== null && this.activeTarget !== target) {
+      this.notifyVisibility(this.activeTarget, false);
+    }
     this.activeTarget = target;
     this.applyOption(option, target);
+    this.notifyVisibility(target, true);
     return true;
   }
 
   /** 关闭当前正在服务的弹出框 */
   private closeActive() {
     if (this.activeTarget === null) return;
-    this.app.close();
+    const target = this.activeTarget;
+    // 先清掉服务对象，避免回调里再次触发时重复关闭
     this.activeTarget = null;
+    this.app.close();
+    this.notifyVisibility(target, false);
+  }
+
+  /**
+   * 通知某个已登记的交互元素「弹出框相对它开/关了」。
+   *
+   * 选项统一从映射表里取：懒映射尚未解析时还没有选项，自然也无从通知。
+   */
+  private notifyVisibility(target: HTMLElement, visible: boolean) {
+    this.optionMap.get(target)?.onVisibilityChange?.(visible);
   }
 
   /**

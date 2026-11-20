@@ -69,6 +69,14 @@ export interface PopoverBaseOption {
   /** 若在弹出框已打开时再次触发，则关闭弹出框 */
   closeWhenClickAgain?: boolean;
   /**
+   * 弹出框相对本元素的显隐变化通知：控制器在把本选项交给组件（打开）、
+   * 切换到别的锚点或关闭弹出框时回调。
+   *
+   * 交互元素自身的「展开」态应当由它驱动，而不是用 focus/blur 去猜——
+   * 否则会出现「按钮已聚焦、弹出框却被关掉」这类状态不一致（见 `DropdownMenuInput.vue`）。
+   */
+  onVisibilityChange?: (visible: boolean) => void;
+  /**
    * 决定弹出框样式中的 z-index 值，在诸如需要区分是否会被 swal 弹出框（z-index=1000）
    * 覆盖的场景下很有用 @default 500
    */

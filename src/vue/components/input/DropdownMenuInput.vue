@@ -9,9 +9,6 @@
       :aria-haspopup="'listbox'"
       :aria-expanded="selected"
       :value="content"
-      @click="onClick"
-      @focus="onFocus"
-      @blur="onBlur"
     />
   </span>
 </template>
@@ -24,7 +21,8 @@
  * # 交互元素 ≠ 输入元素（这里是重点）
  * 组件里有两个 input，职责完全不同：
  * - `ref="input"`（模板中的按钮）：**交互元素**。它被登记进 `InputListPopoverController`，
- *   负责 focus 触发候选列表、显示展开态、点击外部收起；
+ *   负责触发候选列表；展开态由控制器回传的真实显隐驱动（`onVisibilityChange`），
+ *   而不是靠 focus/blur 猜测——按钮保持焦点时弹出框也可能被关掉，两者并不等价；
  * - `ref="valueInput"`（模板中的隐藏 input）：**输入元素**。候选列表的一切输入逻辑都作用在它上面——
  *   值的读写、补全写回、以及 `useInputBase` 的校验流程（`getDOMValue` 从它取值、
  *   `@change` 触发 `onChange` 校验）。
@@ -53,10 +51,8 @@ const valueInputRef = useTemplateRef("valueInput");
 
 /** 手动向候选列表派发事件的函数（`add` 的返回值），用于补发该元素收不到的事件 */
 let eventSender: ReturnType<typeof InputListPopoverController.instance.add>;
-/** 是否处于展开态（决定按钮的 `.expanded` 样式） */
+/** 是否处于展开态（决定按钮的 `.expanded` 样式）：由候选列表的真实显隐驱动 */
 const selected = ref(false);
-/** 刚被程序化聚焦的 100ms 内的标记：用于区分「点按钮展开」与「点按钮收起」 */
-let focusLock = false;
 
 /** 按钮上显示的文案：按当前值从 `range` 里取（`range` 的值即展示用 HTML） */
 const content = computed(() => {
@@ -80,27 +76,6 @@ function getDOMValue() {
   return Number(valueInputRef.value!.value);
 }
 
-/** 点击按钮：已展开且不是「刚聚焦」时才收起（点自己弹出的那次不算） */
-function onClick() {
-  if (selected.value && !focusLock) {
-    inputRef.value!.click();
-  }
-}
-
-/** 按钮获得焦点（通常是点击后候选列表打开时补的焦点）：标记展开，并上锁 100ms */
-function onFocus() {
-  selected.value = true;
-  focusLock = true;
-  setTimeout(() => {
-    focusLock = false;
-  }, 100);
-}
-
-/** 按钮失焦：收起 */
-function onBlur() {
-  selected.value = false;
-}
-
 onMounted(() => {
   // 登记交互元素（按钮），但把输入逻辑指向隐藏的 `valueInput`，定位锚点也用按钮
   eventSender = InputListPopoverController.instance.add(inputRef.value!, {
@@ -108,6 +83,10 @@ onMounted(() => {
     inputListBindElement: valueInputRef.value!,
     anchorElement: inputRef.value!,
     closeWhenClickAgain: true,
+    // 展开态只认候选列表的真实显隐：点按钮收起、点外部关闭时都会收到 false
+    onVisibilityChange: (visible) => {
+      selected.value = visible;
+    },
     // 枚举选择是「列出全部」而非「按输入过滤」，不做拼音匹配
     alwaysShowAllSuggestions: true,
     // 将下拉列表的默认选项设置为当前内存态的对应数值
