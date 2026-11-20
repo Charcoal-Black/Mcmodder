@@ -21,6 +21,14 @@ import { GIFUtils } from "../../gif/GIFUtils.ts";
 
 type ParsedOpinion = [number, number, number, number];
 
+interface VerifyListPayload {
+  classID: string;
+  userID: string;
+  ignoreManager?: string;
+  classAddOnly: string;
+  typeID: string;
+}
+
 export class AdminVerifyInit extends AdminBaseInit {
   private static readonly passButtonSelector = "#verify-pass-btn:not(.edit), #assistant-pass-btn";
   private static readonly refundButtonSelector =
@@ -120,6 +128,8 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   run() {
     this.rearrange();
+
+    this.appendUserFilter();
 
     this.verifyClassID = undefined;
     this.prevHeight = 0;
@@ -1275,6 +1285,55 @@ export class AdminVerifyInit extends AdminBaseInit {
     containerWidgets.eq(1).insertAfter(containerWidgets.eq(-1));
   }
 
+  /** 新增一个只显示指定用户待审项的选项 */
+  private appendUserFilter() {
+    const widget = $(".verify-user-filter").first().parents(".panel");
+    $("<hr>").appendTo(widget);
+    const p = $("<p>").appendTo(widget);
+    const a = $("<a>")
+      .attr({
+        class: "ignore-parent",
+        "data-page": "pageVerifyMod-list",
+      })
+      .text("显示所有指定 UID 的人: ")
+      .appendTo(p);
+    const input = $("<input>")
+      .addClass("form-control mcmodder-verify-userfilter")
+      .appendTo(p)
+      .change(() => {
+        const value = input.val().trim() as string;
+        const ids = value
+          .split(",")
+          .map((id) => Number(id.trim()))
+          .filter((id) => Number.isInteger(id) && id > 0)
+          .join(",");
+        if (ids.length === 0) {
+          if (value.length > 0) {
+            Utils.commonMsg(
+              "输入的 UID 不合法，必须是正整数，输入多个 UID 时请使用单个半角逗号分隔~",
+              false,
+            );
+          }
+          a.removeClass("verify-user-filter");
+          return;
+        }
+        a.addClass("verify-user-filter").attr({
+          "data-uid": ids,
+          "data-data": JSON.stringify({
+            ...this.parseCurrentVerifyListConfig(),
+            classID: "-1",
+            typeID: "0",
+            userID: ids,
+          }),
+        });
+      })
+      .keydown((ev) => {
+        if (ev.key === "Enter") {
+          setTimeout(() => a.click(), 0);
+        }
+      });
+  }
+
   /** 添加“一键查询待审项”快捷按钮 */
   private appendCheckButton() {
     $(
@@ -1284,7 +1343,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       .click(() => this.getVerificationCount());
     const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
     if (autoVerifyDelay && autoVerifyDelay >= 1e-2) {
-      const title = $(`<span style="margin-left: 10px;">距离自动查询: </span>`).insertAfter(
+      const title = $(`<span class="mcmodder-verify-autocheck">距离自动查询: </span>`).insertAfter(
         "#mcmodder-check-verification",
       );
       const text = $("<span>").appendTo(title).get(0);
@@ -1303,8 +1362,29 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.parent.scheduleRequestUtils.run("autoCheckVerify");
   }
 
+  private isVerifyListPayload(data: unknown): data is VerifyListPayload {
+    return (
+      data !== null &&
+      typeof data === "object" &&
+      "classID" in data &&
+      "userID" in data &&
+      "classAddOnly" in data &&
+      "typeID" in data
+    );
+  }
+
   /** 获取当前的待审列表是在何种配置下加载的 */
   private parseCurrentVerifyListConfig() {
+    // 优先直接复用百科原生“战术刷新”按钮的配置
+    let data;
+    try {
+      data = JSON.parse($("#refresh-btn").attr("data-data"));
+    } catch (error) {
+      console.warn("[Mcmodder] 待审列表配置解析错误：", error);
+    }
+    if (this.isVerifyListPayload(data)) return data;
+
+    // fallback 到常规推导，正常情况下应该不会走到这一步，这里以防万一而保留
     const typeID = $("#verify-type-list").val() as string;
     const classAddOnly = $("#ignore-manager").is(":checked") ? "1" : "0";
     const userlink = $("#connect-frame-sub .select-row")
@@ -1313,7 +1393,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       .last()
       .find("a")
       .first()
-      .prop("href");
+      .prop("href") as string;
     const userID = userlink?.slice(24, -1) ?? "0";
     let classID = $("#class-version-list").val() as string;
     if ((classID === "0" && typeID !== "0") || userID !== "0") {
