@@ -2845,6 +2845,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-input-list.editable .mcmodder-input-option.selected .text {
   max-width: calc(100% - 4 * var(--mcmodder-width-padding-3));
 }
+.mcmodder-input-option .text .desc,
 .mcmodder-input-option .text .alias {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);

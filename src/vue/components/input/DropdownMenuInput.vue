@@ -60,7 +60,8 @@ let focusLock = false;
 
 /** 按钮上显示的文案：按当前值从 `range` 里取（`range` 的值即展示用 HTML） */
 const content = computed(() => {
-  return props.range[valueRef.value];
+  const item = props.range[valueRef.value];
+  return typeof item === "string" ? item : item.text;
 });
 
 /**
@@ -114,7 +115,11 @@ onMounted(() => {
     defaultSelectionProvider: getValue,
     // 不提供 onModifySuggestion → 候选列表不显示新增 / 删除 / 改名按钮
     suggestionManager: {
-      onInitSuggestion: () => Object.entries(props.range).map(([value, text]) => ({ text, value })),
+      onInitSuggestion: () =>
+        Object.entries(props.range).map(([value, text]) => {
+          if (typeof text === "string") return { text, value };
+          return { ...text, value };
+        }),
     },
   });
 });

@@ -1611,16 +1611,23 @@ type InputValueNumericRange = [number | null, number | null];
 /** 数值输入的范围 `[min, max]`（两端必有值） */
 type InputValueFiniteNumericRange = [number, number];
 /** 枚举值集合：值 → 显示文案（用于下拉类输入） */
-type InputValueSet = Record<number, string>;
+type InputValueSet = Record<number, string | { text: string; desc?: string }>;
 /** 输入范围：数值区间或枚举值集合 */
 type InputValueRange = InputValueNumericRange | InputValueSet;
 
-/** 单条候选：`value` 为真正被匹配与写回的文本；`text` 为自定义展示（存在时以 `v-text` 渲染，不做匹配高亮） */
+/** 候选栏中的单条候选 */
 interface InputSuggestion {
+  /** 自定义展示文本 */
   text?: string;
+  /** 自定义展示补充描述文本 */
+  desc?: string;
+  /** 原始数值 */
   value: string;
+  /** 是否显示原始数值 */
   showValue?: boolean;
+  /** 参与匹配的别名 */
   alias?: string[];
+  /** 是否强制对 {@link text} 中出现的非法字符转义 */
   noEscape?: boolean;
 }
 /** 候选的简写形式：允许直接写字符串（等价于 `{ value }`），`onInitSuggestion` 返回时会统一规范化 */
@@ -1629,6 +1636,7 @@ type InputSimplifiedSuggestion = InputSuggestion | string;
 interface InputSuggestionRate {
   score?: number;
   ranges?: {
+    desc?: [number, number];
     value?: [number, number];
     alias: Record<number, [number, number]>;
   };

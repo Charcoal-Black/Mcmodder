@@ -73,25 +73,45 @@ export const settings = [
           {
             id: "backgroundPoolRotateMode",
             title: "本地背景轮换方式",
-            description:
-              "多张本地背景时的取图方式。<b>随机</b>：每次加载抽一张，尽量不与上次相同（避免突兀）；<b>完全随机</b>：按权重纯随机，允许连续重复 —— 想让「出现频率」真正起效就用这个；<b>顺序循环</b>：按列表依次取，到底回开头；<b>洗牌轮完重洗</b>：一轮内每张只出一次，轮完重新洗牌；<b>每天固定</b>：一天之内固定一张，跨天换一张且不重复。",
-            type: "radioGroup",
+            description: "多张本地背景时的取图方式。",
+            type: "dropdownMenu",
             value: 0,
             range: {
-              0: "随机",
-              1: "完全随机",
-              2: "顺序循环",
-              3: "洗牌轮完重洗",
-              4: "每天固定",
+              0: {
+                text: "随机",
+                desc: "每次抽取时尽可能不与上次相同",
+              },
+              1: {
+                text: "完全随机",
+                desc: "完全按照权重分配抽取概率，可能连续重复",
+              },
+              2: {
+                text: "顺序循环",
+                desc: "按列表正序循环轮播",
+              },
+              3: {
+                text: "洗牌轮完重洗",
+                desc: "每轮每张只抽取一次，轮完重新洗牌",
+              },
+              4: {
+                text: "每天固定",
+                desc: "只在跨天时重新抽取",
+              },
             },
+            visible: (ctx) =>
+              (ctx.configs.getSettings("backgroundPoolDay") ?? 0) > 1 ||
+              (ctx.configs.getSettings("backgroundPoolNight") ?? 0) > 1,
           },
           {
             id: "backgroundOverrideExisting",
             title: "覆盖页面自带背景",
             description:
-              "开启后，即使页面自己设置了背景（如消息中心、个人主页），也会被上面的背景替换。关闭（默认）时只替换原本没有背景的页面，保留站点与其他脚本设置的背景。",
+              "启用后，本地背景会覆盖页面已有背景，包括用户自行设置的个人页背景，以及部分模组区域下资料的背景。",
             type: "checkbox",
             value: false,
+            visible: (ctx) =>
+              (ctx.configs.getSettings("backgroundPoolDay") ?? 0) > 0 ||
+              (ctx.configs.getSettings("backgroundPoolNight") ?? 0) > 0,
           },
         ],
       },
@@ -644,14 +664,6 @@ export const settings = [
             type: "checkbox",
           },
           {
-            id: "commentJumpEnabled",
-            title: "启用定位短评",
-            description:
-              "开启后可通过 <code>#comment-&lt;id&gt;</code> 链接跨页定位短评，也可在分页条输入楼层号直接跳转；关闭后这两项均不生效。",
-            type: "checkbox",
-            value: true,
-          },
-          {
             id: "missileAlert",
             title: "核弹警告",
             description: "当短评长度超过特定值时，弹出核弹警告。",
@@ -675,13 +687,22 @@ export const settings = [
             range: [0, null],
           },
           {
+            id: "commentJumpEnabled",
+            title: "启用定位短评",
+            description:
+              "启用后，脚本会启用短评区的楼层跳转功能。在用户点击消息中心的提醒时，脚本也会通过 <code>#comment-${id}</code> 链接自动跨页定位短评",
+            type: "checkbox",
+            value: true,
+          },
+          {
             id: "commentJumpRequestLimit",
             title: "短评跳转查找请求上限",
             description:
-              "通过 #comment-<id> 链接跨页跳转短评时，二分查找目标页最多发出的请求数。超过上限仍未定位则停止查找。",
+              "通过 #comment-${id} 链接跨页跳转短评时，二分查找目标页最多发出的请求数。超过上限仍未定位则停止查找。",
             type: "number",
             value: 12,
             range: [1, null],
+            visible: (ctx) => ctx.configs.getSettings("commentJumpEnabled"),
           },
           {
             id: "userBlacklist",

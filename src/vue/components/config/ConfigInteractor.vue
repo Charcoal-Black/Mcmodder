@@ -147,7 +147,12 @@ const opt = computed(() => {
       return { finiteRange: data.range as InputValueFiniteNumericRange };
     case "dropdownMenu": {
       const valueSet = { ...data.range } as InputValueSet;
-      valueSet[data.value as number] += " (默认)";
+      const defaultValue = data.value as number;
+      if (typeof valueSet[defaultValue] === "string") {
+        valueSet[defaultValue] += " (默认)";
+      } else {
+        valueSet[defaultValue].text += " (默认)";
+      }
       return { valueSet };
     }
     case "dropdownTextMenu": {
@@ -170,11 +175,11 @@ const opt = computed(() => {
       return {};
     case "backgroundPool":
       return {};
-    case "radioGroup": {
-      const valueSet = { ...data.range } as InputValueSet;
-      valueSet[data.value as number] += " (默认)";
-      return { valueSet };
-    }
+    // case "radioGroup": {
+    //   const valueSet = { ...data.range } as InputValueSet;
+    //   valueSet[data.value as number] += " (默认)";
+    //   return { valueSet };
+    // }
   }
   throw new Error("这 InputType 有力气");
 });
