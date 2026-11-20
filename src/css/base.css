@@ -1143,6 +1143,16 @@ body:not(.view),
   position: relative;
   image-rendering: pixelated;
 }
+.mcmodder-verify-autocheck {
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mcmodder-width-padding-3);
+}
+.mcmodder-verify-userfilter {
+  width: 200px;
+  display: inline-block;
+}
 .mcmodder-verify-locate {
   margin-left: var(--mcmodder-width-padding-3);
 }
