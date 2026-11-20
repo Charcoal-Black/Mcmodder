@@ -25,6 +25,9 @@
           <span v-else>
             <MatchedText :text="entry.value" :ranges="[entry.ranges?.value]" />
           </span>
+          <span v-if="entry.desc" class="desc">
+            <MatchedText :text="entry.desc" :ranges="[entry.ranges?.desc]" />
+          </span>
           <span v-if="entry.text === undefined && entry.showValue" class="item-ename">
             &nbsp;
             {{ entry.value }}
@@ -139,7 +142,7 @@ const saveSuggestionToConfig =
   ) =>
   (list: InputSuggestion[]) => {
     const simplified = list.map((e) =>
-      typeof e === "string" ? e : { value: e.value, alias: e.alias },
+      typeof e === "string" ? e : { desc: e.desc, value: e.value, alias: e.alias },
     );
     configs.set(item, key, simplified);
     return true;
@@ -347,7 +350,8 @@ watchEffect(() => {
       score: 0,
       ranges: { alias: {} },
     };
-    [entry.value, ...(entry.alias ?? [])]
+    [entry.desc, entry.value, ...(entry.alias ?? [])]
+      .filter((e) => e !== undefined)
       .map((e) => e.toLowerCase())
       .forEach((value, index) => {
         // index 0 是候选本体，其余下标对应各 alias（ranges 里以 alias 的下标存储）
@@ -355,6 +359,8 @@ watchEffect(() => {
         if (range) {
           range[1]++; // 闭区间改成左闭右开
           if (index === 0) {
+            rate.ranges!.desc = range;
+          } else if (index === 1) {
             rate.ranges!.value = range;
           } else {
             rate.ranges!.alias[index - 1] = range;
@@ -588,9 +594,17 @@ const pick = <T extends (...args: never[]) => unknown>(
 
 /** 候选项的悬停提示（title）：本体 + 括号内列出各快捷名称 */
 function getTitle(entry: InputSuggestion) {
-  let res = entry.value;
-  if (entry.alias !== undefined) {
-    res += ` (${entry.alias.join("; ")})`;
+  let res;
+  if (entry.showValue) {
+    res = entry.value;
+    if (entry.alias !== undefined) {
+      res += ` (${entry.alias.join("; ")})`;
+    }
+  } else {
+    res = entry.text;
+    if (entry.desc) {
+      res += ` ${entry.desc}`;
+    }
   }
   return res;
 }
