@@ -102,7 +102,11 @@ export class Values {
     },
     js: {
       markdownit: "https://cdnjs.cloudflare.com/ajax/libs/markdown-it/11.0.1/markdown-it.min.js",
-      pangu: "https://cdn.jsdelivr.net/npm/pangu@7.2.0/dist/browser/pangu.umd.min.js",
+      /**
+       * 经确认，此 pangu 版本 (4.0.7) 最适合百科情境，更新的版本都不一定更适合，不要随意改动此版本号。
+       * @see https://github.com/Charcoal-Black/Mcmodder/pull/135
+       */
+      pangu: "https://cdn.jsdelivr.net/npm/pangu@4.0.7/dist/browser/pangu.min.js",
       turndown: "https://cdnjs.cloudflare.com/ajax/libs/turndown/7.2.1/turndown.min.js",
     },
     nightMode: {
