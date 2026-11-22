@@ -732,7 +732,7 @@ export class AttitudeSystem {
       commentId: target.commentId,
       active: this.countsCache.get(target.commentId)?.record.mine ?? [],
       target,
-      zIndex: 499, // 涉及到嵌套下拉菜单
+      zIndex: 500,
     };
   }
 

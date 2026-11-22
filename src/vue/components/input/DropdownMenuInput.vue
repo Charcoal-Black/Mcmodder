@@ -39,6 +39,7 @@ import type { InputProps } from "../../../types/props";
 
 interface Props extends InputProps<number> {
   range: InputValueSet;
+  zIndex?: number;
 }
 
 const props = defineProps<Props>();
@@ -83,6 +84,7 @@ onMounted(() => {
     type: "inputList",
     inputListBindElement: valueInputRef.value!,
     anchorElement: inputRef.value!,
+    ...(props.zIndex ? { zIndex: props.zIndex } : undefined),
     closeWhenClickAgain: true,
     // 展开态只认候选列表的真实显隐：点按钮收起、点外部关闭时都会收到 false
     onVisibilityChange: (visible) => {
