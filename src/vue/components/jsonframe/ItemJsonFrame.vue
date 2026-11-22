@@ -4,7 +4,8 @@
     ref="jsonFrame"
     :parent="parent"
     :config-name="configName"
-    :allowed-keys="indexedKeys"
+    :indexed-keys="Values.assets.storage.indexes.mcmodderItemData"
+    :allowed-keys="Values.assets.storage.keys.mcmodderItemData"
     :column-options="columnOptions"
     :edit-configs="editConfigs"
     :attr="{
@@ -170,16 +171,6 @@ const props = withDefaults(
 );
 
 const configName = "mcmodderJsonStorage";
-const indexedKeys = [
-  "id",
-  "registerName",
-  "metadata",
-  "name",
-  "englishName",
-  "creativeTabName",
-  "branch",
-  "OredictList",
-];
 const columnOptions = {
   itemType: [
     "类型",
@@ -213,13 +204,15 @@ const columnOptions = {
     "矿物词典/物品标签",
     (data) => {
       if (!data || data.charAt(0) != "[") return data;
-      let res = "";
+      const res: string[] = [];
       const entries = data.slice(1, -1).split(",") as string[];
       entries.forEach((entry) => {
         entry = entry.trim();
-        res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${Utils.getOredictURL(entry)}">${entry}</a>`;
+        res.push(
+          `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${Utils.getOredictURL(entry)}">${entry}</a>`,
+        );
       });
-      return res;
+      return res.join("");
     },
   ],
   maxStackSize: ["最大堆叠", TableUtils.DISPLAYRULE_NUMBER],
@@ -1112,20 +1105,20 @@ function exportJson(fileName: string) {
 }
 
 function onCommonExportClick() {
-  let content = "";
+  const content: string[] = [];
   jsonFrame.value!.table!.getAllData().forEach((e) => {
-    content += JSON.stringify(convertToImportableFormat(e)) + "\r\n";
+    content.push(JSON.stringify(convertToImportableFormat(e)));
   });
-  Utils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, `${content.join("\r\n")}\r\n`);
   swal.close();
 }
 
 function onFullExportClick() {
-  let content = "";
+  const content: string[] = [];
   jsonFrame.value!.table!.getAllData().forEach((entry) => {
-    content += JSON.stringify(entry) + "\r\n";
+    content.push(JSON.stringify(entry));
   });
-  Utils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, `${content.join("\r\n")}\r\n`);
   swal.close();
 }
 

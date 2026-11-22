@@ -44,7 +44,8 @@ export interface JsonFrameProps {
 export interface GenericJsonFrameProps<T extends TableAcceptable>
   extends JsonFrameProps, TableProps<T> {
   configName: KeysOfType<Required<AppStorage>, Record<string, object[]>>;
-  allowedKeys: string[];
+  allowedKeys: readonly string[];
+  indexedKeys: readonly string[];
   opts?: {
     gmStorageRepo?: () => GMStorageRepository<T>;
     idbRepo?: () => import("../jsonframe/repository/IDBRepository").IDBRepository<T>;

@@ -5,6 +5,7 @@
       ref="input"
       readonly
       class="btn mcmodder-dropdown-button"
+      :class="props.class"
       :aria-label="title"
       :aria-haspopup="'listbox'"
       :aria-expanded="selected"
@@ -32,7 +33,7 @@
  * 再由 `content`（`range[值]`）反向渲染出按钮上的文案。
  * 若让两者合一，候选列表就会把「按钮」当作文本框来改写，`readonly` 的按钮将无法承载补全过程。
  */
-import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { computed, onMounted, ref, useTemplateRef, type ClassValue } from "vue";
 import { InputListPopoverController } from "../../../widget/popover/InputListPopoverController.ts";
 import { useInputBase } from "../../composables/useInputBase.ts";
 import type { InputProps } from "../../../types/props";
@@ -40,6 +41,7 @@ import type { InputProps } from "../../../types/props";
 interface Props extends InputProps<number> {
   range: InputValueSet;
   zIndex?: number;
+  class?: ClassValue;
 }
 
 const props = defineProps<Props>();

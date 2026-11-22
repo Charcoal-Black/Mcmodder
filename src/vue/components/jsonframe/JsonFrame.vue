@@ -12,12 +12,13 @@
           top: cssMenuTopOffset,
         }"
       >
-        <select v-model="activeFileName" class="jsonframe-select">
-          <option value="">选择一个JSON文件</option>
-          <option v-for="filename in selectionList" :key="filename" :value="filename">
-            {{ filename }}
-          </option>
-        </select>
+        <DropdownMenuInput
+          title="打开文件"
+          :value="activeFileIndex"
+          :range="activeFileMap"
+          :on-successful-change="onFileChange"
+          class="btn-sm"
+        />
         <template v-for="tool in tools" :key="tool.id">
           <label
             v-if="tool.labelAttr"
@@ -71,6 +72,7 @@ import type { AppRepository } from "../../../jsonframe/repository/AppRepository.
 import { Values } from "../../../Values";
 import GenericTable from "../table/GenericTable.vue";
 import type { GenericJsonFrameProps } from "../../../types/props";
+import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 
 const props = defineProps<GenericJsonFrameProps<T>>();
 const configs = computed(() => props.parent.configRepository);
@@ -79,7 +81,23 @@ const root = useTemplateRef("root");
 const table = useTemplateRef("table");
 
 const tools = shallowRef<JsonFrameTool[]>([]);
-const activeFileName = ref("");
+const activeFileIndex = ref(0);
+const activeFileName = computed({
+  get() {
+    if (activeFileIndex.value < 1) return "";
+    return selectionList.value[activeFileIndex.value - 1];
+  },
+  set(newValue) {
+    if (activeFileIndex.value < 1) return;
+    selectionList.value[activeFileIndex.value - 1] = newValue;
+  },
+});
+const activeFileMap = computed(() => {
+  return Object.fromEntries([
+    [0, "选择一个JSON文件"],
+    ...selectionList.value.map((filename, index) => [index + 1, filename]),
+  ]) as Record<number, string>;
+});
 const isFixedMenuVisible = ref(false);
 const hasRearranged = ref(false);
 const selectionList = ref<string[]>([]);
@@ -261,6 +279,12 @@ function isAvailableFileName(fileName: string) {
   return !!(fileName && selectionList.value.includes(fileName));
 }
 
+function onFileChange(info: InputValidInfo<number>) {
+  if (info.isok) {
+    activeFileIndex.value = info.final!;
+  }
+}
+
 watch(
   () => activeFileName.value,
   () => {
@@ -399,7 +423,7 @@ function fileDeleteInquire(fileName: string): Promise<SweetAlertCallbackState<nu
 }
 
 async function tryDeleteJson(fileName: string) {
-  if (!isAvailableFileName(fileName)) return new Promise((resolve) => resolve(false));
+  if (!isAvailableFileName(fileName)) return false;
   const { value: isConfirm } = await fileDeleteInquire(fileName);
   if (isConfirm) {
     await deleteJson(fileName);
@@ -415,7 +439,7 @@ async function deleteJson(fileName: string) {
 }
 
 function reset() {
-  activeFileName.value = "";
+  activeFileIndex.value = 0;
   table.value!.empty();
 }
 

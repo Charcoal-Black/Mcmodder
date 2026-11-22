@@ -136,18 +136,12 @@ export class Values {
       indexes: {
         mcmodderItemData: [
           "id",
-          "itemType",
           "registerName",
           "metadata",
           "name",
           "englishName",
           "creativeTabName",
           "branch",
-          "type",
-          "jumpTo",
-          "jumpParent",
-          "generalTo",
-          "generalParent",
           "OredictList",
         ],
         mcmodderRecipeData: ["gui_id"],
