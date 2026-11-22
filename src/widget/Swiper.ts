@@ -36,7 +36,8 @@ export class Swiper {
     ul.addEventListener(
       "pointerover",
       (e) => {
-        if (e.target instanceof HTMLLIElement) {
+        const target = e.target;
+        if (target && $(target).closest("ul > li").length) {
           this.hover = true;
           this.timeout = setTimeout(() => {
             this.update();
