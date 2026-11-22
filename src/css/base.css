@@ -1298,11 +1298,12 @@ body:not(.view),
   text-overflow: ellipsis;
   overflow: hidden;
 }
-.mcmodder-table tr:not(.mcmodder-table-empty):nth-child(2n) {
-  background-color: var(--mcmodder-color-background);
-}
-.mcmodder-table tr:not(.mcmodder-table-empty):nth-child(2n + 1) {
+/* 虚拟滚动只渲染可视行，渲染窗口起点变化时 nth-child 的奇偶会漂移，故按数据行索引着色 */
+.mcmodder-table tr.mcmodder-table-row-even {
   background-color: var(--mcmodder-color-primary-background);
+}
+.mcmodder-table tr.mcmodder-table-row-odd {
+  background-color: var(--mcmodder-color-background);
 }
 .mcmodder-editor-link::before {
   font-family: FontAwesome;

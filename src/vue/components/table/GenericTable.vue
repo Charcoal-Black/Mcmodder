@@ -21,20 +21,27 @@
       <thead>
         <th v-for="(option, index) in columnOptions" :key="index" v-html="option.name" />
       </thead>
-      <tbody>
-        <tr class="mcmodder-table-margin-top" :style="{ height: cssMarginTopHeight + 'px' }" />
+      <tbody ref="tbody">
+        <tr class="mcmodder-table-margin-top" :style="{ height: startSpacerSize + 'px' }" />
         <tr v-show="!currentData.length" class="mcmodder-table-empty" />
+        <!--
+          行 key 用「数据行索引」而不是池视图 id：池视图会被回收复用，大跨度滚动时虚拟滚动
+          甚至会整批重排索引↔视图的对应关系。若按视图 id 作 key，同一 DOM 行会在原地被换成
+          另一行的内容，每个单元格都要重写 innerHTML（含图片 data URI），一帧几百次就会卡死。
+          按索引作 key 后，同一个 DOM 行永远只表示同一行数据，滚动时只有进出视口的那一两行会变。
+        -->
         <tr
-          v-for="index in renderingRowArray"
-          :key="index"
-          :data-index="index"
+          v-for="view in visiblePool"
+          :key="view.nr.index"
+          :data-index="view.nr.index"
           :class="{
-            'mcmodder-table-pointerover-tr': index === hoveringIndex,
-            'mcmodder-table-unsaved-tr':
-              currentData[index].edited && Object.keys(currentData[index].edited).length,
-            selected: currentData[index].selected,
+            'mcmodder-table-pointerover-tr': view.nr.index === hoveringIndex,
+            'mcmodder-table-unsaved-tr': view.item.edited && Object.keys(view.item.edited).length,
+            'mcmodder-table-row-even': view.nr.index % 2 === 0,
+            'mcmodder-table-row-odd': view.nr.index % 2 === 1,
+            selected: view.item.selected,
           }"
-          @pointerenter="rowOnPointerenter(index)"
+          @pointerenter="rowOnPointerenter(view.nr.index)"
         >
           <td
             v-for="key in Object.keys(columnOptions)"
@@ -42,15 +49,15 @@
             :data-key="key"
             :class="{
               'mcmodder-table-pointerover-td': key === hoveringKey,
-              'mcmodder-table-unsaved-td': currentData[index].edited?.[key],
+              'mcmodder-table-unsaved-td': view.item.edited?.[key],
             }"
-            @pointerenter="unitOnPointerenter(index, key)"
-            @pointerleave="unitOnPointerleave(index, key)"
-            @dblclick="onDblclick(index, key)"
+            @pointerenter="unitOnPointerenter(view.nr.index, key)"
+            @pointerleave="unitOnPointerleave(view.nr.index, key)"
+            @dblclick="onDblclick(view.nr.index, key)"
           >
             <div
-              v-if="editingIndex !== index || editingKey !== key"
-              v-html="renderUnit(currentData[index], key)"
+              v-if="editingIndex !== view.nr.index || editingKey !== key"
+              v-html="renderUnit(view.item, key)"
             />
             <div
               v-else
@@ -78,10 +85,7 @@
             </div>
           </td>
         </tr>
-        <tr
-          class="mcmodder-table-margin-bottom"
-          :style="{ height: cssMarginBottomHeight + 'px' }"
-        />
+        <tr class="mcmodder-table-margin-bottom" :style="{ height: endSpacerSize + 'px' }" />
       </tbody>
     </table>
     <ContextMenu ref="contextMenu" />
@@ -103,8 +107,8 @@
  *   字段综合加工后的结果（如 `DISPLAYRULE_LINK_CENTER_WITH_NAME` 以 `"id,名称"` 一列同时展示
  *   两个字段），这种「纯展示列」只有展示语义、无法反解回某个字段，因此**一定不能双击编辑**。
  *
- * - **渲染层**：表格体用虚拟滚动只渲染可视行（该实现存在已知问题，后续会替换为 VueUse，本文件
- *   不展开注释）。
+ * - **渲染层**：表格体用 `vue-virtual-scroller` 的 headless `WindowScroller` 做虚拟滚动，只渲染
+ *   可视行；上下各留一个 spacer 行补足未渲染部分的高度（见下方「虚拟滚动」小节）。
  *
  * - **编辑层**：`editConfigs` 声明哪些列可编辑及控件形态。双击可编辑单元格时按 `TableInputOption`
  *   装配 NUMBER/TEXT 输入控件，提交后经 `EditCommand`（或 `EditRowCommand`）写入 `edited`；
@@ -115,8 +119,8 @@
  *   操作表格、不触碰组件内部状态，从而保证可撤销、可重做。
  */
 import {
-  computed,
   nextTick,
+  onBeforeUnmount,
   onMounted,
   ref,
   type ShallowRef,
@@ -125,6 +129,7 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
+import { useWindowScroller } from "vue-virtual-scroller/composables/useWindowScroller";
 import { TableUtils } from "../../../table/Table.ts";
 import { Utils } from "../../../Utils.ts";
 import ContextMenu from "../ContextMenu.vue";
@@ -155,18 +160,61 @@ const showLoadingOverlay = ref(true);
 const classLoadingOverlayFaded = ref(false);
 
 /** 组件根节点（`mcmodder-table-container`） */
-const root = useTemplateRef("root");
+const root = useTemplateRef<HTMLDivElement>("root");
 /** 加载进度条子组件实例 */
 const loadingProgress = useTemplateRef("progressBar");
 /** 编辑态输入控件容器（双击单元格后在此渲染输入框） */
 const inputContainer = useTemplateRef("inputContainer");
 
-// === 虚拟滚动状态（当前实现存在已知问题，后续将整体替换为 VueUse；相关片段不展开注释） === //
-const renderingRows = ref<TableRowRange>({ l: -1, r: -1 });
-const screenContainableRows = ref(1);
+// === 虚拟滚动 === //
+
+/** 表格体 `<tbody>`：作为虚拟滚动的内容容器（页面滚动模式），只渲染可视行 */
+const tbody = useTemplateRef<HTMLTableSectionElement>("tbody");
+/** 行高（px）：先按默认值估算、渲染后实测校正；表格内容不换行，所有行共用一个高度 */
 const rowHeight = ref(TableUtils.ROW_HEIGHT_DEFAULT);
-const cssMarginTopHeight = ref(0);
-const cssMarginBottomHeight = ref(0);
+/**
+ * 行高是否需要重新实测：只有数据/列配置变化或表格重新显示时才需要。
+ * 滚动过程中每帧都量一次 `getBoundingClientRect()` 会强制同步布局，没必要。
+ */
+let rowHeightDirty = true;
+/** 行数据没有稳定主键，用索引即可：flowMode 下视图始终按连续区间复用（须为稳定引用，避免反复全量重算） */
+const getRowKey = (_item: TableRowData<T>, index: number) => index;
+
+/**
+ * 虚拟滚动核心（`vue-virtual-scroller` 的 headless `WindowScroller`）：
+ * 以页面滚动为视口，`flowMode` 让渲染出的 `<tr>` 仍按普通表格行参与布局，
+ * 未渲染的行由上下两个 spacer 行（`startSpacerSize` / `endSpacerSize`）占位。
+ * 数据变化、实测行高变化都会触发重算；容器尺寸变化另行用 ResizeObserver 通知。
+ */
+const {
+  visiblePool,
+  startSpacerSize,
+  endSpacerSize,
+  getItemOffset,
+  updateVisibleItems,
+  handleResize,
+} = useWindowScroller(() => ({
+  items: currentData.value,
+  keyField: getRowKey,
+  el: tbody.value ?? undefined,
+  // 表格始终随页面滚动（旧实现也只监听 window）；不能让自动探测选中 overflow:auto 但并未滚动的祖先
+  scrollParent: window,
+  itemSize: rowHeight.value,
+  minItemSize: null,
+  typeField: "type",
+  buffer: rowHeight.value * 6,
+  prerender: 0,
+  emitUpdate: true,
+  updateInterval: 0,
+  flowMode: true,
+  onUpdate: () => {
+    syncRowHeight();
+    scheduleTooltipUpdate();
+  },
+}));
+
+/** 容器尺寸变化监听（显示/隐藏、数据增减、折叠展开等）→ 通知虚拟滚动重算可视区 */
+let resizeObserver: ResizeObserver | undefined;
 
 // === EDITABLE TABLE === //
 
@@ -204,14 +252,6 @@ let clipboard: TableDataList<T> = [];
 
 // ====================== //
 
-const renderingRowArray = computed(() => {
-  const { l, r } = renderingRows.value;
-  if (l < 0 && r < 0) {
-    return [];
-  }
-  return Utils.createRange(l, r);
-});
-
 // 列配置初始化：把 props.columnOptions 里每列初始化器归一化为 `ColumnOption`（表头名 + 可选展示规则）。
 // 注意：这里的键是「展示列」名，通常与数据字段同名，但也可以在 displayRule 里综合多个字段展示。
 const columnOptionsConstructor: Partial<ColumnOptions<T>> = {};
@@ -222,30 +262,12 @@ const columnOptions = columnOptionsConstructor as ColumnOptions<T>;
 
 /**
  * 绑定全局事件（挂载时调用一次）：
- * - 窗口滚动 / 缩放 → 重算虚拟滚动可视区（`Utils.animationThrottle` 节流、passive 监听）；
  * - 文档 keydown → 撤销/重做/保存/全选/复制等快捷键分发，以及 Shift 按下进入连续多选模式；
  * - 文档 keyup → Shift 抬起清除多选标记；
+ * 滚动 / 缩放由虚拟滚动自身监听，无需在此处理。
  * 绑定结束后立即 `refreshAll()` 触发首屏渲染。
  */
 function bindEvents() {
-  window.addEventListener(
-    "scroll",
-    Utils.animationThrottle(() => {
-      onScroll();
-    }),
-    {
-      passive: true,
-    },
-  );
-  window.addEventListener(
-    "resize",
-    Utils.animationThrottle(() => {
-      updateScreenContainableRows();
-    }),
-    {
-      passive: true,
-    },
-  );
   refreshAll();
 
   $(document.body)
@@ -314,43 +336,45 @@ function gotoHandler(e: Event) {
   }
 }
 
-// 下方的虚拟滚动实现（含 updateScreenContainableRows / calculateRenderableRows / onScroll 等）
-// 存在已知问题，后续将整体替换为 VueUse 的虚拟滚动组件，故不展开逐行注释。
-
-function updateScreenContainableRows() {
-  screenContainableRows.value =
-    Math.ceil(window.innerHeight / rowHeight.value) + TableUtils.ROW_EXPAND;
-}
+// === 虚拟滚动辅助 === //
 
 /** 取表格体 `<tbody>` 的原生 DOM 节点 */
 function getTbody() {
-  return $(root.value!).find("tbody").get(0);
+  return tbody.value;
 }
 
-function calculateRenderableRows(): TableRowRange {
-  const dataLength = currentData.value.length;
-  if (!dataLength) return { l: -1, r: -1 };
-
-  const l = Math.floor(getTbody().getBoundingClientRect().top / -rowHeight.value);
-  const r = l + screenContainableRows.value * 2 + TableUtils.ROW_EXPAND;
-
-  const L = Math.floor(l / screenContainableRows.value) * screenContainableRows.value;
-  const R = Math.ceil(r / screenContainableRows.value) * screenContainableRows.value;
-
-  return {
-    l: Math.min(dataLength - 1, Math.max(0, L)),
-    r: Math.min(dataLength, R),
-  };
+/**
+ * 实测当前渲染行的真实高度并同步给虚拟滚动：行高变化会自动触发重新布局。
+ * 只在 `rowHeightDirty` 时测（数据变化 / 表格重新显示），避免滚动时每帧强制同步布局。
+ * 表格被隐藏（`v-show`）或尚无渲染行时测不到高度，保留脏标记等下次再测。
+ */
+function syncRowHeight() {
+  if (!rowHeightDirty) return;
+  nextTick(() => {
+    if (!rowHeightDirty) return;
+    const row = tbody.value?.querySelector<HTMLElement>("tr[data-index]");
+    const height = row?.getBoundingClientRect().height;
+    if (!height) return;
+    rowHeightDirty = false;
+    if (Math.abs(height - rowHeight.value) > 0.5) {
+      rowHeight.value = height;
+    }
+  });
 }
 
-function calculateRowHeightTopOffset(index: number) {
-  return index * rowHeight.value;
-}
+/** 待执行的 tooltip 刷新定时器（滚动过程中合并成一次） */
+let tooltipTimer: number | undefined;
 
-function calculateRowHeightBottomOffset(index: number) {
-  const dataLength = currentData.value.length;
-  if (!dataLength) return 0;
-  return (dataLength - index - 1) * rowHeight.value;
+/**
+ * 延后刷新 tooltip：`Utils.updateAllTooltip` 会扫全文档的 `[data-toggle="tooltip"]`，
+ * 虚拟滚动每滚过一行就会触发一次更新，不能每帧都跑；合并到停止滚动后再统一初始化。
+ */
+function scheduleTooltipUpdate() {
+  if (tooltipTimer !== undefined) return;
+  tooltipTimer = window.setTimeout(() => {
+    tooltipTimer = undefined;
+    Utils.updateAllTooltip();
+  }, 150);
 }
 
 /**
@@ -372,54 +396,15 @@ function searchData(key: keyof T | null, value: unknown) {
   return -1;
 }
 
-/** 把窗口平滑滚动到指定行：以该行在页面中的位置减去半屏高度定位（行大致居中） */
+/**
+ * 把窗口平滑滚动到指定行：以该行在文档中的位置减去半屏高度定位（行大致居中）。
+ * `getItemOffset` 由虚拟滚动按已测行高给出，尚未渲染的行同样可用。
+ */
 function scrollTo(index: number) {
-  $("html")
-    .get(0)
-    .scrollTo({
-      top:
-        Utils.getAbsolutePos(getTbody()).y +
-        calculateRowHeightTopOffset(index) -
-        window.screen.height / 2,
-      behavior: "smooth",
-    });
-}
-
-function onScroll() {
-  const newRows = calculateRenderableRows();
-  if (renderingRows.value.l === newRows.l && renderingRows.value.r === newRows.r) {
-    if (newRows.l === -1 && newRows.r === -1) {
-      cssMarginTopHeight.value = 0;
-      cssMarginBottomHeight.value = 0;
-    }
-    return;
-  }
-  const top = calculateRowHeightTopOffset(newRows.l);
-  const bottom = calculateRowHeightBottomOffset(newRows.r);
-  cssMarginTopHeight.value = top;
-  cssMarginBottomHeight.value = bottom;
-
-  // this.$tbody.find("[data-index]").remove();
-  // for (let i = newRows.l; i <= newRows.r; i++) {
-  //   this.renderRow(i).insertBefore(this.$marginBottom);
-  // }
-
-  // 保存行高以便实现虚拟列表
-  nextTick(() => {
-    const newRowHeight =
-      $(getTbody()).find(`[data-index=${newRows.l}]`).get(0)?.getBoundingClientRect()?.height ??
-      TableUtils.ROW_HEIGHT_DEFAULT;
-    if (newRowHeight !== rowHeight.value) {
-      rowHeight.value = newRowHeight;
-      updateScreenContainableRows();
-    } else {
-      renderingRows.value.l = newRows.l;
-      renderingRows.value.r = newRows.r;
-    }
-    nextTick(() => {
-      Utils.updateAllTooltip();
-    });
-  });
+  const tbodyElement = tbody.value;
+  if (!tbodyElement) return;
+  const top = Utils.getAbsolutePos(tbodyElement).y + getItemOffset(index) - window.innerHeight / 2;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
 /**
@@ -431,13 +416,20 @@ function setAllData(data: TableDataList<T>) {
   currentData.value = data.map((e) => ({ content: e }));
 }
 
-// 挂载初始化：隐藏初始进度动画 → 计算可视行数 → 绑定全局事件 → 刷新渲染 → 装配右键菜单
+// 挂载初始化：隐藏初始进度动画 → 绑定全局事件 → 刷新渲染 → 装配右键菜单 → 监听容器尺寸
 onMounted(() => {
   loadingProgress.value?.hide();
-  updateScreenContainableRows();
   bindEvents(); // 内部末尾也会 refreshAll，与下一条 refreshAll 各触发一次（保持原行为）
   refreshAll();
   initContextMenu();
+
+  resizeObserver = new ResizeObserver(() => handleResize());
+  if (root.value) resizeObserver.observe(root.value);
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  if (tooltipTimer !== undefined) clearTimeout(tooltipTimer);
 });
 
 /** 取全表数据：把每行包装解包回 `content`，返回 `T[]`（父组件读取/导出用） */
@@ -504,9 +496,9 @@ function deleteData(index: number) {
   refreshAll();
 }
 
-/** 判断某行当前是否在虚拟滚动的渲染区间内（虚拟滚动相关，不展开注释） */
+/** 判断某行当前是否在虚拟滚动的渲染区间内（只有渲染中的行才有对应 DOM） */
 function isIndexRendering(index: number) {
-  return index >= renderingRows.value.l && index <= renderingRows.value.r;
+  return visiblePool.value.some((view) => view.nr.index === index);
 }
 
 /**
@@ -522,7 +514,8 @@ function getElementIndex(target?: EventTarget | Element | JQuery | null) {
 
 /** 取指定行的 DOM 元素（仅在该行处于渲染区间时可用，否则返回空 jQuery 集） */
 function getRowElement(index: number) {
-  if (isIndexRendering(index)) return $(getTbody()).find(`[data-index=${index}]`);
+  const tbodyElement = getTbody();
+  if (tbodyElement && isIndexRendering(index)) return $(tbodyElement).find(`[data-index=${index}]`);
   return $();
 }
 
@@ -554,14 +547,16 @@ function renderUnit(data: TableRowData<T>, key: string) {
   return content;
 }
 
-/** 刷新整表：手动 `triggerRef(currentData)` 触发视图更新、结束加载态、重置渲染区间并发 `refresh` 事件 */
+/** 刷新整表：手动 `triggerRef(currentData)` 触发视图更新、结束加载态、重算可视区并发 `refresh` 事件 */
 function refreshAll() {
   triggerRef(currentData);
   completeLoading();
-  renderingRows.value = { l: -1, r: -1 };
   emit("refresh");
+  // 数据/列配置变了，行高需要重新实测一次
+  rowHeightDirty = true;
   nextTick(() => {
-    onScroll();
+    updateVisibleItems(false);
+    syncRowHeight();
   });
 }
 
@@ -594,9 +589,14 @@ function completeLoading() {
   }, 800);
 }
 
-/** 显示表格主表 */
+/** 显示表格主表（重新显示时 tbody 才有尺寸，需让虚拟滚动重算一次） */
 function show() {
   showTable.value = true;
+  rowHeightDirty = true;
+  nextTick(() => {
+    updateVisibleItems(true);
+    syncRowHeight();
+  });
 }
 
 /** 隐藏表格主表 */

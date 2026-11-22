@@ -17,9 +17,7 @@ import { Values } from "../Values";
  * 它们返回的是纯 HTML 字符串，只用于展示，无法反解回数据。
  */
 export class TableUtils {
-  /** 虚拟滚动在可视行数之外多渲染的冗余行数（当前被 `calculateRenderableRows` 用作额外缓冲） */
-  static readonly ROW_EXPAND = 2;
-  /** 行高默认值（px）。实际行高由虚拟滚动在渲染后测得并更新到 `GenericTable.rowHeight` */
+  /** 行高默认值（px）。实际行高由虚拟滚动在渲染后实测校正到 `GenericTable.rowHeight` */
   static readonly ROW_HEIGHT_DEFAULT = 48;
 
   // 预置展示规则：每个都是一个 TableDisplayRule（unit, row) => HTML/文本/null），

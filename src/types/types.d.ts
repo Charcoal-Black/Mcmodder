@@ -949,12 +949,6 @@ type TableRowSelection = number[];
 /** 行数据列表（一整个表格的数据体） */
 type TableDataList<T extends TableAcceptable> = T[];
 
-/** 虚拟滚动当前渲染区间的左右闭区间边界（数据行索引） */
-interface TableRowRange {
-  l: number;
-  r: number;
-}
-
 /**
  * 展示规则：把某展示列的原始值与（可选的）整行数据渲染成可展示内容。
  * 输入 `unit` 即列值的原始数据，`row` 为该字段所在整行（便于一个展示列综合多个字段）；

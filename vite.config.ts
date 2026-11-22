@@ -130,11 +130,48 @@ const devMonkeyClientCacheBust: Plugin = {
   },
 };
 
+/**
+ * `vue-virtual-scroller` 的兼容补丁。
+ *
+ * 该库在模块顶层用一段立即执行函数探测 RTL 滚动条方向：先 `document.createElement("div")`，
+ * 再 `document.body.appendChild(...)` / `removeChild(...)` 量 `scrollLeft`。本脚本以
+ * `document-start` 注入，那时 `<body>` 还没被解析出来（`document.body === null`），
+ * 于是模块求值当场抛 `TypeError`，而 ESM 依赖先于 `main.ts` 模块体求值 —— 整个用户脚本会直接失效。
+ *
+ * 这里把该模块里这两处 `document.body` 兜底成 `document.documentElement`：`document-start` 时它
+ * 必然存在，且被量的是一个临时元素，挂在 `<html>` 下与挂在 `<body>` 下对 `scrollLeft` 的结论一致。
+ * 该模块里其余的 `document.body` 只出现在比较表达式里（判断「滚动容器是不是 window」），不受影响。
+ *
+ * 只作用于 `vue-virtual-scroller` 自己的模块（含 dev 期 `node_modules/.vite/deps/` 下的预打包产物）。
+ * 若将来升级后库改了这段探测的写法、补丁不再命中，需要重新确认它是否仍在模块顶层碰 `document.body`。
+ */
+const vueVirtualScrollerDocumentBodyGuard: Plugin = {
+  name: "vue-virtual-scroller-document-body-guard",
+  enforce: "pre",
+  transform(code, id) {
+    if (!id.includes("vue-virtual-scroller")) return null;
+    if (
+      !code.includes("document.body.appendChild(") &&
+      !code.includes("document.body.removeChild(")
+    ) {
+      return null;
+    }
+    return {
+      code: code.replace(
+        /document\.body\.(appendChild|removeChild)\(/g,
+        "(document.body ?? document.documentElement).$1(",
+      ),
+      map: null,
+    };
+  },
+};
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     devPrivateNetworkAccess,
     devMonkeyClientCacheBust,
+    vueVirtualScrollerDocumentBodyGuard,
     vue(),
     monkey({
       entry: "src/main.ts",
