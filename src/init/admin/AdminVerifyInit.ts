@@ -35,6 +35,8 @@ export class AdminVerifyInit extends AdminBaseInit {
     "#verify-refund-btn:not(.edit), #assistant-refund-btn";
   private static readonly checkButtonSelector = "#assistant-check-btn";
   private static readonly reasonInputSelector = "#verify-reason, #assistant-reason";
+  /** 视口宽度低于该值时强制关闭分屏，避免左右两栏都过于狭窄 */
+  private static readonly splitScreenMinWidth = 900;
 
   private readonly splitScreenOnVerify: boolean;
   private readonly lastRefundText: Record<number, string> = {};
@@ -49,9 +51,10 @@ export class AdminVerifyInit extends AdminBaseInit {
   private reasonInput?: JQuery;
   private prevHeight = 0;
   private verifyID: number | undefined;
-  private singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
   /** 分屏容器等只需挂载一次的节点是否已创建 */
   private frameMounted = false;
+  /** 分屏当前是否实际生效（页面足够宽且配置开启） */
+  private splitActive = false;
   /** 待审列表自动查询的定时器句柄，用于重进页面时替换旧定时器 */
   private notifyTimer?: number;
   /** 挂载在审核窗内、仅创建一个实例的正文对比组件（`TextComparator`） */
@@ -85,10 +88,13 @@ export class AdminVerifyInit extends AdminBaseInit {
   private readonly lastRefundElement = shallowRef($());
   private readonly assistantSuggestionElement = shallowRef($());
   private readonly lastSubmission = ref(0);
-  /** 审核页面分屏是否可用且已启用 */
+  /** 分屏是否可用，以及当前页面宽度是否足以启用分屏 */
   private get enableSplit() {
-    return this.splitScreenOnVerify && !this.parent.isMobileClient;
+    return this.splitScreenOnVerify && window.innerWidth >= AdminVerifyInit.splitScreenMinWidth;
   }
+  private readonly locateButton = $(
+    '<a class="mcmodder-verify-locate" title="在待审列表定位本待审项"><i class="fa fa-crosshairs"></i></a>',
+  );
 
   /**
    * 主站通用快捷搜索功能下方的一段待审项基本信息，包括：
@@ -134,78 +140,8 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.verifyClassID = undefined;
     this.prevHeight = 0;
 
-    // 分屏窗口、分隔条、委托事件均为一次性挂载，重进页面时复用旧节点，避免重复叠加
-    this.singleVerifyCallbackOnSplit = undefined;
-    // 分屏窗口所在节点被宿主替换时（重新登录、后台整体刷新），旧的已失效，需要重新挂载
-    if (this.frameMounted && this.verifyContainer?.get(0).isConnected === false) {
-      this.frameMounted = false;
-      this.textComparator?.unmount();
-      this.textComparator = undefined;
-      this.timeline?.unmount();
-      this.timeline = undefined;
-      this.smallIconViewer?.unmount();
-      this.smallIconViewer = undefined;
-      this.largeIconViewer?.unmount();
-      this.largeIconViewer = undefined;
-      this.prevSmallIconViewer?.unmount();
-      this.prevSmallIconViewer = undefined;
-      this.prevLargeIconViewer?.unmount();
-      this.prevLargeIconViewer = undefined;
-    }
-    if (this.enableSplit && !this.frameMounted) {
-      const connectedFrame = document.getElementById("connect-frame");
-      if (!connectedFrame) return;
-      this.verifyContainer = $("<div>").appendTo(connectedFrame);
-      this.verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(this.verifyContainer);
-      this.verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(this.verifyWindow);
-      this.verifyWindowDivider = new HorizontalDraggableFrame(
-        "verifyWindowDivider",
-        this.configs,
-        {},
-        connectedFrame,
-      )
-        .setHorizontalPos(1)
-        .bindRight(this.verifyContainer, true);
-      this.frameMounted = true;
-
-      // 打开待审项时打开分屏
-      $("#connect-frame-sub").on("click", "tr[data-data]", (e) => {
-        this.verifyFrame!.empty()
-          .addClass("mcmodder-loading-container")
-          .append(`<div class="mcmodder-loading"></div>`);
-        this.verifyWindowDivider!.expandIfCollapsed();
-        const target = $(e.currentTarget);
-        this.mergeChangedOpinions(target);
-      });
-
-      this.singleVerifyCallbackOnSplit = (mutation: MutationRecord) => {
-        // 重排版
-        if (!this.verifyFrame) return;
-        this.verifyFrame.empty().removeClass("mcmodder-loading-container");
-        $(mutation.target).contents().appendTo(this.verifyFrame);
-        this.verifyFrame.find("> p:first-child()").next().hide();
-        this.verifyFrame
-          .find("> p:first-child()")
-          .append("<span>[展开]</span>")
-          .attr("hide", "1")
-          .click((e) => {
-            const t = $(e.currentTarget);
-            if (t.attr("hide") === "1") {
-              t.attr("hide", "0").next().show();
-              t.find("span").html("[折叠]");
-            } else {
-              t.attr("hide", "1").next().hide();
-              t.find("span").html("[展开]");
-            }
-          });
-        this.verifyFrame.find("> hr").remove();
-        this.verifyFrame.find(".verify-action-btns br").remove();
-        this.verifyFrame.find(".assistant-action-btns br").remove();
-        // setTimeout(() => {
-        window.dispatchEvent(new Event("scroll"));
-        // }, 100);
-      };
-    }
+    // 分屏是否启用随页面宽度实时变化：窄屏时退回原生审核窗
+    this.updateSplitState();
 
     this.singleVerifyObserver.observe($("#connect-frame-sub").get(0), {
       childList: true,
@@ -231,48 +167,240 @@ export class AdminVerifyInit extends AdminBaseInit {
     }
   }
 
-  override firstRun() {
-    if (this.enableSplit) {
-      const verifyWindowElement = this.verifyWindow!.get(0);
-      window.addEventListener(
-        "scroll",
-        Utils.animationThrottle(() => {
-          const top = document.scrollingElement?.scrollTop;
-          const bottom = this.verifyContainer!.prop("scrollHeight") as number;
-          if (top != undefined) {
-            const height = Math.min(bottom - top, screen.height);
-            this.verifyWindow!.css({
-              "margin-top": top + "px",
-              height: height + "px",
-            });
-            if (height < this.prevHeight) {
-              const scrollTopMax =
-                verifyWindowElement.scrollHeight - verifyWindowElement.clientHeight;
-              if (scrollTopMax - verifyWindowElement.scrollTop < 100) {
-                const shift = this.prevHeight - height;
-                verifyWindowElement.scrollBy({ top: shift });
-              }
-            }
-            this.prevHeight = height;
-          }
-        }),
-        {
-          passive: true,
-        },
-      );
-      $(document).on("click", ".mcmodder-verify-locate", () => {
-        if (this.verifyID === undefined) {
-          Utils.commonMsg("待审项 ID 获取失败...", false);
-          return;
-        }
-        const tr = this.getEntry(this.verifyID);
-        if (tr.length) {
-          Utils.highlight(tr, "gold", 2e3, true);
-        } else {
-          Utils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
-        }
-      });
+  /** 卸载已失效的分屏容器，并释放挂载在其中的 Vue 组件。 */
+  private resetSplitFrame() {
+    this.frameMounted = false;
+    this.splitActive = false;
+    this.prevHeight = 0;
+    $("html").removeClass("mcmodder-verify-split");
+    this.textComparator?.unmount();
+    this.textComparator = undefined;
+    this.timeline?.unmount();
+    this.timeline = undefined;
+    this.smallIconViewer?.unmount();
+    this.smallIconViewer = undefined;
+    this.largeIconViewer?.unmount();
+    this.largeIconViewer = undefined;
+    this.prevSmallIconViewer?.unmount();
+    this.prevSmallIconViewer = undefined;
+    this.prevLargeIconViewer?.unmount();
+    this.prevLargeIconViewer = undefined;
+    this.verifyWindowDivider?.$instance.remove();
+    this.verifyWindowDivider = undefined;
+    this.verifyContainer?.remove();
+    this.verifyContainer = undefined;
+    this.verifyWindow = undefined;
+    this.verifyFrame = undefined;
+  }
+
+  /** 根据当前页面宽度与配置同步分屏的启用状态。 */
+  private updateSplitState() {
+    // 分屏窗口所在节点被宿主替换时（重新登录、后台整体刷新），旧的已失效，需要重新挂载
+    if (this.frameMounted && this.verifyContainer?.get(0).isConnected === false) {
+      this.resetSplitFrame();
     }
+    if (!this.enableSplit) {
+      this.setSplitActive(false);
+      return;
+    }
+    if (!this.frameMounted && !this.mountSplitFrame()) {
+      this.setSplitActive(false);
+      return;
+    }
+    this.setSplitActive(true);
+  }
+
+  /**
+   * 创建分屏容器（仅创建一次）。
+   *
+   * @returns 是否创建成功；`#connect-frame` 尚未渲染时返回 `false`。
+   */
+  private mountSplitFrame() {
+    const connectedFrame = document.getElementById("connect-frame");
+    if (!connectedFrame) return false;
+    this.verifyContainer = $("<div>").appendTo(connectedFrame);
+    this.verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(this.verifyContainer);
+    this.verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(this.verifyWindow);
+    this.verifyWindowDivider = new HorizontalDraggableFrame(
+      "verifyWindowDivider",
+      this.configs,
+      {},
+      connectedFrame,
+    )
+      .setHorizontalPos(1)
+      .bindRight(this.verifyContainer, true);
+    this.frameMounted = true;
+
+    // 打开待审项时打开分屏
+    $("#connect-frame-sub").on("click", "tr[data-data]", (e) => {
+      const target = $(e.currentTarget);
+      if (this.splitActive) {
+        this.verifyFrame!.empty()
+          .addClass("mcmodder-loading-container")
+          .append(`<div class="mcmodder-loading"></div>`);
+        this.verifyWindowDivider!.expandIfCollapsed();
+      }
+      this.mergeChangedOpinions(target);
+    });
+    return true;
+  }
+
+  /**
+   * 切换分屏的启用状态。
+   *
+   * 禁用时把待审项内容还给原生审核窗，启用时再取回分屏窗，避免宽度变化时丢失当前审核内容。
+   */
+  private setSplitActive(active: boolean) {
+    if (active) {
+      if (!this.frameMounted || this.splitActive) return;
+      this.splitActive = true;
+      $("html").addClass("mcmodder-verify-split");
+      this.verifyWindowDivider?.$instance.show();
+      this.verifyFrame = $("#mcmodder-verify-window-frame");
+      const nativeFrame = $("#verify-window-frame");
+      // 窄屏期间打开的待审项内容仍在原生审核窗内，此时需要迁移到分屏窗
+      if (nativeFrame.find(".verify-info-table").length) {
+        this.handleSplitMutation(nativeFrame);
+      }
+      this.verifyWindowDivider?.updateHorizontalPos();
+      this.updateVerifyWindowHeight();
+      this.locateButton.show();
+    } else {
+      if (this.splitActive) {
+        // 搬回原生审核窗前展开分屏排版时折叠的第一段，避免原生审核窗默认隐藏内容
+        const firstParagraph = this.verifyFrame?.find("> p:first-child()");
+        if (firstParagraph?.attr("data-mcmodder-split-header")) {
+          firstParagraph.attr("hide", "0").next().show();
+          firstParagraph.find("span").html("[折叠]");
+        }
+        const nativeFrame = $("#verify-window-frame");
+        if (nativeFrame.length) {
+          if (this.verifyFrame?.hasClass("mcmodder-loading-container")) {
+            // 加载中的占位符不需要搬回原生审核窗
+            this.verifyFrame.empty().removeClass("mcmodder-loading-container");
+          } else {
+            this.moveChildren(this.verifyFrame, nativeFrame);
+          }
+          this.verifyFrame = nativeFrame;
+        }
+        this.splitActive = false;
+        this.prevHeight = 0;
+      }
+      $("html").removeClass("mcmodder-verify-split");
+      this.verifyContainer?.hide();
+      this.verifyWindowDivider?.$instance.hide();
+      this.locateButton.hide();
+    }
+  }
+
+  /**
+   * 用原生 DOM 搬运子节点，避免 jQuery 在插入时重新执行内容中的 `<script>`。
+   * 审核内容可能在原生审核窗与分屏窗之间来回搬运，重复执行脚本会产生副作用。
+   */
+  private moveChildren(from: JQuery | undefined, to: JQuery | undefined) {
+    const fromNode = from?.get(0);
+    const toNode = to?.get(0);
+    if (!fromNode || !toNode) return;
+    Array.from(fromNode.childNodes).forEach((node) => toNode.appendChild(node));
+  }
+
+  /** 把原生审核窗中已加载的待审项内容搬进分屏窗，并做一次分屏排版。 */
+  private handleSplitMutation(nativeFrame: JQuery) {
+    if (!this.verifyFrame) return;
+    // 分屏窗可能处于收起状态（例如窄屏下打开待审项后拉宽窗口），此时需要展开
+    this.verifyWindowDivider?.expandIfCollapsed();
+    this.verifyFrame.empty().removeClass("mcmodder-loading-container");
+    this.moveChildren(nativeFrame, this.verifyFrame);
+    const firstParagraph = this.verifyFrame.find("> p:first-child()");
+    // 内容可能已经排版过（例如宽度恢复后从原生审核窗搬回），避免重复插入展开按钮
+    if (!firstParagraph.attr("data-mcmodder-split-header")) {
+      firstParagraph.next().hide();
+      firstParagraph
+        .append("<span>[展开]</span>")
+        .attr({
+          "data-mcmodder-split-header": "1",
+          hide: "1",
+        })
+        .click((e) => {
+          const t = $(e.currentTarget);
+          if (t.attr("hide") === "1") {
+            t.attr("hide", "0").next().show();
+            t.find("span").html("[折叠]");
+          } else {
+            t.attr("hide", "1").next().hide();
+            t.find("span").html("[展开]");
+          }
+        });
+    }
+    this.verifyFrame.find("> hr").remove();
+    this.verifyFrame.find(".verify-action-btns br").remove();
+    this.verifyFrame.find(".assistant-action-btns br").remove();
+    window.dispatchEvent(new Event("scroll"));
+  }
+
+  /** 根据页面滚动位置更新分屏窗的高度。 */
+  private updateVerifyWindowHeight() {
+    const container = this.verifyContainer;
+    const verifyWindow = this.verifyWindow;
+    if (!this.splitActive || !container?.is(":visible") || !verifyWindow) return;
+    const verifyWindowElement = verifyWindow.get(0);
+    const top = document.scrollingElement?.scrollTop;
+    const bottom = container.prop("scrollHeight") as number;
+    if (top != undefined) {
+      const height = Math.min(bottom - top, screen.height);
+      verifyWindow.css({
+        "margin-top": top + "px",
+        height: height + "px",
+      });
+      if (height < this.prevHeight) {
+        const scrollTopMax = verifyWindowElement.scrollHeight - verifyWindowElement.clientHeight;
+        if (scrollTopMax - verifyWindowElement.scrollTop < 100) {
+          const shift = this.prevHeight - height;
+          verifyWindowElement.scrollBy({ top: shift });
+        }
+      }
+      this.prevHeight = height;
+    }
+  }
+
+  /** 当前是否处于审核页面（后台为 SPA，resize 监听需要自行判断）。 */
+  private isVerifyPage() {
+    return (
+      $("#connect-frame > div.page-header > h1.title").first().text() === this.getTriggerTitle()
+    );
+  }
+
+  override firstRun() {
+    window.addEventListener(
+      "resize",
+      Utils.animationThrottle(() => {
+        if (!this.isVerifyPage()) return;
+        this.updateSplitState();
+        this.updateVerifyWindowHeight();
+      }),
+      {
+        passive: true,
+      },
+    );
+    window.addEventListener(
+      "scroll",
+      Utils.animationThrottle(() => this.updateVerifyWindowHeight()),
+      {
+        passive: true,
+      },
+    );
+    $(document).on("click", ".mcmodder-verify-locate", () => {
+      if (this.verifyID === undefined) {
+        Utils.commonMsg("待审项 ID 获取失败...", false);
+        return;
+      }
+      const tr = this.getEntry(this.verifyID);
+      if (tr.length) {
+        Utils.highlight(tr, "gold", 2e3, true);
+      } else {
+        Utils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
+      }
+    });
 
     this.initAssistantViewed();
     $(document)
@@ -313,17 +441,16 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   private readonly singleVerifyObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
-      if (
-        (mutation.target as HTMLElement).id === "verify-window-frame" &&
-        Array.from(mutation.addedNodes).filter(
-          (c) =>
-            c.nodeType === Node.ELEMENT_NODE &&
-            (c as HTMLElement).classList.contains("verify-info-table"),
-        ).length
-      ) {
+      const verifyInfoTable = Array.from(mutation.addedNodes).find(
+        (c) =>
+          c.nodeType === Node.ELEMENT_NODE &&
+          (c as HTMLElement).classList.contains("verify-info-table") &&
+          !(c as HTMLElement).hasAttribute("data-mcmodder-verify-processed"),
+      );
+      if ((mutation.target as HTMLElement).id === "verify-window-frame" && verifyInfoTable) {
         // 当所有详情已全部加载完成
-        if (this.singleVerifyCallbackOnSplit) {
-          this.singleVerifyCallbackOnSplit(mutation);
+        if (this.splitActive) {
+          this.handleSplitMutation($(mutation.target));
         } else {
           this.verifyFrame = $("#verify-window-frame");
         }
@@ -347,6 +474,9 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   /** 每次审核信息全部加载完成后所触发的回调。 */
   private onVerifyContentsLoaded() {
+    // 标记已处理，避免内容在分屏窗与原生审核窗之间搬动时被误判为新加载
+    this.verifyFrame!.find(".verify-info-table").attr("data-mcmodder-verify-processed", "1");
+
     // 定位
     try {
       this.verifyID = this.verifyFrame!.find("#verify-pass-btn, #assistant-pass-btn").data(
@@ -355,11 +485,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       const p = $(`<p>本待审项 ID = </p>`).prependTo(this.verifyFrame!);
       const id = $(`<span class="mcmodder-slim-dark">${this.verifyID}</span>`).appendTo(p);
       Utils.addClickCopyEvent(id, "本待审项 ID ", this.verifyID);
-      if (this.splitScreenOnVerify) {
-        p.append(
-          `<a class="mcmodder-verify-locate" title="在待审列表定位本待审项"><i class="fa fa-crosshairs"></i></a>`,
-        );
-      }
+      this.locateButton.appendTo(p);
     } catch (e) {
       Utils.commonMsg("读取待审项 ID 失败: " + String(e), false);
     }

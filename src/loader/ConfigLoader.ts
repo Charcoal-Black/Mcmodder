@@ -616,7 +616,7 @@ export const settings = [
             id: "splitScreenOnVerify",
             title: "审核页面分屏",
             description:
-              "在后台查看一个待审项时，其内容只会占据右半区域，左半部分依旧可预览列表中的其他待审项。（为保证排版正常，此配置在移动端无效）",
+              "在后台查看一个待审项时，其内容只会占据右半区域，左半部分依旧可预览列表中的其他待审项。（为保证排版正常，此配置在页面过窄时无效）",
             type: "checkbox",
             value: false,
             visible: (ctx) => Utils.hasVerifyAccess(ctx.permission),
