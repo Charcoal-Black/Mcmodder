@@ -891,7 +891,7 @@ async function performClassSearch(classID: number, typeID: number) {
 async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplication>) {
   ctx.empty();
   ctx.showLoading();
-  let resp = await props.parent.web.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: url,
       method: "GET",
@@ -899,7 +899,7 @@ async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplic
     "从收纳帖获取JSON列表",
   );
   if (!resp.responseXML) return;
-  let doc = $(resp.responseXML);
+  const doc = $(resp.responseXML);
   if (doc.find("title").text() === "页面重载开启") {
     return new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -907,21 +907,23 @@ async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplic
       }, 1e3);
     });
   }
-  let jsonList = doc.find("ignore_js_op");
+  const jsonList = doc.find("ignore_js_op");
   jsonList.each((_, _json) => {
     const json = $(_json);
-    const infoFrame = json.parents(".t_f");
+    const infoFrame = json.parents(".t_fsz");
     const infoCopied = infoFrame.clone();
     infoCopied.find("ignore_js_op").replaceWith("[JSON]");
     const avatar = json.parents(".plhin").find(".avatar a");
-    const pid = Number(infoFrame.attr("id")?.slice(12)); // postmessage_xxxxx
+    const pid = Number(infoFrame.find(".t_f").first().attr("id")?.slice(12)); // postmessage_xxxxx
     if (isNaN(pid)) return;
     ctx.appendData({
       user: `${Utils.abstractLastFromURL(avatar.attr("href"), "center")},${avatar.children().attr("alt")}`,
       pid: pid,
       name: json.find("a").text(),
-      size: json.find("em").text().slice(1).split(", ")[0],
-      info: infoCopied.text(),
+      size: json.children(".tattl").length
+        ? json.find("dd").children().eq(3).text().split(", ")[0]
+        : json.find("em").text().slice(1).split(", ")[0],
+      info: infoCopied.text().trim(),
       op: json.find("a").prop("href"),
     });
   });
