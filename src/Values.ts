@@ -1,6 +1,7 @@
 import { GM_getValue, GM_info, GM_openInTab } from "$";
 import defaultEditReasons from "./assets/json/input/EditReason.json";
 import defaultVerifyReasons from "./assets/json/input/VerifyReason.json";
+import { arrayToMap, omitKey, reverseMap } from "./CollectionUtils";
 
 export class Values {
   static readonly menuCommands = {
@@ -30,27 +31,6 @@ export class Values {
       );
     },
   } as const;
-
-  private static reverseMap<T extends Readonly<Record<PropertyKey, PropertyKey>>>(obj: T) {
-    const reversed: Record<PropertyKey, PropertyKey> = {};
-    (Object.entries(obj) as [PropertyKey, PropertyKey][]).forEach(([a, b]) => {
-      reversed[b] = a;
-    });
-    return reversed as Readonly<ReverseMap<T>>;
-  }
-
-  private static arrayToMap<
-    T extends ReadonlyArray<Record<PropertyKey, PropertyKey>>,
-    K extends keyof ElementOf<T>,
-  >(arr: T, key: K) {
-    return arr.reduce(
-      (acc, item) => {
-        acc[item[key]] = item;
-        return acc;
-      },
-      {} as Record<PropertyKey, Record<PropertyKey, PropertyKey>>,
-    ) as ArrayToMap<T, K>;
-  }
 
   static readonly hostname = window.location.href.startsWith("https://www1.mcmod.cn/")
     ? "https://www1.mcmod.cn"
@@ -500,8 +480,162 @@ export class Values {
   ];
   //26.1以后的版本列表 YY.D.H
   static readonly newVersionList = [
-    [[], [0, 1, 2, 3]], // 26: 26.0(none), 26.1([0, 1])
+    [[], [0, 1, 2, 3]], // 26: 26.0(none), 26.1([0, 1, 2, 3])
   ];
+
+  static readonly editTypes = {
+    "1": "模组",
+    "2": "日志",
+    "3": "资料",
+    "4": "合成表",
+    "5": "教程",
+    "8": "作者",
+  } as const;
+
+  static readonly editActionTypes = [
+    { type: "1", id: "class-add", name: "模组添加" },
+    { type: "1", id: "class-edit", name: "模组编辑" },
+    { type: "2", id: "version-add", name: "日志添加" },
+    { type: "2", id: "version-edit", name: "日志编辑" },
+    { type: "3", id: "item-add", name: "资料添加" },
+    { type: "3", id: "item-edit", name: "资料编辑" },
+    { type: "4", id: "tab-add", name: "合成表添加" },
+    { type: "4", id: "tab-edit", name: "合成表编辑" },
+    { type: "4", id: "tab-delete", name: "合成表删除" }, // 合成表是唯一可删除的类型
+    { type: "5", id: "post-add", name: "教程添加" },
+    { type: "5", id: "post-edit", name: "教程编辑" },
+    { type: "8", id: "author-add", name: "作者添加" }, // 一般不会出现，作者通常随模组收录而自动添加，站内此入口也是隐藏的
+    { type: "8", id: "author-edit", name: "作者编辑" },
+  ] as const satisfies {
+    type: keyof typeof Values.editTypes;
+    id: string;
+    name: string;
+  }[];
+
+  static readonly editActionIDMap = arrayToMap(this.editActionTypes, "id");
+  static readonly editActionTypeMap = arrayToMap(this.editActionTypes, "type");
+
+  static readonly suggestionTypes = [
+    { index: 0, id: "pass", name: "建议通过", abbr: "通过", className: "text-success" },
+    { index: 1, id: "check", name: "需要检查", abbr: "检查", className: "text-warning" },
+    { index: 2, id: "refund", name: "建议退回", abbr: "退回", className: "text-danger" },
+    { index: 3, id: "waiting", name: "正在确认", abbr: "等待", className: "" },
+  ] as const satisfies {
+    index: number;
+    id: string;
+    name: string;
+    abbr: string;
+    className: string;
+  }[];
+
+  static readonly suggestionIDMap = arrayToMap(this.suggestionTypes, "id");
+
+  static readonly suggestionAbbrMap = arrayToMap(this.suggestionTypes, "abbr");
+
+  static readonly classEditFields = {
+    activity: "参与活动",
+    api: "运作方式",
+    author: "作者/团队",
+    category: "模组元素",
+    cfprojectid: "CurseForge Project ID",
+    content: "模组介绍",
+    "cover-data": "模组封面",
+    "cover-delete": "删除封面",
+    ename: "次要名称",
+    intro: "简介",
+    keys: "追加关键词",
+    license: "开源许可",
+    link: "相关链接",
+    mcversion: "支持MC版本",
+    "mode-1": "运行环境",
+    "mode-2": "运行环境",
+    modid: "MODID",
+    mrprojectid: "Modrinth Project ID",
+    name: "主要名称",
+    platform: "支持平台",
+    relation: "模组关系",
+    sname: "缩写名称",
+    source: "开源状态",
+    status: "官方状态",
+    tag: "模组标签",
+  } as const satisfies Record<keyof McmodClassEditorInnerData, string>;
+
+  static readonly classEditVerifyTableFields = {
+    mode: "运行环境" as const,
+    ...omitKey(this.classEditFields, ["mode-1", "mode-2"]),
+  };
+
+  static readonly versionEditFields = {
+    content: "日志正文",
+    mcversion: "MC版本",
+    name: "MOD版本号",
+    updatetime: "更新日期",
+  } as const satisfies Partial<Record<keyof McmodVersionEditorInnerData, string>>;
+
+  static readonly versionEditVerifyTableFields = this.versionEditFields;
+
+  static readonly itemEditFields = {
+    content: "资料介绍",
+    "cover-data": "资料封面",
+    "cover-delete": "删除封面",
+    name: "主要名称",
+    ename: "次要名称",
+    type: "资料分类",
+    category: "资料类型",
+    "icon-32x-data": "小图标",
+    "icon-32x-lock": "锁定小图标",
+    "icon-32x-delete": "删除小图标",
+    "icon-128x-data": "大图标",
+    "icon-128x-lock": "锁定大图标",
+    "icon-128x-delete": "删除大图标",
+    tool: "完整采集工具",
+    oredict: "矿物词典",
+    regname: "注册名",
+    damage: "最大耐久",
+    maxstack: "最大叠加",
+    metadata: "元数据",
+  } as const satisfies Partial<Record<keyof McmodItemEditorInnerData, string>>;
+
+  static readonly itemEditVerifyTableFields = this.itemEditFields;
+
+  static readonly tabEditFields = {
+    visualization: "合成表可视化",
+    startver: "开始版本",
+    endver: "结束版本",
+    orderly: "摆放要求",
+    others: "模组要求",
+    text: "备注",
+    source: "合成表源数据",
+  } as const;
+
+  static readonly tabEditVerifyTableFields = this.tabEditFields;
+
+  static readonly postEditFields = {
+    copyright: "著作权",
+    content: "教程正文",
+    "cover-data": "教程封面",
+    "cover-delete": "删除封面",
+    relation: "关联分区",
+    owned: "教程权限",
+    name: "教程标题",
+  } as const satisfies Partial<Record<keyof McmodPostEditorInnerData, string>>;
+
+  static readonly postEditVerifyTableFields = this.postEditFields;
+
+  static readonly authorEditFields = {
+    "avatar-type": "头像",
+    "avatar-value": "头像",
+    content: "作者介绍",
+    link: "相关连接",
+    member: "团队成员",
+    name: "名称",
+    team: "是否为团队",
+  } as const satisfies Partial<Record<keyof McmodAuthorEditorInnerData, string>>;
+
+  static readonly authorEditVerifyTableFields = {
+    avatar: "头像" as const,
+    ...omitKey(this.authorEditFields, ["avatar-type", "avatar-value"]),
+  };
 
   static readonly loaderID = {
     Forge: "1",
@@ -522,7 +656,7 @@ export class Values {
     其他: "10",
   } as const;
 
-  static readonly reversedLoaderID = this.reverseMap(this.loaderID);
+  static readonly reversedLoaderID = reverseMap(this.loaderID);
 
   static readonly loaderSupportVersions = {
     "1": [
@@ -715,7 +849,7 @@ export class Values {
     other: "其他",
   } as const;
 
-  static readonly reversedAuthorPositionMap = this.reverseMap(this.authorPositionMap);
+  static readonly reversedAuthorPositionMap = reverseMap(this.authorPositionMap);
 
   static readonly licenseTypeMap = {
     source: "源码",
@@ -723,7 +857,7 @@ export class Values {
     artifact: "构建",
   } as const;
 
-  static readonly reversedLicenseTypeMap = this.reverseMap(this.licenseTypeMap);
+  static readonly reversedLicenseTypeMap = reverseMap(this.licenseTypeMap);
 
   static readonly classCategories = [
     { index: 0, name: "科技", type: 0, value: "1,1" },
@@ -763,9 +897,9 @@ export class Values {
     { index: 34, name: "国创", type: 1, value: "0,33" },
   ] as const;
 
-  static readonly classCategoryNameMap = this.arrayToMap(this.classCategories, "name");
+  static readonly classCategoryNameMap = arrayToMap(this.classCategories, "name");
 
-  static readonly classCategoryValueMap = this.arrayToMap(this.classCategories, "value");
+  static readonly classCategoryValueMap = arrayToMap(this.classCategories, "value");
 
   static readonly licenseName = {
     ARR: "All Rights Reserved（非许可协议）",
@@ -903,7 +1037,7 @@ export class Values {
     other: "其他",
   } as const;
 
-  static readonly reversedLicenseMap = this.reverseMap(this.licenseName);
+  static readonly reversedLicenseMap = reverseMap(this.licenseName);
 
   static readonly siteMap = {
     official: "官方",
@@ -959,9 +1093,71 @@ export class Values {
     youtube: "YouTube",
     reddit: "Reddit",
     other: "其他",
-  };
+  } as const;
 
-  static readonly reversedSiteMap = this.reverseMap(this.siteMap);
+  static readonly reversedSiteMap = reverseMap(this.siteMap);
+
+  static readonly authorSiteMap = {
+    official: "官方",
+    mcmod: "MC百科",
+    curseforge: "CurseForge",
+    modrinth: "Modrinth",
+    mcbbs: "MCBBS",
+    klpbbs: "KLPBBS",
+    minebbs: "MineBBS",
+    mczwlt: "红石中继站",
+    mcbbs_co: "MCBBS纪念版",
+    bilibili: "B站",
+    weibo: "微博",
+    tieba: "贴吧",
+    zhihu: "知乎",
+    douban: "豆瓣",
+    xiaohongshu: "小红书",
+    music163: "网易云音乐",
+    soundcloud: "SoundCloud",
+    bcy: "半次元",
+    pixiv: "Pixiv",
+    steam: "Steam",
+    tiktok: "Tiktok",
+    flickr: "Flickr",
+    vk: "VK",
+    github: "GitHub",
+    gitlab: "GitLab",
+    gitee: "Gitee",
+    gitea: "Gitea",
+    gitpod: "Gitpod",
+    gitcode: "GitCode",
+    bitbucket: "Bitbucket",
+    maven: "Maven",
+    crowdin: "Crowdin",
+    mastodon: "Mastodon",
+    codeberg: "Codeberg",
+    cnb: "cnb.cool",
+    ftb: "FTB",
+    patreon: "Patreon",
+    bmc: "Buy Me a Coffee",
+    kofi: "ko-fi",
+    afdian: "爱发电",
+    kook: "KOOK",
+    discord: "Discord",
+    facebook: "FaceBook",
+    twitter: "Twitter",
+    twitch: "Twitch",
+    youtube: "YouTube",
+    reddit: "Reddit",
+    linkedin: "LinkedIn",
+    instagram: "Instagram",
+    spotify: "Spotify",
+    stackoverflow: "StackOverFlow",
+    minecraft_forum: "Minecraft Forum",
+    sourceforge: "SourceForge",
+    planetminecraft: "Planetminecraft",
+    mcpedl: "MCPEDL",
+    wiki: "WIKI",
+    other: "其他",
+  } as const;
+
+  static readonly reversedAuthorSiteMap = reverseMap(this.authorSiteMap);
 
   static readonly mcVersionMap = {
     "1": "远古版本",
@@ -1052,7 +1248,7 @@ export class Values {
     "86": "26.4",
   } as const;
 
-  static readonly reversedMcVersionMap = this.reverseMap(this.mcVersionMap);
+  static readonly reversedMcVersionMap = reverseMap(this.mcVersionMap);
 
   static readonly modEnvironmentModeMap = {
     "0": "待考证",
@@ -1061,14 +1257,14 @@ export class Values {
     "3": "无效",
   } as const;
 
-  static readonly reversedModEnvironmentModeMap = this.reverseMap(this.modEnvironmentModeMap);
+  static readonly reversedModEnvironmentModeMap = reverseMap(this.modEnvironmentModeMap);
 
   static readonly modPlatformMap = {
     "1": "JAVA版 (JAVA Edition)",
     "2": "基岩版 (Bedrock Edition)",
   } as const;
 
-  static readonly reversedModPlatformMap = this.reverseMap(this.modPlatformMap);
+  static readonly reversedModPlatformMap = reverseMap(this.modPlatformMap);
 
   static readonly modRelationTypeMap = {
     "1": "前置",
@@ -1076,7 +1272,7 @@ export class Values {
     "3": "联动",
   } as const;
 
-  static readonly reversedModRelationTypeMap = this.reverseMap(this.modRelationTypeMap);
+  static readonly reversedModRelationTypeMap = reverseMap(this.modRelationTypeMap);
 
   static readonly modSourceMap = {
     "0": "不显示",
@@ -1084,7 +1280,7 @@ export class Values {
     "2": "闭源",
   } as const;
 
-  static readonly reversedModSourceMap = this.reverseMap(this.modSourceMap);
+  static readonly reversedModSourceMap = reverseMap(this.modSourceMap);
 
   static readonly modStatusMap = {
     "0": "不确定",
@@ -1093,7 +1289,22 @@ export class Values {
     "3": "停更",
   } as const;
 
-  static readonly reversedModStatusMap = this.reverseMap(this.modStatusMap);
+  /**
+   * @warning 仅指定枚举映射关系，*不*是编辑器里的选项显示顺序！
+   *
+   * 编辑器中的显示顺序为 `0, 4, 1, 2, 3`。
+   */
+  static readonly postCopyrights = [
+    { id: "0", label: "无声明", name: "无声明" },
+    { id: "1", label: "CC: BY-NC", name: "署名 (BY) - 非商业性使用 (NC)" },
+    { id: "2", label: "CC: BY-NC-SA", name: "署名 (BY) - 非商业性使用 (NC) - 相同方式共享 (SA)" },
+    { id: "3", label: "CC: BY-NC-ND", name: "署名 (BY) - 非商业性使用 (NC) - 禁止演绎 (ND)" },
+    { id: "4", label: "未经授权禁止转载", name: "未经授权禁止转载" },
+  ] as const;
+
+  static readonly postCopyrightIDMap = arrayToMap(this.postCopyrights, "id");
+
+  static readonly reversedModStatusMap = reverseMap(this.modStatusMap);
 
   static readonly searchOption = [
     { reg: /^添加模组/, label: "添加模组", exclude: "中的" },
@@ -1144,7 +1355,7 @@ export class Values {
     oredict: { text: "矿物词典/物品标签", icon: "fa-tag" },
   } as const;
 
-  static readonly itemDefaultTypeList: ItemCustomTypeList = [
+  static readonly itemDefaultTypeList = [
     // 默认资料类型
     {
       classID: 0,
@@ -1216,7 +1427,9 @@ export class Values {
       icon: "\ue628",
       color: "#4382d8",
     },
-  ];
+  ] as const satisfies ItemCustomTypeList;
+
+  static readonly itemTypeIDMap = arrayToMap(this.itemDefaultTypeList, "typeID");
 
   static readonly itemCustomTypeList: ItemCustomTypeList = [
     {

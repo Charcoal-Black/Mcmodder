@@ -19,7 +19,7 @@ import VerifyTimeline from "../../vue/components/VerifyTimeline.vue";
 import GIFViewer from "../../vue/components/GIFViewer.vue";
 import { GIFUtils } from "../../gif/GIFUtils.ts";
 
-type ParsedOpinion = [number, number, number, number];
+type ParsedOpinion = Record<ElementOf<typeof Values.suggestionTypes>["id"], number>;
 
 interface VerifyListPayload {
   classID: string;
@@ -662,11 +662,20 @@ export class AdminVerifyInit extends AdminBaseInit {
         hasText = true;
       }
       if (isClass) {
-        this.classModifiers[rowText]?.(content, data as McmodClassEditorInnerData);
+        this.classModifiers[rowText as ValueOf<typeof Values.classEditFields>]?.(
+          content,
+          data as McmodClassEditorInnerData,
+        );
       } else if (isItem) {
-        this.itemModifiers[rowText]?.(content, data as McmodItemEditorInnerData);
+        this.itemModifiers[rowText as ValueOf<typeof Values.itemEditFields>]?.(
+          content,
+          data as McmodItemEditorInnerData,
+        );
       } else if (isTab) {
-        this.tabModifiers[rowText]?.(content, data as McmodTabEditorInnerData);
+        this.tabModifiers[rowText as ValueOf<typeof Values.tabEditFields>]?.(
+          content,
+          data as McmodTabEditorInnerData,
+        );
       }
     });
 
@@ -791,7 +800,7 @@ export class AdminVerifyInit extends AdminBaseInit {
   }
 
   private readonly classModifiers: Record<
-    string,
+    ValueOf<typeof Values.classEditFields>,
     (content: VerifyContent, data: McmodClassEditorInnerData) => void
   > = {
     主要名称: this.parseClassRawText("name"),
@@ -804,7 +813,7 @@ export class AdminVerifyInit extends AdminBaseInit {
      *
      * 原始 HTML 范例：
      * ```html
-     * <p>[curseforge] {{ link }}</p>
+     * <p>[curseforge] {{ link }} ({{ desc }})</p>
      * ```
      */
     相关链接: (content, data) => {
@@ -852,9 +861,31 @@ export class AdminVerifyInit extends AdminBaseInit {
 
     模组标签: this.parseClassCommaSplitedText("tag"),
 
-    /** 为支持 MC 版本提供编辑版本对比功能，并检查加载器版本与相对应的所填写的支持版本是否合理。 */
-    支持MC版本: (content) => {
-      PlatformCompareFrame.performCompare(content.previous, content.current);
+    /**
+     * 为支持 MC 版本提供编辑版本对比功能，并把「哪些加载器填了版本」解析出来。
+     *
+     * 审核页的这一行只列出**填了版本**的加载器，因此 `mcversion` 只需要记录出现的加载器；
+     * `ClassEditRules.checkPlatform` 正是据此判断「运作方式里勾了、但没有对应版本」。
+     * 之前这里只做对比、不写 `data.mcversion`，导致该规则在审核页永远拿不到数据。
+     */
+    支持MC版本: (content, data) => {
+      const { current } = PlatformCompareFrame.performCompare(content.previous, content.current);
+      // 站点类型把 `mcversion` 声明成「每个加载器都有键」的完整映射，而审核页只列出填了版本的
+      // 加载器，所以这里先按普通记录收集，赋值时再收窄。
+      const mcversion: Record<string, Record<number, keyof typeof Values.mcVersionMap>> = {};
+      Object.entries(current).forEach(([loaderName, versions]) => {
+        const loader = Utils.getKeyValueOfObject(Values.loaderID, loaderName);
+        if (loader === undefined) {
+          return;
+        }
+        const record: Record<number, keyof typeof Values.mcVersionMap> = {};
+        [...versions].forEach((version, index) => {
+          record[index] = (Utils.getKeyValueOfObject(Values.reversedMcVersionMap, version) ??
+            version) as keyof typeof Values.mcVersionMap;
+        });
+        mcversion[loader] = record;
+      });
+      data.mcversion = mcversion;
     },
 
     /** 为模组封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
@@ -941,11 +972,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     追加关键词: (content, data) => {
-      const tags = content.current
+      const keys = content.current
         .text()
         .split("/")
-        .map((tag) => tag.trim());
-      data.tag = tags.join(",");
+        .map((key) => key.trim());
+      data.keys = keys.join(",");
     },
 
     官方状态: (content, data) => {
@@ -1139,6 +1170,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     模组介绍: (content, data) => {
+      // 空内容的占位符同样是 `-`，与其它文本字段一致：漏掉这一步会把占位符当成正文，
+      // 于是「正文为空」永远不会触发，反而会多出标点与中文检查的提示。
+      if (content.current.html() === "-") {
+        return;
+      }
       data.content = content.current.html();
     },
 
@@ -1148,16 +1184,19 @@ export class AdminVerifyInit extends AdminBaseInit {
   };
 
   private readonly itemModifiers: Record<
-    string,
+    ValueOf<typeof Values.itemEditFields> | "来自模组",
     (content: VerifyContent, data: McmodItemEditorInnerData) => void
   > = {
     主要名称: this.parseItemRawText("name"),
     次要名称: this.parseItemRawText("ename"),
     资料分类: this.parseItemRawText("type"),
     注册名: this.parseItemRawText("regname"),
+    最大耐久: this.parseItemRawText("damage"),
     最大叠加: this.parseItemRawText("maxstack"),
+    元数据: this.parseItemRawText("metadata"),
     小图标: this.parseItemImage("icon-32x-data"),
     大图标: this.parseItemImage("icon-128x-data"),
+    删除封面: this.parseItemBooleanText("cover-delete"),
     锁定小图标: this.parseItemBooleanText("icon-32x-lock"),
     锁定大图标: this.parseItemBooleanText("icon-128x-lock"),
     删除小图标: this.parseItemBooleanText("icon-32x-delete"),
@@ -1185,6 +1224,13 @@ export class AdminVerifyInit extends AdminBaseInit {
           data.tool![index++] = { id: id.toString() };
         }
       });
+    },
+
+    /** 为资料封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
+    资料封面: (content, data) => {
+      const img = content.row.find("img");
+      data["cover-data"] = img.prop("src");
+      img.each((_, e) => this.appendImgContainer(e));
     },
 
     /**
@@ -1218,11 +1264,21 @@ export class AdminVerifyInit extends AdminBaseInit {
         content.current,
       );
     },
+
+    资料介绍: (content, data) => {
+      // 与模组介绍同理：`-` 是空内容的占位符
+      if (content.current.html() === "-") {
+        return;
+      }
+      data.content = content.current.html();
+    },
   };
 
-  private readonly tabModifiers: Record<
-    string,
-    (content: VerifyContent, data: McmodTabEditorInnerData) => void
+  private readonly tabModifiers: Partial<
+    Record<
+      ValueOf<typeof Values.tabEditVerifyTableFields>,
+      (content: VerifyContent, data: McmodTabEditorInnerData) => void
+    >
   > = {
     /** 为合成表 GUI 的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
     合成表可视化: (content) => {
@@ -1575,26 +1631,6 @@ export class AdminVerifyInit extends AdminBaseInit {
     return html;
   }
 
-  private static readonly opinionMapKey = {
-    通过: 0,
-    退回: 1,
-    检查: 2,
-    等待: 3,
-  } as Record<string, number>;
-
-  private static readonly opinionMapName = {
-    0: "通过",
-    1: "退回",
-    2: "检查",
-    3: "等待",
-  } as Record<number, string>;
-
-  private static readonly opinionMapClassName = {
-    0: "text-success",
-    1: "text-danger",
-    2: "text-warning",
-  } as Record<number, string>;
-
   /** 获取展示待审项行元素中「意见变化」的元素。 */
   private getOpinions(elem: JQuery) {
     return elem
@@ -1626,13 +1662,18 @@ export class AdminVerifyInit extends AdminBaseInit {
    */
   private parseOpinions(elem: JQuery): ParsedOpinion {
     const data = elem.toArray().map((e) => e.textContent);
-    const result: ParsedOpinion = [0, 0, 0, 0];
+    const result: ParsedOpinion = {
+      pass: 0,
+      check: 0,
+      refund: 0,
+      waiting: 0,
+    };
     data.forEach((e) => {
       const value = Number(e.slice(0, -2));
       const name = e.slice(-2);
-      const key = AdminVerifyInit.opinionMapKey[name];
+      const key = Utils.getKeyValueOfObject(Values.suggestionAbbrMap, name);
       if (key !== undefined) {
-        result[key] = value;
+        result[key.id] = value;
       }
     });
     return result;
@@ -1649,13 +1690,14 @@ export class AdminVerifyInit extends AdminBaseInit {
   private renderOpinions(data: ParsedOpinion, showPositiveSign = false) {
     const result: Node[] = [];
     let first = true;
-    for (let key = 0; key < 3; key++) {
+    for (const key of Utils.getKeys(data)) {
       if (data[key] === 0) {
         continue;
       }
       const value = data[key];
-      const name = AdminVerifyInit.opinionMapName[key];
-      const className = AdminVerifyInit.opinionMapClassName[key];
+      const type = Values.suggestionIDMap[key];
+      const name = type["name"];
+      const className = type["className"];
       if (!first) {
         result.push(document.createTextNode("、"));
       } else {
@@ -1699,9 +1741,14 @@ export class AdminVerifyInit extends AdminBaseInit {
         const currentElement = $(currentMap.get(id)!);
         const latestOpinion = this.parseOpinions(this.getOpinions(latestElement));
         const currentOpinion = this.parseOpinions(this.getOpinions(currentElement));
-        const changed: ParsedOpinion = [0, 0, 0, 0];
+        const changed: ParsedOpinion = {
+          pass: 0,
+          check: 0,
+          refund: 0,
+          waiting: 0,
+        };
         let sum = 0;
-        for (let i = 0; i < 4; i++) {
+        for (const i of Utils.getKeys(changed)) {
           changed[i] = latestOpinion[i] - currentOpinion[i];
           sum += Math.abs(changed[i]);
         }
@@ -1748,7 +1795,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     const current = this.parseOpinions(this.getOpinions(tr));
     target.removeClass("mcmodder-verify-newopinion");
     const targetText = "[📚 助理意见：";
-    for (let i = 0; i < 4; i++) {
+    for (const i of Utils.getKeys(current)) {
       current[i] += parsedChanged[i];
     }
     changed.remove();

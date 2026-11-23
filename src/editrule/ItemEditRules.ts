@@ -8,11 +8,14 @@
  * - 每条检查末尾注释中的 `xxx_yyy` 是原生语言包
  *   （`PublicLangData.editor.inform.list`）里的键名，便于与百科编辑页的提示逐条对照；
  *   提示文案为硬编码中文。
- * - 正文中的机翻 / 第一人称 / 不确定 / 不规范词库，以及「未修改任何项」的检查尚未移植。
+ * - 正文词库（机翻 / 第一人称 / 不确定 / 不规范 / 版本模糊）见 {@link ContentBadWords}；
+ *   「未修改任何项」的检查尚未移植。
  * -
  *
  * 提示级别（error / warning / info）与原生实现可能存在少量差异。
  */
+import { ContentBadWords } from "./ContentBadWords";
+
 export class ItemEditRules {
   /**
    * 对一份资料编辑数据执行全部检查。
@@ -26,6 +29,8 @@ export class ItemEditRules {
       warning: [],
       info: [],
     };
+
+    ContentBadWords.checkHtml(data.content, result);
 
     if (!(!isAdd && data.name === undefined) && !data.name) {
       result.error.push("资料缺少“主要名称”，命名规范请参考“编辑帮助”中的《主站通用命名规则》。");

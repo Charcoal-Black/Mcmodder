@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    /* e2e 跑在 Node 里（`node:fs` / `process.env`），与根配置的浏览器环境不同 */
+    "types": ["jquery", "jquery.cookie", "node"]
+  },
+  /*
+   * 把 src 一并纳入：`src/types/types.d.ts` 是**全局**声明文件（无 import / export），
+   * 只有与它同处一个 program，`McmodClassEditorData` 这类类型才可见。
+   * 单独写一句 `import type` 是不行的 —— 全局声明文件没有可导入的导出。
+   *
+   * `.vue` 必须显式列出：`include` 只写 ts 时，Volar / tsserver 会认为
+   * `.vue` 文件不属于本项目，转而给它建一个看不见 `src` 全局声明的临时 project，
+   * 于是一些全局类型会退化成 `unknown`。
+   */
+  "include": ["./**/*.ts", "./**/*.vue", "../src"]
+}

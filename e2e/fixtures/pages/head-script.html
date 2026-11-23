@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mcmodder E2E 时序页</title>
+    <script>
+      /*
+       * 页面自己的第一个脚本，用来验证用户脚本的求值时机：
+       * Tampermonkey 的 document-start 承诺「早于页面任何脚本」，注入方案必须守住这一点。
+       */
+      window.__headScriptState = {
+        readyState: document.readyState,
+        shimReady: typeof window.GM_getValue === "function",
+        bundleRan: !!document.querySelector("style[data-mcmodder-vue-css]"),
+      };
+    </script>
+  </head>
+  <body>
+    <h1 class="e2e-title">时序验证页</h1>
+  </body>
+</html>

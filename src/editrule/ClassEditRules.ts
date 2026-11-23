@@ -1,5 +1,6 @@
 import { Utils } from "../Utils";
 import { Values } from "../Values";
+import { ContentBadWords } from "./ContentBadWords";
 
 /**
  * 模组编辑数据（`class_add` / `class_edit`）的快速查错规则。
@@ -11,7 +12,8 @@ import { Values } from "../Values";
  * - 每条检查末尾注释中的 `xxx_yyy` 是原生语言包
  *   （`PublicLangData.editor.inform.list`）里的键名，便于与百科编辑页的提示逐条对照；
  *   提示文案为硬编码中文。
- * - 正文中的机翻 / 第一人称 / 不确定 / 不规范词库，以及「未修改任何项」的检查尚未移植。
+ * - 正文词库（机翻 / 第一人称 / 不确定 / 不规范 / 版本模糊）见 {@link ContentBadWords}；
+ *   「未修改任何项」的检查尚未移植。
  *
  * 提示级别（error / warning / info）与原生实现可能存在少量差异。
  */
@@ -493,6 +495,7 @@ export class ClassEditRules {
         "请正确使用标点符号，汉字中使用全角标点，段落结尾需加句号，列表除最后一项外请用分号。",
       ); // common_content_ending
     }
+    ContentBadWords.check(text, result);
     const levels = ClassEditRules.getHeadingLevels(text);
     if (levels.length > 0 && levels.length !== Math.max(...levels)) {
       result.warning.push("正文介绍中含有跨级使用的标题，请检查标题结构完整性。"); // common_content_title_broken

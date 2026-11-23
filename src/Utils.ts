@@ -228,6 +228,48 @@ export class Utils {
     );
   }
 
+  /** 比较两个简单**可序列化**对象是否值相等 */
+  static isEqual(a: unknown, b: unknown, vis = new WeakSet<WeakKey>()) {
+    if (a === b) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+
+    const keysA = Reflect.ownKeys(a);
+    const keysB = Reflect.ownKeys(b);
+    if (keysA.length !== keysB.length) return false;
+    if (vis.has(a) || vis.has(b)) return false;
+    vis.add(a);
+    vis.add(b);
+
+    for (const key of keysA) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      if (
+        !Utils.isEqual(
+          (a as Record<PropertyKey, unknown>)[key],
+          (b as Record<PropertyKey, unknown>)[key],
+          vis,
+        )
+      )
+        return false;
+    }
+    return true;
+  }
+
+  /** 检查一个对象是否只是空数组或者空对象的嵌套，而不含有效的值 */
+  static isEmpty(obj: unknown, vis = new WeakSet<WeakKey>()) {
+    if (obj === undefined || obj === null || obj === "") return true;
+
+    if (Array.isArray(obj) && obj.some((el) => !Utils.isEmpty(el, vis))) return false;
+
+    if (typeof obj !== "object") return false;
+
+    const keys = Reflect.ownKeys(obj);
+    if (vis.has(obj)) return true;
+    vis.add(obj);
+    if (keys.some((key) => !Utils.isEmpty((obj as Record<PropertyKey, unknown>)[key], vis)))
+      return false;
+    return true;
+  }
+
   /** 简易深拷贝（JSON 序列化实现，不保留函数/原型等） */
   static simpleDeepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
@@ -249,18 +291,23 @@ export class Utils {
     });
   }
 
-  static isKeyOfObject<T extends Readonly<Record<PropertyKey, unknown>>>(
-    obj: T,
-    key: PropertyKey,
-  ): key is keyof T {
+  static isKeyOfObject<T extends object>(obj: T, key: PropertyKey): key is keyof T {
     return Object.hasOwn(obj, key);
   }
 
-  static getKeyValueOfObject<T extends Readonly<Record<PropertyKey, unknown>>>(
-    obj: T,
-    key: PropertyKey,
-  ) {
+  static getKeyValueOfObject<
+    T extends Readonly<Record<PropertyKey, unknown>>,
+    K extends PropertyKey,
+  >(obj: T, key: K) {
     return obj[key] as ValueOf<T> | undefined;
+  }
+
+  static getKeys<T extends object>(obj: T) {
+    return Object.keys(obj) as (keyof T)[];
+  }
+
+  static getEntries<T extends object>(obj: T) {
+    return Object.entries(obj) as [keyof T, ValueOf<T>][];
   }
 
   static isHTMLElement(node: Node): node is HTMLElement {
@@ -370,7 +417,7 @@ export class Utils {
     return `${Math.floor(t / 8.64e7)}d`;
   }
 
-  /** 将时长格式化为中文相对时间（如 `3天前`/`5分钟后`），差值小于 1s 返回 `刚刚` */
+  /** 将时长格式化为中文相对时间（如 `3天前`/`5分后`），差值小于 1s 返回 `刚刚` */
   static getFormattedChineseTime(t: number) {
     let a;
     const b = t < 0 ? "前" : "后";
@@ -394,13 +441,49 @@ export class Utils {
     return n.toString();
   }
 
-  /** 拼接模组完整名称：`[abbr] name (ename)`；接受三个字符串参数或一个 `Class` 对象 */
+  /**
+   * 拼接模组完整名称：`[abbr] name (ename)`。
+   *
+   * 若传入的参数类型是 {@link McmodClassEditorInnerData}，且 `isClassAdd = true`，
+   * 则返回串中的 `abbr` 将被替换为 {@link McmodClassEditorInnerData.category}
+   * 中的首个**核心元素**的名称；若 `isClassAdd = false`，则 `abbr` 总是会被置空，
+   * 以同步后台待审列表中模组类编辑项的单元格内容的行为。
+   */
   static getClassFullName(name: string, ename: string, abbr: string): string;
   static getClassFullName(data: Class): string | undefined;
-  static getClassFullName(...args: [name: string, ename: string, abbr: string] | [data: Class]) {
-    const name = (args.length === 1 ? args[0].name : args[0]).trim();
-    const ename = (args.length === 1 ? args[0].englishName : args[1]).trim();
-    const abbr = (args.length === 1 ? args[0].abbr : args[2]).trim();
+  static getClassFullName(data: McmodClassEditorInnerData, isClassAdd: boolean): string | undefined;
+  static getClassFullName(
+    ...args:
+      | [name: string, ename: string, abbr: string]
+      | [data: Class]
+      | [data: McmodClassEditorInnerData, isClassAdd: boolean]
+  ) {
+    const { name, ename, abbr } = (() => {
+      if (args.length === 3)
+        return {
+          name: args[0],
+          ename: args[1],
+          abbr: args[2],
+        };
+      const data = args[0];
+      if ("englishName" in data)
+        return {
+          name: data.name,
+          ename: data.englishName,
+          abbr: data.abbr,
+        };
+      const isClassAdd = args[1];
+      // 用户可能只勾了杂项元素（甚至一个都没勾）；这时没有核心分类可选，
+      // 列表仍要能显示名称，不能因为分类缺失就抛错
+      const categories = Object.values(data.category ?? {})
+        .map((value) => Values.classCategoryValueMap[value])
+        .filter((category) => category?.type === 0);
+      return {
+        name: data.name,
+        ename: data.ename,
+        abbr: isClassAdd ? (categories[0]?.name ?? "") : "",
+      };
+    })();
     if (!name) return undefined;
     let res = "";
     if (abbr) res += `[${abbr}] `;
@@ -441,7 +524,31 @@ export class Utils {
   }
 
   /** 拼接物品完整名称：`name (ename)`，无英文名时仅返回名称 */
-  static getItemFullName(name: string, ename?: string | null) {
+  static getItemFullName(name: string, ename?: string): string;
+  static getItemFullName(data: Item): string | undefined;
+  static getItemFullName(data: McmodItemEditorInnerData): string | undefined;
+  static getItemFullName(
+    ...args: [name: string, ename?: string | null] | [data: Item] | [data: McmodItemEditorInnerData]
+  ) {
+    const { name, ename } = (() => {
+      if (typeof args[0] === "string")
+        return {
+          name: args[0],
+          ename: args[1],
+        };
+      const name = args[0].name ?? "";
+      if ("ename" in args[0])
+        return {
+          name,
+          ename: args[0].ename,
+        };
+      if ("englishName" in args[0])
+        return {
+          name,
+          ename: args[0].englishName,
+        };
+      return { name };
+    })();
     let res = name.trim();
     const trimedEname = ename?.trim();
     if (trimedEname) res += ` (${trimedEname})`;
@@ -585,7 +692,13 @@ export class Utils {
     return Number(Utils.abstractLastFromURL(url, typeList));
   }
 
-  /** 按物品 ID 生成图标 URL（宽度限 32/36/128/144，`ver` 用于缓存版本号） */
+  /**
+   * 按物品 ID 生成图标 URL。
+   *
+   * @param id 物品 ID，`0` 用于无图标或图标加载失败时的展示
+   * @param width 物品宽度，限 32/36/128/144
+   * @param ver 缓存版本号
+   */
   static getImageURLByItemID(id: number, width = 32, ver = 0) {
     const validSize = [32, 36, 128, 144];
     if (!validSize.includes(width)) {
@@ -601,6 +714,11 @@ export class Utils {
     return `${Values.hostname}/item/${id}.html`;
   }
 
+  /** 生成物品资料编辑页 URL */
+  static getItemEditURL(id: number) {
+    return `${Values.hostname}/item/edit/${id}/`;
+  }
+
   /** 生成物品类型列表页 URL */
   static getItemTypeURL(classID: number, typeID: number) {
     return `${Values.hostname}/item/list/${classID}-${typeID}.html`;
@@ -609,6 +727,16 @@ export class Utils {
   /** 生成模组页 URL */
   static getClassURL(id: number) {
     return `${Values.hostname}/class/${id}.html`;
+  }
+
+  /** 生成整合包页 URL */
+  static getModpackURL(id: number) {
+    return `${Values.hostname}/modpack/${id}.html`;
+  }
+
+  /** 生成作者页 URL */
+  static getAuthorURL(id: number) {
+    return `${Values.hostname}/author/${id}.html`;
   }
 
   /** 生成矿物词典/物品标签页 URL */
@@ -1230,22 +1358,26 @@ export class Utils {
   }
 
   /** 格式化为 `YYYY-M-D` 日期字符串 */
-  static getFormattedDate(date = new Date()) {
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  static getFormattedDate(date: Date | number = new Date()) {
+    if (typeof date === "number") date = new Date(date);
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
   }
 
   /** 格式化为 `YYYY年M月D日` 中文日期字符串 */
-  static getFormattedChineseDate(date = new Date()) {
+  static getFormattedChineseDate(date: Date | number = new Date()) {
+    if (typeof date === "number") date = new Date(date);
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   }
 
   /** 格式化为 `HH:MM:SS` 24 小时制时间字符串 */
-  static getFormatted24hTime(date = new Date()) {
+  static getFormatted24hTime(date: Date | number = new Date()) {
+    if (typeof date === "number") date = new Date(date);
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
   }
 
   /** 格式化为 `YYYY-M-D HH:MM:SS` 日期时间字符串 */
-  static getFormattedDateTime(date = new Date()) {
+  static getFormattedDateTime(date: Date | number = new Date()) {
+    if (typeof date === "number") date = new Date(date);
     return `${this.getFormattedDate(date)} ${this.getFormatted24hTime(date)}`;
   }
 
@@ -1513,10 +1645,10 @@ export class Utils {
     const res = { "item-data": {} } as DeepPartial<McmodItemEditorData>;
     const data = res["item-data"]! as Partial<McmodItemEditorInnerData>;
     if (item.id) {
-      res["action"] = "item_edit";
+      res["action"] = "item-edit";
       res["edit-id"] = item.id.toString();
     } else {
-      res["action"] = "item_add";
+      res["action"] = "item-add";
     }
     res["class-id"] = item.classID.toString();
 

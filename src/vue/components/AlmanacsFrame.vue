@@ -48,7 +48,7 @@ watch(
 );
 
 const formattedChineseDate = computed(() => {
-  return Utils.getFormattedChineseDate(new Date(date.value));
+  return Utils.getFormattedChineseDate(date.value);
 });
 
 async function get(date: number) {

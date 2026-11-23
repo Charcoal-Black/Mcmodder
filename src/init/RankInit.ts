@@ -143,7 +143,7 @@ export class RankInit extends Init {
             const data = JSON.stringify(rawData);
             this.configs.set("rankData", (t - 24 * 60 * 60).toString(), data);
             Utils.commonMsg(
-              `成功保存${Utils.getFormattedChineseDate(new Date((t - 24 * 60 * 60) * 1e3))}的贡献数据~ (${Utils.getFormattedSize(data.length)})`,
+              `成功保存${Utils.getFormattedChineseDate((t - 24 * 60 * 60) * 1e3)}的贡献数据~ (${Utils.getFormattedSize(data.length)})`,
             );
           });
         if (t <= Math.min(endTime, Date.now() / 1e3 - 24 * 60 * 60))

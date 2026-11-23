@@ -4,8 +4,8 @@ import "./devCheck";
 import { BackgroundPool } from "./background/BackgroundPool";
 import { GM_getValue, GM_addValueChangeListener } from "$";
 import { Mcmodder } from "./Mcmodder";
-import bbsCss from "./css/bbs.css?raw";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
+import bbsCss from "./css/bbs.css?raw";
 
 (() => {
   try {

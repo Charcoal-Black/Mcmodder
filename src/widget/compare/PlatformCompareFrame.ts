@@ -10,6 +10,9 @@ export class PlatformCompareFrame {
     let category: Set<string>;
     let loaderName = "";
     let nodeRecord: Record<string, HTMLElement>;
+    if (node.text() === "-") {
+      return [platforms, nodes];
+    }
     node.contents().each((_, p) => {
       if (p.nodeType === Node.ELEMENT_NODE) {
         loaderName = p.textContent.slice(0, -1);
@@ -71,5 +74,6 @@ export class PlatformCompareFrame {
     const [nextData, nextNodes] = this.parse(next);
     this.compare(prevData, nextData, prevNodes, "mcmodder-compare-del");
     this.compare(nextData, prevData, nextNodes, "mcmodder-compare-ins");
+    return { previous: prevData, current: nextData };
   }
 }

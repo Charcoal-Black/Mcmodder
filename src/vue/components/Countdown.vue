@@ -28,7 +28,7 @@ let intervalID: number | undefined;
 
 onMounted(() => {
   update();
-  intervalID = setInterval(() => {
+  intervalID = window.setInterval(() => {
     update();
   }, props.updateInterval);
 });

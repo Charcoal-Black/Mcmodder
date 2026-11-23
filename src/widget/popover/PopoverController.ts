@@ -240,7 +240,7 @@ export abstract class PopoverController<
           (this.hoveringPopover && !this.inPopover(e))
         ) {
           this.hoveringPopover = false;
-          this.timeout = setTimeout(() => {
+          this.timeout = window.setTimeout(() => {
             this.closeActive();
             this.timeout = null;
           }, 300);

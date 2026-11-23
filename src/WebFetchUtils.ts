@@ -138,7 +138,7 @@ export class WebFetchUtils {
     id = Number(id);
     const resp = await this.createRequest(
       {
-        url: `${this.parent.hostname}/item/${id}.html`,
+        url: Utils.getItemURL(id),
         method: "GET",
         redirect: "manual",
         anonymous: true,
