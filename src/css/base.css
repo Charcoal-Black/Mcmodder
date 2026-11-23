@@ -86,8 +86,12 @@ html:not(.dark) .mcmodder-format-color {
   background-color: var(--mcmodder-tca3);
 }
 :root {
+  /* 中文显式回退到无衬线：Firefox 下 monospace 泛型的 CJK 回退是宋体系（衬线、
+     小字号发虚），Chromium 则回退雅黑——同一段代码两种观感。栈内先钉死 CJK 无衬线，
+     两个引擎一致。等宽中文与宋体同为全角，代码块对齐不受影响。 */
   --mcmodder-font-monospace:
-    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Microsoft YaHei",
+    "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", monospace;
   --mcmodder-cursor-hand: url(//www.mcmod.cn/images/cursor/hand.png), auto;
   --mcmodder-animation-shinyborder: mcmodder-shinyborder 2s ease-in-out infinite alternate;
   --mcmodder-width-radius: calc(1em * var(--mcmodder-ratio-radius));
