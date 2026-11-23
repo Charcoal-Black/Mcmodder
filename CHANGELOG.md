@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## [2.4.3] - 2026-11-23
+
+### 新增内容
+
+- 新增本地背景图池 [[#132](https://github.com/Charcoal-Black/Mcmodder/pull/132)]。
+
+  - 新增“白天本地背景”与“夜间本地背景”配置项，最多可设置 20 个原始体积不超过 8 MiB（压缩后不超过 1.2 MiB）的背景图。
+
+  - 新增“本地背景轮换方式”配置项，决定多张本地背景时的取图方式，可设置为随机抽取、顺序抽取等方式。
+  
+  - 新增“覆盖页面自带背景”配置项，启用后本地背景会强制覆盖页面已有的背景。
+
+  - 与表态贴纸不同，所有背景图均保存在本地，不会上传到百科图床。
+
+- 新增 Playwright 离线后台测试，详见 `CONTRIBUTING.md`。
+
+- 后台审核新增自定义用户 UID 待审项筛选器。
+
+### 修改内容
+
+- 现在后台待审项分屏是**响应式**的，分屏状态会随着页面宽度的变化而自动开启或关闭。
+
+- 封装了浏览器的原生颜色输入控件，保证跨平台一致外观。
+
+### Bug 修复
+
+- 实时预览的表格渲染异常 [[#126](https://github.com/Charcoal-Black/Mcmodder/issues/126)]。
+
+- 无法上传模组封面 [[#133](https://github.com/Charcoal-Black/Mcmodder/pull/133)] [[#137](https://github.com/Charcoal-Black/Mcmodder/issues/137)]。
+
+- 社群 SweerAlert 弹窗在夜间模式下的颜色过亮 [[#134](https://github.com/Charcoal-Black/Mcmodder/pull/134)]。
+
+- 中英间添加空格功能对 `[icon:health]` 特殊字段和 `/` 的处理异常 [[#135](https://github.com/Charcoal-Black/Mcmodder/pull/135)] [[#83](https://github.com/Charcoal-Black/Mcmodder/issues/83)]。
+
+- 表态面板有时会被编辑器遮盖。
+
+- 移动端启用“审核页面分屏”配置项时，打不开后台待审项。
+
+- 通过光标悬浮来切换 Swiper 标签页时，指示器不会跟随移动。
+
+- JSON 导入辅助忽略非 IDB 索引键，导致物品 JSON 管理系统无法识别图标等字段 [[#136](https://github.com/Charcoal-Black/Mcmodder/issues/136)]。
+
+- 从收纳贴导入 JSON 时，部分附件识别不到。
+
+- 使用 vue-virtual-scroller 重写表格虚拟滚动逻辑，以解决表格渲染异常，以及有时无法滚动的问题 [[#136](https://github.com/Charcoal-Black/Mcmodder/issues/136)]。
+
 ## [2.4.2] - 2026-11-17
 
 ### 新增内容
