@@ -1,13 +1,14 @@
-#connect-frame-sub > #verify-window {
+/* 仅在分屏实际启用时隐藏原生审核窗；脚本会根据页面宽度实时增删 <html> 上的该类 */
+html.mcmodder-verify-split #connect-frame-sub > #verify-window {
   display: none !important;
 }
-#verify-window .modal-dialog {
+html.mcmodder-verify-split #verify-window .modal-dialog {
   width: 100%;
   margin: 0;
 }
-#verify-window .modal-content {
+html.mcmodder-verify-split #verify-window .modal-content {
   border-radius: 0;
 }
-#verify-window .modal-backdrop {
+html.mcmodder-verify-split #verify-window .modal-backdrop {
   background-color: var(--mcmodder-color-background);
 }

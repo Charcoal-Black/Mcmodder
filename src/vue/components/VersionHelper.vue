@@ -143,7 +143,7 @@ function onFetchMRFocusout() {
 
 async function autoFillFetchID() {
   // 自动获取 CFID / MRID
-  const resp = await parent.utils.createRequest(
+  const resp = await parent.web.createRequest(
     {
       url: `${parent.hostname}/class/edit/${document.location.href.split("/version/")[1].split(".html")[0]}/`,
       method: "GET",
@@ -184,7 +184,7 @@ function getCurseForgeFileList(cfid: string) {
   let fileList: CFGameVersion[] = [];
   let captchaAttempt = 0;
   let work = (index: number) => {
-    parent.utils
+    parent.web
       .createRequest(
         {
           url: `https://www.curseforge.com/api/v1/mods/${cfid}/files?pageIndex=${index}&pageSize=50&sort=dateCreated&sortDescending=true&removeAlphas=false`,
@@ -283,7 +283,7 @@ function getModrinthFileList(mrid: string) {
   // this.tbody.html(`<img src="${McmodderValues.assets.mcmod.loading}"></img>`);
   let fileList: MRGameVersion[] = [];
   let work = () => {
-    parent.utils
+    parent.web
       .createRequest(
         {
           url: `https://api.modrinth.com/v2/project/${mrid}/version`,

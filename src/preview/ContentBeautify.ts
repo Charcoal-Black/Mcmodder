@@ -27,7 +27,13 @@ function onClickMenuAnchor(ev: JQueryEventObject) {
 }
 
 /**
- * https://www.mcmod.cn/static/public/js/main.js
+ * 此方法属于前端逻辑，基本参照 https://www.mcmod.cn/static/public/js/main.js 实现。
+ *
+ * 此脚本只会在页面初始化时通过 `<script>` 引入到页面来执行，不会动态执行。
+ * 因此如果需要完全模拟百科原生逻辑，请注意在下列情形渲染正文时，不要调用此方法：
+ *
+ * - 后台查看待审列表时展示的资料正文；
+ * - 在测试沙盒中手动更新正文，但未刷新页面。
  */
 export function contentBeautify(content: JQuery) {
   content.addClass("common-text");
@@ -46,6 +52,11 @@ export function contentBeautify(content: JQuery) {
         if (width) $(this).attr("width", width);
         if (height) $(this).attr("height", height);
       });
+  });
+
+  // 表格添加外层容器与可滑动特性
+  $(".common-text table").each(function () {
+    $(this).addClass("table table-bordered text-nowrap").wrap('<div class="table-scroll"></div>');
   });
 
   // 图片查看

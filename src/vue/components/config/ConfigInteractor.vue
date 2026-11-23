@@ -1,6 +1,6 @@
 <template>
   <div class="center-setting-block">
-    <div class="setting-item">
+    <div class="setting-item" :class="type !== 'backgroundPool' ? 'flex' : ''">
       <span v-if="type !== 'checkbox'">
         <MatchedText :text="titleText" :ranges="matchedRanges?.title" />
       </span>
@@ -61,6 +61,20 @@
         :value="value as Key"
         :on-successful-change="onConfigSuccessfulChange"
       />
+      <BackgroundPoolInput
+        v-else-if="type === 'backgroundPool'"
+        :id="id"
+        :title="title"
+        :value="value as number"
+        :on-successful-change="onConfigSuccessfulChange"
+      />
+      <RadioGroupInput
+        v-else-if="type === 'radioGroup'"
+        :title="title"
+        :value="value as number"
+        :on-successful-change="onConfigSuccessfulChange"
+        :range="valueSet!"
+      />
       <slot name="afterInput" />
     </div>
     <!-- 设置项描述内含 <del>/<code>/<a> 等排版标签，无法用纯文本渲染；内容来自 ConfigLoader 自身的静态配置，已过 sanitizeHTML -->
@@ -92,6 +106,8 @@ import SliderInput from "../input/SliderInput.vue";
 import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 import DropdownTextInput from "../input/DropdownTextInput.vue";
 import KeybindInput from "../input/KeybindInput.vue";
+import BackgroundPoolInput from "../input/BackgroundPoolInput.vue";
+import RadioGroupInput from "../input/RadioGroupInput.vue";
 import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
 import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 import type { ConfigMatchRanges } from "../../../types/props";
@@ -131,7 +147,12 @@ const opt = computed(() => {
       return { finiteRange: data.range as InputValueFiniteNumericRange };
     case "dropdownMenu": {
       const valueSet = { ...data.range } as InputValueSet;
-      valueSet[data.value as number] += " (默认)";
+      const defaultValue = data.value as number;
+      if (typeof valueSet[defaultValue] === "string") {
+        valueSet[defaultValue] += " (默认)";
+      } else {
+        valueSet[defaultValue].text += " (默认)";
+      }
       return { valueSet };
     }
     case "dropdownTextMenu": {
@@ -152,6 +173,13 @@ const opt = computed(() => {
     }
     case "keybind":
       return {};
+    case "backgroundPool":
+      return {};
+    // case "radioGroup": {
+    //   const valueSet = { ...data.range } as InputValueSet;
+    //   valueSet[data.value as number] += " (默认)";
+    //   return { valueSet };
+    // }
   }
   throw new Error("这 InputType 有力气");
 });
@@ -171,6 +199,11 @@ function onConfigSuccessfulChange(resp: InputValidInfo<typeof value.value>) {
 const description = computed(() => {
   const option = configOption.value;
   if (option.type === "dropdownMenu") {
+    return configOption.value.description;
+  }
+  if (option.type === "backgroundPool") {
+    // 此类型内容遵循非常规逻辑，具体图片数据存储在 GM Storage 的其他键中，Settings 本体只存图片数量，
+    // 图片本身无法用纯文本直接完整描述，且目前所有背景图配置项均默认为无预设背景，因此同样不描述默认值
     return configOption.value.description;
   }
   let list = [];

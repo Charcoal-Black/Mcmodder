@@ -1143,6 +1143,16 @@ body:not(.view),
   position: relative;
   image-rendering: pixelated;
 }
+.mcmodder-verify-autocheck {
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mcmodder-width-padding-3);
+}
+.mcmodder-verify-userfilter {
+  width: 200px;
+  display: inline-block;
+}
 .mcmodder-verify-locate {
   margin-left: var(--mcmodder-width-padding-3);
 }
@@ -1288,11 +1298,12 @@ body:not(.view),
   text-overflow: ellipsis;
   overflow: hidden;
 }
-.mcmodder-table tr:not(.mcmodder-table-empty):nth-child(2n) {
-  background-color: var(--mcmodder-color-background);
-}
-.mcmodder-table tr:not(.mcmodder-table-empty):nth-child(2n + 1) {
+/* 虚拟滚动只渲染可视行，渲染窗口起点变化时 nth-child 的奇偶会漂移，故按数据行索引着色 */
+.mcmodder-table tr.mcmodder-table-row-even {
   background-color: var(--mcmodder-color-primary-background);
+}
+.mcmodder-table tr.mcmodder-table-row-odd {
+  background-color: var(--mcmodder-color-background);
 }
 .mcmodder-editor-link::before {
   font-family: FontAwesome;
@@ -2845,6 +2856,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
 .mcmodder-input-list.editable .mcmodder-input-option.selected .text {
   max-width: calc(100% - 4 * var(--mcmodder-width-padding-3));
 }
+.mcmodder-input-option .text .desc,
 .mcmodder-input-option .text .alias {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);

@@ -19,7 +19,15 @@ import VerifyTimeline from "../../vue/components/VerifyTimeline.vue";
 import GIFViewer from "../../vue/components/GIFViewer.vue";
 import { GIFUtils } from "../../gif/GIFUtils.ts";
 
-type ParsedOpinion = [number, number, number, number];
+type ParsedOpinion = Record<ElementOf<typeof Values.suggestionTypes>["id"], number>;
+
+interface VerifyListPayload {
+  classID: string;
+  userID: string;
+  ignoreManager?: string;
+  classAddOnly: string;
+  typeID: string;
+}
 
 export class AdminVerifyInit extends AdminBaseInit {
   private static readonly passButtonSelector = "#verify-pass-btn:not(.edit), #assistant-pass-btn";
@@ -27,6 +35,8 @@ export class AdminVerifyInit extends AdminBaseInit {
     "#verify-refund-btn:not(.edit), #assistant-refund-btn";
   private static readonly checkButtonSelector = "#assistant-check-btn";
   private static readonly reasonInputSelector = "#verify-reason, #assistant-reason";
+  /** 视口宽度低于该值时强制关闭分屏，避免左右两栏都过于狭窄 */
+  private static readonly splitScreenMinWidth = 900;
 
   private readonly splitScreenOnVerify: boolean;
   private readonly lastRefundText: Record<number, string> = {};
@@ -41,9 +51,10 @@ export class AdminVerifyInit extends AdminBaseInit {
   private reasonInput?: JQuery;
   private prevHeight = 0;
   private verifyID: number | undefined;
-  private singleVerifyCallbackOnSplit: ((mutation: MutationRecord) => void) | undefined;
   /** 分屏容器等只需挂载一次的节点是否已创建 */
   private frameMounted = false;
+  /** 分屏当前是否实际生效（页面足够宽且配置开启） */
+  private splitActive = false;
   /** 待审列表自动查询的定时器句柄，用于重进页面时替换旧定时器 */
   private notifyTimer?: number;
   /** 挂载在审核窗内、仅创建一个实例的正文对比组件（`TextComparator`） */
@@ -77,10 +88,13 @@ export class AdminVerifyInit extends AdminBaseInit {
   private readonly lastRefundElement = shallowRef($());
   private readonly assistantSuggestionElement = shallowRef($());
   private readonly lastSubmission = ref(0);
-  /** 审核页面分屏是否可用且已启用 */
+  /** 分屏是否可用，以及当前页面宽度是否足以启用分屏 */
   private get enableSplit() {
-    return this.splitScreenOnVerify && !this.parent.isMobileClient;
+    return this.splitScreenOnVerify && window.innerWidth >= AdminVerifyInit.splitScreenMinWidth;
   }
+  private readonly locateButton = $(
+    '<a class="mcmodder-verify-locate" title="在待审列表定位本待审项"><i class="fa fa-crosshairs"></i></a>',
+  );
 
   /**
    * 主站通用快捷搜索功能下方的一段待审项基本信息，包括：
@@ -121,81 +135,13 @@ export class AdminVerifyInit extends AdminBaseInit {
   run() {
     this.rearrange();
 
+    this.appendUserFilter();
+
     this.verifyClassID = undefined;
     this.prevHeight = 0;
 
-    // 分屏窗口、分隔条、委托事件均为一次性挂载，重进页面时复用旧节点，避免重复叠加
-    this.singleVerifyCallbackOnSplit = undefined;
-    // 分屏窗口所在节点被宿主替换时（重新登录、后台整体刷新），旧的已失效，需要重新挂载
-    if (this.frameMounted && this.verifyContainer?.get(0).isConnected === false) {
-      this.frameMounted = false;
-      this.textComparator?.unmount();
-      this.textComparator = undefined;
-      this.timeline?.unmount();
-      this.timeline = undefined;
-      this.smallIconViewer?.unmount();
-      this.smallIconViewer = undefined;
-      this.largeIconViewer?.unmount();
-      this.largeIconViewer = undefined;
-      this.prevSmallIconViewer?.unmount();
-      this.prevSmallIconViewer = undefined;
-      this.prevLargeIconViewer?.unmount();
-      this.prevLargeIconViewer = undefined;
-    }
-    if (this.enableSplit && !this.frameMounted) {
-      const connectedFrame = document.getElementById("connect-frame");
-      if (!connectedFrame) return;
-      this.verifyContainer = $("<div>").appendTo(connectedFrame);
-      this.verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(this.verifyContainer);
-      this.verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(this.verifyWindow);
-      this.verifyWindowDivider = new HorizontalDraggableFrame(
-        "verifyWindowDivider",
-        this.configs,
-        {},
-        connectedFrame,
-      )
-        .setHorizontalPos(1)
-        .bindRight(this.verifyContainer, true);
-      this.frameMounted = true;
-
-      // 打开待审项时打开分屏
-      $("#connect-frame-sub").on("click", "tr[data-data]", (e) => {
-        this.verifyFrame!.empty()
-          .addClass("mcmodder-loading-container")
-          .append(`<div class="mcmodder-loading"></div>`);
-        this.verifyWindowDivider!.expandIfCollapsed();
-        const target = $(e.currentTarget);
-        this.mergeChangedOpinions(target);
-      });
-
-      this.singleVerifyCallbackOnSplit = (mutation: MutationRecord) => {
-        // 重排版
-        if (!this.verifyFrame) return;
-        this.verifyFrame.empty().removeClass("mcmodder-loading-container");
-        $(mutation.target).contents().appendTo(this.verifyFrame);
-        this.verifyFrame.find("> p:first-child()").next().hide();
-        this.verifyFrame
-          .find("> p:first-child()")
-          .append("<span>[展开]</span>")
-          .attr("hide", "1")
-          .click((e) => {
-            const t = $(e.currentTarget);
-            if (t.attr("hide") === "1") {
-              t.attr("hide", "0").next().show();
-              t.find("span").html("[折叠]");
-            } else {
-              t.attr("hide", "1").next().hide();
-              t.find("span").html("[展开]");
-            }
-          });
-        this.verifyFrame.find("> hr").remove();
-        this.verifyFrame.find(".verify-action-btns br").remove();
-        this.verifyFrame.find(".assistant-action-btns br").remove();
-        // setTimeout(() => {
-        window.dispatchEvent(new Event("scroll"));
-        // }, 100);
-      };
-    }
+    // 分屏是否启用随页面宽度实时变化：窄屏时退回原生审核窗
+    this.updateSplitState();
 
     this.singleVerifyObserver.observe($("#connect-frame-sub").get(0), {
       childList: true,
@@ -221,48 +167,240 @@ export class AdminVerifyInit extends AdminBaseInit {
     }
   }
 
-  override firstRun() {
-    if (this.enableSplit) {
-      const verifyWindowElement = this.verifyWindow!.get(0);
-      window.addEventListener(
-        "scroll",
-        Utils.animationThrottle(() => {
-          const top = document.scrollingElement?.scrollTop;
-          const bottom = this.verifyContainer!.prop("scrollHeight") as number;
-          if (top != undefined) {
-            const height = Math.min(bottom - top, screen.height);
-            this.verifyWindow!.css({
-              "margin-top": top + "px",
-              height: height + "px",
-            });
-            if (height < this.prevHeight) {
-              const scrollTopMax =
-                verifyWindowElement.scrollHeight - verifyWindowElement.clientHeight;
-              if (scrollTopMax - verifyWindowElement.scrollTop < 100) {
-                const shift = this.prevHeight - height;
-                verifyWindowElement.scrollBy({ top: shift });
-              }
-            }
-            this.prevHeight = height;
-          }
-        }),
-        {
-          passive: true,
-        },
-      );
-      $(document).on("click", ".mcmodder-verify-locate", () => {
-        if (this.verifyID === undefined) {
-          Utils.commonMsg("待审项 ID 获取失败...", false);
-          return;
-        }
-        const tr = this.getEntry(this.verifyID);
-        if (tr.length) {
-          Utils.highlight(tr, "gold", 2e3, true);
-        } else {
-          Utils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
-        }
-      });
+  /** 卸载已失效的分屏容器，并释放挂载在其中的 Vue 组件。 */
+  private resetSplitFrame() {
+    this.frameMounted = false;
+    this.splitActive = false;
+    this.prevHeight = 0;
+    $("html").removeClass("mcmodder-verify-split");
+    this.textComparator?.unmount();
+    this.textComparator = undefined;
+    this.timeline?.unmount();
+    this.timeline = undefined;
+    this.smallIconViewer?.unmount();
+    this.smallIconViewer = undefined;
+    this.largeIconViewer?.unmount();
+    this.largeIconViewer = undefined;
+    this.prevSmallIconViewer?.unmount();
+    this.prevSmallIconViewer = undefined;
+    this.prevLargeIconViewer?.unmount();
+    this.prevLargeIconViewer = undefined;
+    this.verifyWindowDivider?.$instance.remove();
+    this.verifyWindowDivider = undefined;
+    this.verifyContainer?.remove();
+    this.verifyContainer = undefined;
+    this.verifyWindow = undefined;
+    this.verifyFrame = undefined;
+  }
+
+  /** 根据当前页面宽度与配置同步分屏的启用状态。 */
+  private updateSplitState() {
+    // 分屏窗口所在节点被宿主替换时（重新登录、后台整体刷新），旧的已失效，需要重新挂载
+    if (this.frameMounted && this.verifyContainer?.get(0).isConnected === false) {
+      this.resetSplitFrame();
     }
+    if (!this.enableSplit) {
+      this.setSplitActive(false);
+      return;
+    }
+    if (!this.frameMounted && !this.mountSplitFrame()) {
+      this.setSplitActive(false);
+      return;
+    }
+    this.setSplitActive(true);
+  }
+
+  /**
+   * 创建分屏容器（仅创建一次）。
+   *
+   * @returns 是否创建成功；`#connect-frame` 尚未渲染时返回 `false`。
+   */
+  private mountSplitFrame() {
+    const connectedFrame = document.getElementById("connect-frame");
+    if (!connectedFrame) return false;
+    this.verifyContainer = $("<div>").appendTo(connectedFrame);
+    this.verifyWindow = $('<div id="mcmodder-verify-window">').appendTo(this.verifyContainer);
+    this.verifyFrame = $(`<div id="mcmodder-verify-window-frame">`).appendTo(this.verifyWindow);
+    this.verifyWindowDivider = new HorizontalDraggableFrame(
+      "verifyWindowDivider",
+      this.configs,
+      {},
+      connectedFrame,
+    )
+      .setHorizontalPos(1)
+      .bindRight(this.verifyContainer, true);
+    this.frameMounted = true;
+
+    // 打开待审项时打开分屏
+    $("#connect-frame-sub").on("click", "tr[data-data]", (e) => {
+      const target = $(e.currentTarget);
+      if (this.splitActive) {
+        this.verifyFrame!.empty()
+          .addClass("mcmodder-loading-container")
+          .append(`<div class="mcmodder-loading"></div>`);
+        this.verifyWindowDivider!.expandIfCollapsed();
+      }
+      this.mergeChangedOpinions(target);
+    });
+    return true;
+  }
+
+  /**
+   * 切换分屏的启用状态。
+   *
+   * 禁用时把待审项内容还给原生审核窗，启用时再取回分屏窗，避免宽度变化时丢失当前审核内容。
+   */
+  private setSplitActive(active: boolean) {
+    if (active) {
+      if (!this.frameMounted || this.splitActive) return;
+      this.splitActive = true;
+      $("html").addClass("mcmodder-verify-split");
+      this.verifyWindowDivider?.$instance.show();
+      this.verifyFrame = $("#mcmodder-verify-window-frame");
+      const nativeFrame = $("#verify-window-frame");
+      // 窄屏期间打开的待审项内容仍在原生审核窗内，此时需要迁移到分屏窗
+      if (nativeFrame.find(".verify-info-table").length) {
+        this.handleSplitMutation(nativeFrame);
+      }
+      this.verifyWindowDivider?.updateHorizontalPos();
+      this.updateVerifyWindowHeight();
+      this.locateButton.show();
+    } else {
+      if (this.splitActive) {
+        // 搬回原生审核窗前展开分屏排版时折叠的第一段，避免原生审核窗默认隐藏内容
+        const firstParagraph = this.verifyFrame?.find("> p:first-child()");
+        if (firstParagraph?.attr("data-mcmodder-split-header")) {
+          firstParagraph.attr("hide", "0").next().show();
+          firstParagraph.find("span").html("[折叠]");
+        }
+        const nativeFrame = $("#verify-window-frame");
+        if (nativeFrame.length) {
+          if (this.verifyFrame?.hasClass("mcmodder-loading-container")) {
+            // 加载中的占位符不需要搬回原生审核窗
+            this.verifyFrame.empty().removeClass("mcmodder-loading-container");
+          } else {
+            this.moveChildren(this.verifyFrame, nativeFrame);
+          }
+          this.verifyFrame = nativeFrame;
+        }
+        this.splitActive = false;
+        this.prevHeight = 0;
+      }
+      $("html").removeClass("mcmodder-verify-split");
+      this.verifyContainer?.hide();
+      this.verifyWindowDivider?.$instance.hide();
+      this.locateButton.hide();
+    }
+  }
+
+  /**
+   * 用原生 DOM 搬运子节点，避免 jQuery 在插入时重新执行内容中的 `<script>`。
+   * 审核内容可能在原生审核窗与分屏窗之间来回搬运，重复执行脚本会产生副作用。
+   */
+  private moveChildren(from: JQuery | undefined, to: JQuery | undefined) {
+    const fromNode = from?.get(0);
+    const toNode = to?.get(0);
+    if (!fromNode || !toNode) return;
+    Array.from(fromNode.childNodes).forEach((node) => toNode.appendChild(node));
+  }
+
+  /** 把原生审核窗中已加载的待审项内容搬进分屏窗，并做一次分屏排版。 */
+  private handleSplitMutation(nativeFrame: JQuery) {
+    if (!this.verifyFrame) return;
+    // 分屏窗可能处于收起状态（例如窄屏下打开待审项后拉宽窗口），此时需要展开
+    this.verifyWindowDivider?.expandIfCollapsed();
+    this.verifyFrame.empty().removeClass("mcmodder-loading-container");
+    this.moveChildren(nativeFrame, this.verifyFrame);
+    const firstParagraph = this.verifyFrame.find("> p:first-child()");
+    // 内容可能已经排版过（例如宽度恢复后从原生审核窗搬回），避免重复插入展开按钮
+    if (!firstParagraph.attr("data-mcmodder-split-header")) {
+      firstParagraph.next().hide();
+      firstParagraph
+        .append("<span>[展开]</span>")
+        .attr({
+          "data-mcmodder-split-header": "1",
+          hide: "1",
+        })
+        .click((e) => {
+          const t = $(e.currentTarget);
+          if (t.attr("hide") === "1") {
+            t.attr("hide", "0").next().show();
+            t.find("span").html("[折叠]");
+          } else {
+            t.attr("hide", "1").next().hide();
+            t.find("span").html("[展开]");
+          }
+        });
+    }
+    this.verifyFrame.find("> hr").remove();
+    this.verifyFrame.find(".verify-action-btns br").remove();
+    this.verifyFrame.find(".assistant-action-btns br").remove();
+    window.dispatchEvent(new Event("scroll"));
+  }
+
+  /** 根据页面滚动位置更新分屏窗的高度。 */
+  private updateVerifyWindowHeight() {
+    const container = this.verifyContainer;
+    const verifyWindow = this.verifyWindow;
+    if (!this.splitActive || !container?.is(":visible") || !verifyWindow) return;
+    const verifyWindowElement = verifyWindow.get(0);
+    const top = document.scrollingElement?.scrollTop;
+    const bottom = container.prop("scrollHeight") as number;
+    if (top != undefined) {
+      const height = Math.min(bottom - top, screen.height);
+      verifyWindow.css({
+        "margin-top": top + "px",
+        height: height + "px",
+      });
+      if (height < this.prevHeight) {
+        const scrollTopMax = verifyWindowElement.scrollHeight - verifyWindowElement.clientHeight;
+        if (scrollTopMax - verifyWindowElement.scrollTop < 100) {
+          const shift = this.prevHeight - height;
+          verifyWindowElement.scrollBy({ top: shift });
+        }
+      }
+      this.prevHeight = height;
+    }
+  }
+
+  /** 当前是否处于审核页面（后台为 SPA，resize 监听需要自行判断）。 */
+  private isVerifyPage() {
+    return (
+      $("#connect-frame > div.page-header > h1.title").first().text() === this.getTriggerTitle()
+    );
+  }
+
+  override firstRun() {
+    window.addEventListener(
+      "resize",
+      Utils.animationThrottle(() => {
+        if (!this.isVerifyPage()) return;
+        this.updateSplitState();
+        this.updateVerifyWindowHeight();
+      }),
+      {
+        passive: true,
+      },
+    );
+    window.addEventListener(
+      "scroll",
+      Utils.animationThrottle(() => this.updateVerifyWindowHeight()),
+      {
+        passive: true,
+      },
+    );
+    $(document).on("click", ".mcmodder-verify-locate", () => {
+      if (this.verifyID === undefined) {
+        Utils.commonMsg("待审项 ID 获取失败...", false);
+        return;
+      }
+      const tr = this.getEntry(this.verifyID);
+      if (tr.length) {
+        Utils.highlight(tr, "gold", 2e3, true);
+      } else {
+        Utils.commonMsg("在当前显示的待审列表中找不到本待审项...", false);
+      }
+    });
 
     this.initAssistantViewed();
     $(document)
@@ -284,16 +422,16 @@ export class AdminVerifyInit extends AdminBaseInit {
           if (this.parent.isMobileClient) {
             return;
           }
-          if (this.parent.utils.isKeyMatchConfig("keybindVerifyCheck", e)) {
+          if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyCheck", e)) {
             e.stopPropagation();
             this.checkButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyPass", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyPass", e)) {
             e.stopPropagation();
             this.passButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyRefund", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyRefund", e)) {
             e.stopPropagation();
             this.refundButton?.click();
-          } else if (this.parent.utils.isKeyMatchConfig("keybindVerifyReason", e)) {
+          } else if (this.parent.configRepository.isKeyMatchConfig("keybindVerifyReason", e)) {
             e.preventDefault();
             this.reasonInput?.focus();
           }
@@ -303,17 +441,16 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   private readonly singleVerifyObserver = new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
-      if (
-        (mutation.target as HTMLElement).id === "verify-window-frame" &&
-        Array.from(mutation.addedNodes).filter(
-          (c) =>
-            c.nodeType === Node.ELEMENT_NODE &&
-            (c as HTMLElement).classList.contains("verify-info-table"),
-        ).length
-      ) {
+      const verifyInfoTable = Array.from(mutation.addedNodes).find(
+        (c) =>
+          c.nodeType === Node.ELEMENT_NODE &&
+          (c as HTMLElement).classList.contains("verify-info-table") &&
+          !(c as HTMLElement).hasAttribute("data-mcmodder-verify-processed"),
+      );
+      if ((mutation.target as HTMLElement).id === "verify-window-frame" && verifyInfoTable) {
         // 当所有详情已全部加载完成
-        if (this.singleVerifyCallbackOnSplit) {
-          this.singleVerifyCallbackOnSplit(mutation);
+        if (this.splitActive) {
+          this.handleSplitMutation($(mutation.target));
         } else {
           this.verifyFrame = $("#verify-window-frame");
         }
@@ -337,6 +474,9 @@ export class AdminVerifyInit extends AdminBaseInit {
 
   /** 每次审核信息全部加载完成后所触发的回调。 */
   private onVerifyContentsLoaded() {
+    // 标记已处理，避免内容在分屏窗与原生审核窗之间搬动时被误判为新加载
+    this.verifyFrame!.find(".verify-info-table").attr("data-mcmodder-verify-processed", "1");
+
     // 定位
     try {
       this.verifyID = this.verifyFrame!.find("#verify-pass-btn, #assistant-pass-btn").data(
@@ -345,11 +485,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       const p = $(`<p>本待审项 ID = </p>`).prependTo(this.verifyFrame!);
       const id = $(`<span class="mcmodder-slim-dark">${this.verifyID}</span>`).appendTo(p);
       Utils.addClickCopyEvent(id, "本待审项 ID ", this.verifyID);
-      if (this.splitScreenOnVerify) {
-        p.append(
-          `<a class="mcmodder-verify-locate" title="在待审列表定位本待审项"><i class="fa fa-crosshairs"></i></a>`,
-        );
-      }
+      this.locateButton.appendTo(p);
     } catch (e) {
       Utils.commonMsg("读取待审项 ID 失败: " + String(e), false);
     }
@@ -526,11 +662,20 @@ export class AdminVerifyInit extends AdminBaseInit {
         hasText = true;
       }
       if (isClass) {
-        this.classModifiers[rowText]?.(content, data as McmodClassEditorInnerData);
+        this.classModifiers[rowText as ValueOf<typeof Values.classEditFields>]?.(
+          content,
+          data as McmodClassEditorInnerData,
+        );
       } else if (isItem) {
-        this.itemModifiers[rowText]?.(content, data as McmodItemEditorInnerData);
+        this.itemModifiers[rowText as ValueOf<typeof Values.itemEditFields>]?.(
+          content,
+          data as McmodItemEditorInnerData,
+        );
       } else if (isTab) {
-        this.tabModifiers[rowText]?.(content, data as McmodTabEditorInnerData);
+        this.tabModifiers[rowText as ValueOf<typeof Values.tabEditFields>]?.(
+          content,
+          data as McmodTabEditorInnerData,
+        );
       }
     });
 
@@ -655,7 +800,7 @@ export class AdminVerifyInit extends AdminBaseInit {
   }
 
   private readonly classModifiers: Record<
-    string,
+    ValueOf<typeof Values.classEditFields>,
     (content: VerifyContent, data: McmodClassEditorInnerData) => void
   > = {
     主要名称: this.parseClassRawText("name"),
@@ -668,7 +813,7 @@ export class AdminVerifyInit extends AdminBaseInit {
      *
      * 原始 HTML 范例：
      * ```html
-     * <p>[curseforge] {{ link }}</p>
+     * <p>[curseforge] {{ link }} ({{ desc }})</p>
      * ```
      */
     相关链接: (content, data) => {
@@ -716,9 +861,31 @@ export class AdminVerifyInit extends AdminBaseInit {
 
     模组标签: this.parseClassCommaSplitedText("tag"),
 
-    /** 为支持 MC 版本提供编辑版本对比功能，并检查加载器版本与相对应的所填写的支持版本是否合理。 */
-    支持MC版本: (content) => {
-      PlatformCompareFrame.performCompare(content.previous, content.current);
+    /**
+     * 为支持 MC 版本提供编辑版本对比功能，并把「哪些加载器填了版本」解析出来。
+     *
+     * 审核页的这一行只列出**填了版本**的加载器，因此 `mcversion` 只需要记录出现的加载器；
+     * `ClassEditRules.checkPlatform` 正是据此判断「运作方式里勾了、但没有对应版本」。
+     * 之前这里只做对比、不写 `data.mcversion`，导致该规则在审核页永远拿不到数据。
+     */
+    支持MC版本: (content, data) => {
+      const { current } = PlatformCompareFrame.performCompare(content.previous, content.current);
+      // 站点类型把 `mcversion` 声明成「每个加载器都有键」的完整映射，而审核页只列出填了版本的
+      // 加载器，所以这里先按普通记录收集，赋值时再收窄。
+      const mcversion: Record<string, Record<number, keyof typeof Values.mcVersionMap>> = {};
+      Object.entries(current).forEach(([loaderName, versions]) => {
+        const loader = Utils.getKeyValueOfObject(Values.loaderID, loaderName);
+        if (loader === undefined) {
+          return;
+        }
+        const record: Record<number, keyof typeof Values.mcVersionMap> = {};
+        [...versions].forEach((version, index) => {
+          record[index] = (Utils.getKeyValueOfObject(Values.reversedMcVersionMap, version) ??
+            version) as keyof typeof Values.mcVersionMap;
+        });
+        mcversion[loader] = record;
+      });
+      data.mcversion = mcversion;
     },
 
     /** 为模组封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
@@ -805,11 +972,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     追加关键词: (content, data) => {
-      const tags = content.current
+      const keys = content.current
         .text()
         .split("/")
-        .map((tag) => tag.trim());
-      data.tag = tags.join(",");
+        .map((key) => key.trim());
+      data.keys = keys.join(",");
     },
 
     官方状态: (content, data) => {
@@ -1003,6 +1170,11 @@ export class AdminVerifyInit extends AdminBaseInit {
     },
 
     模组介绍: (content, data) => {
+      // 空内容的占位符同样是 `-`，与其它文本字段一致：漏掉这一步会把占位符当成正文，
+      // 于是「正文为空」永远不会触发，反而会多出标点与中文检查的提示。
+      if (content.current.html() === "-") {
+        return;
+      }
       data.content = content.current.html();
     },
 
@@ -1012,16 +1184,19 @@ export class AdminVerifyInit extends AdminBaseInit {
   };
 
   private readonly itemModifiers: Record<
-    string,
+    ValueOf<typeof Values.itemEditFields> | "来自模组",
     (content: VerifyContent, data: McmodItemEditorInnerData) => void
   > = {
     主要名称: this.parseItemRawText("name"),
     次要名称: this.parseItemRawText("ename"),
     资料分类: this.parseItemRawText("type"),
     注册名: this.parseItemRawText("regname"),
+    最大耐久: this.parseItemRawText("damage"),
     最大叠加: this.parseItemRawText("maxstack"),
+    元数据: this.parseItemRawText("metadata"),
     小图标: this.parseItemImage("icon-32x-data"),
     大图标: this.parseItemImage("icon-128x-data"),
+    删除封面: this.parseItemBooleanText("cover-delete"),
     锁定小图标: this.parseItemBooleanText("icon-32x-lock"),
     锁定大图标: this.parseItemBooleanText("icon-128x-lock"),
     删除小图标: this.parseItemBooleanText("icon-32x-delete"),
@@ -1051,6 +1226,13 @@ export class AdminVerifyInit extends AdminBaseInit {
       });
     },
 
+    /** 为资料封面的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
+    资料封面: (content, data) => {
+      const img = content.row.find("img");
+      data["cover-data"] = img.prop("src");
+      img.each((_, e) => this.appendImgContainer(e));
+    },
+
     /**
      * 为资料类型添加快速跳转链接。
      * 若属于模组分区自定义资料类型，则只有在本地记录了该模组分区的自定义资料类型的情况下，
@@ -1060,7 +1242,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       content.row.children().each((i, e) => {
         if (i === 0) return;
         const text = e.textContent;
-        const type = this.parent.utils.getItemTypeData(this.verifyClassID, text);
+        const type = this.parent.configRepository.getItemTypeData(this.verifyClassID, text);
         if (type === undefined) {
           data.category = { 0: "-1" };
           return;
@@ -1082,11 +1264,21 @@ export class AdminVerifyInit extends AdminBaseInit {
         content.current,
       );
     },
+
+    资料介绍: (content, data) => {
+      // 与模组介绍同理：`-` 是空内容的占位符
+      if (content.current.html() === "-") {
+        return;
+      }
+      data.content = content.current.html();
+    },
   };
 
-  private readonly tabModifiers: Record<
-    string,
-    (content: VerifyContent, data: McmodTabEditorInnerData) => void
+  private readonly tabModifiers: Partial<
+    Record<
+      ValueOf<typeof Values.tabEditVerifyTableFields>,
+      (content: VerifyContent, data: McmodTabEditorInnerData) => void
+    >
   > = {
     /** 为合成表 GUI 的外层添加一个容器框，保证表格过窄时内容不会溢出。 */
     合成表可视化: (content) => {
@@ -1275,6 +1467,55 @@ export class AdminVerifyInit extends AdminBaseInit {
     containerWidgets.eq(1).insertAfter(containerWidgets.eq(-1));
   }
 
+  /** 新增一个只显示指定用户待审项的选项 */
+  private appendUserFilter() {
+    const widget = $(".verify-user-filter").first().parents(".panel");
+    $("<hr>").appendTo(widget);
+    const p = $("<p>").appendTo(widget);
+    const a = $("<a>")
+      .attr({
+        class: "ignore-parent",
+        "data-page": "pageVerifyMod-list",
+      })
+      .text("显示所有指定 UID 的人: ")
+      .appendTo(p);
+    const input = $("<input>")
+      .addClass("form-control mcmodder-verify-userfilter")
+      .appendTo(p)
+      .change(() => {
+        const value = input.val().trim() as string;
+        const ids = value
+          .split(",")
+          .map((id) => Number(id.trim()))
+          .filter((id) => Number.isInteger(id) && id > 0)
+          .join(",");
+        if (ids.length === 0) {
+          if (value.length > 0) {
+            Utils.commonMsg(
+              "输入的 UID 不合法，必须是正整数，输入多个 UID 时请使用单个半角逗号分隔~",
+              false,
+            );
+          }
+          a.removeClass("verify-user-filter");
+          return;
+        }
+        a.addClass("verify-user-filter").attr({
+          "data-uid": ids,
+          "data-data": JSON.stringify({
+            ...this.parseCurrentVerifyListConfig(),
+            classID: "-1",
+            typeID: "0",
+            userID: ids,
+          }),
+        });
+      })
+      .keydown((ev) => {
+        if (ev.key === "Enter") {
+          setTimeout(() => a.click(), 0);
+        }
+      });
+  }
+
   /** 添加“一键查询待审项”快捷按钮 */
   private appendCheckButton() {
     $(
@@ -1284,7 +1525,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       .click(() => this.getVerificationCount());
     const autoVerifyDelay = this.configs.getSettings("autoVerifyDelay");
     if (autoVerifyDelay && autoVerifyDelay >= 1e-2) {
-      const title = $(`<span style="margin-left: 10px;">距离自动查询: </span>`).insertAfter(
+      const title = $(`<span class="mcmodder-verify-autocheck">距离自动查询: </span>`).insertAfter(
         "#mcmodder-check-verification",
       );
       const text = $("<span>").appendTo(title).get(0);
@@ -1303,8 +1544,29 @@ export class AdminVerifyInit extends AdminBaseInit {
     this.parent.scheduleRequestUtils.run("autoCheckVerify");
   }
 
+  private isVerifyListPayload(data: unknown): data is VerifyListPayload {
+    return (
+      data !== null &&
+      typeof data === "object" &&
+      "classID" in data &&
+      "userID" in data &&
+      "classAddOnly" in data &&
+      "typeID" in data
+    );
+  }
+
   /** 获取当前的待审列表是在何种配置下加载的 */
   private parseCurrentVerifyListConfig() {
+    // 优先直接复用百科原生“战术刷新”按钮的配置
+    let data;
+    try {
+      data = JSON.parse($("#refresh-btn").attr("data-data"));
+    } catch (error) {
+      console.warn("[Mcmodder] 待审列表配置解析错误：", error);
+    }
+    if (this.isVerifyListPayload(data)) return data;
+
+    // fallback 到常规推导，正常情况下应该不会走到这一步，这里以防万一而保留
     const typeID = $("#verify-type-list").val() as string;
     const classAddOnly = $("#ignore-manager").is(":checked") ? "1" : "0";
     const userlink = $("#connect-frame-sub .select-row")
@@ -1313,7 +1575,7 @@ export class AdminVerifyInit extends AdminBaseInit {
       .last()
       .find("a")
       .first()
-      .prop("href");
+      .prop("href") as string;
     const userID = userlink?.slice(24, -1) ?? "0";
     let classID = $("#class-version-list").val() as string;
     if ((classID === "0" && typeID !== "0") || userID !== "0") {
@@ -1345,7 +1607,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     ) {
       return;
     }
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: "https://admin.mcmod.cn/frame/pageVerifyMod-list/",
         method: "POST",
@@ -1368,26 +1630,6 @@ export class AdminVerifyInit extends AdminBaseInit {
     const html = $(JSON.parse(resp.responseText).html);
     return html;
   }
-
-  private static readonly opinionMapKey = {
-    通过: 0,
-    退回: 1,
-    检查: 2,
-    等待: 3,
-  } as Record<string, number>;
-
-  private static readonly opinionMapName = {
-    0: "通过",
-    1: "退回",
-    2: "检查",
-    3: "等待",
-  } as Record<number, string>;
-
-  private static readonly opinionMapClassName = {
-    0: "text-success",
-    1: "text-danger",
-    2: "text-warning",
-  } as Record<number, string>;
 
   /** 获取展示待审项行元素中「意见变化」的元素。 */
   private getOpinions(elem: JQuery) {
@@ -1420,13 +1662,18 @@ export class AdminVerifyInit extends AdminBaseInit {
    */
   private parseOpinions(elem: JQuery): ParsedOpinion {
     const data = elem.toArray().map((e) => e.textContent);
-    const result: ParsedOpinion = [0, 0, 0, 0];
+    const result: ParsedOpinion = {
+      pass: 0,
+      check: 0,
+      refund: 0,
+      waiting: 0,
+    };
     data.forEach((e) => {
       const value = Number(e.slice(0, -2));
       const name = e.slice(-2);
-      const key = AdminVerifyInit.opinionMapKey[name];
+      const key = Utils.getKeyValueOfObject(Values.suggestionAbbrMap, name);
       if (key !== undefined) {
-        result[key] = value;
+        result[key.id] = value;
       }
     });
     return result;
@@ -1443,13 +1690,14 @@ export class AdminVerifyInit extends AdminBaseInit {
   private renderOpinions(data: ParsedOpinion, showPositiveSign = false) {
     const result: Node[] = [];
     let first = true;
-    for (let key = 0; key < 3; key++) {
+    for (const key of Utils.getKeys(data)) {
       if (data[key] === 0) {
         continue;
       }
       const value = data[key];
-      const name = AdminVerifyInit.opinionMapName[key];
-      const className = AdminVerifyInit.opinionMapClassName[key];
+      const type = Values.suggestionIDMap[key];
+      const name = type["name"];
+      const className = type["className"];
       if (!first) {
         result.push(document.createTextNode("、"));
       } else {
@@ -1493,9 +1741,14 @@ export class AdminVerifyInit extends AdminBaseInit {
         const currentElement = $(currentMap.get(id)!);
         const latestOpinion = this.parseOpinions(this.getOpinions(latestElement));
         const currentOpinion = this.parseOpinions(this.getOpinions(currentElement));
-        const changed: ParsedOpinion = [0, 0, 0, 0];
+        const changed: ParsedOpinion = {
+          pass: 0,
+          check: 0,
+          refund: 0,
+          waiting: 0,
+        };
         let sum = 0;
-        for (let i = 0; i < 4; i++) {
+        for (const i of Utils.getKeys(changed)) {
           changed[i] = latestOpinion[i] - currentOpinion[i];
           sum += Math.abs(changed[i]);
         }
@@ -1542,7 +1795,7 @@ export class AdminVerifyInit extends AdminBaseInit {
     const current = this.parseOpinions(this.getOpinions(tr));
     target.removeClass("mcmodder-verify-newopinion");
     const targetText = "[📚 助理意见：";
-    for (let i = 0; i < 4; i++) {
+    for (const i of Utils.getKeys(current)) {
       current[i] += parsedChanged[i];
     }
     changed.remove();

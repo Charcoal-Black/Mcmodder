@@ -1,5 +1,9 @@
 declare const unsafeWindow: unknown;
 
+type Mutable<T> = {
+  -readonly [K in keyof T]: T[K];
+};
+
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;
 
@@ -11,11 +15,19 @@ type KeysOfExactType<T, P> = {
   [K in keyof T]-?: Equal<T[K], P> extends true ? K : never;
 }[keyof T];
 
-type ValueOf<T extends Record<PropertyKey, unknown>> = T[keyof T];
+type ValueOf<T extends object> = T[keyof T];
 
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
+
+type DeepRequired<T> = {
+  [P in keyof T]-?: T[P] extends object ? DeepRequired<T[P]> : T[P];
+};
+
+type SetRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+
+type SetDeepRequired<T, K extends keyof T> = Omit<T, K> & DeepRequired<Pick<T, K>>;
 
 type ReverseMap<T extends Record<PropertyKey, PropertyKey>> = {
   [K in keyof T as T[K]]: K;
@@ -49,6 +61,8 @@ type WithDefaultKey<T extends Record<PropertyKey, unknown>, K extends PropertyKe
 };
 
 type Awaitable<T> = T | Promise<T>;
+
+type Arrayable<T> = T | T[];
 
 type IndexedType<T extends object, K extends number | string | symbol = number> = T & {
   _primaryKey: K;
@@ -197,6 +211,18 @@ interface Settings {
   autoCheckin: boolean;
   defaultBackground: string;
   defaultNightBackground: string;
+  /** 白天本地图池（仅记录数量，图片实体在 GM storage） */
+  backgroundPoolDay: number;
+  /** 夜间本地图池（仅记录数量，图片实体在 GM storage） */
+  backgroundPoolNight: number;
+  /**
+   * 轮换预设：
+   * 0=随机（不连续）、1=完全随机（可连续，权重主导）、2=顺序循环、
+   * 3=洗牌轮完重洗、4=每天固定
+   */
+  backgroundPoolRotateMode: 0 | 1 | 2 | 3 | 4;
+  /** 是否覆盖页面自带的背景（默认否：只替换原本没有背景的页面） */
+  backgroundOverrideExisting: boolean;
   backgroundAlpha: number;
   textShadowAlpha: number;
   radiusRatio: number;
@@ -247,6 +273,8 @@ interface Settings {
   uploadFileButton: boolean;
   ignoreEmptyLine: boolean;
   replyLink: boolean;
+  /** 是否启用短评跨页定位（关闭后 #comment-xxx 链接与楼层输入框都不工作） */
+  commentJumpEnabled: boolean;
   missileAlert: boolean;
   missileAlertHeight: number;
   commentExpandHeight: number;
@@ -336,7 +364,9 @@ type InputType =
   | "colorpicker"
   | "keybind"
   | "dropdownMenu"
-  | "dropdownTextMenu";
+  | "dropdownTextMenu"
+  | "backgroundPool"
+  | "radioGroup";
 
 type Permission = "banned" | "none" | "editor" | "developer" | "manager" | "admin";
 
@@ -439,6 +469,27 @@ interface KeybindConfigParams extends ConfigParamsBase<
   type: "keybind";
 }
 
+/**
+ * 本地背景图池。配置值只记录图片数量（用于让设置面板感知变化），
+ * 图片实体存放在 GM storage，见 `background/BackgroundRepository.ts`。
+ */
+interface BackgroundPoolConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  never
+> {
+  type: "backgroundPool";
+}
+
+/** 单选按钮组式的枚举值选择器（选项少、需平铺可见时用） */
+interface RadioGroupConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, number>,
+  number,
+  InputValueSet
+> {
+  type: "radioGroup";
+}
+
 /** 下拉菜单类配置项 */
 interface DropdownConfigParams extends ConfigParamsBase<
   KeysOfType<Required<Settings>, number>,
@@ -468,7 +519,9 @@ type ConfigParams =
   | SliderConfigParams
   | KeybindConfigParams
   | DropdownConfigParams
-  | DropdownTextConfigParams;
+  | DropdownTextConfigParams
+  | BackgroundPoolConfigParams
+  | RadioGroupConfigParams;
 
 /** 用于决定配置项是否显示的上下文 */
 interface ConfigVisibilityContext {
@@ -787,7 +840,7 @@ interface Profile {
   /** 开发者区域的模组 ID 列表，以单个逗号 `,` 分隔 @deprecated 请使用 {@link developers} */
   devModList?: string;
   /** 权限等级 */
-  permission: import("../config/ConfigUtils").Permission;
+  permission: Permission;
   /** 该数据上次更新的时间戳 */
   lastUpdated?: number;
 
@@ -910,12 +963,6 @@ type TableRowSelection = number[];
 /** 行数据列表（一整个表格的数据体） */
 type TableDataList<T extends TableAcceptable> = T[];
 
-/** 虚拟滚动当前渲染区间的左右闭区间边界（数据行索引） */
-interface TableRowRange {
-  l: number;
-  r: number;
-}
-
 /**
  * 展示规则：把某展示列的原始值与（可选的）整行数据渲染成可展示内容。
  * 输入 `unit` 即列值的原始数据，`row` 为该字段所在整行（便于一个展示列综合多个字段）；
@@ -993,6 +1040,18 @@ type AttitudeReactorsOption = import("./props").AttitudeReactorsOption;
 
 type PopoverOption =
   InputListOption | AttitudePickerState | StickerViewerOption | AttitudeReactorsOption;
+
+interface McmodEditorInnerMetaData {
+  /**
+   * 审核附言。用于给审核留下信息，只有审核员会看到。
+   */
+  remark?: string;
+
+  /**
+   * 审核说明。描述大致修改了哪些地方，会在改动对比中显示，所有人都能看到。
+   */
+  reason?: string;
+}
 
 interface McmodItemEditorInnerData {
   /**
@@ -1127,7 +1186,7 @@ interface McmodItemEditorInnerData {
   damage?: string;
 
   /**
-   * 本物品的**最大堆叠**（旧也称**最大叠加**），Number() 后必须为正整数。
+   * 本物品的**最大堆叠**（后台审核和旧编辑页也称**最大叠加**），Number() 后必须为正整数。
    *
    * > 适用于“物品/方块”的资料，单组最大的堆叠数量。
    */
@@ -1141,11 +1200,44 @@ interface McmodItemEditorInnerData {
   metadata?: string;
 }
 
-interface McmodItemEditorData {
-  action: "item_add" | "item_edit";
+interface McmodEditorMetaData {
+  /**
+   * 操作类型。
+   */
+  action: ElementOf<typeof import("../Values.ts").Values.editActionTypes>["id"];
+
+  /**
+   * 当前正在编辑的内容的所属资料 ID。如果正在编辑的是日志/作者/教程类资料，则为日志/作者/教程 ID。
+   *
+   * 若当前编辑没有明确的所属资料，例如**资料添加**、**日志添加**、**模组添加**、**教程添加**，则为 `"0"` 或空串。
+   */
   "edit-id": string;
+
+  /**
+   * 当前正在编辑的内容的所属模组 ID。
+   *
+   * 若当前编辑没有明确的所属模组，例如**模组添加**、**教程添加/编辑**、**作者添加/编辑**类编辑等，则为 `"0"` 或空串。
+   */
   "class-id": string;
-  "item-data": McmodItemEditorInnerData;
+
+  /**
+   * 创建编辑时，为 `"0"` 或空串。
+   *
+   * 修改编辑时，为当前正在修改的编辑的 ID。
+   */
+  "redo-id": string;
+
+  /**
+   * 验证码。
+   *
+   * 用户非编辑员，且主站用户等级低于 Lv.5 时，需要两字符验证码才能提交/修改编辑。
+   */
+  captcha?: string;
+}
+
+interface McmodItemEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "3" })["id"];
+  "item-data": McmodItemEditorInnerData & McmodEditorInnerMetaData;
 }
 
 interface McmodClassEditorInnerData {
@@ -1296,7 +1388,21 @@ interface McmodClassEditorInnerData {
     {
       /** 链接所指向的站点 ID */
       title: keyof typeof import("../Values").Values.siteMap;
-      /** 链接 URL */
+      /**
+       * 链接 URL。
+       *
+       * 以下是常见的合法范例。链接末端是否有斜杠不影响合法性，都能过审。
+       *
+       * - **CurseForge 链接范例**：https://www.curseforge.com/minecraft/mc-mods/gregtechceu-modern
+       * - **Modrinth 链接范例**：https://modrinth.com/mod/gregtechceu-modern
+       * - **GitHub 链接范例**：https://github.com/GregTechCEu/GregTech-Modern
+       *
+       * 注意不能出现冗余后缀。常见的后缀列举在了 `ClassEditRules` 中的
+       * `redundantLinkParams`、`redundantCFLinkSuffixes`、`redundantMRLinkSuffixes` 里。
+       *
+       * 此外，指向「某个人」而非模组本身的地址也不能出现。常见的个人地址已经列举在了
+       * `ClassEditRules.personalPatterns` 里。
+       */
       href: string;
       /**
        * > 在此处可以填写链接备注（例如：“Forge”、“已失效”等），会在鼠标悬浮时显示。
@@ -1313,7 +1419,7 @@ interface McmodClassEditorInnerData {
    * （意外支持的版本、实际不支持的版本无需添加）。
    */
   mcversion?: Record<
-    ValueOf<keyof typeof import("../Values").Values.loaderID>,
+    ValueOf<typeof import("../Values").Values.loaderID>,
     Record<number, keyof typeof import("../Values").Values.mcVersionMap>
   >;
 
@@ -1443,6 +1549,11 @@ interface McmodClassEditorInnerData {
   tag?: string;
 }
 
+interface McmodClassEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "1" })["id"];
+  "class-data": McmodClassEditorInnerData & McmodEditorInnerMetaData;
+}
+
 interface McmodTabEditorInnerData {
   /**
    * 合成表使用的 **GUI**。键值 Number() 后必须是正整数，代表 GUI 的数字 ID。
@@ -1505,6 +1616,11 @@ interface McmodTabEditorInnerData {
    */
   "slot-fuel-number"?: Record<number, string>;
 
+  /**
+   * 合成表的**能量数据**。
+   */
+  "slot-power-number"?: Record<number, string>;
+
   /** 开始版本 */
   startver?: string;
 
@@ -1513,6 +1629,254 @@ interface McmodTabEditorInnerData {
 
   /** 备注 */
   text?: string;
+}
+
+interface McmodTabEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "4" })["id"];
+  "item-table-data": McmodTabEditorInnerData & McmodEditorInnerMetaData;
+}
+
+interface McmodAuthorEditorInnerData {
+  /**
+   * > 请选择如何显示个人作者/开发团队的头像。手动上传时，
+   * 会根据图像实际大小自动转换为合适的尺寸 (100x100、200x200、400x400)。
+   *
+   * 头像显示方式。*只有第一个键会被读取。*
+   *
+   * - `0`: 不显示
+   * - `1`: 绑定 MC 百科头像
+   * - `2`: 绑定 GitHub 头像
+   * - `3`: 手动上传
+   */
+  "avatar-type"?: Record<0 | 1 | 2 | 3, "1">;
+
+  /**
+   * 头像值，含义由 {@link avatar-type} 决定。
+   *
+   * - `0`: 留空
+   * - `1`: 要绑定的 MC 百科用户 UID
+   * - `2`: 要绑定的 GitHub 用户 ID
+   * - `3`: 图片 URL
+   */
+  "avatar-value"?: string;
+
+  /** 正文 */
+  content?: string;
+
+  /**
+   * > 可添加用于导向的正规网站链接，用于导航与考证个人作者或开发团队的相关主页，请勿添加非正规网站的链接。
+   * （其中“官方”代表“个人网站”或“官方网站”）
+   */
+  link?: Record<
+    number,
+    {
+      /** 链接所指向的站点 ID */
+      title: keyof typeof import("../Values").Values.authorSiteMap;
+      /** 链接 URL。*/
+      href: string;
+      /** 网址的内容描述与备注。 */
+      text: string;
+      /** 当 `title` 为 `other`（其他）时，用户输入的自定义站点名称。 */
+      custom: string;
+    }
+  >;
+
+  /**
+   * > 请添加此团队中所包含的作者成员。
+   *
+   * 编辑团队的作者信息时，只能添加已经被收录的作者，而不能像编辑模组那样顺带新建作者。
+   */
+  member?: ElementOf<Required<Required<McmodClassEditorInnerData>["author"]>["link"]>[];
+
+  /**
+   * > 填写个人作者/开发团队的名称，如有需要，可增加更多昵称，但只能设置其中一个为主要名称。
+   */
+  name: {
+    /** 主要名称。 */
+    main: string;
+    /** 全部昵称的列表。*主要名称除在 `main` 记录之外，也是需要重复包含在其中的*，但是不一定是第 0 项。 */
+    list: Record<number, { name: string }>;
+  };
+
+  /**
+   * > 名称为开发团队时请勾选，个人作者的情况下勿选。
+   */
+  team?: { 0: "0" | "1" };
+}
+
+interface McmodAuthorEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "8" })["id"];
+  "author-data": McmodAuthorEditorInnerData & McmodEditorInnerMetaData;
+  /** 编辑前的作者头像经解析后的 URL，目前暂不清楚实际用途 */
+  "author-avatar-cover"?: string;
+}
+
+interface McmodPostEditorInnerData {
+  /**
+   * **著作权**。*只有第一个键的**值**会被读取。*
+   *
+   * > 声明本篇教程是否允许被转载或所使用哪种知识共享协议。
+   */
+  copyright?: Record<number, ElementOf<typeof import("../Values.ts").Values.postCopyrights>["id"]>;
+
+  /** 正文 */
+  content?: string;
+
+  /**
+   * > 上传一张图片作为教程的封面，裁剪比例为16:10，上传后会根据图像实际大小自动转换为合适的尺寸
+   *  (720x450、480x300、240x150)。不可上传与教程无关或不清晰、边缘有瑕疵的封面。
+   */
+  "cover-data"?: string;
+
+  /**
+   * 本次编辑是否要求**删除封面**。
+   */
+  "cover-delete"?: { 0: "0" | "1" };
+
+  /**
+   * **教程标题**。
+   */
+  name: string;
+
+  /**
+   * > 选择本篇教程中所使用或涉及到的模组或整合包，教程会显示在被关联的分区中，设为主要关联会在分区下有更靠前的排名，
+   * 最多可添加 10 个。备注内可填入 MC/Mod 版本、注意事项等信息（选填）。
+   */
+  relation: {
+    /** 主要关联的分区。 */
+    main: {
+      /** 模组/整合包的百科数字 ID */
+      id: string;
+      /** 关联的是模组还是整合包 */
+      type: "mod" | "modpack";
+      /** 分区备注 */
+      remark: "";
+    };
+    /** 全部分区的列表。*主要分区除在 `main` 记录之外，也是需要重复包含在其中的*，但是不一定是第 0 项。 */
+    list: Record<number, McmodPostEditorInnerData["relation"]["main"]>;
+  };
+
+  /**
+   * > 设置教程的权限。
+   * > - 个人教程：默认只有创建者可以编辑，同时也可以设置协作者。
+   * > - 社区教程：创建一篇由社区维护的公开教程，所有人都能编辑完善，但必须严格遵守编辑规范。
+   *
+   * 文案与实际不符，实际只有作者本人可编辑，无法设置协作者。
+   * *只有第一个键的**值**会被读取，`0` 为 __社区教程__，`1` 为 __个人教程__。*
+   */
+  owned: Record<0 | 1, "0" | "1">;
+}
+
+interface McmodPostEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "5" })["id"];
+  "post-data": McmodPostEditorInnerData & McmodEditorInnerMetaData;
+}
+
+interface McmodAuthorEditorInnerData {
+  /**
+   * > 请选择如何显示个人作者/开发团队的头像。手动上传时，
+   * 会根据图像实际大小自动转换为合适的尺寸 (100x100、200x200、400x400)。
+   *
+   * 头像显示方式。*只有第一个键会被读取。*
+   *
+   * - `0`: 不显示
+   * - `1`: 绑定 MC 百科头像
+   * - `2`: 绑定 GitHub 头像
+   * - `3`: 手动上传
+   */
+  "avatar-type"?: Record<0 | 1 | 2 | 3, "1">;
+
+  /**
+   * 头像值，含义由 {@link avatar-type} 决定。
+   *
+   * - `0`: 留空
+   * - `1`: 要绑定的 MC 百科用户 UID
+   * - `2`: 要绑定的 GitHub 用户 ID
+   * - `3`: 图片 URL
+   */
+  "avatar-value"?: string;
+
+  /** 正文 */
+  content?: string;
+
+  /**
+   * > 可添加用于导向的正规网站链接，用于导航与考证个人作者或开发团队的相关主页，请勿添加非正规网站的链接。
+   * （其中“官方”代表“个人网站”或“官方网站”）
+   */
+  link?: Record<
+    number,
+    {
+      /** 链接所指向的站点 ID */
+      title: keyof typeof import("../Values").Values.authorSiteMap;
+      /** 链接 URL。*/
+      href: string;
+      /** 网址的内容描述与备注。 */
+      text: string;
+      /** 当 `title` 为 `other`（其他）时，用户输入的自定义站点名称。 */
+      custom: string;
+    }
+  >;
+
+  /**
+   * > 请添加此团队中所包含的作者成员。
+   *
+   * 编辑团队的作者信息时，只能添加已经被收录的作者，而不能像编辑模组那样顺带新建作者。
+   */
+  member?: ElementOf<Required<Required<McmodClassEditorInnerData>["author"]>["link"]>;
+
+  /**
+   * > 填写个人作者/开发团队的名称，如有需要，可增加更多昵称，但只能设置其中一个为主要名称。
+   */
+  name: {
+    /** 主要名称。 */
+    main: string;
+    /** 全部昵称的列表。*主要名称除在 `main` 记录之外，也是需要重复包含在其中的*，但是不一定是第 0 项。 */
+    list: Record<number, { name: string }>;
+  };
+
+  /**
+   * > 名称为开发团队时请勾选，个人作者的情况下勿选。
+   */
+  team?: { 0: "0" | "1" };
+}
+
+interface McmodAuthorEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "8" })["id"];
+  "author-data": McmodAuthorEditorInnerData & McmodEditorInnerMetaData;
+  /** 编辑前的作者头像经解析后的 URL，目前暂不清楚实际用途 */
+  "author-avatar-cover"?: string;
+}
+
+interface McmodVersionEditorInnerData {
+  /** 正文 */
+  content?: string;
+
+  /**
+   * > 日志更新的对应支持 MC 版本，相当于给日志分类，相同的版本会合在一起显示。
+   */
+  mcversion?: string;
+
+  /**
+   * > 日志的版本号，需与官方一致。
+   */
+  name: string;
+
+  /**
+   * > 作者更新此版本的日期。
+   *
+   * @warning 直接通过页面 `window` 上的 `getEditorData()` 拿到的 `updatetime` 是 `Date` 对象。
+   * 序列化时，需要转为 **ISO 字符串** 来存储和作为请求载荷。
+   *
+   * @warning 百科原生疑似漏洞：日期选择控件无法设置时间，在设置为相同日期的情况下，最终提交的本字段
+   * 数据会受本机时区影响而产生偏移。例如：在 UTC+8 下，实际提交数据为前一天的 16 时；在 UTC-7 下，
+   * 实际提交数据为当天的 7 时。可能会让最终线上展示的更新日期产生一天的偏差，尚未测试。
+   */
+  updatetime?: string;
+}
+
+interface McmodVersionEditorData extends McmodEditorMetaData {
+  action: (ElementOf<typeof import("../Values.ts").Values.editActionTypes> & { type: "2" })["id"];
+  "class-version-data": McmodVersionEditorInnerData & McmodEditorInnerMetaData;
 }
 
 interface ClassName {
@@ -1572,16 +1936,23 @@ type InputValueNumericRange = [number | null, number | null];
 /** 数值输入的范围 `[min, max]`（两端必有值） */
 type InputValueFiniteNumericRange = [number, number];
 /** 枚举值集合：值 → 显示文案（用于下拉类输入） */
-type InputValueSet = Record<number, string>;
+type InputValueSet = Record<number, string | { text: string; desc?: string }>;
 /** 输入范围：数值区间或枚举值集合 */
 type InputValueRange = InputValueNumericRange | InputValueSet;
 
-/** 单条候选：`value` 为真正被匹配与写回的文本；`text` 为自定义展示（存在时以 `v-text` 渲染，不做匹配高亮） */
+/** 候选栏中的单条候选 */
 interface InputSuggestion {
+  /** 自定义展示文本 */
   text?: string;
+  /** 自定义展示补充描述文本 */
+  desc?: string;
+  /** 原始数值 */
   value: string;
+  /** 是否显示原始数值 */
   showValue?: boolean;
+  /** 参与匹配的别名 */
   alias?: string[];
+  /** 是否强制对 {@link text} 中出现的非法字符转义 */
   noEscape?: boolean;
 }
 /** 候选的简写形式：允许直接写字符串（等价于 `{ value }`），`onInitSuggestion` 返回时会统一规范化 */
@@ -1590,6 +1961,7 @@ type InputSimplifiedSuggestion = InputSuggestion | string;
 interface InputSuggestionRate {
   score?: number;
   ranges?: {
+    desc?: [number, number];
     value?: [number, number];
     alias: Record<number, [number, number]>;
   };
@@ -1784,7 +2156,7 @@ type ModalOption<T> = T["option"];
 /**
  * 跨标签页请求提示记录。
  *
- * 每次 {@link Utils.createRequest} 真正派发请求时写一条，用于让**所有可见的标签页**各自显示一条
+ * 每次 {@link import("../WebFetchUtils").WebFetchUtils.createRequest} 真正派发请求时写一条，用于让**所有可见的标签页**各自显示一条
  * iziToast 气泡（请求方法 + URL），便于调试与监控。
  *
  * - `id` —— 随机标识，接收端据此本地去重（同一 `id` 只弹一次）；

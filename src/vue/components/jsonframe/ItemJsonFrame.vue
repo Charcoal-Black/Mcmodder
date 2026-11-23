@@ -4,7 +4,8 @@
     ref="jsonFrame"
     :parent="parent"
     :config-name="configName"
-    :allowed-keys="indexedKeys"
+    :indexed-keys="Values.assets.storage.indexes.mcmodderItemData"
+    :allowed-keys="Values.assets.storage.keys.mcmodderItemData"
     :column-options="columnOptions"
     :edit-configs="editConfigs"
     :attr="{
@@ -170,21 +171,11 @@ const props = withDefaults(
 );
 
 const configName = "mcmodderJsonStorage";
-const indexedKeys = [
-  "id",
-  "registerName",
-  "metadata",
-  "name",
-  "englishName",
-  "creativeTabName",
-  "branch",
-  "OredictList",
-];
 const columnOptions = {
   itemType: [
     "类型",
     (type, item) => {
-      return props.parent.utils.getItemTypeHTML(item.classID, type).prop("outerHTML");
+      return props.parent.configRepository.getItemTypeHTML(item.classID, type).prop("outerHTML");
     },
   ],
   smallIcon: ["小", TableUtils.DISPLAYRULE_IMAGE_BASE64],
@@ -213,13 +204,15 @@ const columnOptions = {
     "矿物词典/物品标签",
     (data) => {
       if (!data || data.charAt(0) != "[") return data;
-      let res = "";
+      const res: string[] = [];
       const entries = data.slice(1, -1).split(",") as string[];
       entries.forEach((entry) => {
         entry = entry.trim();
-        res += `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${Utils.getOredictURL(entry)}">${entry}</a>`;
+        res.push(
+          `<a class="jsonframe-oredict badge mcmodder-monospace" target="_blank" href="${Utils.getOredictURL(entry)}">${entry}</a>`,
+        );
       });
-      return res;
+      return res.join("");
     },
   ],
   maxStackSize: ["最大堆叠", TableUtils.DISPLAYRULE_NUMBER],
@@ -565,8 +558,8 @@ async function getImageBlobByItemList(itemList: ItemList, width: 32 | 128, maxCo
 async function inferItemList(itemList: ItemList, config: ItemJsonFrameConfig) {
   let check = async (id: number) => {
     const data = config.getall
-      ? await props.parent.utils.getDetailedItemByID(id)
-      : await props.parent.utils.getItemByID(id);
+      ? await props.parent.web.getDetailedItemByID(id)
+      : await props.parent.web.getItemByID(id);
     if (!data) {
       logger.value!.log(`${id} 已失效`);
       return false;
@@ -634,7 +627,7 @@ async function getItemListFromPage(
   let jumpList = [],
     generalList = [],
     repeatedData;
-  let resp = await props.parent.utils.createRequest(
+  let resp = await props.parent.web.createRequest(
     {
       url: url,
       method: "GET",
@@ -700,7 +693,7 @@ async function getItemListFromPage(
     s = c.attr("data-loop");
     if (s) {
       generalList.push(item.id);
-      resp = await props.parent.utils.createRequest(
+      resp = await props.parent.web.createRequest(
         {
           url: Utils.getItemURL(item.id),
           method: "GET",
@@ -782,7 +775,7 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
   } */
 
   // 获取分支情况
-  const resp = await props.parent.utils.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: `${props.parent.hostname}/item/list/${classID}-${typeID}.html`,
       method: "GET",
@@ -822,7 +815,7 @@ async function getItemListByClassID(config: ItemJsonFrameConfig) {
 async function performClassSearch(classID: number, typeID: number) {
   // STEP 0: 前置数据收集
   logger.value!.log(`打开模组页 ${classID}`);
-  const resp = await props.parent.utils.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: Utils.getClassURL(classID),
       method: "GET",
@@ -898,7 +891,7 @@ async function performClassSearch(classID: number, typeID: number) {
 async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplication>) {
   ctx.empty();
   ctx.showLoading();
-  let resp = await props.parent.utils.createRequest(
+  const resp = await props.parent.web.createRequest(
     {
       url: url,
       method: "GET",
@@ -906,7 +899,7 @@ async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplic
     "从收纳帖获取JSON列表",
   );
   if (!resp.responseXML) return;
-  let doc = $(resp.responseXML);
+  const doc = $(resp.responseXML);
   if (doc.find("title").text() === "页面重载开启") {
     return new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -914,21 +907,23 @@ async function getJSONFromURL(url: string, ctx: TableContext<ItemJsonFrameApplic
       }, 1e3);
     });
   }
-  let jsonList = doc.find("ignore_js_op");
+  const jsonList = doc.find("ignore_js_op");
   jsonList.each((_, _json) => {
     const json = $(_json);
-    const infoFrame = json.parents(".t_f");
+    const infoFrame = json.parents(".t_fsz");
     const infoCopied = infoFrame.clone();
     infoCopied.find("ignore_js_op").replaceWith("[JSON]");
     const avatar = json.parents(".plhin").find(".avatar a");
-    const pid = Number(infoFrame.attr("id")?.slice(12)); // postmessage_xxxxx
+    const pid = Number(infoFrame.find(".t_f").first().attr("id")?.slice(12)); // postmessage_xxxxx
     if (isNaN(pid)) return;
     ctx.appendData({
       user: `${Utils.abstractLastFromURL(avatar.attr("href"), "center")},${avatar.children().attr("alt")}`,
       pid: pid,
       name: json.find("a").text(),
-      size: json.find("em").text().slice(1).split(", ")[0],
-      info: infoCopied.text(),
+      size: json.children(".tattl").length
+        ? json.find("dd").children().eq(3).text().split(", ")[0]
+        : json.find("em").text().slice(1).split(", ")[0],
+      info: infoCopied.text().trim(),
       op: json.find("a").prop("href"),
     });
   });
@@ -1009,7 +1004,7 @@ async function preManualSubmitRow(index: number) {
 
 function manualSubmitRow(url: string, index: number) {
   const data = convertToImportableFormat(jsonFrame.value!.table!.getData(index));
-  const interactID = props.parent.utils.setInteract(JSON.stringify(data));
+  const interactID = props.parent.configRepository.setInteract(JSON.stringify(data));
   GM_openInTab(`${url}?i=${interactID}`);
 }
 
@@ -1030,7 +1025,7 @@ async function getJSONByPage(page: number, table: TableContext<ItemJsonFrameAppl
 
 async function downloadAndImportFile(url: string) {
   // TODO: 修复 UTF-8 => ISO-8859-1 乱码问题
-  let resp = await props.parent.utils.createRequest({ url: url }, "下载JSON");
+  let resp = await props.parent.web.createRequest({ url: url }, "下载JSON");
   let headers = resp.responseHeaders;
   if (!headers.includes("content-type: application/octet-stream")) {
     Utils.commonMsg("下载失败...", false);
@@ -1112,20 +1107,20 @@ function exportJson(fileName: string) {
 }
 
 function onCommonExportClick() {
-  let content = "";
+  const content: string[] = [];
   jsonFrame.value!.table!.getAllData().forEach((e) => {
-    content += JSON.stringify(convertToImportableFormat(e)) + "\r\n";
+    content.push(JSON.stringify(convertToImportableFormat(e)));
   });
-  Utils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, `${content.join("\r\n")}\r\n`);
   swal.close();
 }
 
 function onFullExportClick() {
-  let content = "";
+  const content: string[] = [];
   jsonFrame.value!.table!.getAllData().forEach((entry) => {
-    content += JSON.stringify(entry) + "\r\n";
+    content.push(JSON.stringify(entry));
   });
-  Utils.saveFile(jsonFrame.value!.activeFileName, content);
+  Utils.saveFile(jsonFrame.value!.activeFileName, `${content.join("\r\n")}\r\n`);
   swal.close();
 }
 

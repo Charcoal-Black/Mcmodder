@@ -23,7 +23,7 @@
             [userFavList.includes(uid) ? 'user-fav' : 'user-recent'],
             ...[deleted.has(uid) ? 'deleted' : undefined],
           ]"
-          :title="`${profile.nickname} · ${parent.utils.getProfileAbstract(profile, true, true)}`"
+          :title="`${profile.nickname} · ${Utils.getProfileAbstract(profile, true, true)}`"
           target="_blank"
           :href="Utils.getCenterURL(uid)"
           @click="onUserClick($event, uid)"

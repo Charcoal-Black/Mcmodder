@@ -1,3 +1,4 @@
 src/html/*
+e2e/support/data/seed/item/*.html
 package-lock.json
 CHANGELOG.md

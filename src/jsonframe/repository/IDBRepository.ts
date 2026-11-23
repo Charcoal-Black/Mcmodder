@@ -38,7 +38,7 @@ export class IDBRepository<T extends object> implements AppRepository<T> {
    * @param tableName 本仓储对应的表名。
    * @param indexedKeys 除 `_filename` 外需要建立的额外索引字段名。
    */
-  constructor(tableName: string, indexedKeys: string[]) {
+  constructor(tableName: string, indexedKeys: readonly string[]) {
     this.db = new Dexie(IDBRepository.databaseName);
     this.columns = ["_primaryKey", "_filename", ...indexedKeys].join(", ");
     this.version = this.db.version(IDBRepository.versionNumber);

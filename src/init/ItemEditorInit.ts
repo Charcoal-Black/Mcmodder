@@ -27,7 +27,6 @@ export class ItemEditorInit extends Init {
       [s, t].every((sz) => [32, 128].includes(sz))
     ) {
       // 创建一个临时 GIFViewer 来中转，既暴力又优雅（x）
-      // 未来可能会考虑将 GIFViewer 给整体拆分成功能层和视觉交互层，消除组件挂载开销
       const fromViewer = s === 32 ? this.smallGifViewerInstance : this.largeGifViewerInstance;
       const toViewer = t === 32 ? this.smallGifViewerInstance : this.largeGifViewerInstance;
       if (!fromViewer || !toViewer) {
@@ -39,6 +38,7 @@ export class ItemEditorInit extends Init {
         const tempContainer = $("<div>");
         this.tempGifViewer ??= createApp(GIFViewer, {
           parent: this.parent,
+          headless: true,
           editable: true,
           validate: this.validateGIFViewer(32),
           onChange: (blob: Blob) => void this.applyGifIcon(blob, 32),
@@ -280,7 +280,7 @@ export class ItemEditorInit extends Init {
     const params = new URLSearchParams(window.location.search);
     if (params.has("i")) {
       const interactID = params.get("i");
-      const data = this.parent.utils.getInteract(interactID) as string;
+      const data = this.parent.configRepository.getInteract(interactID) as string;
       if (data) {
         jsonUploader.val(data).change();
       }

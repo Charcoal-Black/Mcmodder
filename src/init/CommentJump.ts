@@ -301,7 +301,7 @@ export class CommentJumpController {
     if (this.requests >= this.jumpLimit) throw new Error("COMMENT_JUMP_REQUEST_LIMIT");
     this.requests++;
     this.updateLoading(`正在定位短评（第 ${page} 页）…`);
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: `${this.parent.hostname}/frame/comment/CommentRow/`,
         method: "POST",
@@ -345,7 +345,7 @@ export class CommentJumpController {
     if (this.requests >= this.jumpLimit) throw new Error("COMMENT_JUMP_REQUEST_LIMIT");
     this.requests++;
     this.updateLoading(`正在定位回复（第 ${page} 页）…`);
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: `${this.parent.hostname}/frame/comment/CommentReply/`,
         method: "POST",

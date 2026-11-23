@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mcmodder E2E 离线替身页</title>
+  </head>
+  <body>
+    <h1 class="e2e-title">mcmod.cn 离线替身页</h1>
+    <p>
+      本页由 Playwright 的路由拦截直接返回，不会产生真实网络请求。用于验证用户脚本的注入链路本身：
+      脚本体在 document-start 求值、GM API 齐备、不受宿主站点内容影响。
+    </p>
+    <p>注意：本页没有 jQuery，脚本会走「宿主环境不完整」的分支，只做启动遮罩的淡入淡出。</p>
+  </body>
+</html>

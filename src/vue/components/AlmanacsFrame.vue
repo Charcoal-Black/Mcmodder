@@ -48,7 +48,7 @@ watch(
 );
 
 const formattedChineseDate = computed(() => {
-  return Utils.getFormattedChineseDate(new Date(date.value));
+  return Utils.getFormattedChineseDate(date.value);
 });
 
 async function get(date: number) {
@@ -60,7 +60,7 @@ async function get(date: number) {
     }
   });
   if (!almanacs.value && date === Utils.getStartTime(new Date(), 0)) {
-    const resp = await parent.utils.createRequest(
+    const resp = await parent.web.createRequest(
       {
         url: `${parent.hostname}/tools/almanacs`,
         method: "GET",

@@ -1,4 +1,5 @@
 import { GM_getValue, GM_openInTab, GM_setValue } from "$";
+import { BackgroundPool } from "./background/BackgroundPool";
 import { AdvancementID, AdvancementUtils } from "./advancement/AdvancementUtils";
 import { ConfigUtils } from "./config/ConfigUtils";
 import { DraggableFrame } from "./widget/draggable/DraggableFrame";
@@ -28,6 +29,7 @@ import { createApp } from "vue";
 import FavUser from "./vue/components/FavUser.vue";
 import ProfileSelector from "./vue/components/ProfileSelector.vue";
 import { ConfigRepository } from "./config/ConfigRepository.ts";
+import { WebFetchUtils } from "./WebFetchUtils.ts";
 
 interface ScreenAttachedFrameData {
   node: HTMLElement;
@@ -36,7 +38,7 @@ interface ScreenAttachedFrameData {
 }
 
 export class Mcmodder {
-  utils: Utils;
+  web: WebFetchUtils;
   configRepository: ConfigRepository;
   currentUID: number;
   currentUsername: string;
@@ -101,13 +103,16 @@ export class Mcmodder {
     this.modalBroadcaster = new ModalBroadcaster(this);
     this.requestToastBroadcaster = new RequestToastBroadcaster(this);
 
-    this.utils = new Utils(this);
-    this.configRepository = this.utils.configs;
+    this.configRepository = new ConfigRepository(this);
+    this.web = new WebFetchUtils(this, this.configRepository);
 
     this.echartsUtils = new EchartsUtils(this);
 
     this.cfgutils = new ConfigUtils(this);
-    this.styleColors = Utils.getThemeColors(this.configRepository);
+    this.styleColors = {
+      tc1: this.configRepository.getSettings("themeColor1")!,
+      tc2: this.configRepository.getSettings("themeColor2")!,
+    };
 
     this.advutils = new AdvancementUtils(this);
     AdvancementLoader.run(this.advutils);
@@ -215,7 +220,7 @@ export class Mcmodder {
         previewFrame.attr("data-status", "pending");
         this.linkPendingSet.add(sourceUrl);
         await Utils.sleep(750);
-        const resp = await this.utils.createRequest(
+        const resp = await this.web.createRequest(
           {
             url: target.href,
             method: "GET",
@@ -761,9 +766,14 @@ export class Mcmodder {
     ).addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
-    if (this.configRepository.getSettings("defaultBackground") != "none") {
+    // 是否覆盖页面自带的背景：默认否（保守），只替换原本没有背景的页面；
+    // 用户可在设置里开启，强制用脚本背景覆盖站点/其他脚本设置的背景。
+    const overrideExisting = this.configRepository.getSettings("backgroundOverrideExisting");
+    const hasLocalBackground =
+      BackgroundPool.getImages("day").length > 0 || BackgroundPool.getImages("night").length > 0;
+    if (hasLocalBackground || this.configRepository.getSettings("defaultBackground") != "none") {
       $("body")
-        .filter((_, c) => $(c).css("background-image") === "none")
+        .filter((_, c) => overrideExisting || $(c).css("background-image") === "none")
         .css({
           background: "var(--mcmodder-image-background)",
           "background-size": "cover",
@@ -990,7 +1000,7 @@ export class Mcmodder {
     )
       setInterval(
         () => {
-          this.utils
+          this.web
             .createRequest(
               {
                 url: `${this.hostname}/frame/CommonHeader/`,

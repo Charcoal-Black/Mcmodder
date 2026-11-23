@@ -18,7 +18,7 @@ export class AutoCheckinScheduleRequest extends ScheduleRequestType {
    */
   async run(list: ScheduleRequestUtils) {
     list.create(Utils.getStartTime(new Date()), "autoCheckin", this.parent.currentUID);
-    const resp = await this.parent.utils.createRequest(
+    const resp = await this.parent.web.createRequest(
       {
         url: "https://center.mcmod.cn/action/doUserCheckIn/",
         method: "POST",

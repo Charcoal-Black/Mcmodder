@@ -35,7 +35,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
       if (!id) return;
       const sid = id.toString();
       const l = `${this.parent.hostname}/class/history/${id}.html`;
-      this.parent.utils
+      this.parent.web
         .createRequest(
           {
             url: l,
@@ -57,7 +57,7 @@ export class AutoSubscribeScheduleRequest extends ScheduleRequestType {
           }
 
           if (this.configs.getSettings("subscribeComment")) {
-            this.parent.utils.createRequest(
+            this.parent.web.createRequest(
               {
                 url: `${this.parent.hostname}/frame/comment/CommentRow/`,
                 method: "POST",

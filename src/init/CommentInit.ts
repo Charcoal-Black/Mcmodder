@@ -96,14 +96,18 @@ export class CommentInit extends Init {
             return false;
           }
         });
-      gotofloor.val(currentFloor).change(() => {
-        const targetFloor = parseInt(gotofloor.val().trim(), 10);
-        if (!Number.isInteger(targetFloor) || targetFloor < 1) {
-          Utils.commonMsg("请输入一个合法的数值...", false);
-          return;
-        }
-        this.jump.startFloorJump(targetFloor);
-      });
+      if (this.configs.getSettings("commentJumpEnabled") === false) {
+        gotofloor.prop("disabled", true).attr("title", "已关闭「启用定位短评」");
+      } else {
+        gotofloor.val(currentFloor).change(() => {
+          const targetFloor = parseInt(gotofloor.val().trim(), 10);
+          if (!Number.isInteger(targetFloor) || targetFloor < 1) {
+            Utils.commonMsg("请输入一个合法的数值...", false);
+            return;
+          }
+          this.jump.startFloorJump(targetFloor);
+        });
+      }
     });
   }
 
@@ -315,7 +319,8 @@ export class CommentInit extends Init {
     if (this.parent.href.includes("center.mcmod.cn") || this.parent.href.includes("/author/")) {
       this.unlockComment();
     }
-    if (this.jump.start()) {
+    const jumpEnabled = this.configs.getSettings("commentJumpEnabled") !== false;
+    if (jumpEnabled && this.jump.start()) {
       $(".common-comment-block.lazy").get(0)?.scrollIntoView({
         behavior: "smooth",
         block: "center",

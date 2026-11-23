@@ -15,6 +15,7 @@
               1: '最多收藏',
             }"
             :on-successful-change="handleSortChange"
+            :z-index="501"
           />
         </template>
         <span v-if="total" class="mcmodder-attitude-sticker-count">共 {{ total }} 张</span>

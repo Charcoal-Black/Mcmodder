@@ -32,7 +32,7 @@ export default defineConfig([
     rules: { "local/import-path-casing": "error" },
   },
   {
-    files: ["src/**/*.vue"],
+    files: ["src/**/*.vue", "demo/**/*.vue", "e2e/**/*.vue"],
     // TS 规则放在 vue 配置之前：vue 的 flat 配置要负责外层 parser，后写的才生效
     extends: [...tseslint.configs.recommended, vue.configs["flat/recommended"]],
     languageOptions: {
@@ -43,7 +43,7 @@ export default defineConfig([
       "vue/multi-word-component-names": [
         "error",
         {
-          ignores: ["Countdown", "Collapsible", "Pagination", "Popover"],
+          ignores: ["App", "Countdown", "Collapsible", "Pagination", "Popover"],
         },
       ],
       "vue/component-name-in-template-casing": ["error", "PascalCase"],
@@ -59,7 +59,7 @@ export default defineConfig([
     },
   },
   {
-    files: ["src/**/*.{ts,vue}"],
+    files: ["src/**/*.{ts,vue}", "demo/**/*.{ts,vue}"],
     rules: {
       /**
        * 禁用「浏览器全局函数」的裸调用。

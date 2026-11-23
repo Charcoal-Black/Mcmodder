@@ -1,6 +1,7 @@
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
+import { BackgroundPool } from "../background/BackgroundPool";
 
 /**
  * 样式加载器：把若干张「调色盘」展开为 `--mcmodder-color-*` CSS 变量，
@@ -502,13 +503,21 @@ export class StyleLoader {
       [],
     );
 
-    const bg = configs.getSettings("defaultBackground") || Values.assets.bg;
-    const bgNight = configs.getSettings("defaultNightBackground") || Values.assets.nightMode.bg;
+    // 本地图池优先：池为空时回落到手填 URL，再回落到内置默认图
+    const bgMode = BackgroundPool.readMode(configs);
+    const localBg = BackgroundPool.pick("day", bgMode);
+    const localBgNight = BackgroundPool.pick("night", bgMode);
+    const bg = localBg ?? (configs.getSettings("defaultBackground") || Values.assets.bg);
+    const bgNight =
+      localBgNight ?? (configs.getSettings("defaultNightBackground") || Values.assets.nightMode.bg);
+    /** data URL 含 base64 的 `+/=`，统一加引号避免 CSS 解析歧义 */
+    const toCssUrl = (value: string) =>
+      value === "none" ? "none" : `url(${value.startsWith("data:") ? `"${value}"` : value}) fixed`;
     const otherCss = `
-      --mcmodder-image-background: ${bg === "none" ? "none" : `url(${bg}) fixed`};
+      --mcmodder-image-background: ${toCssUrl(bg)};
     `;
     const otherNightCss = `
-      --mcmodder-image-background: ${bgNight === "none" ? "none" : `url(${bgNight}) fixed`};
+      --mcmodder-image-background: ${toCssUrl(bgNight)};
     `;
 
     const css = {
