@@ -1816,50 +1816,88 @@ body .top-main .pulldown .arrow {
   font-size: 75%;
   margin-left: 0.375em;
 }
-.mcmodder-text-stats {
+/* 统计条控件簇：统一高度并垂直居中；模式下拉现在是 100px 固定宽 + 16px 字号，
+   「按字对比」会被省略号截掉一个字符。这里给控件统一 26px 高、14px 字号，
+   下拉按 7.5em 自适应；皮肤层（mcmodderUI.css 后注入）给整簇加的 padding/阴影
+   一并压掉，右缘才能与统计条对齐。 */
+#mcmodder-text-area .mcmodder-text-stats {
   display: flex;
-  gap: var(--mcmodder-width-padding-3);
+  align-items: center;
+  gap: 0.3em;
   margin-bottom: 0.2em;
   overflow-x: auto;
 }
-.mcmodder-text-stats .stats-num > span,
-.mcmodder-text-stats .stats-opt {
+#mcmodder-text-area .mcmodder-text-stats .stats-num {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+}
+#mcmodder-text-area .mcmodder-text-stats .stats-num > span {
   font-size: 14px;
   background-color: var(--mcmodder-color-background);
   margin-right: 0.5em;
   text-wrap: nowrap;
 }
-.mcmodder-text-stats .stats-num {
-  display: flex;
-  overflow-x: auto;
-}
-.mcmodder-text-stats .stats-opt {
+#mcmodder-text-area .mcmodder-text-stats .stats-opt {
   margin-left: auto;
   margin-right: 0;
   display: flex;
+  align-items: center;
   gap: 0.2em;
+  font-size: 14px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
-.mcmodder-text-stats .stats-opt > * {
-  padding: 0 5px;
-  border-radius: 0.2em;
-  display: inline-block;
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 4px;
+  line-height: 1;
   text-align: center;
   color: var(--mcmodder-color-text);
 }
-.mcmodder-text-stats .stats-opt > a {
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > .stats-opt-nav {
+  min-width: 4.5em;
+  font-variant-numeric: tabular-nums;
+  color: var(--mcmodder-color-text-dark1);
+}
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > a {
   -webkit-user-select: none;
   user-select: none;
+  cursor: pointer;
 }
-.mcmodder-text-stats .stats-opt > a:hover {
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > a:hover {
   background-color: var(--mcmodder-color-background-dark1);
 }
-.mcmodder-text-stats .stats-opt > .mcmodder-dropdown-container {
-  display: flex;
-  margin: 0;
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > a.prev,
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > a.next {
+  width: 24px;
+  padding: 0;
 }
-.mcmodder-text-stats .stats-opt > .mcmodder-dropdown-container > .mcmodder-dropdown-button {
-  width: 100px;
+#mcmodder-text-area .mcmodder-text-stats .stats-opt > .mcmodder-dropdown-container {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+#mcmodder-text-area
+  .mcmodder-text-stats
+  .stats-opt
+  > .mcmodder-dropdown-container
+  > .mcmodder-dropdown-button {
+  width: 7.5em;
+  min-width: 7.5em;
   height: 100%;
+  padding: 0 1.8em 0 0.6em;
+  box-sizing: border-box;
+  font-size: 14px;
+  line-height: 1;
 }
 .mcmodder-scroll-indicator-horizontal {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
