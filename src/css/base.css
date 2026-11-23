@@ -1339,6 +1339,16 @@ body:not(.view),
   vertical-align: top;
   margin: 2em 1em 0 0;
 }
+/* 列表页站点 CSS 把 .item-table-hover 设为 32×32 + position:absolute（列表悬浮卡片
+   的定位机制）。预览内容是从资料页抓来的 HTML，在列表页上下文渲染时会命中这条
+   列表页规则：图标脱流、贴单元格左下并越出边框。预览容器内恢复资料页本身的
+   静态内联布局。 */
+.mcmodder-preview-container .item-table-hover {
+  position: static;
+  display: inline-block;
+  width: auto;
+  height: auto;
+}
 .mcmodder-preview-frame .quote_text legend {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);
