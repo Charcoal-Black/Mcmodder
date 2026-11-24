@@ -25,7 +25,7 @@ import { SupabaseUtils } from "./supabase/SupabaseUtils";
 import { AttitudeSystem } from "./attitude/AttitudeSystem";
 import { Splash3D } from "./widget/Splash3D";
 import { EchartsUtils } from "./echarts/EChartsUtils";
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import FavUser from "./vue/components/FavUser.vue";
 import ProfileSelector from "./vue/components/ProfileSelector.vue";
 import { ConfigRepository } from "./config/ConfigRepository.ts";
@@ -439,10 +439,14 @@ export class Mcmodder {
     GM_setValue("mcmodderSplashList", "");
   }
 
-  applyCustomFont(font: number) {
+  applyCustomFont(font: Settings["customFont"]) {
+    $("#mcmodder-style-font").remove();
     switch (font) {
       case 1: {
-        Utils.addStyle(`* {font-family: ${Values.assets.font.fontFamily[font]};}`);
+        Utils.addStyle(
+          `* {font-family: ${Values.assets.font.fontFamily[font]};}`,
+          "mcmodder-style-font",
+        );
         break;
       }
       case 2:
@@ -452,7 +456,10 @@ export class Mcmodder {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="${Values.assets.font.link[font]}" rel="stylesheet">
         `).appendTo("head");
-        Utils.addStyle(`* {font-family: ${Values.assets.font.fontFamily[font]};}`);
+        Utils.addStyle(
+          `* {font-family: ${Values.assets.font.fontFamily[font]};}`,
+          "mcmodder-style-font",
+        );
         break;
       }
     }
@@ -664,10 +671,13 @@ export class Mcmodder {
       this.configRepository.setSettings("customFont", 2);
     }
 
-    const customFont = this.configRepository.getSettings("customFont");
-    if (customFont) {
-      this.applyCustomFont(customFont);
-    }
+    watch(
+      () => this.configRepository.getSettingsRef("customFont", 0 as const).value,
+      (newValue) => this.applyCustomFont(newValue),
+      {
+        immediate: true,
+      },
+    );
 
     // 关闭主页&整合包区广告
     $("span")

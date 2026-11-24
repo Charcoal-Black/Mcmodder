@@ -1,3 +1,4 @@
+import { computed, watch } from "vue";
 import { Mcmodder } from "../Mcmodder";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
@@ -103,9 +104,10 @@ export class StyleLoader {
    *
    * # 流程
    * 1. 用 `import.meta.glob` 读入 `src/css/*.css` 原始文本；
-   * 2. 定义基础调色盘（background/text 亮暗两套）、主题调色盘（由主题色 `tc1`/`tc2`
-   *    派生 primary/accent/danger/success/warning）、CodeMirror 语法高亮调色盘、
-   *    高亮标记色，各自调用 `applyPaletteModifier` 展开成亮色与夜间两套变量；
+   * 2. 定义基础调色盘（background/text 亮暗两套）、主题调色盘（由主题色
+   *    `themeColor1`/`themeColor2` 派生 primary/accent/danger/success/warning）、
+   *    CodeMirror 语法高亮调色盘、高亮标记色，各自调用 `applyPaletteModifier`
+   *    展开成亮色与夜间两套变量；
    * 3. 定义「其他杂色」的亮/夜两套调色盘（背景透明、文字阴影、链接、态度、
    *    加载平台、版本标记、分类状态等固定色板），直接以 `[]` 修饰表产出基础变量；
    * 4. 将上述变量并入 `:root`（亮色）与 `:root.dark`（夜间）两个选择器，
@@ -184,56 +186,69 @@ export class StyleLoader {
       },
     ]);
 
-    const themeBasePalette: Palette = {
-      primary: Utils.setColorBrightness(parent.styleColors.tc1, 80),
-      accent: Utils.setColorBrightness(parent.styleColors.tc2, 80),
-      danger: Utils.setColorBrightness("#dc3545", 80),
-      success: Utils.setColorBrightness("#28a745", 80),
-      warning: Utils.setColorBrightness("#8a6d3b", 80),
-    };
-    const themeNightPalette: Palette = {
-      primary: Utils.setColorBrightness(parent.styleColors.tc1, 60),
-      accent: Utils.setColorBrightness(parent.styleColors.tc2, 60),
-      danger: Utils.setColorBrightness("#dc3545", 60),
-      success: Utils.setColorBrightness("#28a745", 60),
-      warning: Utils.setColorBrightness("#8a6d3b", 60),
-    };
+    const themeColor1 = configs.getSettingsRef("themeColor1", "#86c155");
+    const themeColor2 = configs.getSettingsRef("themeColor2", "#58b6d8");
+
+    const themeBasePalette = computed(
+      () =>
+        ({
+          primary: Utils.setColorBrightness(themeColor1.value, 80),
+          accent: Utils.setColorBrightness(themeColor2.value, 80),
+          danger: Utils.setColorBrightness("#dc3545", 80),
+          success: Utils.setColorBrightness("#28a745", 80),
+          warning: Utils.setColorBrightness("#8a6d3b", 80),
+        }) as Palette,
+    );
+    const themeNightPalette = computed(
+      () =>
+        ({
+          primary: Utils.setColorBrightness(themeColor1.value ?? "#86c155", 60),
+          accent: Utils.setColorBrightness(themeColor2.value ?? "#58b6d8", 60),
+          danger: Utils.setColorBrightness("#dc3545", 60),
+          success: Utils.setColorBrightness("#28a745", 60),
+          warning: Utils.setColorBrightness("#8a6d3b", 60),
+        }) as Palette,
+    );
     const paletteTransparentStep: PaletteModifierStep = {
       transparent: {
         converter: (color, tier) => Utils.setColorAlpha(color, Math.pow(0.5, tier!)),
         maxTier: 2,
       },
     };
-    const themePaletteBaseCss = this.applyPaletteModifier(themeBasePalette, [
-      {
-        dark: {
-          converter: (color, tier) => Utils.adjustColorBrightness(color, 1 - 0.2 * tier!),
-          maxTier: 2,
+    const themePaletteBaseCss = computed(() =>
+      this.applyPaletteModifier(themeBasePalette.value, [
+        {
+          dark: {
+            converter: (color, tier) => Utils.adjustColorBrightness(color, 1 - 0.2 * tier!),
+            maxTier: 2,
+          },
+          light: {
+            converter: (color) => Utils.adjustColorBrightness(color, 1.5),
+          },
+          background: {
+            converter: (color) => Utils.setColorBrightness(color, 99),
+          },
         },
-        light: {
-          converter: (color) => Utils.adjustColorBrightness(color, 1.5),
+        paletteTransparentStep,
+      ]),
+    );
+    const themePaletteNightCss = computed(() =>
+      this.applyPaletteModifier(themeNightPalette.value, [
+        {
+          dark: {
+            converter: (color, tier) => Utils.adjustColorBrightness(color, 1 + 0.2 * tier!),
+            maxTier: 2,
+          },
+          light: {
+            converter: (color) => Utils.adjustColorBrightness(color, 0.5),
+          },
+          background: {
+            converter: (color) => Utils.setColorBrightness(color, 8),
+          },
         },
-        background: {
-          converter: (color) => Utils.setColorBrightness(color, 99),
-        },
-      },
-      paletteTransparentStep,
-    ]);
-    const themePaletteNightCss = this.applyPaletteModifier(themeNightPalette, [
-      {
-        dark: {
-          converter: (color, tier) => Utils.adjustColorBrightness(color, 1 + 0.2 * tier!),
-          maxTier: 2,
-        },
-        light: {
-          converter: (color) => Utils.adjustColorBrightness(color, 0.5),
-        },
-        background: {
-          converter: (color) => Utils.setColorBrightness(color, 8),
-        },
-      },
-      paletteTransparentStep,
-    ]);
+        paletteTransparentStep,
+      ]),
+    );
 
     const codemirrorPalette: Palette = {
       "cm-keyword": "#708",
@@ -341,203 +356,220 @@ export class StyleLoader {
       paletteTransparentStep,
     ]);
 
-    const backgroundAlpha =
-      Utils.clamp(Number(configs.getSettings("backgroundAlpha")), 128, 255) / 0xff;
-    const textShadowAlpha =
-      Utils.clamp(Number(configs.getSettings("textShadowAlpha")), 0, 255) / 0xff;
-    const otherPaletteBaseCss = this.applyPaletteModifier(
-      {
-        "background-transparent": Utils.setColorAlpha(basePalette.background, backgroundAlpha),
-        "text-shadow": "#FFF0",
-        "text-shadow-strong": "#8884",
-        "box-shadow": "#8884",
-        "pre-ins": "#406619",
-        "pre-del": "#b30000",
-        "code-text": "#c7254e",
-        "code-background": "#f9f2f4",
-        "text-success": "#28a745",
-        "text-danger": "#dc3545",
-        "text-warning": "#8a6d3b",
-        "text-info": "#31708f",
-        "text-primary": "#31708f",
-        badges: "#fff8",
-        button: "#6c757d",
-        "permission-editor": "#15f",
-        "permission-admin": "#b3f",
-        "permission-developer": "#f51",
-        "itemrelation-jump": "#15f",
-        "itemrelation-general": "#f51",
-        link: "#06c",
-        "link-visited": "#551a8b",
-        "link-foot": "#008000",
-        "channel-1": "#334bdb",
-        "channel-2": "#904623",
-        "almanacs-good": "#f7f7b880",
-        "almanacs-bad": "#ffceac80",
-        "copyright-title": "#3b566e",
-        "copyright-text": "#6f8ba4",
-        "alert-primary-1": "#004085",
-        "alert-primary-2": "#cce5ff",
-        "alert-primary-3": "#b8daff",
-        "alert-warning-1": "#856404",
-        "alert-warning-2": "#fff3cd",
-        "alert-warning-3": "#ffeeba",
-        "alert-danger-1": "#721c24",
-        "alert-danger-2": "#f8d7da",
-        "alert-danger-3": "#f5c6cb",
-        "verifyframe-error": "#933",
-        "verifyframe-warning": "#7c4916",
-        "verifyframe-info": "#666",
-        "version-alpha-1": "#f55",
-        "version-alpha-2": "#faa8",
-        "version-beta-1": "#55f",
-        "version-beta-2": "#aaf8",
-        "version-release-1": "#5a5",
-        "version-release-2": "#afa8",
-        "platform-forge": "#5b6197",
-        "platform-fabric": "#8a7b71",
-        "platform-neoforge": "#dc895c",
-        "platform-quilt": "#8b61d4",
-        "platform-liteloader": "#4c90de",
-        "platform-nilloader": "#dd5088",
-        "platform-javaagent": "#111827",
-        uknowtoomuch: "#000",
-        "uknowtoomuch-hover": "#fff",
-        "attitude-up": "#09f",
-        "attitude-grintears": "#ad901c",
-        "attitude-heart": "#c03",
-        "attitude-flushed": "#000",
-        "attitude-cry": "#36c",
-        "attitude-meh": "#777",
-        "attitude-down": "#222",
-        "attitude-lemon": "#938626",
-        "attitude-horsehead": "#74260c",
-        "attitude-heartbroken": "#900",
-        "attitude-angry": "#f30",
-        "attitude-tired": "#960",
-        "attitude-snowflake": "#39c",
-        "attitude-handshake": "#363",
-        "attitude-devil-angry": "#8a1212",
-        "classstatus-1": "#2cbe4e",
-        "classstatus-2": "#cb6431",
-        "classstatus-3": "#cb2431",
-        "classstatus-4": "#adadad",
-        "classstatus-5": "#3675e9",
-        "classstatus-6": "#303030",
-      },
-      [],
+    const backgroundAlphaRaw = configs.getSettingsRef("backgroundAlpha", 204);
+    const textShadowAlphaRaw = configs.getSettingsRef("textShadowAlpha", 64);
+    const backgroundAlpha = computed(() => {
+      return Utils.clamp(backgroundAlphaRaw.value, 128, 255) / 0xff;
+    });
+    const textShadowAlpha = computed(() => {
+      return Utils.clamp(textShadowAlphaRaw.value, 0, 255) / 0xff;
+    });
+    const otherPaletteBaseCss = computed(() =>
+      this.applyPaletteModifier(
+        {
+          "background-transparent": Utils.setColorAlpha(
+            basePalette.background,
+            backgroundAlpha.value,
+          ),
+          "text-shadow": "#FFF0",
+          "text-shadow-strong": "#8884",
+          "box-shadow": "#8884",
+          "pre-ins": "#406619",
+          "pre-del": "#b30000",
+          "code-text": "#c7254e",
+          "code-background": "#f9f2f4",
+          "text-success": "#28a745",
+          "text-danger": "#dc3545",
+          "text-warning": "#8a6d3b",
+          "text-info": "#31708f",
+          "text-primary": "#31708f",
+          badges: "#fff8",
+          button: "#6c757d",
+          "permission-editor": "#15f",
+          "permission-admin": "#b3f",
+          "permission-developer": "#f51",
+          "itemrelation-jump": "#15f",
+          "itemrelation-general": "#f51",
+          link: "#06c",
+          "link-visited": "#551a8b",
+          "link-foot": "#008000",
+          "channel-1": "#334bdb",
+          "channel-2": "#904623",
+          "almanacs-good": "#f7f7b880",
+          "almanacs-bad": "#ffceac80",
+          "copyright-title": "#3b566e",
+          "copyright-text": "#6f8ba4",
+          "alert-primary-1": "#004085",
+          "alert-primary-2": "#cce5ff",
+          "alert-primary-3": "#b8daff",
+          "alert-warning-1": "#856404",
+          "alert-warning-2": "#fff3cd",
+          "alert-warning-3": "#ffeeba",
+          "alert-danger-1": "#721c24",
+          "alert-danger-2": "#f8d7da",
+          "alert-danger-3": "#f5c6cb",
+          "verifyframe-error": "#933",
+          "verifyframe-warning": "#7c4916",
+          "verifyframe-info": "#666",
+          "version-alpha-1": "#f55",
+          "version-alpha-2": "#faa8",
+          "version-beta-1": "#55f",
+          "version-beta-2": "#aaf8",
+          "version-release-1": "#5a5",
+          "version-release-2": "#afa8",
+          "platform-forge": "#5b6197",
+          "platform-fabric": "#8a7b71",
+          "platform-neoforge": "#dc895c",
+          "platform-quilt": "#8b61d4",
+          "platform-liteloader": "#4c90de",
+          "platform-nilloader": "#dd5088",
+          "platform-javaagent": "#111827",
+          uknowtoomuch: "#000",
+          "uknowtoomuch-hover": "#fff",
+          "attitude-up": "#09f",
+          "attitude-grintears": "#ad901c",
+          "attitude-heart": "#c03",
+          "attitude-flushed": "#000",
+          "attitude-cry": "#36c",
+          "attitude-meh": "#777",
+          "attitude-down": "#222",
+          "attitude-lemon": "#938626",
+          "attitude-horsehead": "#74260c",
+          "attitude-heartbroken": "#900",
+          "attitude-angry": "#f30",
+          "attitude-tired": "#960",
+          "attitude-snowflake": "#39c",
+          "attitude-handshake": "#363",
+          "attitude-devil-angry": "#8a1212",
+          "classstatus-1": "#2cbe4e",
+          "classstatus-2": "#cb6431",
+          "classstatus-3": "#cb2431",
+          "classstatus-4": "#adadad",
+          "classstatus-5": "#3675e9",
+          "classstatus-6": "#303030",
+        },
+        [],
+      ),
     );
-    const otherPaletteNightCss = this.applyPaletteModifier(
-      {
-        "background-transparent": Utils.setColorAlpha(nightPalette.background, backgroundAlpha),
-        "text-shadow": Utils.setColorAlpha(nightPalette.background, textShadowAlpha),
-        "text-shadow-strong": "#0004",
-        "box-shadow": "#0008",
-        "pre-ins": "#beff7b",
-        "pre-del": "#ff7b7b",
-        "code-text": "#f68",
-        "code-background": "#423",
-        "text-success": "#4c4",
-        "text-danger": "#faa",
-        "text-warning": "#fa5",
-        "text-info": "#4be",
-        "text-primary": "#4be",
-        badges: "#1118",
-        button: "#9ab",
-        "permission-editor": "#28f",
-        "permission-admin": "#c6f",
-        "permission-developer": "#f82",
-        "itemrelation-jump": "#28f",
-        "itemrelation-general": "#f82",
-        link: "#6bf",
-        "link-visited": "#96c",
-        "link-foot": "#3a3",
-        "channel-1": "#8af",
-        "channel-2": "#fa8",
-        "almanacs-good": "#4428",
-        "almanacs-bad": "#4328",
-        "copyright-title": "#8cf",
-        "copyright-text": "#8bd",
-        "alert-primary-1": "#bdf",
-        "alert-primary-2": "#036",
-        "alert-primary-3": "#27d",
-        "alert-warning-1": "#fdc",
-        "alert-warning-2": "#430",
-        "alert-warning-3": "#860",
-        "alert-danger-1": "#fcc",
-        "alert-danger-2": "#411",
-        "alert-danger-3": "#822",
-        "verifyframe-error": "#f55",
-        "verifyframe-warning": "#da6",
-        "verifyframe-info": "#aaa",
-        "version-alpha-1": "#f99",
-        "version-alpha-2": "#8558",
-        "version-beta-1": "#99f",
-        "version-beta-2": "#5588",
-        "version-release-1": "#8c8",
-        "version-release-2": "#5858",
-        uknowtoomuch: "#444",
-        "uknowtoomuch-hover": "#ddd",
-        "attitude-up": "#09f",
-        "attitude-grintears": "#db1",
-        "attitude-heart": "#f14",
-        "attitude-flushed": "#fff",
-        "attitude-cry": "#9be",
-        "attitude-meh": "#999",
-        "attitude-down": "#666",
-        "attitude-lemon": "#a93",
-        "attitude-horsehead": "#d64",
-        "attitude-heartbroken": "#a11",
-        "attitude-angry": "#f30",
-        "attitude-tired": "#b71",
-        "attitude-snowflake": "#7ac",
-        "attitude-handshake": "#383",
-        "attitude-devil-angry": "#ff4d4d",
-        "classstatus-1": "#183",
-        "classstatus-2": "#852",
-        "classstatus-3": "#822",
-        "classstatus-4": "#666",
-        "classstatus-5": "#258",
-        "classstatus-6": "#333",
-      },
-      [],
+    const otherPaletteNightCss = computed(() =>
+      this.applyPaletteModifier(
+        {
+          "background-transparent": Utils.setColorAlpha(
+            nightPalette.background,
+            backgroundAlpha.value,
+          ),
+          "text-shadow": Utils.setColorAlpha(nightPalette.background, textShadowAlpha.value),
+          "text-shadow-strong": "#0004",
+          "box-shadow": "#0008",
+          "pre-ins": "#beff7b",
+          "pre-del": "#ff7b7b",
+          "code-text": "#f68",
+          "code-background": "#423",
+          "text-success": "#4c4",
+          "text-danger": "#faa",
+          "text-warning": "#fa5",
+          "text-info": "#4be",
+          "text-primary": "#4be",
+          badges: "#1118",
+          button: "#9ab",
+          "permission-editor": "#28f",
+          "permission-admin": "#c6f",
+          "permission-developer": "#f82",
+          "itemrelation-jump": "#28f",
+          "itemrelation-general": "#f82",
+          link: "#6bf",
+          "link-visited": "#96c",
+          "link-foot": "#3a3",
+          "channel-1": "#8af",
+          "channel-2": "#fa8",
+          "almanacs-good": "#4428",
+          "almanacs-bad": "#4328",
+          "copyright-title": "#8cf",
+          "copyright-text": "#8bd",
+          "alert-primary-1": "#bdf",
+          "alert-primary-2": "#036",
+          "alert-primary-3": "#27d",
+          "alert-warning-1": "#fdc",
+          "alert-warning-2": "#430",
+          "alert-warning-3": "#860",
+          "alert-danger-1": "#fcc",
+          "alert-danger-2": "#411",
+          "alert-danger-3": "#822",
+          "verifyframe-error": "#f55",
+          "verifyframe-warning": "#da6",
+          "verifyframe-info": "#aaa",
+          "version-alpha-1": "#f99",
+          "version-alpha-2": "#8558",
+          "version-beta-1": "#99f",
+          "version-beta-2": "#5588",
+          "version-release-1": "#8c8",
+          "version-release-2": "#5858",
+          uknowtoomuch: "#444",
+          "uknowtoomuch-hover": "#ddd",
+          "attitude-up": "#09f",
+          "attitude-grintears": "#db1",
+          "attitude-heart": "#f14",
+          "attitude-flushed": "#fff",
+          "attitude-cry": "#9be",
+          "attitude-meh": "#999",
+          "attitude-down": "#666",
+          "attitude-lemon": "#a93",
+          "attitude-horsehead": "#d64",
+          "attitude-heartbroken": "#a11",
+          "attitude-angry": "#f30",
+          "attitude-tired": "#b71",
+          "attitude-snowflake": "#7ac",
+          "attitude-handshake": "#383",
+          "attitude-devil-angry": "#ff4d4d",
+          "classstatus-1": "#183",
+          "classstatus-2": "#852",
+          "classstatus-3": "#822",
+          "classstatus-4": "#666",
+          "classstatus-5": "#258",
+          "classstatus-6": "#333",
+        },
+        [],
+      ),
     );
 
     // 本地图池优先：池为空时回落到手填 URL，再回落到内置默认图
     const bgMode = BackgroundPool.readMode(configs);
     const localBg = BackgroundPool.pick("day", bgMode);
     const localBgNight = BackgroundPool.pick("night", bgMode);
-    const bg = localBg ?? (configs.getSettings("defaultBackground") || Values.assets.bg);
-    const bgNight =
-      localBgNight ?? (configs.getSettings("defaultNightBackground") || Values.assets.nightMode.bg);
+    const bg = computed(
+      () => localBg ?? configs.getSettingsRef("defaultBackground", Values.assets.bg).value,
+    );
+    const bgNight = computed(
+      () =>
+        localBgNight ??
+        configs.getSettingsRef("defaultNightBackground", Values.assets.nightMode.bg).value,
+    );
     /** data URL 含 base64 的 `+/=`，统一加引号避免 CSS 解析歧义 */
     const toCssUrl = (value: string) =>
       value === "none" ? "none" : `url(${value.startsWith("data:") ? `"${value}"` : value}) fixed`;
-    const otherCss = `
-      --mcmodder-image-background: ${toCssUrl(bg)};
-    `;
-    const otherNightCss = `
-      --mcmodder-image-background: ${toCssUrl(bgNight)};
-    `;
+    const otherCss = computed(() => `--mcmodder-image-background: ${toCssUrl(bg.value)};`);
+    const otherNightCss = computed(
+      () => `--mcmodder-image-background: ${toCssUrl(bgNight.value)};`,
+    );
 
-    const css = {
+    const css = computed(() => ({
       themeColor: `
       :root {
         ${basePaletteBackgroundCss}
         ${basePaletteTextCss}
-        ${themePaletteBaseCss}
+        ${themePaletteBaseCss.value}
         ${highlightPaletteCss}
         ${codemirrorPaletteCss}
-        ${otherPaletteBaseCss}
-        ${otherCss}
+        ${otherPaletteBaseCss.value}
+        ${otherCss.value}
       }
       :root.dark {
         ${nightPaletteBackgroundCss}
         ${nightPaletteTextCss}
-        ${themePaletteNightCss}
+        ${themePaletteNightCss.value}
         ${codemirrorPaletteNightCss}
-        ${otherPaletteNightCss}
-        ${otherNightCss}
+        ${otherPaletteNightCss.value}
+        ${otherNightCss.value}
       }`,
       base: baseCss,
       mcmodderUI: mcmodderUICss,
@@ -550,7 +582,7 @@ export class StyleLoader {
       codemirrorCss: codemirrorCss,
       // 末尾追加：减弱动效规则需要压过同选择器的静态样式
       reducedMotion: reducedMotionCss,
-    };
+    }));
 
     const htmlNode = $("html");
     if (configs.getSettings("disableGradient")) {
@@ -560,43 +592,56 @@ export class StyleLoader {
     //   htmlNode.addClass("mcmodder-config-disable-fade-transition")
     // }
 
-    let style = "";
-    style += css.themeColor;
-    style += css.base;
-    // if (configs.get("mcmodderUI")) {
-    style += css.mcmodderUI;
-    // }
-    if (configs.getSettings("customAttitude_v2")) {
-      style += css.attitude;
-    }
-    if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {
-      style += css.tableThemeColor;
-    }
-    if (configs.getSettings("tableLeftAlign")) {
-      style += css.tableLeftAlign;
-    }
-    if (configs.getSettings("tabSelectorInfo")) {
-      style += css.tabSelectorInfo;
-    }
-    if (configs.getSettings("splitScreenOnVerify")) {
-      style += css.splitScreenOnVerify;
-    }
-    // if (configs.get("markdownIt")) {
-    style += css.codemirrorCss;
-    // }
-    if (configs.getSettings("enableAprilFools")) {
-      /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
-      style += css.aprilFools;
-    }
-    style += css.reducedMotion;
+    const enabledStyles = computed(() => {
+      const styles = css.value;
+      const result = [styles.themeColor, styles.base, styles.mcmodderUI];
+      if (configs.getSettings("customAttitude_v2")) {
+        result.push(styles.attitude);
+      }
+      if (/* configs.get("mcmodderUI") && */ configs.getSettings("tableThemeColor")) {
+        result.push(styles.tableThemeColor);
+      }
+      if (configs.getSettings("tableLeftAlign")) {
+        result.push(styles.tableLeftAlign);
+      }
+      if (configs.getSettings("tabSelectorInfo")) {
+        result.push(styles.tabSelectorInfo);
+      }
+      if (configs.getSettings("splitScreenOnVerify")) {
+        result.push(styles.splitScreenOnVerify);
+      }
+      // if (configs.get("markdownIt")) {
+      result.push(styles.codemirrorCss);
+      // }
+      if (configs.getSettings("enableAprilFools")) {
+        /* McmodderUtils.addStyle(" .center-task-block:first-child { animation:aprilfools 2.75s linear infinite; background:#FFF; z-index:999; } @keyframes aprilfools { 0% { -webkit-transform:rotate(0deg); } 25% { -webkit-transform:rotate(90deg); } 50% { -webkit-transform:rotate(180deg); } 75% { -webkit-transform:rotate(270deg); } 100% { -webkit-transform:rotate(360deg); } } ") */
+        result.push(styles.aprilFools);
+      }
+      result.push(styles.reducedMotion);
+      return result;
+    });
 
-    parent.css = style;
-    Utils.addStyle(style);
+    watch(
+      () => enabledStyles.value,
+      (newValue) => {
+        const css = newValue.join("");
+        $("#mcmodder-style-global").remove();
+        Utils.addStyle(css, "mcmodder-style-global");
+        parent.css = css;
+      },
+      {
+        immediate: true,
+      },
+    );
 
-    const radiusRatio: number | undefined = configs.getSettings("radiusRatio");
-    document.documentElement.style.setProperty(
-      "--mcmodder-ratio-radius",
-      (radiusRatio === undefined ? 1 : radiusRatio).toString(),
+    const radiusRatio = configs.getSettingsRef("radiusRatio", 1);
+    watch(
+      () => radiusRatio.value,
+      (newValue) => {
+        const style = document.documentElement.style;
+        style.setProperty("--mcmodder-ratio-radius", newValue.toString());
+      },
+      { immediate: true },
     );
 
     parent.updateNightMode();
