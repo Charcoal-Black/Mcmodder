@@ -1408,6 +1408,7 @@ div#mcmodder-text-result {
   border: 1px solid var(--mcmodder-color-primary-transparent1);
   color: var(--mcmodder-color-text);
   max-height: 300px;
+  margin: 4px;
   padding: 0.25em;
   font-size: 12px;
   overscroll-behavior-y: contain;
@@ -1831,6 +1832,7 @@ body .top-main .pulldown .arrow {
   display: flex;
   align-items: center;
   overflow-x: auto;
+  padding: 4px;
 }
 #mcmodder-text-area .mcmodder-text-stats .stats-num > span {
   font-size: 14px;
@@ -1845,7 +1847,7 @@ body .top-main .pulldown .arrow {
   align-items: center;
   gap: 0.2em;
   font-size: 14px;
-  padding: 0;
+  padding: 4px;
   background: transparent;
   box-shadow: none;
   border-radius: 0;
@@ -1870,7 +1872,7 @@ body .top-main .pulldown .arrow {
 #mcmodder-text-area .mcmodder-text-stats .stats-opt > a {
   -webkit-user-select: none;
   user-select: none;
-  cursor: pointer;
+  cursor: var(--mcmodder-cursor-hand);
 }
 #mcmodder-text-area .mcmodder-text-stats .stats-opt > a:hover {
   background-color: var(--mcmodder-color-background-dark1);
