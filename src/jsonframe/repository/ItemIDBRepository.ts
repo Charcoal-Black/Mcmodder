@@ -68,17 +68,68 @@ export class ItemIDBRepository extends IDBRepository<Item> implements ItemReposi
       const written = await super.read(filename);
       const length = written.length;
       const icons = new Array<ItemIcon>(length);
+      const fail = new Set<number>();
       written.forEach((item, index) => {
+        const { smallIcon, largeIcon } = item;
+        let smallIconBlob, largeIconBlob;
+        if (smallIcon) {
+          try {
+            smallIconBlob = Utils.base642Blob(smallIcon, "image/png");
+          } catch {
+            fail.add(index);
+          }
+        }
+        if (largeIcon) {
+          try {
+            largeIconBlob = Utils.base642Blob(largeIcon, "image/png");
+          } catch (error) {
+            fail.add(index);
+            console.warn("[Mcmodder] 物品图标解析失败: ", error);
+          }
+        }
         icons[index] = {
           itemPrimaryKey: item._primaryKey,
-          smallIcon: item.smallIcon ? Utils.base642Blob(item.smallIcon, "image/png") : undefined,
-          largeIcon: item.largeIcon ? Utils.base642Blob(item.largeIcon, "image/png") : undefined,
+          ...(smallIconBlob ? { smallIcon: smallIconBlob } : undefined),
+          ...(largeIconBlob ? { largeIcon: largeIconBlob } : undefined),
         };
         delete item.smallIcon;
         delete item.largeIcon;
       });
-      await this.iconTable!.bulkAdd(icons);
-      await this.table!.bulkPut(written);
+
+      if (fail.size > 0) {
+        let list = [...fail]
+          .slice(0, 5)
+          .map((e) => e + 1)
+          .join(", ");
+        if (fail.size > 5) list += ", ...";
+        Utils.commonMsg(
+          `有 ${fail.size.toLocaleString()} 个物品资料的图标导入失败了，` +
+            `请检查这些图标的 Base64 编码是否规范... (出现问题的资料序号: ${list})`,
+          false,
+        );
+      }
+
+      try {
+        await this.iconTable!.bulkAdd(icons);
+        await this.table!.bulkPut(written);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "failures" in error &&
+          Array.isArray(error.failures) &&
+          error.failures.some(
+            (failure) => failure instanceof DOMException && failure.name === "QuotaExceededError",
+          )
+        ) {
+          Utils.commonMsg("磁盘空间或浏览器存储配额不足，无法导入物品资料...", false);
+        } else {
+          Utils.commonMsg("将物品资料写入数据库时遇到了未知错误...", false);
+        }
+        throw new Error(String(error), {
+          // 全部回滚
+          cause: error,
+        });
+      }
     });
   }
 
