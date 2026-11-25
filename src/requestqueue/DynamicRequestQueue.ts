@@ -38,14 +38,12 @@ export abstract class DynamicRequestQueue extends RequestQueue {
   /**
    * 回收结果并决定下一个请求——动态队列的「心跳」，取代了基类里按 `progress` 依次派发的部分。
    *
-   * 顺序很重要：先把有效结果落进 `results`（之后才可能触发备份），再滑动窗口；
-   * 搜完时直接清掉备份，避免下次运行误以为「还有断点可续」。
+   * 顺序很重要：先把有效结果落进 `results`（自动备份的计数基准就取自这里），再滑动窗口。
    */
   override storeResult(result: RequestResult) {
     if (!this.execution) return;
     // 注意用的是 truthy 判断：`onCallback` 返回 0 / "" 之类会被当作无效结果丢弃
-    const canRestore = result?.success && result?.value;
-    if (canRestore) {
+    if (result?.success && result?.value) {
       // 追加而非按下标写入：动态队列的 `queue` 只有一个槽位，下标失去意义
       this.execution.results.push(result.value);
     }
@@ -54,14 +52,12 @@ export abstract class DynamicRequestQueue extends RequestQueue {
       // 窗口只前进一格，基类随即按同一节奏派发下一个
       this.execution.progress = 0;
       this.execution.queue[0] = nextRequest;
-    } else {
-      this.backupManager.clear();
     }
-    if (canRestore) {
-      if (this.execution.results.length % RequestQueue.BACKUP_FREQUENCY === 0) {
-        this.tryBackup();
-      }
-    }
+  }
+
+  /** 动态队列按「已回收的成功结果数」计：`progress` 每轮都会归零，不能作为备份依据 */
+  protected override getBackupMarker() {
+    return this.execution?.results.length ?? 0;
   }
 
   /**

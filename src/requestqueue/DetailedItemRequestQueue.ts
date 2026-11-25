@@ -62,8 +62,8 @@ export class DetailedItemListRequestQueue extends RequestQueue {
   /**
    * 抓取整份 `itemList` 的详细信息。
    *
-   * 两条路径：存在备份 → {@link RequestQueue.executeBackup} 从断点续跑（此时 `itemList` 直接取自
-   * 备份里的现场）；否则按 `itemList` 的长度**打洞**出一份等长的 `requestList`——
+   * 两条路径交给 {@link RequestQueue.executeWithBackup}：存在备份 → 从断点续跑（此时 `itemList`
+   * 直接取自备份里的现场）；否则按 `itemList` 的长度**打洞**出一份等长的 `requestList`——
    * 跳过的那几项留作空洞，基类会跳过它们并在对齐的结果数组里留空位（见 `execute` 中的 `hasOwnProperty` 判断）。
    *
    * @param itemList 待补全的资料列表；会**就地**被返回对象合并修改
@@ -71,10 +71,7 @@ export class DetailedItemListRequestQueue extends RequestQueue {
    */
   async run(itemList: ItemList) {
     // 其实就是 STEP 3
-    if (this.backupManager.hasBackup()) {
-      // 续跑：`execution.itemList` 来自备份，与调用方传进来的这份未必是同一批数据
-      await this.executeBackup();
-    } else {
+    await this.executeWithBackup(() => {
       const itemListLength = itemList.length;
       // 先按 itemList 的长度开好等长的洞，跳过的项留空——下标必须保持一一对应
       const requestList = new Array(itemListLength);
@@ -103,8 +100,7 @@ export class DetailedItemListRequestQueue extends RequestQueue {
       this.preExecution = {
         itemList: itemList,
       };
-      await this.execute();
-    }
+    });
 
     // 按下标合并回原对象：队列下标与 itemList 下标一一对应（空洞除外，其结果槽也是空的）
     const requestResults = this.getResult();
@@ -115,7 +111,6 @@ export class DetailedItemListRequestQueue extends RequestQueue {
       );
     }
     this.logger.log("获取资料详细信息 完成");
-    this.backupManager.clear();
     return this.execution!.itemList;
   }
 }

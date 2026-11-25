@@ -63,9 +63,9 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
   /**
    * 扫描全部区间，捞出隐藏资料。
    *
-   * 与 {@link DetailedItemListRequestQueue} 同理：先看有没有备份，有则从断点续跑（`itemList`
-   * 与扫描游标都从备份里来）；否则把已知 ID 压成区间后**只放一个请求进队列**，
-   * 之后每一步都由 {@link getNextRequest} 现场生成。
+   * 与 {@link DetailedItemListRequestQueue} 同理：备份的衔接交给 {@link RequestQueue.executeWithBackup}，
+   * 有备份则从断点续跑（`itemList` 与扫描游标都从备份里来）；否则把已知 ID 压成区间后
+   * **只放一个请求进队列**，之后每一步都由 {@link getNextRequest} 现场生成。
    *
    * @param itemList STEP 1 得到的已知资料列表；结果以 `concat` 追加在其后（不修改传入的数组）
    * @param config 目标模组与类型，以及是否需要详细信息
@@ -73,9 +73,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
    */
   async run(itemList: ItemList, config: ItemJsonFrameConfig) {
     // 其实就是 STEP 2
-    if (this.backupManager.hasBackup()) {
-      await this.executeBackup();
-    } else {
+    await this.executeWithBackup(() => {
       this.logger.log(`共 ${itemList.length.toLocaleString()} 个资料`);
       this.logger.log("搜索潜在资料");
 
@@ -113,17 +111,14 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
       // 从第一个区间的左端往左扫（dir = -1 表示扫描方向朝下）
       this.preExecution.dir = -1;
       this.preExecution.rangeIndex = 0;
-      this.preExecution.currentID = this.preExecution.idRanges[this.preExecution.rangeIndex].l;
-      // 队列初始只有一个槽位（滑动窗口），之后每次回收结果才补上下一个
+      // 没有任何已知资料就没有可扫的区间，起点留 0、队列留空，整轮直接收尾
+      this.preExecution.currentID = this.preExecution.idRanges[0]?.l ?? 0;
+      // 队列初始只有一个槽位（滑动窗口），之后每次回收结果才补上下一个；没得扫就留空队列
       const firstRequest = this.getNextRequest();
-      if (firstRequest) {
-        this.queue = [firstRequest];
-        await this.execute();
-      }
-    }
+      this.queue = firstRequest ? [firstRequest] : [];
+    });
 
     this.logger.log("搜索潜在资料 完成");
-    this.backupManager.clear();
     // 捞到的资料是「追加」而不是「填坑」：它们在原列表中并不存在
     this.execution!.itemList = this.execution!.itemList.concat(this.results);
     // delete this.config;

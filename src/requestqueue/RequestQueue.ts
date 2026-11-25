@@ -30,18 +30,7 @@ import { McmodderConsole } from "../widget/logger/Console";
  */
 export abstract class RequestQueue {
   /** 每派发多少个请求做一次现场备份（静态队列按 `progress` 计，动态队列按成功数计） */
-  static BACKUP_FREQUENCY = 50;
-
-  /** 组合根，队列用它去拿 `web.createRequest` 等共享服务 */
-  parent: Mcmodder;
-  /** 本队列的标识，同时决定备份的存储键（`${id}_backup`） */
-  id: string;
-  /** 最大并发数 */
-  maxConcurrent: number;
-  /** 单个请求派发前的最小等待（ms） */
-  minInterval: number;
-  /** 进度与错误信息的输出目标 */
-  logger: Logger;
+  protected static readonly BACKUP_FREQUENCY = 50;
   /** 待执行的请求表；子类在 `run()` 里填好后交给 {@link execute} */
   queue: RequestList = [];
   /** 是否处于暂停态（`run()` 中调用不会立即生效，只挡住后续派发） */
@@ -49,7 +38,7 @@ export abstract class RequestQueue {
   /** 是否空闲：`false` 表示从启动到全部完成的整个周期内都算忙（外部据此禁用按钮） */
   isIdle = true;
   /** 备份的读写门面（落到 GM 存储的 `mcmodderBackup` 下） */
-  backupManager: BackupManager<RequestQueueBackup>;
+  readonly backupManager: BackupManager<RequestQueueBackup>;
   /** 本次运行的执行现场：队列副本、已回收的结果、进行中的下标集合、派发游标 */
   execution?: RequestQueueExecution;
   /** 子类在启动前提供的附加现场数据（会被合并进 `execution`，也随备份一起持久化） */
@@ -67,17 +56,17 @@ export abstract class RequestQueue {
    * @param logger 进度输出目标，缺省用控制台 logger
    */
   constructor(
-    parent: Mcmodder,
-    id: string,
-    maxConcurrent = 6,
-    minInterval = 750,
-    logger: Logger = new McmodderConsole(),
+    /** 组合根，队列用它去拿 `web.createRequest` 等共享服务 */
+    protected readonly parent: Mcmodder,
+    /** 本队列的标识，同时决定备份的存储键（`${id}_backup`） */
+    protected readonly id: string,
+    /** 最大并发数 */
+    protected readonly maxConcurrent = 6,
+    /** 单个请求派发前的最小等待（ms） */
+    protected readonly minInterval = 750,
+    /** 进度与错误信息的输出目标 */
+    protected readonly logger: Logger = new McmodderConsole(),
   ) {
-    this.parent = parent;
-    this.id = id;
-    this.maxConcurrent = maxConcurrent;
-    this.minInterval = minInterval;
-    this.logger = logger;
     this.backupManager = new BackupManager(parent, `${id}_backup`);
   }
 
@@ -87,6 +76,8 @@ export abstract class RequestQueue {
    * 备份里的 `runningIndex` 是「上次中断时正在飞的那几个请求」——它们的**结果当时还没拿到**，
    * 因此原样重发一遍（`results` 里缺失的槽位正是它们的），这也是为什么 `queue` 必须整个存进备份。
    * 恢复期间沿用 `minInterval`，不额外惩罚。
+   *
+   * 备份的清理不在这里做，由统一入口 {@link executeWithBackup} 在整轮任务结束后负责。
    */
   protected async executeBackup() {
     const backup = this.backupManager.restore();
@@ -99,12 +90,37 @@ export abstract class RequestQueue {
     (backup as any).runningIndex = new Set<number>(backup.runningIndex);
     this.execution = backup as any;
     this.running = new Set();
+    // 备份点本身就是一次自动备份，恢复后从当前基准重新计数，避免立刻重复落盘
+    this.lastAutoBackupMarker = this.getBackupMarker();
     backup.runningIndex.forEach((index) => {
       this.create(index, this.minInterval);
     });
     this.logger.success("读取到先前的备份，请求队列已重启。");
     // 从备份恢复时跳过「建现场 / 检查队列」那段初始化，直接消费已有现场
     await this.execute(true);
+  }
+
+  /**
+   * 「一轮任务」的统一入口：把主逻辑与备份逻辑的衔接收在父类里。
+   *
+   * - 有备份 → {@link executeBackup} 从断点续跑；
+   * - 没有备份 → 先让子类在 `prepare` 里搭好现场（`queue` 与 `preExecution`），再 {@link execute}；
+   * - 不论走哪条路径，整轮结束后统一清掉备份。
+   *
+   * 子类因此只需要关心「这一轮要做什么」，不必再重复 `hasBackup()` / `clear()` 这套样板。
+   *
+   * @param prepare 仅在无备份时调用，用来填 `queue` / `preExecution`（通常也在这里打起始日志）
+   */
+  protected async executeWithBackup(prepare: () => void | Promise<void>) {
+    if (this.backupManager.hasBackup()) {
+      await this.executeBackup();
+    } else {
+      // 新一轮：先清掉上一轮遗留的现场，保证 prepare 期间读到的只有 `preExecution`
+      this.execution = undefined;
+      this.results = undefined;
+      await prepare();
+      await this.execute();
+    }
     this.backupManager.clear();
   }
 
@@ -234,11 +250,55 @@ export abstract class RequestQueue {
     return new Array(requestLength);
   }
 
+  /**
+   * 自动备份的计数基准：静态队列按派发游标 `progress` 计，动态队列 override 成已回收的成功结果数。
+   * 每 {@link BACKUP_FREQUENCY} 个单位自动落盘一次。
+   */
+  protected getBackupMarker(): number {
+    return this.execution?.progress ?? 0;
+  }
+
+  /** 上一次自动备份时的计数基准，避免计数原地不动时（动态队列连续失败）反复落盘 */
+  private lastAutoBackupMarker = 0;
+
+  /** 计数基准到达 {@link BACKUP_FREQUENCY} 的整数倍时自动备份一次 */
+  private tryAutoBackup() {
+    const marker = this.getBackupMarker();
+    if (
+      marker > 0 &&
+      marker !== this.lastAutoBackupMarker &&
+      marker % RequestQueue.BACKUP_FREQUENCY === 0
+    ) {
+      this.lastAutoBackupMarker = marker;
+      this.tryBackup();
+    }
+  }
+
   /** 回收一个完成的结果：按 `index` 写回对齐槽位，失败与缺下标的结果直接丢弃 */
   protected storeResult(result: RequestResult) {
     if (result?.success && result.index != undefined) {
       this.execution!.results[result.index] = result.value;
     }
+  }
+
+  /**
+   * 建一份空的执行现场：`preExecution` 里的附加字段会被并入，同名核心字段由这里覆盖。
+   *
+   * 空队列也是合法状态（动态队列可能一个请求都产不出来），此时现场照样建好，
+   * 调用方仍能从 `execution` 里取回附加数据。
+   */
+  protected initializeExecution() {
+    this.isIdle = false;
+    this.lastAutoBackupMarker = 0;
+    const execution: RequestQueueExecution = {
+      queue: this.queue,
+      results: this.getResultInitializer(this.queue.length),
+      runningIndex: new Set(),
+      progress: 0,
+    };
+    // preExecution 在左侧：附加字段在前、核心字段在后，保证核心字段不会被附加数据覆盖
+    this.execution = this.preExecution ? Object.assign(this.preExecution, execution) : execution;
+    this.running = new Set();
   }
 
   /**
@@ -251,26 +311,12 @@ export abstract class RequestQueue {
    */
   async execute(isRestoredFromBackup = false) {
     if (!isRestoredFromBackup) {
-      // 三道前置检查：不许重入、不许空跑
+      // 不许重入；空队列是合法状态，建好现场后循环会直接收尾
       if (!this.isIdle) {
         console.error("该队列已在运行中");
         return;
       }
-      if (!this.queue.length) {
-        console.error("队列为空，无法启动");
-        return;
-      }
-      this.isIdle = false;
-      const execution: RequestQueueExecution = {
-        queue: this.queue,
-        results: this.getResultInitializer(this.queue.length),
-        runningIndex: new Set(),
-        progress: 0,
-      };
-      // preExecution 在左侧：附加字段在前、核心字段在后，保证核心字段不会被附加数据覆盖
-      if (this.preExecution) this.execution = Object.assign(this.preExecution, execution);
-      else this.execution = execution;
-      this.running = new Set();
+      this.initializeExecution();
     }
     if (!this.execution || this.running === undefined) return;
     const requestLength = this.execution.queue.length;
@@ -284,9 +330,7 @@ export abstract class RequestQueue {
         }
         // 无论这一格是否为空洞，游标都要前进（洞位只留空结果）
         this.execution.progress++;
-        if (this.execution.progress % RequestQueue.BACKUP_FREQUENCY === 0) {
-          this.tryBackup();
-        }
+        this.tryAutoBackup();
       } else {
         // 并发已满：等最先返回的那个，收完立刻回到循环顶部补位
         const result = await Promise.race(this.running);
