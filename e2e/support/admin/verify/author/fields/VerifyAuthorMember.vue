@@ -21,7 +21,7 @@ import { Values } from "../../../../../../src/Values";
 
 const { member } = defineProps<{ member: Required<McmodAuthorEditorInnerData>["member"] }>();
 const author = computed(() =>
-  member.map((entry) => ({
+  Object.values(member).map((entry) => ({
     ...entry,
     id: Number(entry.id),
     author: McmodRepository.getAuthor(Number(entry.id)),

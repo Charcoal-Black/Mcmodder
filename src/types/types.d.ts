@@ -39,7 +39,7 @@ type ArrayToMap<
   T extends ReadonlyArray<Record<PropertyKey, unknown>>,
   K extends keyof ElementOf<T>,
 > = {
-  [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>;
+  [V in Extract<ElementOf<T>[K], PropertyKey>]: Extract<ElementOf<T>, { [P in K]: V }>;
 };
 
 type ArrayToMap2<
@@ -47,7 +47,7 @@ type ArrayToMap2<
   K extends keyof ElementOf<T>,
   K2 extends keyof ElementOf<T>,
 > = {
-  [V in ElementOf<T>[K]]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
+  [V in Extract<ElementOf<T>[K], PropertyKey>]: Extract<ElementOf<T>, { [P in K]: V }>[K2];
 };
 
 type WithDefault<T, V> =
@@ -339,10 +339,9 @@ interface Settings {
   customAttitude?: boolean;
 }
 
-interface OnlineSettings {
-  anonymiseSplashContributor: boolean;
-  showUserBadge: boolean;
-}
+type OnlineSettings = ConfigurableSettings & {
+  readonly syncWithSupabase: true;
+};
 
 interface SettingsSection {
   id: string;
@@ -398,7 +397,7 @@ type ConfigurableSettingsOptions = {
  * @template V 配置项默认值的类型。
  * @template R 输入范围的类型，取 `never` 表示该输入类型不接受范围。
  */
-interface ConfigParamsBase<T extends ConfigurableSettings["id"], V, R> {
+interface ConfigParamsBase<T, V, R> {
   /** 配置项字段名 */
   id: T;
   /** 配置项标题 */
@@ -412,15 +411,11 @@ interface ConfigParamsBase<T extends ConfigurableSettings["id"], V, R> {
   /** 可见性，缺省为始终可见 */
   visible?: (ctx: ConfigVisibilityContext) => boolean | undefined;
   /** 配置项需要与云端同步 */
-  syncWithSupabase?: T extends keyof OnlineSettings ? true : false;
+  syncWithSupabase?: boolean;
 }
 
 /** 复选框类配置项 */
-interface CheckboxConfigParams extends ConfigParamsBase<
-  KeysOfType<Required<Settings>, boolean>,
-  boolean,
-  never
-> {
+interface CheckboxConfigParams extends ConfigParamsBase<string, boolean, never> {
   type: "checkbox";
 }
 
@@ -1686,7 +1681,7 @@ interface McmodAuthorEditorInnerData {
    *
    * 编辑团队的作者信息时，只能添加已经被收录的作者，而不能像编辑模组那样顺带新建作者。
    */
-  member?: ElementOf<Required<Required<McmodClassEditorInnerData>["author"]>["link"]>[];
+  member?: Required<Required<McmodClassEditorInnerData>["author"]>["link"];
 
   /**
    * > 填写个人作者/开发团队的名称，如有需要，可增加更多昵称，但只能设置其中一个为主要名称。
@@ -1822,7 +1817,7 @@ interface McmodAuthorEditorInnerData {
    *
    * 编辑团队的作者信息时，只能添加已经被收录的作者，而不能像编辑模组那样顺带新建作者。
    */
-  member?: ElementOf<Required<Required<McmodClassEditorInnerData>["author"]>["link"]>;
+  member?: Required<Required<McmodClassEditorInnerData>["author"]>["link"];
 
   /**
    * > 填写个人作者/开发团队的名称，如有需要，可增加更多昵称，但只能设置其中一个为主要名称。
@@ -1981,7 +1976,7 @@ interface InputControlRef<T> {
 }
 
 interface InputLimit {
-  readonly type: import("../config/ConfigUtils").InputType;
+  readonly type: InputType;
   readonly range?: InputValueRange;
 }
 
@@ -2006,7 +2001,7 @@ interface InputValidInfo<T> {
 interface ConfigOption extends InputOption {
   readonly title: string;
   readonly description: string;
-  readonly permission: import("../config/ConfigUtils").Permission;
+  readonly permission: Permission;
   readonly suggestion?: InputSimplifiedSuggestion[];
 }
 
@@ -2151,7 +2146,7 @@ type ModalBroadcastRecord = {
 }[keyof ModalTypeTypes];
 
 /** 某个弹窗类型的 payload 类型：取其 `option` 字段（各弹窗类自行声明，如 `NewVerificationModalOption`） */
-type ModalOption<T> = T["option"];
+type ModalOption<T extends import("../modal/ModalType.ts").ModalType> = T["option"];
 
 /**
  * 跨标签页请求提示记录。

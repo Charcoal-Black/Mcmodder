@@ -29,7 +29,7 @@ declare global {
     title?: string;
     text?: string;
     input?: T;
-    inputValue?: T extends null ? undefined : SweetAlertInputTypes[T];
+    inputValue?: T extends null ? undefined : SweetAlertInputTypes[Exclude<T, null>];
     inputOptions?: Record<string, string>;
     html?: string;
     footer?: string;
@@ -45,7 +45,7 @@ declare global {
     preConfirm?: (...args: any[]) => any;
   }
   interface SweetAlertCallbackState<T extends keyof SweetAlertInputTypes | null> {
-    value: SweetAlertInputTypes[T];
+    value: T extends null ? boolean : SweetAlertInputTypes[Exclude<T, null>];
   }
   interface SweetAlertStatic {
     fire<T extends keyof SweetAlertInputTypes | null = null>(

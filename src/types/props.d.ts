@@ -47,7 +47,7 @@ export interface GenericJsonFrameProps<T extends TableAcceptable>
   allowedKeys: readonly string[];
   indexedKeys: readonly string[];
   opts?: {
-    gmStorageRepo?: () => GMStorageRepository<T>;
+    gmStorageRepo?: () => import("../jsonframe/repository/GMStorageRepository").GMStorageRepository<T>;
     idbRepo?: () => import("../jsonframe/repository/IDBRepository").IDBRepository<T>;
     parseText?: (text: string) => {
       success: number;
