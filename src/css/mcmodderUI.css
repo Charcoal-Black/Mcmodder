@@ -193,7 +193,8 @@ body > .content,
   padding: 5px 0;
   text-wrap: nowrap;
 }
-.setting-item .checkbox label {
+.setting-item .checkbox label,
+.setting-item .radio label {
   margin: 0.25rem 0;
 }
 .itemname h5 {
@@ -1044,25 +1045,30 @@ body .edui-default .edui-editor-toolbarboxinner {
 .center-item-popover-b {
   background: linear-gradient(45deg, var(--mcmodder-color-primary), var(--mcmodder-color-accent));
 }
-.checkbox label::before {
+.checkbox label::before,
+.radio label::before {
   outline-offset: -2px;
 }
 .checkbox label::before,
+.radio label::before,
 .form-control {
   outline-width: 0;
   transition:
     outline-width 0.2s ease,
     border-color 0.2s ease;
 }
-.checkbox label {
+.checkbox label,
+.radio label {
   transition: color 0.3s ease;
 }
 .checkbox:hover label::before,
+.radio:hover label::before,
 .form-control:hover {
   outline: 0.125em solid var(--mcmodder-color-accent-transparent1) !important;
   border-color: var(--mcmodder-color-accent);
 }
-.checkbox:hover label {
+.checkbox:hover label,
+.radio:hover label {
   color: var(--mcmodder-color-accent-dark2);
 }
 .form-control:focus,
@@ -1422,6 +1428,7 @@ body .edui-default .edui-toolbar .edui-for-mcmodderupload.mcmodder-edui-uploadin
   border-color: var(--mcmodder-color-primary);
 }
 .checkbox label::after,
+.radio label::after,
 .common-center .right .tab-content li.tab-li .tips,
 .dropdown-item,
 .message-menu li a.active,
