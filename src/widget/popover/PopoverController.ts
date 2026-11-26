@@ -119,8 +119,6 @@ export abstract class PopoverController<
   private activeTarget: HTMLElement | null = null;
   /** 悬停离开后的关闭延时（仅悬停型控制器用到） */
   private timeout: number | null = null;
-  /** 鼠标是否已移入弹出框内部（仅悬停型控制器用到） */
-  private hoveringPopover = false;
 
   protected constructor(config: PopoverControllerConfig<TOption, TProps, TEvents>) {
     this.app = config.component;
@@ -203,30 +201,32 @@ export abstract class PopoverController<
   /**
    * 挂上「悬停触发」所需的监听：鼠标移入已登记元素即弹出，移出后延时关闭。
    *
-   * 只有悬停型的控制器才需要它（点击型的控制器不会用到这里的延时与「鼠标在框内」状态）。
+   * 只有悬停型的控制器才需要它（点击型的控制器不会用到这里的延时与移入弹出框后的取消关闭逻辑）。
    */
   protected installHoverListeners() {
     window.addEventListener(
       "pointerover",
       async (e) => {
-        const target = e.target;
-        if (!(target instanceof HTMLElement) || this.pendingOptionSet.has(target)) {
+        // 鼠标移入弹出框：取消待关闭状态
+        if (this.timeout !== null && this.inPopover(e)) {
+          window.clearTimeout(this.timeout);
+          this.timeout = null;
+        }
+
+        // 沿事件路径找最近的已登记元素，链接内部嵌套的图片 / 文本同样能触发
+        const closest = this.getClosestWithOption(e);
+        if (closest === undefined) {
+          return;
+        }
+        const { target, option } = closest;
+        if (this.pendingOptionSet.has(target)) {
           return;
         }
 
-        if (this.timeout !== null && this.inPopover(e)) {
-          clearTimeout(this.timeout);
+        const success = await this.serve("pointerover", target, option);
+        if (success && this.timeout !== null) {
+          window.clearTimeout(this.timeout);
           this.timeout = null;
-          this.hoveringPopover = true;
-        }
-
-        const option = this.hasOption(target);
-        if (option) {
-          const success = await this.serve("pointerover", target, option);
-          if (success && this.timeout !== null) {
-            clearTimeout(this.timeout);
-            this.timeout = null;
-          }
         }
       },
       this.opt,
@@ -234,17 +234,41 @@ export abstract class PopoverController<
 
     window.addEventListener(
       "pointerout",
-      async (e) => {
-        if (
-          (this.activeTarget === e.target && this.timeout === null) ||
-          (this.hoveringPopover && !this.inPopover(e))
-        ) {
-          this.hoveringPopover = false;
-          this.timeout = window.setTimeout(() => {
-            this.closeActive();
-            this.timeout = null;
-          }, 300);
+      (e) => {
+        if (this.activeTarget === null) {
+          return;
         }
+
+        const related = e.relatedTarget;
+        const popoverElement = this.app.getPopoverElement();
+        // 在锚点内部或弹出框内部移动时不关闭（子元素之间的 pointerout 都属于这种情况）
+        if (
+          related instanceof Node &&
+          (this.activeTarget.contains(related) || popoverElement?.contains(related))
+        ) {
+          if (popoverElement?.contains(related) && this.timeout !== null) {
+            window.clearTimeout(this.timeout);
+            this.timeout = null;
+          }
+          return;
+        }
+
+        const target = e.target;
+        if (!(target instanceof Node)) {
+          return;
+        }
+        // 只处理「从锚点或弹出框内部离开」的事件
+        if (!this.activeTarget.contains(target) && !popoverElement?.contains(target)) {
+          return;
+        }
+
+        if (this.timeout !== null) {
+          window.clearTimeout(this.timeout);
+        }
+        this.timeout = window.setTimeout(() => {
+          this.closeActive();
+          this.timeout = null;
+        }, 300);
       },
       this.opt,
     );
@@ -261,6 +285,12 @@ export abstract class PopoverController<
     for (const target of eventTargets) {
       if (!(target instanceof HTMLElement)) {
         continue;
+      }
+      // 更内层的元素已由别的弹出框负责时不能越过它触发外层：
+      // 例如表态结果条里的贴纸图片属于贴纸查看器，外层的表态用户列表不应同时弹出
+      const registeredType = PopoverController.registeredTypes.get(target);
+      if (registeredType !== undefined && registeredType !== this.type) {
+        return;
       }
       if (this.pendingOptionSet.has(target)) {
         return;

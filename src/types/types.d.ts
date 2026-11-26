@@ -628,6 +628,26 @@ interface Item {
 }
 type ItemList = Item[];
 
+/** 资料预览右侧信息表中的一行（资料分类、最大堆叠等） */
+interface LinkPreviewInfoRow {
+  /** 字段名（已去掉末尾的冒号） */
+  label: string;
+  /** 字段值的纯文本 */
+  value: string;
+  /** 字段值中第一个链接的绝对地址 */
+  href?: string;
+}
+
+/** 物品资料预览：`getItemByID(id, true)` 在 `Item` 之外额外解析出的内容 */
+interface ItemPreview extends Item {
+  /** 正文 HTML（已移除引用框中的编辑链接） */
+  content: string;
+  /** 右侧信息表解析出的结构化行 */
+  infoRows: LinkPreviewInfoRow[];
+  /** 合成 / 用途页链接 */
+  tabUrl?: string;
+}
+
 interface UnpurifiedItem extends Item {
   /** 对应原 maxStackSize */
   maxStacksSize?: number;
@@ -647,6 +667,26 @@ interface Class {
   englishName: string;
   abbr: string;
   cover?: string;
+}
+
+/** 模组状态 / 开源状态的展示信息 */
+interface ClassPreviewTag {
+  /** 站点显示的文字（如「活跃」「开源」） */
+  text: string;
+  /** 站点样式编号，对应 `status-N` / `source-N` */
+  level?: number;
+  /** 悬浮说明 */
+  description?: string;
+}
+
+/** 模组资料预览：`getClassByID(id, true)` 在 `Class` 之外额外解析出的内容 */
+interface ClassPreview extends Class {
+  /** 正文 HTML */
+  content: string;
+  /** 更新状态（如「活跃」「停更」） */
+  status?: ClassPreviewTag;
+  /** 开源状态 */
+  source?: ClassPreviewTag;
 }
 
 interface Author {
@@ -1033,8 +1073,14 @@ type StickerViewerOption = import("./props").StickerViewerOption;
 
 type AttitudeReactorsOption = import("./props").AttitudeReactorsOption;
 
+type LinkPreviewOption = import("./props").LinkPreviewOption;
+
 type PopoverOption =
-  InputListOption | AttitudePickerState | StickerViewerOption | AttitudeReactorsOption;
+  | InputListOption
+  | AttitudePickerState
+  | StickerViewerOption
+  | AttitudeReactorsOption
+  | LinkPreviewOption;
 
 interface McmodEditorInnerMetaData {
   /**

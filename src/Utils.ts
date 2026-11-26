@@ -1622,6 +1622,91 @@ export class Utils {
     return res;
   }
 
+  /**
+   * 从物品资料页中解析正文 HTML。
+   *
+   * 引用资料时站点会在正文前插入 `legend`，其中最后一个链接是编辑入口；
+   * 预览里不需要它，故在克隆节点上移除后返回。
+   */
+  static parseItemContent($doc: JQuery = $(document)) {
+    const $content = $doc.find(".item-content.common-text.font14").first();
+    if (!$content.length) return "";
+    const $clone = $content.clone();
+    $clone.find(".quote_text legend a").last().remove();
+    return $clone.html() ?? "";
+  }
+
+  /**
+   * 从物品资料页右侧信息表中解析出结构化行。
+   *
+   * 图标行与「查看合成/用途」行都是 `colspan=2`，分别跳过、单独取链接；
+   * 其余两列行按「字段名 / 字段值」解析，值里的图片用 `alt` 兜底。
+   */
+  static parseItemInfoTable($doc: JQuery = $(document)) {
+    const $table = $doc.find(".item-data .item-info-table .righttable").first();
+    const infoRows: LinkPreviewInfoRow[] = [];
+    let tabUrl: string | undefined;
+    if (!$table.length) return { infoRows, tabUrl };
+
+    const absoluteURL = (url: string | undefined) => {
+      if (!url) return undefined;
+      try {
+        const resolved = new URL(url, Values.hostname);
+        return resolved.protocol === "http:" || resolved.protocol === "https:"
+          ? resolved.href
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
+    $table.find("tr").each((_, tr) => {
+      const $tr = $(tr);
+      const $tabLink = $tr.find('a[href*="/item/tab/"]').first();
+      if ($tabLink.length) tabUrl = absoluteURL($tabLink.attr("href"));
+
+      const $cells = $tr.children("td");
+      if ($cells.length < 2) return;
+
+      const label = $cells
+        .eq(0)
+        .text()
+        .trim()
+        .replace(/[：:]$/, "");
+      if (!label) return;
+
+      const $valueCell = $cells.eq(1);
+      const value =
+        $valueCell.text().trim() ||
+        $valueCell
+          .find("img[alt]")
+          .map((_, img) => $(img).attr("alt")?.trim() ?? "")
+          .get()
+          .filter(Boolean)
+          .join("、");
+      if (!value) return;
+
+      infoRows.push({
+        label,
+        value,
+        href: absoluteURL($valueCell.find("a[href]").first().attr("href")),
+      });
+    });
+
+    return { infoRows, tabUrl };
+  }
+
+  /** 从物品资料页中解析预览所需的完整结构化数据 */
+  static parseItemPreview($doc: JQuery = $(document)): ItemPreview {
+    const { infoRows, tabUrl } = Utils.parseItemInfoTable($doc);
+    return {
+      ...Utils.parseItemDocument($doc),
+      content: Utils.parseItemContent($doc),
+      infoRows,
+      tabUrl,
+    };
+  }
+
   /** 从模组页 DOM 中解析模组信息，返回节点与 `classData` */
   static parseClassDocument($doc: JQuery = $(document)) {
     const name = $doc.find(".class-title h3");
@@ -1637,6 +1722,37 @@ export class Utils {
         abbr: abbr.text().slice(1, -1),
         cover: $doc.find(".class-cover-image img").attr("src"),
       } as Class,
+    };
+  }
+
+  /** 从模组页中解析正文 HTML */
+  static parseClassContent($doc: JQuery = $(document)) {
+    return $doc.find(".class-menu-main .text-area.common-text.font14").first().html() ?? "";
+  }
+
+  /** 从模组页中解析状态 / 开源标签（含站点配色编号与悬浮说明） */
+  static parseClassTag($doc: JQuery, type: "status" | "source"): ClassPreviewTag | undefined {
+    const $tag = $doc.find(`.class-title .class-${type}`).first();
+    if (!$tag.length) return;
+    const text = $tag.text().trim();
+    if (!text) return;
+    const level = ($tag.attr("class") ?? "").match(new RegExp(`${type}-(\\d+)`))?.[1];
+    return {
+      text,
+      level: level === undefined ? undefined : Number(level),
+      description: $tag.attr("data-original-title") ?? $tag.attr("title") ?? undefined,
+    };
+  }
+
+  /** 从模组页中解析预览所需的完整结构化数据 */
+  static parseClassPreview($doc: JQuery = $(document)): ClassPreview {
+    const { classData } = Utils.parseClassDocument($doc);
+    return {
+      ...classData,
+      id: 0,
+      content: Utils.parseClassContent($doc),
+      status: Utils.parseClassTag($doc, "status"),
+      source: Utils.parseClassTag($doc, "source"),
     };
   }
 

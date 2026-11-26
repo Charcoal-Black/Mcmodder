@@ -12,6 +12,7 @@ import { ScheduleRequestUtils } from "./schedulerequest/ScheduleRequestUtils";
 import { StorageBuffer } from "./StorageBuffer";
 import { ModalBroadcaster } from "./modal/ModalBroadcaster";
 import { RequestToastBroadcaster } from "./widget/toast/RequestToastBroadcaster";
+import { LinkPreviewPopoverController } from "./widget/popover/LinkPreviewPopoverController";
 import { AdvancedUEditor } from "./ueditor/AdvancedUEditor";
 import { UEditor } from "./ueditor/UEditor";
 import { Utils, type ThemeColorSet } from "./Utils";
@@ -71,8 +72,8 @@ export class Mcmodder {
   /** 站点自身的未读消息数（页头铃铛的基底，自定义表态数在此之上叠加） */
   private msgSiteCount = 0;
   private readonly titleNode = $("title");
-  private readonly linkPendingSet = new Set<string>();
-  private readonly linkContentDictionary: Record<string, string> = {};
+  /** 已登记资料链接预览的链接（`updateItemTooltip` 会被多次调用，避免重复登记） */
+  private readonly linkPreviewRegistered = new WeakSet<HTMLAnchorElement>();
   private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
   private readonly elementColorCache: Map<string, string> = new Map();
 
@@ -154,6 +155,7 @@ export class Mcmodder {
   updateItemTooltip() {
     // 鼠标悬浮预览介绍
     if (this.configRepository.getSettings("hoverDescription")) {
+      // 这些区域站点自带悬浮预览，先摘掉其事件，避免与本脚本的弹出框叠加
       $(".common-imglist li, .item-list-type-right span, .relation a").off();
       $("a")
         .filter((_, e) => {
@@ -163,132 +165,40 @@ export class Mcmodder {
             /\/\/www1?\.mcmod\.cn\/class\/[0-9]*\.html/.test(href)
           );
         })
-        .filter((_, _c) => {
-          const c = $(_c);
-          if (c.parents(".mcmodder-item-link").length) return false;
+        .filter((_, e) => {
+          const c = $(e);
+          if (c.closest(".mcmodder-popover").length) return false;
+          if (c.closest(".modlist-block .title").length) return false;
           if (c.parent().hasClass("item-table-hover")) return false;
           return true;
         })
-        .addClass("mcmodder-item-link")
-        .removeAttr("title");
-      $(".modlist-block .title a").removeClass("mcmodder-item-link");
-      $(".mcmodder-item-link[data-toggle=tooltip]:not([data-html])").each((_, e) => {
-        $(e).tooltip("dispose");
-        // 强制序列化终极邪道
-        // eslint-disable-next-line no-self-assign
-        e.outerHTML = e.outerHTML;
-      });
-      $(".mcmodder-item-link").each((_, e) => {
-        const href = (e as HTMLAnchorElement).href;
-        $(e).attr({
-          "data-source-url": href.split("mcmod.cn/")[1],
-          "data-toggle": "tooltip",
-          "data-html": "true",
-          "data-original-title": `
-            <div class="mcmodder-preview-container" data-source-url="${href.split("mcmod.cn/")[1]}">
-              <div class="mcmodder-preview-frame maintext">
-                <div class="mcmodder-loading"></div>
-              </div>
-            </div>
-          `,
-        });
-      });
-      document.addEventListener("pointerover", async (e) => {
-        const target = e.target;
-        if (!(
-          target instanceof HTMLAnchorElement && target.classList.contains("mcmodder-item-link")
-        )) {
-          return;
-        }
-        await Utils.sleep(250);
-        const sourceUrl = $(target).attr("data-source-url");
-        const previewContainer = $(`.mcmodder-preview-container[data-source-url="${sourceUrl}"]`);
-        const previewFrame = previewContainer.find(`.mcmodder-preview-frame`);
-        const describedby = $(target).attr("aria-describedby");
-        if (!describedby) return;
-        const tooltip = $("#" + describedby);
-        if (!tooltip.length || !tooltip.hasClass("show")) return;
-        if (previewFrame.attr("data-status")) return;
-        const storagedContent = this.linkContentDictionary[sourceUrl];
-        if (storagedContent !== undefined) {
-          previewFrame.attr("data-status", "fulfilled");
-          $(target).attr("data-original-title", storagedContent);
-          previewFrame.children().html(storagedContent);
-          return;
-        }
-        if (this.linkPendingSet.has(sourceUrl)) return;
-        previewFrame.attr("data-status", "pending");
-        this.linkPendingSet.add(sourceUrl);
-        await Utils.sleep(750);
-        const resp = await this.web.createRequest(
-          {
-            url: target.href,
-            method: "GET",
-            anonymous: true,
-          },
-          "链接预览",
-        );
-        if (!resp.responseXML) return;
-        if (previewFrame.attr("data-status") === "fulfilled") return;
-        const doc = $(resp.responseXML);
-        doc.find(".itemname > .tool").remove();
-        doc.find(".quote_text legend a").last().remove();
-        previewFrame.html(
-          doc.find(".item-content, .class-menu-main .text-area.font14").first().html(),
-        );
-        if (previewFrame.text() === "暂无简介，欢迎协助完善。") {
-          previewFrame.html('<span class="mcmodder-common-danger">该资料正文暂无介绍...</span>');
-        }
-        if (sourceUrl.includes("item/")) {
-          doc
-            .find(".itemname")
-            .first()
-            .insertBefore(previewFrame.children().first())
-            .find("h5")
-            .each((_, h5) => {
-              const keywords = doc.find("meta[name=keywords]").attr("content").split(",");
-              let textContent = h5.textContent;
-              if (keywords[1]) {
-                textContent = ("<a>" + textContent).replace(
-                  ` (${keywords[1]})`,
-                  `</a> <span class="item-h5-ename"><a>${keywords[1]}</a></span>`,
-                );
-              } else {
-                textContent = `<a>${textContent}</a>`;
-              }
-              h5.innerHTML = textContent;
-            });
-        } else if (sourceUrl.includes("class/")) {
-          doc.find(".class-title").first().insertBefore(previewFrame.children().first());
-        }
-        const rightTable = doc.find(".item-data .item-info-table").first();
-        rightTable.removeClass("righttable").insertBefore(previewFrame);
-        const showImg = (c: Element) => (c.outerHTML = c.outerHTML.replaceAll("data-src=", "src="));
-        rightTable.find("img").each((_, img) => {
-          showImg(img);
-        });
-        const mcicons = $("#icon-toughness-empty");
-        if (!mcicons.length) {
-          const module = import.meta.glob("./html/mcicons.html", {
-            query: "?raw",
-            eager: true,
+        .each((_, e) => {
+          const link = e as HTMLAnchorElement;
+          if (this.linkPreviewRegistered.has(link)) return;
+          this.linkPreviewRegistered.add(link);
+
+          const $link = $(link);
+          // 站点可能已经初始化过 tooltip，先销毁它，避免两套悬浮框同时出现
+          if (typeof $link.tooltip === "function" && $link.data("bs.tooltip")) {
+            $link.tooltip("dispose");
+          }
+          $link.removeAttr("title data-toggle data-original-title data-html data-placement");
+
+          const href = link.href;
+          const kind = href.includes("/item/") ? "item" : "class";
+          const id = Utils.abstractIDFromURL(href, kind);
+          if (!id) return;
+          const sourceUrl = new URL(href).pathname.replace(/^\//, "");
+          LinkPreviewPopoverController.instance.add(link, {
+            type: "linkPreview",
+            anchorElement: link,
+            parent: this,
+            href,
+            sourceUrl,
+            kind,
+            id,
           });
-          const mciconsHtml = (module["./html/mcicons.html"] as any).default as string;
-          $(mciconsHtml).prependTo(document.body);
-        }
-        if (this.configRepository.getSettings("hoverImage")) {
-          previewFrame.find("img").each((_, img) => {
-            showImg(img);
-            $(img).attr("src", $(img).attr("data-src"));
-          });
-        }
-        rightTable.find("tr").last().remove();
-        const final = previewContainer.prop("outerHTML");
-        $(target).attr("data-original-title", final);
-        this.linkContentDictionary[sourceUrl] = final;
-        this.linkPendingSet.delete(sourceUrl);
-        previewFrame.attr("data-status", "fulfilled");
-      });
+        });
     }
     Utils.updateAllTooltip();
   }

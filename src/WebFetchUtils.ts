@@ -134,13 +134,17 @@ export class WebFetchUtils {
   }
 
   /** 按 ID 抓取物品资料页并解析为 `Item`，失败返回 undefined */
-  async getItemByID(id: string | number) {
+  async getItemByID(id: string | number): Promise<Item | undefined>;
+  /** `withContent` 为 true 时额外解析正文与右侧信息表，供资料预览使用 */
+  async getItemByID(id: string | number, withContent: true): Promise<ItemPreview | undefined>;
+  async getItemByID(id: string | number, withContent = false) {
     id = Number(id);
     const resp = await this.createRequest(
       {
         url: Utils.getItemURL(id),
         method: "GET",
-        redirect: "manual",
+        // 预览需要跟随合并资料的跳转；基础信息请求仍保留手动重定向以便识别失效资料
+        redirect: withContent ? "follow" : "manual",
         anonymous: true,
       },
       "获取物品基础信息",
@@ -149,7 +153,42 @@ export class WebFetchUtils {
       return;
     }
     const doc = $(resp.responseXML);
-    return Utils.parseItemDocument(doc);
+    if (!withContent) return Utils.parseItemDocument(doc);
+
+    const preview = Utils.parseItemPreview(doc);
+    if (!preview.id) preview.id = id;
+    return preview;
+  }
+
+  /** 按 ID 抓取模组页并解析为 `Class`，失败返回 undefined */
+  async getClassByID(id: string | number): Promise<Class | undefined>;
+  /** `withContent` 为 true 时额外解析正文与状态标签，供资料预览使用 */
+  async getClassByID(id: string | number, withContent: true): Promise<ClassPreview | undefined>;
+  async getClassByID(id: string | number, withContent = false) {
+    id = Number(id);
+    const resp = await this.createRequest(
+      {
+        url: Utils.getClassURL(id),
+        method: "GET",
+        // 预览需要跟随合并模组的跳转；基础信息请求仍保留手动重定向以便识别失效资料
+        redirect: withContent ? "follow" : "manual",
+        anonymous: true,
+      },
+      "获取模组基础信息",
+    );
+    if (resp.status > 300 || !resp.responseXML) {
+      return;
+    }
+    const doc = $(resp.responseXML);
+    if (!withContent) {
+      const { classData } = Utils.parseClassDocument(doc);
+      classData.id = id;
+      return classData;
+    }
+
+    const preview = Utils.parseClassPreview(doc);
+    preview.id = id;
+    return preview;
   }
 
   /** 按 ID 抓取物品编辑页并解析为 `Item`，未登录或失败返回 undefined */

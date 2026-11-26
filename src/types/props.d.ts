@@ -232,6 +232,24 @@ export interface StickerViewerOption extends PopoverBaseOption {
   attitudeType?: string;
 }
 
+/**
+ * 资料链接预览的选项：鼠标悬停在正文中的物品 / 类资料链接上时弹出。
+ *
+ * 预览内容由组件自行抓取并缓存，选项只描述「预览哪一个资料页」。
+ */
+export interface LinkPreviewOption extends PopoverBaseOption {
+  type: "linkPreview";
+  parent: import("../Mcmodder").Mcmodder;
+  /** 资料页的完整链接（请求地址） */
+  href: string;
+  /** 资料页的相对路径（如 `item/123.html`），用作内容缓存键 */
+  sourceUrl: string;
+  /** 目标资料类型 */
+  kind: "item" | "class";
+  /** 目标资料 ID */
+  id: number;
+}
+
 /** 弹出框控制器的跨实例查询接口：定位弹出框根节点、追溯其锚点 */
 export interface PopoverElementAccessor {
   /** 弹出框的根节点（尚未挂载时为 `undefined`），用于区分「本组件的」与「其它组件的」弹出框 */
