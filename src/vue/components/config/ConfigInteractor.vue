@@ -64,6 +64,8 @@
       <BackgroundPoolInput
         v-else-if="type === 'backgroundPool'"
         :id="id"
+        :configs="configs"
+        :parent="parent"
         :title="title"
         :value="value as number"
         :on-successful-change="onConfigSuccessfulChange"
@@ -111,12 +113,14 @@ import RadioGroupInput from "../input/RadioGroupInput.vue";
 import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
 import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 import type { ConfigMatchRanges } from "../../../types/props";
+import type { Mcmodder } from "../../../Mcmodder";
 import MatchedText from "../MatchedText";
 
 interface Props {
   id: ConfigurableSettings["id"];
   cfgutils: ConfigUtils;
   configs: ConfigRepository;
+  parent: Mcmodder;
   matchedRanges?: ConfigMatchRanges;
 }
 

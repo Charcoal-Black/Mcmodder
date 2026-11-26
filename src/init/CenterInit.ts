@@ -1,3 +1,4 @@
+import { BackgroundPool } from "../background/BackgroundPool";
 import { Values } from "../Values";
 import { CenterCardInit } from "./center/CenterCardInit";
 import { CenterCommentInit } from "./center/CenterCommentInit";
@@ -119,11 +120,7 @@ export class CenterInit extends Init {
       .backgroundImage.replace('url("', "")
       .replace('")', "");
     const suffix = bgImg.split(".").pop()?.toLowerCase();
-    if (
-      bgImg !== this.configs.getSettings("defaultBackground") &&
-      suffix &&
-      Values.supportedImageSuffix.includes(suffix)
-    )
+    if (!BackgroundPool.isOwnImage(bgImg) && suffix && Values.supportedImageSuffix.includes(suffix))
       $("div.bbs-link").append(
         `<p align="right"><a href="${bgImg}" target="_blank">查看个人中心背景图片</a></p>`,
       );

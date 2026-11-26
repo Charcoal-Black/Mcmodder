@@ -1,7 +1,6 @@
 // 必须放在所有其它 import 之前：ESM 的依赖会先于本模块体求值，
 // 这里要赶在 Values 的静态初始化（会读 GM_info）之前完成 dev 期自检。
 import "./devCheck";
-import { BackgroundPool } from "./background/BackgroundPool";
 import { GM_getValue, GM_addValueChangeListener } from "$";
 import { Mcmodder } from "./Mcmodder";
 import { SupabaseUtils } from "./supabase/SupabaseUtils";
@@ -282,8 +281,6 @@ import bbsCss from "./css/bbs.css?raw";
             JSON.parse(GM_getValue("mcmodderSettings") ?? "{}")?.useSupabase_v2 !== false;
         } catch (_e) {}
         if (useSupabase) await SupabaseUtils.prepare();
-        // 本地背景池要赶在 StyleLoader 生成 CSS 之前读进内存（那里是同步流程）
-        BackgroundPool.init();
         new Mcmodder();
       })().catch((error) => {
         console.error("Mcmodder 启动失败：", error);

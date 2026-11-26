@@ -76,6 +76,10 @@ export class Mcmodder {
   private readonly linkPreviewRegistered = new WeakSet<HTMLAnchorElement>();
   private readonly elementColorDictionary: Map<HTMLElement, string> = new Map();
   private readonly elementColorCache: Map<string, string> = new Map();
+  /** 当前页面是否已经由本脚本写入过背景（夜间模式切换时需要据此替换或撤销） */
+  private backgroundApplied = false;
+  /** 写入背景前 body 上的内联背景，撤销时原样恢复 */
+  private originalBodyBackground: { background: string; backgroundSize: string } | null = null;
 
   constructor() {
     this.isV4 = typeof fuc_topmenu_v4 === "function";
@@ -106,6 +110,9 @@ export class Mcmodder {
 
     this.configRepository = new ConfigRepository(this);
     this.web = new WebFetchUtils(this, this.configRepository);
+
+    // 图池要在 StyleLoader 生成背景 CSS 之前读进内存（那里是同步流程）
+    BackgroundPool.init(this.configRepository);
 
     this.echartsUtils = new EchartsUtils(this);
 
@@ -518,6 +525,44 @@ export class Mcmodder {
         e.style.setProperty("color", this.elementColorDictionary.get(e)!);
       });
     }
+    this.updateBackground();
+  }
+
+  /**
+   * 应用 / 撤销页面背景。
+   *
+   * 地址由 {@link BackgroundPool.resolve} 决定（图池优先，池空回落到内置默认图）。
+   * 当前主题没有可用背景时（旧版配置为 `none` 且图池为空），不动页面原有背景；
+   * 若之前是本脚本写上去的，则撤掉。
+   */
+  private updateBackground() {
+    const slot = this.isNightMode ? "night" : "day";
+    const body = $("body");
+    if (BackgroundPool.resolve(slot, this.configRepository) === null) {
+      if (this.backgroundApplied) {
+        body.css(this.originalBodyBackground ?? { background: "", "background-size": "" });
+        this.backgroundApplied = false;
+        this.originalBodyBackground = null;
+      }
+      return;
+    }
+    // 是否覆盖页面自带的背景：默认否（保守），只替换原本没有背景的页面；
+    // 用户可在设置里开启，强制用脚本背景覆盖站点/其他脚本设置的背景。
+    const overrideExisting = this.configRepository.getSettings("backgroundOverrideExisting");
+    if (!overrideExisting && !this.backgroundApplied && body.css("background-image") !== "none") {
+      return;
+    }
+    if (!this.backgroundApplied) {
+      this.originalBodyBackground = {
+        background: document.body.style.background,
+        backgroundSize: document.body.style.backgroundSize,
+      };
+    }
+    body.css({
+      background: "var(--mcmodder-image-background)",
+      "background-size": "cover",
+    });
+    this.backgroundApplied = true;
   }
 
   updatePageWidth() {
@@ -567,6 +612,8 @@ export class Mcmodder {
     this.configRepository.watchSettingsRef("nightMode", () => this.updateNightMode());
     this.configRepository.watchSettingsRef("preferredWiderScreen", () => this.updatePageWidth());
     this.configRepository.watchSettingsRef("attitudeTwemoji", () => this.updateAttitudeFont());
+    // 设置面板增删图片后重新应用背景（当前主题被禁用时会撤掉脚本写入的背景）
+    watch(BackgroundPool.revision, () => this.updateBackground());
   }
 
   main() {
@@ -686,20 +733,6 @@ export class Mcmodder {
     ).addClass("mcmodder-content-block");
     $(".common-nav .line").html('<i class="fa fa-chevron-right" />');
     $(".oredict-ad, .worldgen-list-ad").remove();
-    // 是否覆盖页面自带的背景：默认否（保守），只替换原本没有背景的页面；
-    // 用户可在设置里开启，强制用脚本背景覆盖站点/其他脚本设置的背景。
-    const overrideExisting = this.configRepository.getSettings("backgroundOverrideExisting");
-    const hasLocalBackground =
-      BackgroundPool.getImages("day").length > 0 || BackgroundPool.getImages("night").length > 0;
-    if (hasLocalBackground || this.configRepository.getSettings("defaultBackground") != "none") {
-      $("body")
-        .filter((_, c) => overrideExisting || $(c).css("background-image") === "none")
-        .css({
-          background: "var(--mcmodder-image-background)",
-          "background-size": "cover",
-        });
-    }
-
     // 个人菜单
     if (/* this.configRepository.getSettings("mcmodderUI") */ true) {
       const insertPos = $(".header-user .header-layer-block:first-child()");

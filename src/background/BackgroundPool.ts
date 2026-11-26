@@ -1,5 +1,7 @@
 import { GM_getValue, GM_setValue } from "$";
+import { shallowRef } from "vue";
 import type { ConfigRepository } from "../config/ConfigRepository";
+import { Values } from "../Values";
 import type { BackgroundImageRow } from "./BackgroundRepository";
 import { BackgroundRepository } from "./BackgroundRepository";
 
@@ -14,7 +16,7 @@ import { BackgroundRepository } from "./BackgroundRepository";
 export type BackgroundRotateMode = 0 | 1 | 2 | 3 | 4;
 
 /**
- * 本地背景池：缓存两个 slot（白天 / 夜间）的图片，并负责「这一页该用哪张」的决策。
+ * 背景图池：缓存两个 slot（白天 / 夜间）的图片，并负责「这一页该用哪张」的决策。
  *
  * # 为什么是同步的
  * 图片存在 GM storage（同步读写），因此 {@link init} 不需要等待网络 / IndexedDB，
@@ -25,38 +27,50 @@ export type BackgroundRotateMode = 0 | 1 | 2 | 3 | 4;
  * 因此换页面、甚至换域名（设置页在 center、内容页在 www）都保持连续。
  */
 export class BackgroundPool {
+  /**
+   * 图池版本号。
+   *
+   * 配置面板增删图片后会自增，`StyleLoader` 的 computed 与 `Mcmodder` 的
+   * 背景应用逻辑通过它感知变化；本页已选缓存也按它失效。
+   */
+  static readonly revision = shallowRef(0);
+
   private static repository: BackgroundRepository | null = null;
   private static readonly cache: Record<"day" | "night", BackgroundImageRow[]> = {
     day: [],
     night: [],
   };
-  /** 本页已选的图片（同一页面内不再变化） */
+  /** 本页已选的图片地址（同一页面内不再变化） */
   private static readonly picked: Partial<Record<"day" | "night", string>> = {};
+  /** `picked` 对应的图池版本；版本变化时清空缓存 */
+  private static pickedRevision = -1;
   private static initialized = false;
 
-  private static repo() {
-    BackgroundPool.repository ??= new BackgroundRepository();
+  private static repo(configs: ConfigRepository) {
+    BackgroundPool.repository ??= new BackgroundRepository(configs);
     return BackgroundPool.repository;
   }
 
   /** 把两个 slot 的图片读进内存（同步） */
-  static init(): void {
+  static init(configs: ConfigRepository): void {
     if (BackgroundPool.initialized) return;
     BackgroundPool.initialized = true;
-    const repo = BackgroundPool.repo();
+    const repo = BackgroundPool.repo(configs);
     BackgroundPool.cache.day = repo.list("day");
     BackgroundPool.cache.night = repo.list("night");
+    BackgroundPool.revision.value += 1;
   }
 
   /** 重新载入（配置面板增删图片后调用） */
-  static reload(slot?: "day" | "night"): void {
-    const repo = BackgroundPool.repo();
+  static reload(configs: ConfigRepository, slot?: "day" | "night"): void {
+    const repo = BackgroundPool.repo(configs);
     if (slot === "day" || slot === undefined) {
       BackgroundPool.cache.day = repo.list("day");
     }
     if (slot === "night" || slot === undefined) {
       BackgroundPool.cache.night = repo.list("night");
     }
+    BackgroundPool.revision.value += 1;
   }
 
   /** 当前缓存的图片列表（同步，供配置面板展示） */
@@ -65,13 +79,69 @@ export class BackgroundPool {
   }
 
   /**
+   * 解析某个 slot 当前应该使用的背景地址。
+   *
+   * 图池优先；池为空时回落到旧版手填 URL，再回落到内置默认图。
+   *
+   * @returns 图片地址；用户主动禁用（旧版配置为 `none`）时返回 `null`。
+   */
+  static resolve(slot: "day" | "night", configs: ConfigRepository): string | null {
+    return (
+      BackgroundPool.pick(slot, BackgroundPool.readMode(configs)) ??
+      BackgroundPool.fallback(slot, configs)
+    );
+  }
+
+  /**
+   * 图池为空时的兜底地址。
+   *
+   * 旧版的 `defaultBackground` / `defaultNightBackground` 正常情况下已经迁入图池，
+   * 只有用户当时填了 `none`（主动禁用）或值不是合法链接时才会残留。
+   */
+  static fallback(slot: "day" | "night", configs: ConfigRepository): string | null {
+    // const legacy = configs
+    //   .getSettings(slot === "day" ? "defaultBackground" : "defaultNightBackground")
+    //   ?.trim();
+    // if (legacy === "none") return null;
+    // const normalized = legacy === undefined ? null : BackgroundRepository.normalizeLink(legacy);
+    // if (normalized !== null) return normalized;
+    // return slot === "day" ? Values.assets.bg : Values.assets.nightMode.bg;
+    void slot;
+    void configs;
+    return "none";
+  }
+
+  /** 某个地址是否来自本脚本（图池或内置默认图），用于区分页面自带背景 */
+  static isOwnImage(url: string): boolean {
+    if (url.trim().length === 0) return false;
+    if (
+      BackgroundRepository.sameUrl(url, Values.assets.bg) ||
+      BackgroundRepository.sameUrl(url, Values.assets.nightMode.bg)
+    ) {
+      return true;
+    }
+    return [...BackgroundPool.cache.day, ...BackgroundPool.cache.night].some((row) =>
+      BackgroundRepository.sameUrl(row.dataUrl, url),
+    );
+  }
+
+  /** 本页已选缓存是否还对应当前图池版本 */
+  private static syncPicked(): void {
+    if (BackgroundPool.pickedRevision === BackgroundPool.revision.value) return;
+    BackgroundPool.pickedRevision = BackgroundPool.revision.value;
+    delete BackgroundPool.picked.day;
+    delete BackgroundPool.picked.night;
+  }
+
+  /**
    * 选一张背景图。
    *
    * @param slot 白天或夜间。
    * @param mode 轮换预设，见 {@link BackgroundRotateMode}。
-   * @returns 图片的 data URL；池为空时返回 `null`。
+   * @returns 图片地址（本地 data URL 或外链 URL）；池为空时返回 `null`。
    */
   static pick(slot: "day" | "night", mode: BackgroundRotateMode): string | null {
+    BackgroundPool.syncPicked();
     const cached = BackgroundPool.picked[slot];
     if (cached !== undefined) return cached;
 

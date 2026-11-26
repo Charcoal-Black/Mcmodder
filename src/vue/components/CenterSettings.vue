@@ -49,6 +49,7 @@
                     :id="key.id"
                     :cfgutils="cfgutils"
                     :configs="configs"
+                    :parent="parent"
                     :matched-ranges="matchedRanges.get(key.id)"
                   >
                     <template v-if="key.id === 'autoCheckUpdate'" #afterInput>

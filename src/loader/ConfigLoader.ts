@@ -1,15 +1,22 @@
-import { BackgroundRepository } from "../background/BackgroundRepository";
+import { BackgroundPool } from "../background/BackgroundPool";
 import { Utils } from "../Utils";
-import { Values } from "../Values";
 
 /**
- * 本地背景图池的限制说明。
+ * 图池里是否有图片（设置项可见性用；图池在 `Mcmodder` 构造时已读入内存）。
  *
- * 数值直接取自 {@link BackgroundRepository}，避免文案和实际限制脱节。
+ * 读一次 `revision` 让调用方的 computed 能跟踪图池变化：在设置面板里增删图片后，
+ * 「覆盖页面自带背景」「轮换方式」这类依赖图池内容的选项会立即显示 / 隐藏。
  */
-const backgroundPoolLimitText =
-  `单张原图不超过 ${Utils.getFormattedSize(BackgroundRepository.MAX_FILE_BYTES)}` +
-  `（保存前会自动压缩，压缩后仍过大的会被跳过），最多 ${BackgroundRepository.MAX_COUNT.toLocaleString()} 张。`;
+const hasPoolImage = () => {
+  void BackgroundPool.revision.value;
+  return BackgroundPool.getImages("day").length > 0 || BackgroundPool.getImages("night").length > 0;
+};
+
+/** 图池里的图片总数是否超过一张（只有多张时才需要选择轮换方式） */
+const hasMultiplePoolImages = () => {
+  void BackgroundPool.revision.value;
+  return BackgroundPool.getImages("day").length > 1 || BackgroundPool.getImages("night").length > 1;
+};
 
 export const settings = [
   {
@@ -41,39 +48,23 @@ export const settings = [
         label: "背景",
         settings: [
           {
-            id: "defaultBackground",
-            title: "默认背景",
-            description:
-              "输入一个图片链接 URL。若当前页面没有设置背景，则自动使用此背景。图像加载可能会拖慢页面载入时间，可输入 <code>none</code> 以禁用此特性。",
-            type: "text",
-            value: Values.assets.bg,
-          },
-          {
-            id: "defaultNightBackground",
-            title: "默认夜间背景",
-            description:
-              "输入一个图片链接 URL，在夜间模式下此背景会覆盖默认背景。输入 <code>none</code> 以禁用此特性。",
-            type: "text",
-            value: Values.assets.nightMode.bg,
-          },
-          {
             id: "backgroundPoolDay",
-            title: "白天本地背景",
-            description: `从本机选择一张或多张图片作为白天背景。此配置将优先于在“默认背景”与“默认夜间背景”配置项中填写的 URL。${backgroundPoolLimitText}`,
+            title: "白天背景",
+            description: `非夜间模式下使用的背景图池。`,
             type: "backgroundPool",
             value: 0,
           },
           {
             id: "backgroundPoolNight",
-            title: "夜间本地背景",
-            description: `从本机选择一张或多张图片作为夜间背景，此配置将优先于在“默认背景”与“默认夜间背景”配置项中填写的 URL，且夜间模式下将优先使用这里的图片。${backgroundPoolLimitText}`,
+            title: "夜间背景",
+            description: `夜间模式下使用的背景图池。`,
             type: "backgroundPool",
             value: 0,
           },
           {
             id: "backgroundPoolRotateMode",
-            title: "本地背景轮换方式",
-            description: "多张本地背景时的取图方式。",
+            title: "背景轮换方式",
+            description: "图池中有多张图片时的取图方式。",
             type: "dropdownMenu",
             value: 0,
             range: {
@@ -98,20 +89,16 @@ export const settings = [
                 desc: "只在跨天时重新抽取",
               },
             },
-            visible: (ctx) =>
-              (ctx.configs.getSettings("backgroundPoolDay") ?? 0) > 1 ||
-              (ctx.configs.getSettings("backgroundPoolNight") ?? 0) > 1,
+            visible: () => hasMultiplePoolImages(),
           },
           {
             id: "backgroundOverrideExisting",
             title: "覆盖页面自带背景",
             description:
-              "启用后，本地背景会覆盖页面已有背景，包括用户自行设置的个人页背景，以及部分模组区域下资料的背景。",
+              "启用后，背景图池会覆盖页面已有背景，包括用户自行设置的个人页背景，以及部分模组区域下资料的背景。",
             type: "checkbox",
             value: false,
-            visible: (ctx) =>
-              (ctx.configs.getSettings("backgroundPoolDay") ?? 0) > 0 ||
-              (ctx.configs.getSettings("backgroundPoolNight") ?? 0) > 0,
+            visible: () => hasPoolImage(),
           },
         ],
       },

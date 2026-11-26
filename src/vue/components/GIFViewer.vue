@@ -6,7 +6,7 @@
     item="帧"
     :editable="editable"
     :load-error="loadError"
-    :frames="frames"
+    :frames="frames.map((frame) => ({ type: 'local', url: frame }))"
     :subtexts="frameTimes.map((time) => `${time}ms`)"
     :allow-control="!playing"
     :allow-apply="!!editedBlob"

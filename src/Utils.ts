@@ -1651,10 +1651,7 @@ export class Utils {
     const absoluteURL = (url: string | undefined) => {
       if (!url) return undefined;
       try {
-        const resolved = new URL(url, Values.hostname);
-        return resolved.protocol === "http:" || resolved.protocol === "https:"
-          ? resolved.href
-          : undefined;
+        return new URL(url, Values.hostname).href;
       } catch {
         return undefined;
       }

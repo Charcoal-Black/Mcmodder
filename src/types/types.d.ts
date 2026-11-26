@@ -209,8 +209,6 @@ interface Settings {
   enableLive2D: boolean;
   enableAprilFools: boolean;
   autoCheckin: boolean;
-  defaultBackground: string;
-  defaultNightBackground: string;
   /** 白天本地图池（仅记录数量，图片实体在 GM storage） */
   backgroundPoolDay: number;
   /** 夜间本地图池（仅记录数量，图片实体在 GM storage） */
@@ -337,6 +335,8 @@ interface Settings {
   jsonDatabase?: string[];
   useSupabase?: boolean;
   customAttitude?: boolean;
+  defaultBackground?: string;
+  defaultNightBackground?: string;
 }
 
 type OnlineSettings = ConfigurableSettings & {
