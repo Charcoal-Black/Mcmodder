@@ -13,10 +13,10 @@ import type { Logger } from "../widget/logger/Logger";
  * 回填到 `itemList` 的对应下标上。
  *
  * 因为每个 ID 已知、要访问哪个 URL 一开始就能列全，所以是标准的静态队列（并发 6、间隔 750ms），
- * 直接用基类的循环即可。断点续传也由基类兜住：中断时 `execution`（含整个 `itemList`）被备份，
- * 下次运行直接接着跑，**不需要重新从 STEP 1 抓一遍**。
+ * 直接用基类的循环即可。断点续传也由基类兜住：中断时 `execution`（其 `ctx` 含整个 `itemList`）
+ * 被备份，下次运行直接接着跑，**不需要重新从 STEP 1 抓一遍**。
  */
-export class DetailedItemListRequestQueue extends RequestQueue {
+export class DetailedItemListRequestQueue extends RequestQueue<{ itemList: ItemList }, Item> {
   /**
    * @param parent 组合根
    * @param id 队列标识，决定备份的存储键（`ItemJsonFrame` 里分了 `detailedRequestQueue` 与
@@ -37,11 +37,11 @@ export class DetailedItemListRequestQueue extends RequestQueue {
 
   /** 解析编辑页文档得到完整 `Item`，并每 50 个打印一次百分比进度 */
   protected override onCallback(
-    resp: GmResponseEvent<"text", any>,
+    resp: GmResponseEvent<"text", unknown>,
     index: number,
-    requestQueue: RequestList,
+    requestQueue: AppRequestList,
   ) {
-    if (!resp.responseXML) return;
+    if (!resp.responseXML) return null;
     const doc = $(resp.responseXML);
     const data = Utils.parseItemEditorDocument(doc);
     // console.log(data);
@@ -97,20 +97,21 @@ export class DetailedItemListRequestQueue extends RequestQueue {
       }
       this.setQueue(requestList);
       // itemList 挂到现场上：它既是备份的一部分（中断后据此还原），也是结果的落点
-      this.preExecution = {
-        itemList: itemList,
+      this.ctx = {
+        itemList,
       };
     });
 
     // 按下标合并回原对象：队列下标与 itemList 下标一一对应（空洞除外，其结果槽也是空的）
     const requestResults = this.getResult();
-    for (const i in requestResults) {
-      this.execution!.itemList[i] = Object.assign(
-        this.execution!.itemList[i],
-        requestResults[Number(i)],
-      );
+    for (const _i in requestResults) {
+      const i = Number(_i);
+      this.execution!.ctx.itemList[i] = {
+        ...this.execution!.ctx.itemList[i],
+        ...requestResults[i].value,
+      };
     }
     this.logger.log("获取资料详细信息 完成");
-    return this.execution!.itemList;
+    return this.execution!.ctx.itemList;
   }
 }

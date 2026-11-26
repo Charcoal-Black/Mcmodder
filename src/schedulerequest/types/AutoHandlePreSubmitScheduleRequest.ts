@@ -29,7 +29,7 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       this.parent.currentUID,
     );
     const preSubmitList: (PreSubmission | null)[] = (
-      this.configs.getProfile("preSubmitList") as PreSubmission[]
+      this.configs.getProfile("preSubmitList") ?? []
     ).filter((e) => !e.errState);
     let f = true;
     if (!preSubmitList.length) return;
@@ -65,6 +65,10 @@ export class AutoHandlePreSubmitScheduleRequest extends ScheduleRequestType {
       }
     }
     if (f) Utils.commonMsg("自动检查预编辑项已执行~ 当前暂无可正式提交的项目~");
-    else this.configs.setProfile("preSubmitList", preSubmitList.filter(Boolean) as PreSubmission[]);
+    else
+      this.configs.setProfile(
+        "preSubmitList",
+        preSubmitList.filter((e) => e !== null),
+      );
   }
 }

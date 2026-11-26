@@ -25,7 +25,7 @@ npm run format        # prettier --write src e2e
 - **Reuse the existing mechanism.** Every feature area has an established entry point (see "Where to change what"); do not introduce a second convention for the same job.
 - **`CHANGELOG.md` is user-owned.** Never edit it unless explicitly instructed; do not add entries for your own work on your own initiative.
 - Comments, config titles/descriptions, and UI copy are Chinese in the existing house style. Keep it that way.
-- `eslint.config.ts` exemptions are closed lists: legacy files (`src/main.ts`, `src/widget/Splash3D.ts`) and host integrations that cannot avoid `any` (UEditor, ECharts, request queues, `ConfigRepository`, ...). Do not refactor legacy code on sight, and never add new files to these lists to silence your own code.
+- `eslint.config.ts` exemptions are closed lists: legacy files (`src/main.ts`, `src/widget/Splash3D.ts`) and host integrations that cannot avoid `any` (UEditor, ECharts, `ConfigRepository`, ...). Do not refactor legacy code on sight, and never add new files to these lists to silence your own code.
 - `import type` is mandatory for type-only imports (`verbatimModuleSyntax`). Delete unused locals/parameters instead of keeping them; the build fails on them.
 
 ## Host-page constraints

@@ -3,7 +3,7 @@ import { McmodderConsole } from "../widget/logger/Console";
 import type { Logger } from "../widget/logger/Logger";
 import { RequestQueue } from "./RequestQueue";
 
-export class SubmitRequestQueue extends RequestQueue {
+export class SubmitRequestQueue extends RequestQueue<Record<string, never>, void> {
   constructor(
     parent: Mcmodder,
     id: string,
@@ -15,6 +15,6 @@ export class SubmitRequestQueue extends RequestQueue {
   }
 
   protected override onCallback(
-    /* _resp: GmResponseEvent<"text", any>, _index: number, _queue: RequestList */
+    /* _resp: GmResponseEvent<"text", unknown>, _index: number, _queue: AppRequestList */
   ) {}
 }

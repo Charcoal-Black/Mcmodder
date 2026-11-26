@@ -18,9 +18,9 @@ import type { Logger } from "../widget/logger/Logger";
  * - `results` 用 `push` 而非下标对齐，且**只收有效结果**（下标无从得知，顺序即语义）。
  *
  * 遍历进度不再是 `progress`，而是子类自己的状态（如「已扫过的区间长度」），子类需要把它挂到
- * `execution` 上——这正是 `preExecution` 存在的原因。
+ * `ctx` 上（启动后原样并入 `execution.ctx`）——这正是 `ctx` 存在的原因。
  */
-export abstract class DynamicRequestQueue extends RequestQueue {
+export abstract class DynamicRequestQueue<T, R> extends RequestQueue<T, R> {
   /**
    * @param minInterval 单个请求派发前的最小等待（ms）
    * @param logger 进度输出目标
@@ -40,12 +40,12 @@ export abstract class DynamicRequestQueue extends RequestQueue {
    *
    * 顺序很重要：先把有效结果落进 `results`（自动备份的计数基准就取自这里），再滑动窗口。
    */
-  override storeResult(result: RequestResult) {
+  override storeResult(result: RequestResult<R>) {
     if (!this.execution) return;
     // 注意用的是 truthy 判断：`onCallback` 返回 0 / "" 之类会被当作无效结果丢弃
     if (result?.success && result?.value) {
       // 追加而非按下标写入：动态队列的 `queue` 只有一个槽位，下标失去意义
-      this.execution.results.push(result.value);
+      this.execution.results.push(result);
     }
     const nextRequest = this.getNextRequest(result);
     if (nextRequest) {
@@ -66,5 +66,5 @@ export abstract class DynamicRequestQueue extends RequestQueue {
    * @param _result 刚回收的结果（含 `index`/`success`/`value`），子类可用它决定跳过与否
    * @returns 下一个请求；返回 `null` 表示搜索结束
    */
-  abstract getNextRequest(_result: RequestResult): AppRequest | null;
+  abstract getNextRequest(_result: RequestResult<R>): AppRequest | null;
 }

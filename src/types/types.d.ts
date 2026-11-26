@@ -604,9 +604,9 @@ interface Item {
    * 以单个逗号 `,` 不带空格分隔
    *
    * 每项无引号 `""` 包裹，无前缀 `#`；
-   * 最外层*无*方括号 `[]`
+   * 最外层*有*方括号 `[]`
    *
-   * 合法的例子: `minecraft:piglin_loved,forge:ingots/gold`
+   * 合法的例子: `[minecraft:piglin_loved,forge:ingots/gold]`
    */
   OredictList?: string;
   /**
@@ -2252,10 +2252,15 @@ interface JsonFrameTool {
 }
 
 interface ItemJsonFrameConfig {
+  /** 要爬取的目标模组 ID */
   classID: number;
+  /** 要爬取的资料类型 ID */
   typeID: number;
+  /** 是否启用了「访问潜在资料」 */
   infer: boolean;
+  /** 是否启用了「保存完整数据」 */
   getall: boolean;
+  /** 是否启用了「保存物品图标」 */
   geticon: boolean;
 }
 
@@ -2278,29 +2283,31 @@ type JsonStorage<T extends TableAcceptable> = Record<string, T[]>;
 interface AppRequest {
   config: import("$").GmXmlhttpRequestOption<"text", unknown>;
 }
-type RequestList = AppRequest[];
+type AppRequestList = AppRequest[];
 
-interface RequestResult {
+interface RequestResult<R> {
+  /** 请求在 `queue` 中的下标（动态队列里只反映派发时的窗口下标，仅供参考） */
   index?: number;
+  /** 请求是否成功拿到响应并解析出结果；失败项不会被回收进 `results` */
   success?: boolean;
-  // 网络通信牛逼
-  // eslint-disable-next-line
-  value?: any;
+  /** {@link RequestQueue.onCallback} 的返回值；解析不出有效内容时为 `null` */
+  value: R | null;
 }
 
-interface RequestQueueExecution {
-  // 网络通信牛逼
-  // eslint-disable-next-line
-  [key: string]: any;
+interface RequestQueueExecution<C, R> {
+  /** 当前正在飞的请求索引集合 */
   runningIndex: Set<number>;
-  queue: RequestList;
-  results: RequestResult[];
+  /** 需要处理的所有请求 */
+  queue: AppRequestList;
+  /** 已经处理完成的请求结果 */
+  results: RequestResult<R>[];
+  /** 进度 */
   progress: number;
+  /** 子类上下文：启动前由子类提供，随备份一起持久化 */
+  ctx: C;
 }
 
-type RequestQueuePreExecution = Partial<RequestQueueExecution>;
-
-type RequestQueueBackup = Omit<RequestQueueExecution, "runningIndex"> & {
+type RequestQueueBackup<C, R> = Omit<RequestQueueExecution<C, R>, "runningIndex"> & {
   runningIndex: number[];
 };
 

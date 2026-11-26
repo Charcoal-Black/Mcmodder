@@ -18,35 +18,38 @@ import { McmodderConsole } from "../widget/logger/Console";
  * - **断点续传**：`execution`（执行现场）每隔 {@link BACKUP_FREQUENCY} 个请求就落盘一次备份，
  *   下次运行发现备份存在就直接从断点接着跑。
  *
- * # 两种执行现场
- * - {@link execution}：本次运行真正在用的现场（`runningIndex` 是 `Set`，只能存在内存里）；
- * - {@link preExecution}：子类在启动前塞进来的「附加数据」（如待处理的 `itemList`、目标模组配置），
- *   `execute()` 启动时会与新现场合并——它同时也是**备份里保存这些附加数据的载体**，
- *   所以「从备份恢复」时不必由调用方重新提供。
+ * # 执行现场与泛型
+ * - `C`：子类自己的上下文类型（{@link ctx}），如待处理的 `itemList`、目标模组配置、扫描游标；
+ * - `R`：单个请求成功后的结果类型，即 {@link onCallback} 的返回值。
+ *
+ * {@link execution} 是本次运行的完整现场：核心字段（队列、结果、游标等）由基类维护，
+ * 子类的附加数据则原样放在 `execution.ctx` 里。`ctx` 既是启动前由子类提供的数据源，
+ * 也随备份一起持久化，所以「从备份恢复」时不必由调用方重新提供。
+ * （`runningIndex` 是 `Set`，只能存在于内存，落盘时会拍平成数组。）
  *
  * # 静态队列 vs 动态队列
  * 本类的 `queue` 在运行前就已完全确定。需要「下一个请求由上一个请求的结果决定」的场景，
  * 请改用 {@link DynamicRequestQueue}——它会把这套循环整个反过来用。
  */
-export abstract class RequestQueue {
+export abstract class RequestQueue<C, R> {
   /** 每派发多少个请求做一次现场备份（静态队列按 `progress` 计，动态队列按成功数计） */
   protected static readonly BACKUP_FREQUENCY = 50;
   /** 待执行的请求表；子类在 `run()` 里填好后交给 {@link execute} */
-  queue: RequestList = [];
+  queue: AppRequestList = [];
   /** 是否处于暂停态（`run()` 中调用不会立即生效，只挡住后续派发） */
   isPaused = false;
   /** 是否空闲：`false` 表示从启动到全部完成的整个周期内都算忙（外部据此禁用按钮） */
   isIdle = true;
   /** 备份的读写门面（落到 GM 存储的 `mcmodderBackup` 下） */
-  readonly backupManager: BackupManager<RequestQueueBackup>;
+  readonly backupManager: BackupManager<RequestQueueBackup<C, R>>;
   /** 本次运行的执行现场：队列副本、已回收的结果、进行中的下标集合、派发游标 */
-  execution?: RequestQueueExecution;
-  /** 子类在启动前提供的附加现场数据（会被合并进 `execution`，也随备份一起持久化） */
-  preExecution?: RequestQueuePreExecution;
+  execution?: RequestQueueExecution<C, R>;
+  /** 子类在启动前提供的上下文数据（会并入 `execution.ctx`，也随备份一起持久化；启动时必须已赋值） */
+  ctx?: C;
   /** 当前在飞的请求 Promise 集合（同时也是并发计数的依据） */
-  running?: Set<Promise<RequestResult>>;
-  /** 全部完成后按 `queue` 下标对齐的结果数组 */
-  results?: RequestResult[];
+  running?: Set<Promise<RequestResult<R>>>;
+  /** 全部完成后收集到的结果：静态队列按 `queue` 下标对齐，动态队列按成功顺序追加 */
+  results?: RequestResult<R>[];
 
   /**
    * @param parent 组合根
@@ -87,8 +90,10 @@ export abstract class RequestQueue {
     }
     this.isIdle = false;
     // JSON 存盘会把 Set 拍平成数组，这里还原回 Set
-    (backup as any).runningIndex = new Set<number>(backup.runningIndex);
-    this.execution = backup as any;
+    this.execution = {
+      ...backup,
+      runningIndex: new Set<number>(backup.runningIndex),
+    };
     this.running = new Set();
     // 备份点本身就是一次自动备份，恢复后从当前基准重新计数，避免立刻重复落盘
     this.lastAutoBackupMarker = this.getBackupMarker();
@@ -104,18 +109,18 @@ export abstract class RequestQueue {
    * 「一轮任务」的统一入口：把主逻辑与备份逻辑的衔接收在父类里。
    *
    * - 有备份 → {@link executeBackup} 从断点续跑；
-   * - 没有备份 → 先让子类在 `prepare` 里搭好现场（`queue` 与 `preExecution`），再 {@link execute}；
+   * - 没有备份 → 先让子类在 `prepare` 里搭好现场（`queue` 与 `ctx`），再 {@link execute}；
    * - 不论走哪条路径，整轮结束后统一清掉备份。
    *
    * 子类因此只需要关心「这一轮要做什么」，不必再重复 `hasBackup()` / `clear()` 这套样板。
    *
-   * @param prepare 仅在无备份时调用，用来填 `queue` / `preExecution`（通常也在这里打起始日志）
+   * @param prepare 仅在无备份时调用，用来填 `queue` / `ctx`（通常也在这里打起始日志）
    */
   protected async executeWithBackup(prepare: () => void | Promise<void>) {
     if (this.backupManager.hasBackup()) {
       await this.executeBackup();
     } else {
-      // 新一轮：先清掉上一轮遗留的现场，保证 prepare 期间读到的只有 `preExecution`
+      // 新一轮：先清掉上一轮遗留的现场，保证 prepare 期间读到的只有 `ctx`
       this.execution = undefined;
       this.results = undefined;
       await prepare();
@@ -125,17 +130,21 @@ export abstract class RequestQueue {
   }
 
   /**
-   * 每个请求拿到响应后的加工钩子：把原始响应转成队列要用的数据（通常是一个 `Item`）。
+   * 每个请求拿到响应后的加工钩子：把原始响应转成队列要用的结果 `R`（通常是一个 `Item`）。
+   *
+   * 返回 `null` 表示这一项无效（如资料已失效、不属于目标模组）：静态队列仍会把它写进对应下标
+   * （`value` 为 `null`），请求本身失败时则留空槽；动态队列会直接丢弃，并可由
+   * {@link DynamicRequestQueue.getNextRequest} 据此跳过相邻项。
    *
    * @param resp 响应（调用方已保证 `status` 为 200/301）
    * @param index 该请求在 `queue` 中的下标
    * @param queue 整个请求表（子类可用它算总进度）
    */
   protected abstract onCallback(
-    resp: GmResponseEvent<"text", any>,
+    resp: GmResponseEvent<"text", unknown>,
     index: number,
-    queue: RequestList,
-  ): any;
+    queue: AppRequestList,
+  ): R | null;
 
   /**
    * 派发前的挂起点，语义上是「等到可以继续为止」。
@@ -175,12 +184,12 @@ export abstract class RequestQueue {
     }
     const request = this.execution!.queue[index];
     // 结果对象是「就地改」的：它在 Promise 链外声明，好让 `.then` / `.catch` 都能往同一份里写
-    const result: RequestResult = {
+    const result: RequestResult<R> = {
       index: index,
       success: false,
       value: null,
     };
-    const promise = new Promise<GmResponseEvent<"text", any>>((resolve) => {
+    const promise = new Promise<GmResponseEvent<"text", unknown>>((resolve) => {
       this.pausing().then(() => {
         // 真正的限速靠这里的 setTimeout 加上 Mcmodder.web.createRequest 内部的全局间隔
         setTimeout(() => {
@@ -240,9 +249,10 @@ export abstract class RequestQueue {
 
   /** 把执行现场深拷贝后落盘；`Set` 无法直接 JSON 序列化，先转成数组 */
   protected backup() {
-    const data = Utils.simpleDeepCopy(this.execution) as any;
-    data.runningIndex = Array.from(this.execution!.runningIndex!);
-    this.backupManager.backup(data);
+    this.backupManager.backup({
+      ...this.execution!,
+      runningIndex: [...this.execution!.runningIndex!],
+    });
   }
 
   /** 结果数组的初始形态：按请求数开同长度的空槽（下标对齐）；动态队列会 override 成空数组 */
@@ -275,29 +285,31 @@ export abstract class RequestQueue {
   }
 
   /** 回收一个完成的结果：按 `index` 写回对齐槽位，失败与缺下标的结果直接丢弃 */
-  protected storeResult(result: RequestResult) {
-    if (result?.success && result.index != undefined) {
-      this.execution!.results[result.index] = result.value;
+  protected storeResult(result: RequestResult<R>) {
+    if (result?.success && result.index !== undefined) {
+      this.execution!.results[result.index] = result;
     }
   }
 
   /**
-   * 建一份空的执行现场：`preExecution` 里的附加字段会被并入，同名核心字段由这里覆盖。
+   * 建一份空的执行现场：把 {@link ctx} 原样放进 `execution.ctx`，再补上基类维护的核心字段。
    *
    * 空队列也是合法状态（动态队列可能一个请求都产不出来），此时现场照样建好，
-   * 调用方仍能从 `execution` 里取回附加数据。
+   * 调用方仍能从 `execution.ctx` 里取回附加数据。
    */
   protected initializeExecution() {
     this.isIdle = false;
     this.lastAutoBackupMarker = 0;
-    const execution: RequestQueueExecution = {
+    if (this.ctx === undefined) {
+      throw new Error("`ctx` is undefined");
+    }
+    this.execution = {
+      ctx: this.ctx,
       queue: this.queue,
       results: this.getResultInitializer(this.queue.length),
       runningIndex: new Set(),
       progress: 0,
     };
-    // preExecution 在左侧：附加字段在前、核心字段在后，保证核心字段不会被附加数据覆盖
-    this.execution = this.preExecution ? Object.assign(this.preExecution, execution) : execution;
     this.running = new Set();
   }
 
@@ -351,7 +363,12 @@ export abstract class RequestQueue {
     return this;
   }
 
-  /** 取最终结果（仅在 {@link execute} 全部结束后有值），下标与 `queue` 对齐，失败的项为空洞 */
+  /**
+   * 取最终结果（仅在 {@link execute} 全部结束后有值）。
+   *
+   * 元素是完整的 {@link RequestResult}，取值请用 `.value`；静态队列按下标与 `queue` 对齐
+   * （失败或未派发的格子为空），动态队列按成功顺序追加。
+   */
   getResult() {
     return this.results;
   }

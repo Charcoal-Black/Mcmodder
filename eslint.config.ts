@@ -112,7 +112,6 @@ export default defineConfig([
     files: [
       "src/Mcmod.d.ts", // MCMOD
       "src/echarts/EChartsUtils.ts", // ECharts
-      "src/requestqueue/*.ts", // 网络通信
       "src/init/center/CenterHomeInit.ts", // 依旧 ECharts
       "src/ueditor/AdvancedUEditor.ts", // UEditor
       "src/ueditor/UEditor.ts", // 依旧 UEditor

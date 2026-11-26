@@ -4,6 +4,17 @@ import { Utils } from "../Utils";
 import { DynamicRequestQueue } from "./DynamicRequestQueue";
 import type { Logger } from "../widget/logger/Logger";
 
+interface InferItemListRequestQueueCtx {
+  config: ItemJsonFrameConfig;
+  dir: -1 | 1;
+  rangeIndex: number;
+  idRanges: { l: number; r: number }[];
+  idsLength: number;
+  checkedRangeLength: number;
+  itemList: ItemList;
+  currentID: number;
+}
+
 /**
  * 「推」出隐藏资料——即 JSON 框架 STEP 2。
  *
@@ -16,10 +27,13 @@ import type { Logger } from "../widget/logger/Logger";
  * （与已知资料相邻的位置），交替扫描能更快撞到目标。
  *
  * 区间长度完全不可预知，所以它是标准的动态队列：每拿到一个结果才决定下一个 ID 是什么。
- * 遍历游标（`idRanges` / `dir` / `currentID` / `rangeIndex` 等）全部挂在 `execution` 上，
- * 备份会一并存下来，因此中断后能从断点继续扫。
+ * 遍历游标（`idRanges` / `dir` / `currentID` / `rangeIndex` 等）全部挂在 `ctx` 上
+ * （启动后原样并入 `execution.ctx`），备份会一并存下来，因此中断后能从断点继续扫。
  */
-export class InferItemListRequestQueue extends DynamicRequestQueue {
+export class InferItemListRequestQueue extends DynamicRequestQueue<
+  InferItemListRequestQueueCtx,
+  Item
+> {
   /**
    * @param parent 组合根
    * @param id 队列标识，决定备份的存储键
@@ -34,25 +48,25 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
    * 判定这个 ID 是不是「目标模组里我们想要的资料」，是则返回解析后的 `Item`，否则返回 `null`
    * （返回 `null` 会被基类视为无效结果丢弃，同时触发「跳过一次」——见 {@link getNextRequest}）。
    */
-  onCallback(resp: GmResponseEvent<"text", any>) {
+  onCallback(resp: GmResponseEvent<"text", unknown>) {
     if (resp.status === 301 || resp.status === 404 || !resp.responseXML) {
       this.logger.log(`目标物品已失效`);
       return null;
     }
     const doc = $(resp.responseXML);
     // 要详细信息就得进编辑页，普通资料页解析出来的字段少得多
-    const data = this.execution!.config.getall
+    const data = this.execution!.ctx.config.getall
       ? Utils.parseItemEditorDocument(doc)
       : Utils.parseItemDocument(doc);
     // 双向判定：先看是不是目标模组，再看是不是目标类型（两关都过才算命中）
-    if (data.classID != this.execution!.config.classID) {
+    if (data.classID != this.execution!.ctx.config.classID) {
       this.logger.log(`${data.id} 不属于目标模组，而是属于 ${data.classID}`);
       return null;
     }
     // 资料没填类型时按 1 算，与百科的默认行为保持一致
-    if ((data.itemType || 1) != this.execution!.config.typeID) {
+    if ((data.itemType || 1) !== this.execution!.ctx.config.typeID) {
       this.logger.log(
-        `${data.id} 属于目标模组，但资料类型编号是 ${data.itemType || 1} 而不是 ${this.execution!.config.typeID}`,
+        `${data.id} 属于目标模组，但资料类型编号是 ${data.itemType || 1} 而不是 ${this.execution!.ctx.config.typeID}`,
       );
       return null;
     }
@@ -80,14 +94,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
       const ids = itemList.map((item) => item.id).sort((a, b) => a - b);
       const idsLength = ids.length;
 
-      // 全部挂在 preExecution 上：execute() 会把它们并入 execution，也一起进备份
-      this.preExecution = {
-        config: config,
-        itemList: itemList,
-        idRanges: [],
-        idsLength: idsLength,
-        checkedRangeLength: 0,
-      };
+      const idRanges: InferItemListRequestQueueCtx["idRanges"] = [];
 
       // 末尾塞一个哨兵：让最后一段连续区间也能走「遇到断点就收尾」的同一条路径
       ids.push(Number.MAX_SAFE_INTEGER);
@@ -100,7 +107,7 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
           continue;
         }
         // 断了 → 收下 [ids[l], ids[i-1]]，从 i 重新开一段
-        this.preExecution.idRanges.push({
+        idRanges.push({
           l: ids[l],
           r: ids[i - 1],
         });
@@ -108,11 +115,20 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
         l = i;
       }
 
-      // 从第一个区间的左端往左扫（dir = -1 表示扫描方向朝下）
-      this.preExecution.dir = -1;
-      this.preExecution.rangeIndex = 0;
-      // 没有任何已知资料就没有可扫的区间，起点留 0、队列留空，整轮直接收尾
-      this.preExecution.currentID = this.preExecution.idRanges[0]?.l ?? 0;
+      // 全部挂在 ctx 上：execute() 会把它们并入 execution，也一起进备份
+      this.ctx = {
+        // 从第一个区间的左端往左扫（dir = -1 表示扫描方向朝下）
+        dir: -1,
+        rangeIndex: 0,
+        config,
+        itemList,
+        idRanges,
+        idsLength,
+        checkedRangeLength: 0,
+        // 没有任何已知资料就没有可扫的区间，起点留 0、队列留空，整轮直接收尾
+        currentID: idRanges[0]?.l ?? 0,
+      };
+
       // 队列初始只有一个槽位（滑动窗口），之后每次回收结果才补上下一个；没得扫就留空队列
       const firstRequest = this.getNextRequest();
       this.queue = firstRequest ? [firstRequest] : [];
@@ -120,9 +136,11 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
 
     this.logger.log("搜索潜在资料 完成");
     // 捞到的资料是「追加」而不是「填坑」：它们在原列表中并不存在
-    this.execution!.itemList = this.execution!.itemList.concat(this.results);
+    this.execution!.ctx.itemList = this.execution!.ctx.itemList.concat(
+      this.execution!.results.map((result) => result.value).filter((item) => item !== null),
+    );
     // delete this.config;
-    return this.execution!.itemList;
+    return this.execution!.ctx.itemList;
   }
 
   /**
@@ -137,73 +155,74 @@ export class InferItemListRequestQueue extends DynamicRequestQueue {
    *               逐个请求太慢
    * @returns 下一个请求；返回 `null` 表示全部区间扫完
    */
-  getNextRequest(result?: RequestResult): AppRequest | null {
-    // 首次调用发生在 execute() 之前，此时只有 preExecution；续跑时则用恢复好的 execution
-    const execution = this.execution || this.preExecution;
+  getNextRequest(result?: RequestResult<Item>): AppRequest | null {
+    // 首次调用发生在 execute() 之前，此时 execution 尚未建立，只能读到 ctx；续跑时则用恢复好的 execution
+    const execution = this.execution ?? { ctx: this.ctx };
     if (!execution) return null;
-    const rangeLength = execution.idRanges.length;
+    const rangeLength = execution.ctx!.idRanges.length;
     // 从上次那个 ID 再走一格（上次那个已经扫过了）
-    let nextID = execution.currentID + execution.dir;
+    let nextID = execution.ctx!.currentID + execution.ctx!.dir;
     // 上一个 ID 判定为无效 → 紧接着这一个也一起跳
     let forceSkip = result?.value === null;
     while (true) {
-      if (execution.rangeIndex >= rangeLength) {
+      if (execution.ctx!.rangeIndex >= rangeLength) {
         return null;
       }
       // 往左扫到头：已经贴上前一个区间的右端（否则会重复扫到已知资料）、或者越过 ID 下界
       if (
-        execution.dir === -1 &&
-        ((execution.rangeIndex > 0 && nextID === execution.idRanges[execution.rangeIndex - 1].r) ||
+        execution.ctx!.dir === -1 &&
+        ((execution.ctx!.rangeIndex > 0 &&
+          nextID === execution.ctx!.idRanges[execution.ctx!.rangeIndex - 1].r) ||
           nextID < 1 ||
           forceSkip)
       ) {
         // 掉头向右：改从本区间的右端往回扫
-        execution.dir = 1;
-        nextID = execution.idRanges[execution.rangeIndex].r + execution.dir;
+        execution.ctx!.dir = 1;
+        nextID = execution.ctx!.idRanges[execution.ctx!.rangeIndex].r + execution.ctx!.dir;
         forceSkip = false;
         continue;
       }
       // 往右扫到头：贴上后一个区间的左端、或区间用尽
       if (
-        execution.dir === 1 &&
-        ((execution.rangeIndex < rangeLength - 1 &&
-          nextID === execution.idRanges[execution.rangeIndex + 1].l) ||
+        execution.ctx!.dir === 1 &&
+        ((execution.ctx!.rangeIndex < rangeLength - 1 &&
+          nextID === execution.ctx!.idRanges[execution.ctx!.rangeIndex + 1].l) ||
           forceSkip)
       ) {
         // 本区间扫完，换下一个区间
-        execution.rangeIndex++;
-        if (execution.rangeIndex >= rangeLength) {
+        execution.ctx!.rangeIndex++;
+        if (execution.ctx!.rangeIndex >= rangeLength) {
           return null;
         }
-        const range = execution.idRanges[execution.rangeIndex];
+        const range = execution.ctx!.idRanges[execution.ctx!.rangeIndex];
         // 进度按「已扫过的 ID 数 / 已知 ID 总数」估算（扫过的 ID 数往往比已知的多，仅作参考）
-        execution.checkedRangeLength += range.r - range.l + 1;
+        execution.ctx!.checkedRangeLength += range.r - range.l + 1;
         this.logger.log(
           `连续区间 [${range.l}, ${range.r}] - ${Utils.getPrecisionFormatter().format(
-            (execution.checkedRangeLength / execution.idsLength) * 100,
+            (execution.ctx!.checkedRangeLength / execution.ctx!.idsLength) * 100,
           )}% 已完成`,
         );
         // 新区间仍从左端往左扫
-        execution.dir = -1;
-        nextID = range.l + execution.dir;
+        execution.ctx!.dir = -1;
+        nextID = range.l + execution.ctx!.dir;
         forceSkip = false;
         continue;
       }
       break;
     }
     // 收窄区间边界：扫过的部分就此划掉，进度即体现在 l / r 上
-    if (execution.dir === -1) {
-      execution.idRanges[execution.rangeIndex].l = nextID;
+    if (execution.ctx!.dir === -1) {
+      execution.ctx!.idRanges[execution.ctx!.rangeIndex].l = nextID;
     } else {
-      execution.idRanges[execution.rangeIndex].r = nextID;
+      execution.ctx!.idRanges[execution.ctx!.rangeIndex].r = nextID;
     }
-    execution.currentID = nextID;
+    execution.ctx!.currentID = nextID;
     return {
       config: {
         // 只要基础信息就走资料页，要详细信息才进编辑页（编辑页更重，也更容易触发限流）
-        url: execution.config.getall
-          ? `${this.parent.hostname}/item/edit/${execution.currentID}/`
-          : `${this.parent.hostname}/item/${execution.currentID}.html`,
+        url: execution.ctx!.config.getall
+          ? `${this.parent.hostname}/item/edit/${execution.ctx!.currentID}/`
+          : `${this.parent.hostname}/item/${execution.ctx!.currentID}.html`,
         method: "GET",
         // 手动处理重定向：失效资料会被 301 到 404 页，据此判定「已失效」
         redirect: "manual",
