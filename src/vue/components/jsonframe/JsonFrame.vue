@@ -219,6 +219,7 @@ function purifyData(data: T) {
 function parseText(text: string) {
   let success = 0,
     fail = 0,
+    skip = 0,
     save: T[] | undefined;
   try {
     save = JSON.parse(text);
@@ -230,6 +231,7 @@ function parseText(text: string) {
   return {
     success: success,
     fail: fail,
+    skip: skip,
     result: save,
   };
 }
@@ -255,12 +257,16 @@ function getUniqueRegulatedFileName(name: string) {
 
 async function importFromText(text: string, saveAs: string) {
   saveAs = getUniqueRegulatedFileName(saveAs);
-  const { success, fail, result } = props.opts?.parseText?.(text) ?? parseText(text);
+  const { success, fail, skip, result } = props.opts?.parseText?.(text) ?? parseText(text);
   if (success) {
     const purified = result!.map((e) => purifyData(e));
     await appRepository.write(saveAs, purified);
     await updateSelection();
-    Utils.commonMsg(`已读取并保存为 ${saveAs}，其中 ${success} 条解析成功，${fail} 条解析失败。`);
+    Utils.commonMsg(
+      `已读取并保存为 ${saveAs}，其中 ${success} 条解析成功，${fail} 条解析失败${
+        skip ? `，${skip} 条非本类型的记录已跳过` : ""
+      }。`,
+    );
   }
 }
 

@@ -52,6 +52,8 @@ export interface GenericJsonFrameProps<T extends TableAcceptable>
     parseText?: (text: string) => {
       success: number;
       fail: number;
+      /** 识别出但不属于本文件类型的记录数（如 MAEx 合并文件中的实体/效果行） */
+      skip?: number;
       result: T[];
     };
     more?: () => void;

@@ -36,6 +36,7 @@ import Collapsible from "../Collapsible.vue";
 import GenericTable from "../table/GenericTable.vue";
 import JsonFrame from "./JsonFrame.vue";
 import { Values } from "../../../Values.ts";
+import { Utils } from "../../../Utils.ts";
 import type { JsonFrameProps } from "../../../types/props";
 
 const props = defineProps<JsonFrameProps>();
@@ -77,7 +78,9 @@ const guiBoundEditConfigs = {
 } satisfies EditOptionsInitializer<RecipeJsonFrameGuiBound>;
 
 const itemMap = new FieldIndex<Item, "registerName">("registerName");
-const tagMap = new FieldIndex<Item, "OredictList">("OredictList");
+const tagMap = new FieldIndex<Item, "OredictList">("OredictList", (list) =>
+  Utils.parseOredictList(list),
+);
 const guiMap = new FieldIndex<RecipeJsonFrameGuiBound, "guiID">("guiID");
 let guiBound: RecipeJsonFrameGuiBound[] | undefined;
 

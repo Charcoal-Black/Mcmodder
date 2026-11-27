@@ -648,11 +648,20 @@ interface ItemPreview extends Item {
   tabUrl?: string;
 }
 
-interface UnpurifiedItem extends Item {
-  /** 对应原 maxStackSize */
+/** 各导出器导出的物品数据，需经 `ItemJsonFrame.parseText` 归一化后才能作为 {@link Item} 使用 */
+interface UnpurifiedItem extends Omit<Item, "maxStackSize" | "maxDurability"> {
+  /** 对应原 maxStackSize（IRR、IconR 的 Forge 移植、LMS、MAEx） */
   maxStacksSize?: number;
-  /** 对应原 creativeTabName */
+  /** 对应原 creativeTabName（Darknight 的移植不输出该字段） */
   CreativeTabName?: string;
+  /** IconR v2 会把堆叠数与耐久序列化成字符串 */
+  maxStackSize?: number | string;
+  /** 同上，IconR v2 为字符串 */
+  maxDurability?: number | string;
+  /** IconR v2 的物品标签，以数组形式输出，需转换为 {@link Item.OredictList} */
+  TagList?: string[] | string;
+  /** MAEx 的合并文件（`<ns>_all.json`）用该字段区分物品/实体/效果/流体 */
+  kind?: string;
 }
 
 interface ItemIcon {

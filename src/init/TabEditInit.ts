@@ -16,7 +16,9 @@ interface CurrentUsed {
 
 export class TabEditInit extends Init {
   itemFieldIndex = new FieldIndex<Item, "registerName">("registerName");
-  tagFieldIndex = new FieldIndex<Item, "OredictList">("OredictList");
+  tagFieldIndex = new FieldIndex<Item, "OredictList">("OredictList", (list) =>
+    Utils.parseOredictList(list),
+  );
   guiBoundFieldIndex = new FieldIndex<RecipeJsonFrameGuiBound, "guiID">("guiID");
   private isReady = false;
   private guiFrame?: Element;
@@ -149,7 +151,7 @@ export class TabEditInit extends Init {
       this.tagFieldIndex.add(file);
       file.forEach((item) => {
         if (item.id === Number(nItemID)) {
-          this.oredict = item.OredictList?.split(",");
+          this.oredict = Utils.parseOredictList(item.OredictList);
         }
       });
     });

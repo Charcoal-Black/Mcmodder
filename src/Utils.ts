@@ -744,6 +744,22 @@ export class Utils {
     return `${Values.hostname}/oredict/${oredict}-1.html`;
   }
 
+  /**
+   * 解析矿物词典/物品标签的序列化字符串（如 `[minecraft:planks,forge:ingots/gold]`）。
+   *
+   * 兼容各导出器的差异：允许逗号后带空格（IRR、IconR 的 Forge 移植）、首尾多余空白，
+   * 缺少方括号时也能解析；空串与 `[]` 都返回空数组。
+   */
+  static parseOredictList(serialized?: string) {
+    if (!serialized) return [];
+    const inner =
+      serialized.startsWith("[") && serialized.endsWith("]") ? serialized.slice(1, -1) : serialized;
+    return inner
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
   /** 生成用户个人中心页 URL */
   static getCenterURL(id: number) {
     return `https://center.mcmod.cn/${id}/`;
@@ -1776,8 +1792,7 @@ export class Utils {
       item.largeIcon || Utils.appendBase64ImgPrefix(Utils.getImageURLByItemID(item.id, 128)) || "";
     data["is-general-node"] = "0";
     data["is-general-parents"] = "0";
-    if (item.OredictList && item.OredictList.length <= 2)
-      data["oredict"] = item.OredictList.slice(1, -1).replaceAll(", ", ",");
+    if (item.OredictList) data["oredict"] = Utils.parseOredictList(item.OredictList).join(",");
     if (item.maxStackSize != undefined) data["maxstack"] = item.maxStackSize.toString();
     // if (item.tools) data["tools"] = item.tools;
 
