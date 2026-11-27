@@ -1,6 +1,7 @@
 import { GM_getValue, GM_setValue } from "$";
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Utils } from "../Utils";
+import { Values } from "../Values";
 
 /** 一条背景图记录 */
 export interface BackgroundImageRow {
@@ -51,7 +52,31 @@ export class BackgroundRepository {
   private readRaw(): Record<"day" | "night", BackgroundImageRow[]> {
     try {
       const raw = GM_getValue(STORAGE_KEY);
-      if (!raw) return { day: [], night: [] };
+      if (!raw)
+        return {
+          day: [
+            {
+              id: 0,
+              slot: "day",
+              name: "默认背景",
+              type: "link",
+              dataUrl: Values.assets.bg,
+              order: 0,
+              addedAt: Date.now(),
+            },
+          ],
+          night: [
+            {
+              id: 1,
+              slot: "night",
+              name: "默认夜间背景",
+              type: "link",
+              dataUrl: Values.assets.nightMode.bg,
+              order: 0,
+              addedAt: Date.now(),
+            },
+          ],
+        };
       const parsed = JSON.parse(raw) as Partial<Record<"day" | "night", BackgroundImageRow[]>>;
       return {
         day: (parsed.day ?? []).map(BackgroundRepository.normalizeRow),

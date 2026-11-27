@@ -264,14 +264,12 @@ async function onImageImportCompressed(items: { name: string; dataUrl: string }[
     Utils.commonMsg(`已添加 ${added.toLocaleString()} 张${slotLabel}背景~`);
   }
 
-  const messages: string[] = [];
-  if (added > 0) messages.push();
   if (failed.length > 0) {
     Utils.commonMsg(
       `${failed.length.toLocaleString()} 张图片保存失败：${failed.slice(0, 2).join("、")}${failed.length > 2 ? "..." : ""}`,
       false,
     );
-  } else {
+  } else if (added === 0) {
     Utils.commonMsg("没有可添加的图片...", false);
   }
 }

@@ -69,10 +69,9 @@
             :title="
               converting
                 ? '努力转换中，请耐心等待...'
-                : `将选中的${
-                    (selectedLinkTargets.length || '') &&
-                    ` ${selectedLinkTargets.length.toLocaleString()} 张`
-                  }外链${item}下载并压缩后替换为本地${item}`
+                : selectedLinkTargets.length > 0
+                  ? `将选中的${selectedLinkTargets.length.toLocaleString()} 张外链${item}下载并压缩后替换为本地${item}${convertBlockedHint}`
+                  : convertBlockedHint
             "
             @click="onConvertLinkImages"
           >
@@ -164,7 +163,7 @@
           }}</span>
         </p>
         <div
-          v-if="compressedImage === null"
+          v-if="compressedImage === null || compressBusy"
           class="mcmodder-imagelist-compresspreview mcmodder-skeleton"
         />
         <img v-else class="mcmodder-imagelist-compresspreview" :src="compressedImage" />
@@ -233,6 +232,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, useTemplateRef, watch, type Ref } from "vue";
+import { GM_info } from "$";
 import { Utils } from "../../Utils";
 import SliderInput from "./input/SliderInput.vue";
 import { BackgroundRepository } from "../../background/BackgroundRepository";
@@ -400,14 +400,75 @@ function getEditTargets(): number[] {
   return selected.value.size > 0 ? Array.from(selected.value) : [currentIndex.value];
 }
 
-/** 选中的外链图片序号（转换按钮只作用于这些项，不套用「无选中即当前项」的兜底） */
-const selectedLinkTargets = computed(() => {
+/**
+ * 判断外链是否落在脚本的 `@connect` 白名单内。
+ *
+ * `GM_xmlhttpRequest` 只会向白名单内的域名发包，白名单外的链接必然下载失败，
+ * 因此在进入转换队列前先排除，避免用户白等一轮。
+ */
+function isConnectAllowed(url: string): boolean {
+  const connects = GM_info.script.connects ?? [];
+  let target: URL;
+  try {
+    target = new URL(url);
+  } catch {
+    return false;
+  }
+  if (target.protocol !== "http:" && target.protocol !== "https:") return false;
+  const hostname = target.hostname.toLowerCase();
+  return connects.some((entry) => {
+    const value = entry.trim().toLowerCase();
+    if (!value) return false;
+    if (value === "*") return true;
+    if (value === "self") return hostname === location.hostname.toLowerCase();
+    // 条目可能写成 `*.example.com`、`example.com`，甚至带协议或端口，统一取主机名比较
+    let pattern: string;
+    try {
+      pattern = new URL(value.includes("://") ? value : `https://${value}`).hostname;
+    } catch {
+      return false;
+    }
+    pattern = pattern.replace(/^\*\./, "").replace(/^\./, "");
+    return hostname === pattern || hostname.endsWith(`.${pattern}`);
+  });
+}
+
+/** 选中（或光标所在）的外链图片，并标记是否允许下载 */
+const selectedLinkEntries = computed(() => {
   const indexes = [...selected.value];
   if (!selected.value.has(currentIndex.value)) {
     indexes.push(currentIndex.value);
   }
-  return indexes.filter((index) => frames.value[index]?.type === "link").sort((a, b) => a - b);
+  const entries: { index: number; allowed: boolean }[] = [];
+  for (const index of indexes) {
+    const frame = frames.value[index];
+    if (frame?.type === "link") {
+      entries.push({ index, allowed: isConnectAllowed(frame.url) });
+    }
+  }
+  return entries.sort((a, b) => a.index - b.index);
 });
+
+/** 可转换的外链图片序号（已排除不在 `@connect` 白名单内的链接） */
+const selectedLinkTargets = computed(() =>
+  selectedLinkEntries.value.filter((entry) => entry.allowed).map((entry) => entry.index),
+);
+
+/** 选中但因不在 `@connect` 白名单内而无法转换的外链数量 */
+const blockedLinkCount = computed(
+  () => selectedLinkEntries.value.filter((entry) => !entry.allowed).length,
+);
+
+/** 转换按钮上关于白名单限制的附加提示 */
+const convertBlockedHint = computed(() =>
+  blockedLinkCount.value > 0
+    ? selectedLinkTargets.value.length === 0
+      ? blockedLinkCount.value === 1
+        ? `此${item.value}不在脚本的 @connect 白名单内，无法转换`
+        : `所有选中的${item.value}都不在脚本的 @connect 白名单内，无法转换`
+      : `；另有 ${blockedLinkCount.value.toLocaleString()} 张外链${item.value}不在脚本的 @connect 白名单内，无法转换`
+    : "",
+);
 
 /** 从外链地址里取一个用于压缩面板展示的名称 */
 function linkFileName(url: string): string {
@@ -813,7 +874,7 @@ function finishCompression(failed: string[]) {
 
   if (failed.length > 0) {
     Utils.commonMsg(
-      `${failed.length.toLocaleString()} 张图片压缩失败：${failed.slice(0, 2).join("、")}`,
+      `${failed.length.toLocaleString()} 张图片压缩失败：${failed.slice(0, 2).join("、")}${failed.length > 2 ? "..." : ""}`,
       false,
     );
   }
@@ -1190,14 +1251,11 @@ const emit = defineEmits<{
 
 .mcmodder-imagelist-compresspreview {
   display: block;
+  height: 180px;
   max-width: 100%;
   max-height: 240px;
   margin: 0 auto 8px;
   object-fit: contain;
-}
-
-.mcmodder-imagelist-compresspreview.mcmodder-skeleton {
-  height: 180px;
 }
 
 .mcmodder-imagelist-compress-actions {
