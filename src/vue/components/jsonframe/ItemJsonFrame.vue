@@ -471,61 +471,6 @@ function idbRepo() {
   return new ItemIDBRepository();
 }
 
-/**
- * 把各导出器生成的一行数据归一化为脚本内部的 `Item` 字段。
- *
- * 导出器之间的差异（详见 `docs/export-json-format.md`）：
- * - IRR、IconR 的 Forge 移植：`maxStacksSize`、`CreativeTabName`，标签以 `", "` 分隔；
- * - IconR v2（Fabric）：堆叠数与耐久是字符串，标签是数组形式的 `TagList`，
- *   且 `type` 恒为 `Item`（方块也如此，此处无法区分）；
- * - Darknight 的移植：不输出创造模式物品栏名称，`creativeTabName` 留空即可；
- * - MAEx：`<ns>_all.json` 混有实体/效果/流体记录，由 `kind` 区分。
- */
-function normalizeExportedItem(data: UnpurifiedItem) {
-  if (data.maxStacksSize !== undefined) {
-    data.maxStackSize = data.maxStacksSize;
-    delete data.maxStacksSize;
-  }
-  if (data.CreativeTabName !== undefined) {
-    data.creativeTabName = data.CreativeTabName;
-    delete data.CreativeTabName;
-  }
-  const toNumber = (value?: string | number) => {
-    if (value === undefined || value === "") return undefined;
-    const num = Number(value);
-    return Number.isNaN(num) ? undefined : num;
-  };
-  // IconR v2 把数值序列化成字符串，解析失败或为空时删掉该字段，避免把脏数据写进资料
-  const maxStackSize = toNumber(data.maxStackSize);
-  if (maxStackSize === undefined) delete data.maxStackSize;
-  else data.maxStackSize = maxStackSize;
-  const maxDurability = toNumber(data.maxDurability);
-  if (maxDurability === undefined) delete data.maxDurability;
-  else data.maxDurability = maxDurability;
-  const metadata = toNumber(data.metadata);
-  if (metadata === undefined) delete data.metadata;
-  else data.metadata = metadata;
-  // IRR（及其前身 IR）沿用 1.12 的「损耗值」语义：maxDurability = getMaxDamage() + 1，
-  // 不可损伤物品也会写成 1；而百科的「最大耐久」就是 getMaxDamage()。
-  // 带 metadata 的行只可能来自 1.12 系导出器，据此回退一位。
-  if (metadata !== undefined && maxDurability !== undefined)
-    data.maxDurability = Math.max(0, maxDurability - 1);
-
-  // IconR v2 用 `TagList` 数组代替 `OredictList` 字符串
-  const tagList = data.TagList;
-  if (tagList !== undefined) {
-    data.OredictList = `[${(tagList instanceof Array ? tagList : Utils.parseOredictList(tagList))
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .join(",")}]`;
-    delete data.TagList;
-  }
-  // 统一去除逗号后的空格（IRR 与 IconR 的 Forge 移植会带空格）
-  if (data.OredictList !== undefined)
-    data.OredictList = `[${Utils.parseOredictList(data.OredictList).join(",")}]`;
-  return data as Item;
-}
-
 // @override
 function parseText(text: string) {
   let success = 0,
@@ -542,7 +487,7 @@ function parseText(text: string) {
         skip++;
         continue;
       }
-      const item = normalizeExportedItem(data);
+      const item = Utils.normalizeExportedItem(data);
       item.smallIcon = Utils.appendBase64ImgPrefix(item.smallIcon);
       item.largeIcon = Utils.appendBase64ImgPrefix(item.largeIcon);
       success++;

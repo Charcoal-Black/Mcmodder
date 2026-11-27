@@ -5,6 +5,8 @@ import { Init } from "./Init";
 import GIFViewer from "../vue/components/GIFViewer.vue";
 import CheckboxInput from "../vue/components/input/CheckboxInput.vue";
 import { GIFUtils } from "../gif/GIFUtils.ts";
+import ItemJsonAutofill from "../vue/components/ItemJsonAutofill.vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 
 export class ItemEditorInit extends Init {
   canRun() {
@@ -233,48 +235,10 @@ export class ItemEditorInit extends Init {
     // $(document).on("click", () => this.updateItemTooltip());
 
     // JSON 快速手导
-    const jsonUploader = $(
-      '<input id="mcmodder-json-upload" class="mcmodder-monospace form-control" placeholder="粘贴 JSON 物品导出行于此处以快速填充基本信息..">',
-    )
-      .insertBefore($(".tab-ul").first())
-      .change(() => {
-        let data: Item & { maxStacksSize?: number };
-        try {
-          data = JSON.parse(jsonUploader.val());
-        } catch (e) {
-          if (e instanceof SyntaxError)
-            Utils.commonMsg("请检查提交的 JSON 语法是否正确~", false, "解析错误");
-          return;
-        }
-        try {
-          $("[data-multi-id=name]").val(data.name);
-          if (data.englishName != data.name) {
-            $("[data-multi-id=ename]").val(data.englishName || "");
-          }
-          $("#icon-32x")
-            .val(data.smallIcon || "")
-            .change();
-          $("#icon-128x")
-            .val(data.largeIcon || "")
-            .change();
-          if (data.OredictList)
-            data.OredictList.slice(1, data.OredictList.length - 1)
-              .split(", ")
-              .forEach((e) => {
-                $("[data-multi-id=oredict]").prev().children().val(e).focusout();
-              });
-          if (data.maxDurability) $("#item-damage").val(data.maxDurability);
-          $("#item-maxstack").val(data.maxStackSize || data.maxStacksSize || "");
-          let regName = data.registerName || "";
-          if (data.type == "Entity") {
-            regName = regName.replace(":entities/", ":");
-          }
-          $("#item-regname").val(regName);
-          if (data.metadata) $("#item-metadata").val(data.metadata);
-        } catch (e) {
-          if (e instanceof TypeError) Utils.commonMsg(e.toString(), false);
-        }
-      });
+    const jsonUploader = $("<div>").insertBefore($(".tab-ul").first());
+    const itemJsonUploader = createApp(ItemJsonAutofill).mount(
+      jsonUploader.get(0),
+    ) as ComponentExposed<typeof ItemJsonAutofill>;
 
     // 联动
     const params = new URLSearchParams(window.location.search);
@@ -282,7 +246,7 @@ export class ItemEditorInit extends Init {
       const interactID = params.get("i");
       const data = this.parent.configRepository.getInteract(interactID) as string;
       if (data) {
-        jsonUploader.val(data).change();
+        itemJsonUploader.raw = data;
       }
     }
   }

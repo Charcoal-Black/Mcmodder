@@ -2542,10 +2542,6 @@ body .top-main .info .more-info .top_content a:hover,
   height: 100%;
   overflow: auto;
 }
-#mcmodder-json-upload {
-  font-size: 14px;
-  margin-top: var(--mcmodder-width-padding-2);
-}
 #mcmodder-markdown-it {
   display: block;
 }
