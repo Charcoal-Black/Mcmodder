@@ -280,6 +280,8 @@ interface Settings {
   commentExpandHeight: number;
   commentJumpRequestLimit: number;
   userBlacklist: string;
+  /** 是否把黑名单用户在消息中心发的表态、短评通知一并隐藏 */
+  blacklistFilterMessage: boolean;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;
   itemListStylePreview: boolean;

@@ -25,6 +25,7 @@ export class MessageInit extends Init {
 
   run() {
     this.bindCommentJumpHints();
+    this.filterBlacklistedMessages();
 
     if (this.configs.getSettings("lieqi")) {
       $(".content-comment-attitude > i").attr("class", "fas fa-surprise");
@@ -92,6 +93,7 @@ export class MessageInit extends Init {
     // 合计与未读徽标不依赖子 tab
     await this.renderStats();
     if (!$(".message-list").length) return;
+    this.filterBlacklistedMessages();
     await this.renderCommentCounts();
     if (this.isInboxTab()) await this.renderInbox();
   }
@@ -159,6 +161,26 @@ export class MessageInit extends Init {
     } finally {
       this.inboxFetching = false;
     }
+  }
+
+  /**
+   * 隐藏黑名单用户在消息中心发的表态 / 短评通知。
+   *
+   * 发送者 uid 从条目的头像或昵称链接里取（`https://center.mcmod.cn/<uid>/`），
+   * 站点原生条目与脚本注入的表态条目结构相同，一套选择器即可覆盖两者。
+   * 仅隐藏本机显示，云端消息记录不受影响。
+   */
+  private filterBlacklistedMessages() {
+    if (!this.configs.getSettings("blacklistFilterMessage")) return;
+    const blacklist = this.configs.getSettingsAsNumberList("userBlacklist") ?? [];
+    if (blacklist.length === 0) return;
+
+    $(".message-list > ul > li").each((_, li) => {
+      const $item = $(li);
+      const href = $item.find(".avatar a[href], .username b a[href]").first().attr("href") ?? "";
+      const uid = Number(href.match(/center\.mcmod\.cn\/(\d+)/)?.[1]);
+      if (Number.isInteger(uid) && blacklist.includes(uid)) $item.remove();
+    });
   }
 
   private nativeItemCount() {

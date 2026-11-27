@@ -712,6 +712,14 @@ export const settings = [
             type: "text",
           },
           {
+            id: "blacklistFilterMessage",
+            title: "消息中心过滤黑名单",
+            description:
+              "开启后，上述黑名单用户在消息中心发给你的表态、短评通知会被隐藏。只影响本机显示，云端记录仍会保留。",
+            type: "checkbox",
+            value: true,
+          },
+          {
             id: "alwaysNotify",
             title: "实时通讯",
             description: "设置短评动态提醒自动刷新间隔，单位为分钟，设置为小于 0.1 以禁用。",
