@@ -68,12 +68,12 @@
         :value="value as number"
         :on-successful-change="onConfigSuccessfulChange"
       />
-      <RadioGroupInput
-        v-else-if="type === 'radioGroup'"
+      <CheckboxGroupInput
+        v-else-if="type === 'checkboxGroup'"
         :title="title"
-        :value="value as number"
+        :value="value as string"
         :on-successful-change="onConfigSuccessfulChange"
-        :range="valueSet!"
+        :range="valueSet as InputValueTextSet"
       />
       <slot name="afterInput" />
     </div>
@@ -107,7 +107,7 @@ import DropdownMenuInput from "../input/DropdownMenuInput.vue";
 import DropdownTextInput from "../input/DropdownTextInput.vue";
 import KeybindInput from "../input/KeybindInput.vue";
 import BackgroundPoolInput from "../input/BackgroundPoolInput.vue";
-import RadioGroupInput from "../input/RadioGroupInput.vue";
+import CheckboxGroupInput from "../input/CheckboxGroupInput.vue";
 import { useSanitizedHTML } from "../../composables/useSanitizedHTML";
 import type { ConfigRepository } from "../../../config/ConfigRepository.ts";
 import type { ConfigMatchRanges } from "../../../types/props";
@@ -175,11 +175,8 @@ const opt = computed(() => {
       return {};
     case "backgroundPool":
       return {};
-    // case "radioGroup": {
-    //   const valueSet = { ...data.range } as InputValueSet;
-    //   valueSet[data.value as number] += " (默认)";
-    //   return { valueSet };
-    // }
+    case "checkboxGroup":
+      return { valueSet: { ...data.range } as InputValueTextSet };
   }
   throw new Error("这 InputType 有力气");
 });

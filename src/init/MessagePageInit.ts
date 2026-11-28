@@ -1,9 +1,23 @@
 import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import {
   buildAttitudeMessageItem,
+  FALLBACK_MESSAGE_ITEM,
   findAttitudeMessageTemplate,
   insertMessageItemByTime,
 } from "../attitude/attitudeMessageItem";
+import {
+  attitudeTypeFromIconClass,
+  attitudeTypeFromName,
+  parseAttitudeTypeList,
+} from "../attitude/nativeAttitudeTypes";
+import {
+  buildDefaultNickname,
+  buildFakeTimestamp,
+  collectCommentSnippets,
+  pickFakeAttitudeType,
+  pickFakeAvatar,
+} from "../attitude/fakeMessage";
+import { NATIVE_ATTITUDE_TYPES } from "../attitude/nativeAttitudeTypes";
 import { Values } from "../Values";
 import { Init } from "./Init";
 
@@ -17,6 +31,13 @@ export class MessageInit extends Init {
   private refreshTimer?: number;
   private inboxSignature = "";
   private inboxFetching = false;
+  /** 消息列表的黑名单过滤器；页面重渲染时重建 */
+  private blacklistObserver?: MutationObserver;
+  /** 本轮被隐藏的表态通知数量与类型（供假条目补齐使用） */
+  private hiddenAttitudeCount = 0;
+  private hiddenAttitudeTypeList: string[] = [];
+  /** 补齐请求的去抖定时器 */
+  private fakeFillTimer?: number;
 
   canRun() {
     // 站内链接既有 `/message/` 也有 `/message?category=...`，两种形态都要命中
@@ -25,7 +46,7 @@ export class MessageInit extends Init {
 
   run() {
     this.bindCommentJumpHints();
-    this.filterBlacklistedMessages();
+    this.startBlacklistObserver();
 
     if (this.configs.getSettings("lieqi")) {
       $(".content-comment-attitude > i").attr("class", "fas fa-surprise");
@@ -93,7 +114,6 @@ export class MessageInit extends Init {
     // 合计与未读徽标不依赖子 tab
     await this.renderStats();
     if (!$(".message-list").length) return;
-    this.filterBlacklistedMessages();
     await this.renderCommentCounts();
     if (this.isInboxTab()) await this.renderInbox();
   }
@@ -166,21 +186,174 @@ export class MessageInit extends Init {
   /**
    * 隐藏黑名单用户在消息中心发的表态 / 短评通知。
    *
-   * 发送者 uid 从条目的头像或昵称链接里取（`https://center.mcmod.cn/<uid>/`），
-   * 站点原生条目与脚本注入的表态条目结构相同，一套选择器即可覆盖两者。
-   * 仅隐藏本机显示，云端消息记录不受影响。
+   * # 为什么要用 MutationObserver 而不是定时过滤
+   * `refresh()` 有 120ms 去抖、且只在云端表态启用时才调度 —— 用它过滤会让条目
+   * 先被绘制几帧再消失（肉眼可见的闪烁）。`MutationObserver` 的回调排在**微任务**，
+   * 早于本次渲染，因此在同一帧内就能把条目摘掉，用户看不到它出现过。
+   *
+   * 发送者 uid 从头像 / 昵称链接反解（`https://center.mcmod.cn/<uid>/`）；
+   * 站点原生条目与脚本注入的表态条目结构相同，一套选择器覆盖两者。
+   * 仅隐藏本机显示，云端记录与未读统计不受影响。
    */
-  private filterBlacklistedMessages() {
-    if (!this.configs.getSettings("blacklistFilterMessage")) return;
-    const blacklist = this.configs.getSettingsAsNumberList("userBlacklist") ?? [];
-    if (blacklist.length === 0) return;
+  private startBlacklistObserver() {
+    const filterByUser = this.configs.getSettings("blacklistFilterMessage");
+    const blacklist = filterByUser
+      ? (this.configs.getSettingsAsNumberList("userBlacklist") ?? [])
+      : [];
+    const hasTypeFilter = this.hiddenAttitudeTypes.length > 0;
+    if (blacklist.length === 0 && !hasTypeFilter) return;
 
-    $(".message-list > ul > li").each((_, li) => {
-      const $item = $(li);
-      const href = $item.find(".avatar a[href], .username b a[href]").first().attr("href") ?? "";
-      const uid = Number(href.match(/center\.mcmod\.cn\/(\d+)/)?.[1]);
-      if (Number.isInteger(uid) && blacklist.includes(uid)) $item.remove();
+    this.purgeBlacklisted(blacklist);
+
+    const list = document.querySelector(".message-list > ul");
+    if (list === null) return;
+    this.blacklistObserver?.disconnect();
+    this.blacklistObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          this.purgeIfBlacklisted($(node as HTMLElement), blacklist);
+        });
+      }
     });
+    this.blacklistObserver.observe(list, { childList: true });
+  }
+
+  /** 摘掉已渲染列表里所有黑名单条目 */
+  private purgeBlacklisted(blacklist: number[]) {
+    $(".message-list > ul > li").each((_, li) => {
+      this.purgeIfBlacklisted($(li), blacklist);
+    });
+  }
+
+  /** 单条命中黑名单或表态类型黑名单则立即移除 */
+  private purgeIfBlacklisted($item: JQuery, blacklist: number[]) {
+    if ($item.is(".mcmodder-attitude-summary")) return;
+    // 本就是自己补的假条目，不再参与过滤
+    if ($item.attr("data-mcmodder-fake") !== undefined) return;
+
+    // 表态类型过滤：脚本注入的条目带 data 属性；站点原生条目按图标 class 或中文名反查
+    const hiddenTypes = this.hiddenAttitudeTypes;
+    if (hiddenTypes.length > 0) {
+      const type = this.resolveAttitudeType($item);
+      if (type !== undefined && hiddenTypes.includes(type)) {
+        $item.remove();
+        this.hiddenAttitudeCount += 1;
+        this.hiddenAttitudeTypeList.push(type);
+        this.scheduleFakeFill();
+        return;
+      }
+    }
+
+    if (blacklist.length === 0) return;
+    const href = $item.find(".avatar a[href], .username b a[href]").first().attr("href") ?? "";
+    const uid = Number(href.match(/center\.mcmod\.cn\/(\d+)/)?.[1]);
+    if (Number.isInteger(uid) && blacklist.includes(uid)) $item.remove();
+  }
+
+  /**
+   * 解析消息条目的表态类型。
+   *
+   * 三条来源依次尝试：脚本注入条目上的 `data` 属性 → 条目内图标类的反查 →
+   * 表态标识元素的中文名反查。只有**表态类**消息才参与判断（存在
+   * `.content-comment-attitude` 或带 `data-mcmodder-attitude-type`），
+   * 避免普通短评正文里的同名词被误判。
+   */
+  private resolveAttitudeType($item: JQuery): string | undefined {
+    const own = $item.attr("data-mcmodder-attitude-type");
+    if (own !== undefined) return own;
+
+    const $badge = $item.find(".content-comment-attitude").first();
+    if (!$badge.length) return undefined;
+
+    const iconType = attitudeTypeFromIconClass($badge.find("i").first().attr("class"));
+    if (iconType !== undefined) return iconType;
+
+    return attitudeTypeFromName($badge.attr("title") ?? $badge.text());
+  }
+
+  /** 合并多次过滤后的补齐请求，避免连续插入多条时反复重排 */
+  private scheduleFakeFill() {
+    if (this.fakeFillTimer !== undefined) window.clearTimeout(this.fakeFillTimer);
+    this.fakeFillTimer = window.setTimeout(() => {
+      this.fakeFillTimer = undefined;
+      this.fillFakeAttitudes();
+    }, 60);
+  }
+
+  /**
+   * 用假条目补齐被隐藏的表态通知。
+   *
+   * 克隆列表里第一条真实条目作骨架，替换昵称、头像、表态类型、短评摘要与时间；
+   * 表态类型从**本轮被隐藏的类型**里取，这样补上的正是被拿掉的那几种。
+   * 条目带 `data-mcmodder-fake` 标记，重渲染时先清掉再补，不会无限累积。
+   */
+  private fillFakeAttitudes(force = false) {
+    if (!force && !this.configs.getSettings("fakeFillHidden")) return;
+    const list = $(".message-list > ul").first();
+    if (!list.length) return;
+
+    // 先清掉上一次补的，按最新状态重建
+    list.children("li[data-mcmodder-fake]").remove();
+    const count = this.hiddenAttitudeCount;
+    if (count <= 0) {
+      return;
+    }
+
+    // 模板池：优先用真实条目（随机挑，避免全是同一条的翻版），
+    // 列表为空时退回内置模板
+    const $native = list
+      .children("li")
+      .not("[data-mcmodder-fake]")
+      .not(".mcmodder-attitude-summary");
+    const templates: Element[] =
+      $native.length > 0 ? $native.toArray() : [$(FALLBACK_MESSAGE_ITEM).get(0) as Element];
+
+    const snippets = collectCommentSnippets();
+    const types = this.hiddenAttitudeTypeList;
+    const limit = Math.min(count, 20);
+    const offset = Math.floor(Math.random() * Math.max(1, snippets.length));
+
+    for (let i = 0; i < limit; i += 1) {
+      const template = templates[Math.floor(Math.random() * templates.length)];
+      const $item = $(template).clone();
+      $item
+        .attr("data-mcmodder-fake", "1")
+        .removeClass("mcmodder-attitude-unread")
+        .removeAttr("data-mcmodder-attitude-message")
+        .removeAttr("data-mcmodder-attitude-type");
+
+      const nickname = buildDefaultNickname();
+      $item.find(".avatar img").attr({ src: pickFakeAvatar(), alt: nickname });
+      $item.find(".avatar a").attr("href", "javascript:void(0);");
+      $item.find(".username b a").attr("href", "javascript:void(0);").text(nickname);
+
+      // 表态类型：用正面类型，并渲染成站点原生的「图标 + 中文名」形态
+      const type = pickFakeAttitudeType(types);
+      const typeInfo = NATIVE_ATTITUDE_TYPES.find((item) => item.type === type);
+      const $badge = $item.find(".content-comment-attitude").first();
+      if ($badge.length && typeInfo !== undefined) {
+        $badge
+          .empty()
+          .append($("<i>").addClass(`fas ${typeInfo.iconClass}`))
+          .append(document.createTextNode(typeInfo.name));
+      }
+
+      if (snippets.length > 0) {
+        // 打乱一次后按序取，避免同一批里出现重复文案
+        const snippet = snippets[(i + offset) % snippets.length];
+        $item.find(".content-reply > a").first().text(snippet).attr("href", "javascript:void(0);");
+        $item.find(".content-reply > span").remove();
+      }
+
+      $item.find(".content-tools > li").first().text(buildFakeTimestamp());
+      list.append($item);
+    }
+  }
+
+  /** 配置里要隐藏的表态类型（已规范化，兼容中英文写法） */
+  private get hiddenAttitudeTypes(): string[] {
+    return parseAttitudeTypeList(this.configs.getSettings("hiddenAttitudeTypes"));
   }
 
   private nativeItemCount() {

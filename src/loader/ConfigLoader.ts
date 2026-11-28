@@ -720,6 +720,38 @@ export const settings = [
             value: true,
           },
           {
+            id: "hiddenAttitudeTypes",
+            title: "隐藏的表态类型",
+            description:
+              "勾选要隐藏的表态类型：短评下方的表态结果条与消息中心里对应的表态通知都会一并隐藏。全不勾选则全部显示。",
+            type: "checkboxGroup",
+            value: "",
+            range: {
+              up: "勤勉",
+              grintears: "欢乐",
+              heart: "有爱",
+              flushed: "震惊",
+              cry: "大哭",
+              meh: "无语",
+              down: "怠惰",
+              lemon: "酸酸",
+              horsehead: "疑问",
+              heartbroken: "心碎",
+              angry: "安格瑞",
+              tired: "难受",
+              snowflake: "雪飘风萧",
+              handshake: "握爪",
+            },
+          },
+          {
+            id: "fakeFillHidden",
+            title: "用假条目补齐数量",
+            description:
+              "开启后，被隐藏的表态通知会用「QQ酱 + 默认头像」的假条目补齐，让消息数量看起来没有减少。纯本地显示，不影响云端记录，刷新后重新生成。",
+            type: "checkbox",
+            value: false,
+          },
+          {
             id: "alwaysNotify",
             title: "实时通讯",
             description: "设置短评动态提醒自动刷新间隔，单位为分钟，设置为小于 0.1 以禁用。",

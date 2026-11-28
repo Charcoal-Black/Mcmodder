@@ -10,7 +10,7 @@ const DEFAULT_AVATAR =
   );
 
 /** 没有可克隆的原生条目时的表态消息模板（与站内原生表态条目同构） */
-const FALLBACK_MESSAGE_ITEM = `
+export const FALLBACK_MESSAGE_ITEM = `
   <li>
     <span class="avatar">
       <a href="javascript:void(0);" target="_blank"><img alt="" src="${DEFAULT_AVATAR}"></a>
@@ -79,7 +79,8 @@ export function buildAttitudeMessageItem($template: JQuery, item: SupabaseAttitu
   $item
     .addClass("mcmodder-attitude-message")
     .toggleClass("mcmodder-attitude-unread", !item.is_read)
-    .attr("data-mcmodder-attitude-message", String(item.id));
+    .attr("data-mcmodder-attitude-message", String(item.id))
+    .attr("data-mcmodder-attitude-type", item.attitude_type);
 
   const profileUrl = Utils.getCenterURL(item.from_uid);
   $item.find(".avatar a").attr("href", profileUrl);

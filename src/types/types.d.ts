@@ -282,6 +282,10 @@ interface Settings {
   userBlacklist: string;
   /** 是否把黑名单用户在消息中心发的表态、短评通知一并隐藏 */
   blacklistFilterMessage: boolean;
+  /** 要隐藏的表态类型（短评结果条 + 消息中心通知），逗号分隔的 data-type */
+  hiddenAttitudeTypes: string;
+  /** 隐藏表态后，用假条目补齐数量，避免列表看起来变少 */
+  fakeFillHidden: boolean;
   autoVerifyDelay: number;
   splitScreenOnVerify: boolean;
   itemListStylePreview: boolean;
@@ -368,7 +372,7 @@ type InputType =
   | "dropdownMenu"
   | "dropdownTextMenu"
   | "backgroundPool"
-  | "radioGroup";
+  | "checkboxGroup";
 
 type Permission = "banned" | "none" | "editor" | "developer" | "manager" | "admin";
 
@@ -483,13 +487,13 @@ interface BackgroundPoolConfigParams extends ConfigParamsBase<
   type: "backgroundPool";
 }
 
-/** 单选按钮组式的枚举值选择器（选项少、需平铺可见时用） */
-interface RadioGroupConfigParams extends ConfigParamsBase<
-  KeysOfType<Required<Settings>, number>,
-  number,
-  InputValueSet
+/** 多选复选框组（值为逗号分隔的字符串） */
+interface CheckboxGroupConfigParams extends ConfigParamsBase<
+  KeysOfType<Required<Settings>, string>,
+  string,
+  InputValueTextSet
 > {
-  type: "radioGroup";
+  type: "checkboxGroup";
 }
 
 /** 下拉菜单类配置项 */
@@ -523,7 +527,7 @@ type ConfigParams =
   | DropdownConfigParams
   | DropdownTextConfigParams
   | BackgroundPoolConfigParams
-  | RadioGroupConfigParams;
+  | CheckboxGroupConfigParams;
 
 /** 用于决定配置项是否显示的上下文 */
 interface ConfigVisibilityContext {
@@ -1939,6 +1943,8 @@ type InputValueNumericRange = [number | null, number | null];
 type InputValueFiniteNumericRange = [number, number];
 /** 枚举值集合：值 → 显示文案（用于下拉类输入） */
 type InputValueSet = Record<number, string | { text: string; desc?: string }>;
+/** 字符串键的取值集（多选复选框组用，键即写入配置的值） */
+type InputValueTextSet = Record<string, string>;
 /** 输入范围：数值区间或枚举值集合 */
 type InputValueRange = InputValueNumericRange | InputValueSet;
 
