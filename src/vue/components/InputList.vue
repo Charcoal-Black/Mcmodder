@@ -101,8 +101,8 @@ import { useMenuList } from "../composables/useMenuList.ts";
  *
  * # 匹配与补全
  * - 匹配：`suggestedList` 是个 computed，每次求值都拿 `selectionValue`（光标所在段落的已输入前缀）
- *   与每条候选的 `value` / `alias` 做拼音匹配（`pinyin-match`），算出 `score` 与命中区间 `ranges`，
- *   过滤零分项并按分数降序——所以**输入的变化只需体现在输入元素本身**，列表会自行重算；
+ *   与每条候选的 `desc` / `value` / `alias` 做拼音匹配（`pinyin-match`），算出 `score` 与命中区间
+ *   `ranges`，过滤零分项并按分数降序——所以**输入的变化只需体现在输入元素本身**，列表会自行重算；
  * - 补全：`setSelectionValue` 把选中候选写回输入元素（多段输入时只替换光标所在段落），
  *   并派发 `input` / `change` 事件，让宿主原有的表单绑定照常感知到这次修改。
  *
@@ -369,10 +369,9 @@ watchEffect(() => {
       ranges: { alias: {} },
     };
     [entry.desc, entry.value, ...(entry.alias ?? [])]
-      .filter((e) => e !== undefined)
-      .map((e) => e.toLowerCase())
+      .map((e) => e?.toLowerCase() ?? "")
       .forEach((value, index) => {
-        // index 0 是候选本体，其余下标对应各 alias（ranges 里以 alias 的下标存储）
+        // index 0 是附加描述，1 是候选本体，其余下标对应各 alias（ranges 里以 alias 的下标存储）
         const range = Pinyin.match(value, content);
         if (range) {
           range[1]++; // 闭区间改成左闭右开
