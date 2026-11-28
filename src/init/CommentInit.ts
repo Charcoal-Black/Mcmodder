@@ -1,3 +1,4 @@
+import { applyHiddenAttitudeTypes } from "../attitude/hiddenAttitudeTypes";
 import { createApp } from "vue";
 import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import { Utils } from "../Utils";
@@ -111,7 +112,7 @@ export class CommentInit extends Init {
     });
   }
 
-  /** 已完成注入的顶层短评行标记：MutationObserver 会因我们自己的异步写入（表态计数、贴纸解析等）再次回调，靠它保证不重复注入 */
+  /** 完成注入的顶层短评行标记：MutationObserver 会因我们自己的异步写入（表态计数、贴纸解析等）再次回调，靠它保证不重复注入 */
   private static readonly PROCESSED_ATTR = "data-mcmodder-comment-processed";
   /** 楼中楼行标记：与顶层楼分用，避免嵌套结构下两级标记互相干扰 */
   private static readonly REPLY_PROCESSED_ATTR = "data-mcmodder-comment-reply-processed";
@@ -311,7 +312,19 @@ export class CommentInit extends Init {
     }
   }
 
+  /**
+   * 按 `hiddenAttitudeTypes` 隐藏短评结果条里的指定表态类型。
+   *
+   * 站点原生项用 `a[data-type]`，脚本自绘项用 `a[data-mcmodder-attitude]`，
+   * 两者都藏在 `.comment-attitude-result > li` 下，用 `:has()` 连 li 一起收起，
+   * 否则会留下空的 li 占位。CSS 方案对后续 AJAX / 异步渲染的条目同样生效。
+   */
+  private hideAttitudeTypes() {
+    applyHiddenAttitudeTypes(this.configs);
+  }
+
   run() {
+    this.hideAttitudeTypes();
     if (this.configs.getSettings("commentExpandHeight")) {
       const commentHeight = this.configs.getSettings("commentExpandHeight") || "300";
       Utils.addStyle(`.comment-row-text {max-height: ${commentHeight}px;}`);

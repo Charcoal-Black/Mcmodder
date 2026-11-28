@@ -14,7 +14,7 @@ export class ConfigUtils {
     dropdownMenu: 0,
     dropdownTextMenu: "",
     backgroundPool: 0,
-    radioGroup: 0,
+    checkboxGroup: "",
   } as const satisfies Record<InputType, unknown>;
 
   private readonly configs: ConfigRepository;
