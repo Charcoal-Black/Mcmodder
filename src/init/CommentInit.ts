@@ -1,4 +1,4 @@
-import { parseAttitudeTypeList } from "../attitude/nativeAttitudeTypes";
+import { applyHiddenAttitudeTypes } from "../attitude/hiddenAttitudeTypes";
 import { createApp } from "vue";
 import { AttitudeSystem } from "../attitude/AttitudeSystem";
 import { Utils } from "../Utils";
@@ -17,8 +17,6 @@ export class CommentInit extends Init {
 
   /** 短评跨页跳转：查找、翻页与 loading 都由它负责 */
   private readonly jump = new CommentJumpController(this.parent, this.configs);
-  /** 表态结果条的观察器（隐藏指定表态类型用） */
-  private attitudeObserver?: MutationObserver;
 
   private displayPublishTime(target: JQuery) {
     target.find(".comment-reply-row-time").each((_, node) => {
@@ -114,8 +112,6 @@ export class CommentInit extends Init {
     });
   }
 
-  /** 表态结果条目被隐藏的标记（JS 兜底用，避免重复处理） */
-  private static readonly ATTITUDE_HIDDEN_ATTR = "data-mcmodder-attitude-hidden";
   /** 完成注入的顶层短评行标记：MutationObserver 会因我们自己的异步写入（表态计数、贴纸解析等）再次回调，靠它保证不重复注入 */
   private static readonly PROCESSED_ATTR = "data-mcmodder-comment-processed";
   /** 楼中楼行标记：与顶层楼分用，避免嵌套结构下两级标记互相干扰 */
@@ -324,39 +320,7 @@ export class CommentInit extends Init {
    * 否则会留下空的 li 占位。CSS 方案对后续 AJAX / 异步渲染的条目同样生效。
    */
   private hideAttitudeTypes() {
-    const types = parseAttitudeTypeList(this.configs.getSettings("hiddenAttitudeTypes"));
-    if (types.length === 0) return;
-
-    // CSS 快速路径：支持 `:has()` 的浏览器在元素渲染前就收起，无闪烁
-    const selectors = types.flatMap((type) => [
-      `.comment-attitude-result li:has(> a[data-type="${type}"])`,
-      `.comment-attitude-result li:has(> a[data-mcmodder-attitude="${type}"])`,
-    ]);
-    Utils.addStyle(`${selectors.join(",")}{display:none!important;}`, "mcmodder-hidden-attitudes");
-
-    // JS 兜底：`:has()` 不可用（旧版浏览器）或选择器不匹配时仍然生效
-    const apply = () => {
-      $(".comment-attitude-result > li").each((_, li) => {
-        const $li = $(li);
-        if ($li.attr(CommentInit.ATTITUDE_HIDDEN_ATTR)) return;
-        const $anchor = $li.find("a[data-type], a[data-mcmodder-attitude]").first();
-        const type = $anchor.attr("data-type") ?? $anchor.attr("data-mcmodder-attitude");
-        if (type !== undefined && types.includes(type)) {
-          $li.attr(CommentInit.ATTITUDE_HIDDEN_ATTR, "1").hide();
-        }
-      });
-    };
-    apply();
-    // 短评区是异步渲染的：`run()` 执行时 `.comment-attitude-result` 往往还不存在，
-    // 因此观察器挂在短评容器（或 body）上，等结果条出现再处理。
-    if (this.attitudeObserver === undefined) {
-      const host =
-        document.querySelector(".common-comment-block") ??
-        document.querySelector("#comment") ??
-        document.body;
-      this.attitudeObserver = new MutationObserver(apply);
-      this.attitudeObserver.observe(host, { childList: true, subtree: true });
-    }
+    applyHiddenAttitudeTypes(this.configs);
   }
 
   run() {

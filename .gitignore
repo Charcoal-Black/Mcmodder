@@ -35,3 +35,6 @@ smoke/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# 本地 PR 正文草稿
+pr-body.md

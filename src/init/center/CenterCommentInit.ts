@@ -1,4 +1,5 @@
 import { buildAttitudeIcon, getAttitudeTitle } from "../../attitude/attitudeIcon";
+import { applyHiddenAttitudeTypes } from "../../attitude/hiddenAttitudeTypes";
 import { Utils } from "../../Utils";
 import { CenterBaseInit } from "./CenterBaseInit";
 
@@ -12,6 +13,8 @@ export class CenterCommentInit extends CenterBaseInit {
   private fetching = false;
 
   async run() {
+    // 表态统计面板也要按「隐藏的表态类型」收起（站点原生 12 项 + 脚本追加项）
+    applyHiddenAttitudeTypes(this.configs);
     if (this.fetching) return;
     if (!this.configs.getSettings("customAttitude_v2")) return;
     if (!this.parent.supabaseUtils.hasClient()) return;
