@@ -305,6 +305,7 @@ import type { AuthorEdition } from "./author/schema.ts";
 import type { VersionEdition } from "./version/schema.ts";
 import type { PostEdition } from "./post/schema.ts";
 import VerifyCell from "./VerifyCell.vue";
+import { ensureArray } from "../../../../src/CollectionUtils.ts";
 
 interface Props {
   user: User;
@@ -489,7 +490,7 @@ const diff = computed(() => {
       )
         return;
       const groups = Utils.getKeyValueOfObject(TabVerifyFieldGroups, field) ?? field;
-      (Array.isArray(groups) ? groups : [groups])?.forEach((group) => {
+      ensureArray(groups)?.forEach((group) => {
         result.add(group);
       });
     });

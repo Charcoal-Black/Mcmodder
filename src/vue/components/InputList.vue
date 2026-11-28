@@ -2,7 +2,7 @@
   <Popover ref="popoverRef" v-bind="popoverProps">
     <div
       ref="listRef"
-      class="mcmodder-input-list"
+      class="mcmodder-menu-list"
       :class="{
         editable: onModifySuggestion,
       }"
@@ -11,12 +11,12 @@
       <a
         v-for="(entry, i) in suggestedList"
         :key="i"
-        class="mcmodder-input-option"
+        class="mcmodder-menu-option"
         :class="{ selected: selected === i }"
         :title="getTitle(entry)"
         :data-value="entry.value"
         :data-index="i"
-        @pointerenter="onOptionPointerenter(i)"
+        @pointermove="onMenuPointermove(i)"
         @click="onOptionClick(entry.value)"
       >
         <span class="text">
@@ -57,10 +57,10 @@
       </a>
       <a
         v-show="canCreateNew"
-        class="mcmodder-input-option mcmodder-input-new"
+        class="mcmodder-menu-option mcmodder-input-new"
         :class="{ selected: selected === suggestedList.length }"
         :data-index="suggestedList.length"
-        @pointerenter="onOptionPointerenter(suggestedList.length)"
+        @pointermove="onMenuPointermove(suggestedList.length)"
         @click="onNewOptionClick"
       >
         <span class="mcmodder-slim-dark">+ 保存为快捷输入项</span>
@@ -88,6 +88,7 @@ import Pinyin from "pinyin-match";
 import MatchedText from "./MatchedText";
 import Popover from "./Popover.vue";
 import { usePopoverHost } from "../composables/usePopoverHost.ts";
+import { useMenuList } from "../composables/useMenuList.ts";
 
 /**
  * 候选列表（快速补全）组件。
@@ -238,20 +239,37 @@ const inputRef = shallowRef<InputListBindElement | null>(null);
 const valueRef = ref("");
 /** 输入元素的光标位置（由 `input` 事件同步；决定「替换哪一段」） */
 const selectionStart = ref<number | null>(null);
-/** 当前高亮项下标；`canCreateNew` 为真时 `suggestedList.length` 这一项是「保存为快捷输入项」 */
-const selected = ref(0);
 /** 候选全集（每次聚焦时由 `onInitSuggestion` 重新拉取；`shallowRef` + `triggerRef` 以支持原地增删改） */
 const suggestionList = shallowRef<InputSuggestion[]>([]);
 /** 取整段而非「到光标为止」的前缀（`selectionValue` 的开关） */
 const isCompletely = ref(false);
 /** 列表是否应显示（唯一的显隐开关，由 `suggestedList` 求值时顺带计算） */
 const selectable = ref(false);
-// let isFocused = false;
 /** 是否展示「+ 保存为快捷输入项」这一项（需要可保存回调且当前段非空） */
 const canCreateNew = ref(false);
+/** 小 trick，为添加候选的按钮捏造一个空的占位候选项 */
+const suggestedListWithAddOption = computed(() => [
+  ...suggestedList.value,
+  ...(canCreateNew.value
+    ? [
+        {
+          value: "",
+        },
+      ]
+    : []),
+]);
 
 /** 列表根节点（量高度、按 `data-index` 找选项节点） */
 const listRef = useTemplateRef("listRef");
+
+const { selected, onMenuPointermove, onMenuKeydown, onMenuKeyup } = useMenuList({
+  items: suggestedListWithAddOption,
+  selectable,
+  listRef,
+  updateItems: updateValueRef,
+  onOptionClick: (option) => onOptionClick(option.value),
+  acceptKeys: ["Tab", "Enter"],
+});
 
 /**
  * 弹出框宿主的接线：显隐同步、锚点定位、`updatePos` / `close` 都在 `usePopoverHost` 里。
@@ -319,7 +337,7 @@ watchEffect(() => {
   void selectionValue.value;
   void dismissed.value;
 
-  selected.value = 0;
+  selected.value = -1;
 
   // 被显式关闭后，重算一律不改变「不显示」的状态；下次 `setOption` 才解除
   if (dismissed.value) {
@@ -375,7 +393,7 @@ watchEffect(() => {
   });
 
   canCreateNew.value = !!(onModifySuggestion.value && selectionValue.value);
-  selected.value = 0;
+  selected.value = -1;
   if (rawSuggestedList.length) {
     selectable.value = true;
   } else {
@@ -415,63 +433,11 @@ function onInputClick() {
   onInputFocus();
 }
 
-/**
- * 按下这些键时先拦下默认行为（真正消费发生在 `onInputKeyup`），
- * 避免光标在输入框内上下跳动、Tab 切走焦点、回车提前提交表单。
- */
-function onInputKeydown(e: Event) {
-  if (
-    e instanceof KeyboardEvent &&
-    selectable.value &&
-    (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Tab" || e.key === "Enter")
-  ) {
-    e.preventDefault();
-  }
-}
-
-/**
- * 键盘操作（列表可见时）：
- * - ↑ / ↓ 在候选间循环移动选中项，并把它滚动进可视区域；
- * - Tab / Enter 采纳选中项（选中的是「保存为快捷输入项」时改为新增候选）；
- * - 其余按键交回 `updateValueRef` 同步值与选区。
- */
-function onInputKeyup(e: Event) {
-  if (!(e instanceof KeyboardEvent)) {
-    return;
-  }
-  if (selectable.value && e.key === "ArrowUp") {
-    selected.value--;
-    if (selected.value < 0) {
-      // 向上越界：绕回末尾（有「保存为快捷输入项」时落在它身上，否则是最后一条候选）
-      selected.value = suggestedList.value.length - (canCreateNew.value ? 0 : 1);
-    }
-    scrollToSelectedNode();
-  } else if (selectable.value && e.key === "ArrowDown") {
-    selected.value++;
-    if (selected.value >= suggestedList.value.length + (canCreateNew.value ? 1 : 0)) {
-      selected.value = 0;
-    }
-    scrollToSelectedNode();
-  } else if (selectable.value && (e.key === "Tab" || e.key === "Enter")) {
-    const node = getSelectedOptionNode();
-    if (node.length) {
-      e.preventDefault();
-      if (selected.value === suggestedList.value.length) {
-        onNewOptionClick();
-      } else {
-        onOptionClick(suggestedList.value[selected.value].value);
-      }
-    }
-  } else {
-    updateValueRef(e);
-  }
-}
-
 /** 输入框事件名 → 处理函数：由 `InputListPopoverController` 转发到 `window`（也可被宿主直接调用其中任意一个） */
 const inputEvents = {
   click: onInputClick,
-  keydown: onInputKeydown,
-  keyup: onInputKeyup,
+  keydown: onMenuKeydown,
+  keyup: onMenuKeyup,
   input: updateValueRef,
 } as const;
 
@@ -501,7 +467,11 @@ function onNewOptionClick() {
  * @param val 被采纳候选的 `value`。
  */
 function onOptionClick(val: string) {
-  setSelectionValue(val, !!delimiter.value);
+  if (canCreateNew.value && selected.value === suggestedListWithAddOption.value.length - 1) {
+    onNewOptionClick();
+  } else {
+    setSelectionValue(val, !!delimiter.value);
+  }
 }
 
 /**
@@ -570,11 +540,6 @@ function onEditAliasClick(e: PointerEvent, val: string) {
     },
   );
   e.stopPropagation();
-}
-
-/** 指针悬停某项：直接把它设为选中项（与键盘操作共享同一个 `selected`） */
-function onOptionPointerenter(index: number) {
-  selected.value = index;
 }
 
 /**
@@ -687,28 +652,6 @@ function setSelectionValue(content: string, isContinuously = false) {
   } else {
     inputRef.value.blur();
   }
-}
-
-/**
- * 按下标取候选项的 DOM 节点（模板用 `data-index` 标注）。
- *
- * @param index 候选项下标；`canCreateNew` 为真时，下标等于 `suggestedList.length` 的是「保存为快捷输入项」。
- */
-function getOptionNode(index: number) {
-  return $(listRef.value!).find(`[data-index=${index}]`);
-}
-
-/** 把当前选中项滚动进可视区域（键盘上下移动后调用） */
-function scrollToSelectedNode() {
-  getOptionNode(selected.value).get(0).scrollIntoView({
-    behavior: "smooth",
-    block: "nearest",
-  });
-}
-
-/** 当前选中项的 DOM 节点（Tab / Enter 前用它判断「确有可采纳的选中项」） */
-function getSelectedOptionNode() {
-  return getOptionNode(selected.value);
 }
 
 defineExpose<PopoverExpose<InputListProps, typeof inputEvents>>({

@@ -13,18 +13,19 @@
       top: cssY + 'px',
     }"
     tabindex="-1"
-    @keydown="onMenuKeydown"
+    @keydown="onKeydown"
+    @keyup="onMenuKeyup"
   >
     <div class="mcmodder-contextmenu-inner">
       <div class="arrow" />
-      <ul>
+      <ul ref="listRef" class="mcmodder-menu-list">
         <li v-if="activeIndexLength === 0" class="empty">当前无可用选项...</li>
         <template v-for="(item, i) in visibleItems" :key="item.key">
           <li
+            class="mcmodder-menu-option"
             :class="{ selected: selected === i }"
-            @pointerenter="onItemPointerenter(i)"
-            @pointermove="onItemPointermove(i)"
-            @pointerleave="onItemPointerleave(i)"
+            :data-index="i"
+            @pointermove="onMenuPointermove(i)"
             @click="onItemClick(i)"
           >
             <a>
@@ -63,13 +64,12 @@
 import { onMounted, ref, useTemplateRef } from "vue";
 import { Utils } from "../../Utils";
 import KeyDisplay from "./KeyDisplay";
+import { useMenuList } from "../composables/useMenuList";
 
 /** 打开菜单的那次右键事件，回调时透传给 `callback`，供宿主定位被右键的对象 */
 let contextmenuEvent: PointerEvent | undefined;
 /** 菜单是否处于打开状态（`show`/`hide` 维护；打开时拦截重复的右键事件） */
 let activeState = false;
-/** 本次打开以来是否已用过键盘（方向键）或指针进入——用于决定悬停是否接管键盘选中的项 */
-let pressArrowKeyBeforePointerMove = false;
 /** 宿主容器元素（菜单本体之外、真正挂载着菜单的那个 DOM 节点） */
 let container: HTMLElement | null = null;
 /** 当前可用条目在 `items` 中的原下标（过滤后下标 → 原始下标的映射） */
@@ -77,14 +77,18 @@ const activeIndexList: number[] = [];
 
 /** 菜单根节点（`.mcmodder-contextmenu`） */
 const root = useTemplateRef("root");
-/** 当前选中的「过滤后下标」；-1 表示无选中（模板据此加 `.selected`） */
-const selected = ref(-1);
-/** 当前可用条目数（`visibleItems.length`，供键盘上下边界与「无可用选项」提示判断） */
+/** 当前可用条目数（`visibleItems.length`，供快捷键遍历与「无可用选项」提示判断） */
 const activeIndexLength = ref(0);
 /** 宿主注册的全部菜单项（按注册顺序） */
 const items = ref<ContextMenuItems>([]);
 /** 本次打开时过滤出的可用菜单项（模板实际渲染的就是它） */
 const visibleItems = ref<ContextMenuItems>([]);
+
+const { selected, onMenuPointermove, onMenuKeydown, onMenuKeyup } = useMenuList({
+  items: visibleItems,
+  listRef: useTemplateRef("listRef"),
+  onOptionClick: () => onItemClick(selected.value),
+});
 
 /** 箭头靠左（菜单默认在右侧展开） */
 const classExpandRight = ref(false);
@@ -227,13 +231,7 @@ function addItem(option: ContextMenuItemOption) {
   return { addItem };
 }
 
-/**
- * 菜单键盘操作（根节点 `tabindex="-1"`，打开时已聚焦）：
- * 1. 先遍历可用项匹配各自的快捷键，命中则选中并执行；
- * 2. Enter 执行当前选中项；Esc 关闭；↓ / ↑ 在可用项间移动选中。
- * 方向键会置 `pressArrowKeyBeforePointerMove`，避免鼠标恰好停在上次悬停位置时被「夺回」选中态。
- */
-function onMenuKeydown(e: KeyboardEvent) {
+function onKeydown(e: KeyboardEvent) {
   if (!activeState) {
     return;
   }
@@ -245,63 +243,12 @@ function onMenuKeydown(e: KeyboardEvent) {
       return;
     }
   }
-  if (Utils.isKeyMatch({ keyCode: 13 }, e)) {
-    if (selected.value !== -1) {
-      onItemClick(selected.value);
-    }
-  } else if (Utils.isKeyMatch({ keyCode: 27 }, e)) {
+  if (Utils.isKeyMatch({ keyCode: 27 }, e)) {
     e.preventDefault();
     root.value!.blur();
     hide();
-  } else if (Utils.isKeyMatch({ keyCode: 40 }, e)) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (activeIndexLength.value < 1) return;
-    pressArrowKeyBeforePointerMove = true;
-    if (selected.value === -1) {
-      selected.value = 0;
-    } else {
-      selected.value = Math.min(selected.value + 1, activeIndexLength.value - 1);
-    }
-  } else if (Utils.isKeyMatch({ keyCode: 38 }, e)) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (activeIndexLength.value < 1) return;
-    pressArrowKeyBeforePointerMove = true;
-    if (selected.value === -1) {
-      selected.value = activeIndexLength.value - 1;
-    } else {
-      selected.value = Math.max(selected.value - 1, 0);
-    }
   }
-}
-
-/** 指针进入某项：标记本次已用过指针（此后悬停才接管键盘选中态） */
-function onItemPointerenter(_index: number) {
-  if (!activeState) {
-    return;
-  }
-  pressArrowKeyBeforePointerMove = true;
-}
-
-/** 指针在项间移动：接管选中态（用过滤后下标），仅在已经发生过指针进入后生效 */
-function onItemPointermove(index: number) {
-  if (!activeState) {
-    return;
-  }
-  if (!pressArrowKeyBeforePointerMove) {
-    return;
-  }
-  // const activeIndex = activeIndexList.indexOf(index);
-  selected.value = index;
-}
-
-/** 指针离开某项：清除选中态 */
-function onItemPointerleave(_index: number) {
-  if (!activeState) {
-    return;
-  }
-  selected.value = -1;
+  onMenuKeydown(e);
 }
 
 /**

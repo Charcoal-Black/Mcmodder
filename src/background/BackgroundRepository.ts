@@ -1,4 +1,5 @@
 import { GM_getValue, GM_setValue } from "$";
+import { ensureArray } from "../CollectionUtils";
 import type { ConfigRepository } from "../config/ConfigRepository";
 import { Utils } from "../Utils";
 import { Values } from "../Values";
@@ -289,7 +290,7 @@ export class BackgroundRepository {
 
   /** 按 id 删除；可以一次删多张，只写一次库 */
   remove(ids: number | number[]) {
-    const doomed = new Set(Array.isArray(ids) ? ids : [ids]);
+    const doomed = new Set(ensureArray(ids));
     const data = this.readAll();
     data.day = data.day.filter((row) => row.id === undefined || !doomed.has(row.id));
     data.night = data.night.filter((row) => row.id === undefined || !doomed.has(row.id));
@@ -298,7 +299,7 @@ export class BackgroundRepository {
 
   /** 设置若干张图的权重（1-10，超范围自动夹取）；一次只写一次库 */
   setWeight(ids: number | number[], weight: number) {
-    const targets = new Set(Array.isArray(ids) ? ids : [ids]);
+    const targets = new Set(ensureArray(ids));
     const data = this.readAll();
     const clamped = Utils.clamp(Math.round(weight), 1, 10);
     let changed = false;

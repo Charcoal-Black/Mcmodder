@@ -53,8 +53,7 @@ export function omitKey<T extends object, K extends Arrayable<keyof T>>(
   key: K,
 ): Omit<T, K extends (keyof T)[] ? ElementOf<K> : K> {
   const result = { ...obj };
-  const keys = (!Array.isArray(key) ? [key] : key) as (keyof T)[];
-  keys.forEach((key) => delete result[key]);
+  ensureArray(key).forEach((key) => delete result[key]);
   return result as Omit<T, K extends (keyof T)[] ? ElementOf<K> : K>;
 }
 
@@ -69,9 +68,12 @@ export function pickKey<T extends object, K extends Arrayable<keyof T>>(
   key: K,
 ): Pick<T, K extends (keyof T)[] ? ElementOf<K> : K> {
   const result: Partial<T> = {};
-  const keys = (!Array.isArray(key) ? [key] : key) as (keyof T)[];
-  keys.forEach((key) => {
+  ensureArray(key).forEach((key) => {
     if (key in obj) result[key] = obj[key];
   });
   return result as Pick<T, K extends (keyof T)[] ? ElementOf<K> : K>;
+}
+
+export function ensureArray<T>(value: Arrayable<T>) {
+  return Array.isArray(value) ? value : [value];
 }

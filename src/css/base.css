@@ -684,9 +684,8 @@ body .top-main .pulldown .top_content {
   right: 0.5em;
 }
 .item-shortcut-left {
-  float: right;
   opacity: 0.5;
-  margin-left: 0.5em;
+  margin-left: auto;
 }
 .mcmodder-task-tip {
   width: 320px;
@@ -2868,7 +2867,7 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   overflow-y: auto;
   overscroll-behavior-y: contain;
 }
-.mcmodder-input-option {
+.mcmodder-menu-option {
   width: 100%;
   display: flex;
   font-size: 14px;
@@ -2878,22 +2877,22 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   min-height: 24px;
   color: var(--mcmodder-color-text);
 }
-.mcmodder-input-option .text {
+.mcmodder-menu-option .text {
   max-width: 100%;
   overflow: clip;
   text-overflow: ellipsis;
   padding: 0;
 }
-.mcmodder-input-list.editable .mcmodder-input-option.selected .text {
+.mcmodder-menu-list.editable .mcmodder-menu-option.selected .text {
   max-width: calc(100% - 4 * var(--mcmodder-width-padding-3));
 }
-.mcmodder-input-option .text .desc,
-.mcmodder-input-option .text .alias {
+.mcmodder-menu-option .text .desc,
+.mcmodder-menu-option .text .alias {
   font-size: 12px;
   color: var(--mcmodder-color-text-dark2);
   margin-left: 5px;
 }
-.mcmodder-input-option .text .alias span:not(:first-child)::before {
+.mcmodder-menu-option .text .alias span:not(:first-child)::before {
   content: "; ";
 }
 .mcmodder-input-extraoptions {
@@ -2904,13 +2903,13 @@ html.dark .mcmodder-table-pointerover-tr > .mcmodder-table-pointerover-td {
   color: var(--mcmodder-color-text-dark2);
   padding-left: var(--mcmodder-width-padding-3);
 }
-.mcmodder-input-option.selected {
+.mcmodder-menu-option.selected {
   background-color: var(--mcmodder-color-primary-transparent1);
 }
-.mcmodder-input-option.selected .mcmodder-input-extraoptions {
+.mcmodder-menu-option.selected .mcmodder-input-extraoptions {
   display: block;
 }
-.mcmodder-input-option mark,
+.mcmodder-menu-option mark,
 .edit-autolink-list mark {
   padding: 0;
   color: var(--mcmodder-color-accent-dark2);
